@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.3.0
+- Missing materials button: when you're short of materials, click the orange button under Materials cost to add just what's missing to an Auctionator shopping list ("Craft Profit"), or to track the recipe in Blizzard's objective tracker.
+  - New option to choose which: Automatic (Auctionator when installed), Auctionator, Blizzard, or hide the button.
+  - Auctionator: adds the exact amount and quality you're short. Clicking again adds to the list. Vendor-sold and soulbound materials are listed in chat instead.
+  - Pick a quality by clicking a material first, and that's the quality added.
+
 ## 1.2.1
 - Code cleanup, no visible changes: split into smaller files, separated the math from the drawing, and kept all reads of Blizzard's crafting window in one place, so future Blizzard patches are quicker to fix.
 

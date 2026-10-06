@@ -53,7 +53,11 @@ ns.DEFAULTS = {
 	procFx = true,        -- animate multicraft / resourcefulness procs
 	procSound = true,     -- coin sound on procs
 	showSession = true,   -- show the total of this session's crafts
+	missingTarget = "auto", -- missing materials button: "auto" | "auctionator" | "blizzard" | "off"
 }
+
+-- The Auctionator shopping list the missing materials button adds to.
+ns.SHOPPING_LIST = "Craft Profit"
 
 -- TSM price types offered in the options.
 ns.TSM_SOURCES = {

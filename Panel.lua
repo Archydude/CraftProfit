@@ -145,6 +145,45 @@ local function materialTooltip(material)
 	end
 end
 
+local function missingTooltip(model, target)
+	return function(tip)
+		tip:SetText("Missing materials")
+		for _, material in ipairs(model.missing) do tip:AddLine(Item(material.itemID, material.qty), 1, 1, 1) end
+		tip:AddLine(" ")
+		if target == "auctionator" then
+			tip:AddLine(Color("simulated", format("Click: add these to Auctionator's \"%s\" shopping list", ns.SHOPPING_LIST)))
+			tip:AddLine("Click again to add them again, for another craft. Vendor and soulbound materials are listed in chat instead.", 1, 1, 1, true)
+			tip:AddLine("Buys the cheapest quality, or the one you picked by clicking a material.", 1, 1, 1, true)
+		elseif ns.Shopping.IsTracked(model) then
+			tip:AddLine(Color("simulated", "Click: stop tracking this recipe"))
+		else
+			tip:AddLine(Color("simulated", "Click: track this recipe"))
+			tip:AddLine("Blizzard's objective tracker lists all its materials with how many you have.", 1, 1, 1, true)
+		end
+	end
+end
+
+-- The button that sends missing materials to a shopping list or the tracker.
+local function drawMissingButton(model)
+	local count = #model.missing
+	if count == 0 or ns.db.missingTarget == "off" then return end
+	local target = ns.Shopping.Target()
+	local plural = count == 1 and "" or "s"
+	local text
+	addGap()
+	if target == "auctionator" then
+		text = format("Add %d missing material%s to Auctionator", count, plural)
+	elseif target == "blizzard" and ns.Shopping.IsTracked(model) then
+		text = format("%d material%s missing - recipe tracked", count, plural)
+	elseif target == "blizzard" then
+		text = format("Track recipe (%d material%s missing)", count, plural)
+	else
+		addRow(Color("muted", format("%d material%s missing (Auctionator is not loaded)", count, plural)))
+		return
+	end
+	addRow(Color("missing", text), nil, nil, function() ns.Shopping.Send(model) end, missingTooltip(model, target))
+end
+
 local function drawMaterials(model)
 	if #model.materials == 0 then return end
 	addSpacer()
@@ -162,6 +201,7 @@ local function drawMaterials(model)
 		addRow(Item(material.itemID, material.qty) .. tag, amount, nil, onClick, tooltip)
 	end
 	addRow("Materials cost", Money(-model.cost))
+	drawMissingButton(model)
 end
 
 -- What multicraft / resourcefulness added on the last craft, listed above the
@@ -391,6 +431,9 @@ local function createFrame()
 
 	-- Item names arrive from the server after first use; redraw when they do.
 	frame:RegisterEvent("GET_ITEM_INFO_RECEIVED")
+	-- The missing materials button follows what you own and what's tracked.
+	frame:RegisterEvent("BAG_UPDATE_DELAYED")
+	frame:RegisterEvent("TRACKED_RECIPE_UPDATE")
 	frame:SetScript("OnEvent", function(self)
 		if self:IsShown() then Panel.Refresh() end
 	end)

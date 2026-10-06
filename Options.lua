@@ -78,6 +78,16 @@ function Options.Create()
 		ns.Panel.Place()
 	end, "Put the panel back next to the profession window.")
 
+	dropdown("missingTarget", "Missing materials button", {
+		{ "auto", "Automatic (Auctionator, else Blizzard)" },
+		{ "auctionator", "Auctionator shopping list" },
+		{ "blizzard", "Blizzard's recipe tracker" },
+		{ "off", "Don't show it" },
+	}, format("When you're short of materials, the panel shows a button for them.\n\n" ..
+		"Auctionator: adds just what you're missing to the \"%s\" shopping list.\n\n" ..
+		"Blizzard: tracks the recipe, so the objective tracker lists its materials.\n\n" ..
+		"Automatic uses Auctionator when it's installed.", ns.SHOPPING_LIST))
+
 	layout:AddInitializer(CreateSettingsListSectionHeaderInitializer("Prices"))
 	dropdown("provider", "Price addon", {
 		{ "auto", "Automatic (TSM, then Auctionator)" },

@@ -26,15 +26,20 @@ local function auctionatorValue(fn, arg)
 	if ok and value and value > 0 then return value end
 end
 
+-- What a vendor sells an item for, in copper (nil if no vendor sells it, or
+-- nobody knows).
+function Prices.Vendor(itemID)
+	local api = auctionatorAPI()
+	return (tsmAvailable() and tsmValue("vendorbuy", "i:" .. itemID))
+		or (api and auctionatorValue(api.GetVendorPriceByItemID, itemID))
+end
+
 -- What a material costs you, in copper (nil if nobody knows).
 function Prices.Material(itemID)
+	-- Vendor-sold things (vials, thread...) cost the vendor price.
+	local value = ns.db.useVendor and Prices.Vendor(itemID)
+	if value then return value end
 	local api = auctionatorAPI()
-	if ns.db.useVendor then
-		-- Vendor-sold things (vials, thread...) cost the vendor price.
-		local value = (tsmAvailable() and tsmValue("vendorbuy", "i:" .. itemID))
-			or (api and auctionatorValue(api.GetVendorPriceByItemID, itemID))
-		if value then return value end
-	end
 	return (tsmAvailable() and tsmValue(ns.db.matSource, "i:" .. itemID))
 		or (api and auctionatorValue(api.GetAuctionPriceByItemID, itemID))
 end

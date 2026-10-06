@@ -37,6 +37,15 @@ Open your profession and pick a recipe, or open a crafting order. The panel appe
 - Picked qualities reset when you choose another recipe.
 - If the game can't predict the quality for a mix (for example with materials you don't own), the panel says so and keeps the form's quality for the sale price.
 
+### Missing materials
+When you're short of materials, an orange button shows under **Materials cost**. Hover it to see what's missing. What a click does is set in the options:
+
+- **Auctionator shopping list:** adds just what you're missing, with the amount and quality, to Auctionator's **Craft Profit** shopping list. Open it in Auctionator's Shopping tab at the auction house. Clicking again (or on another recipe) adds to the amounts already on the list. Vendor-sold and soulbound materials are listed in chat instead.
+- **Blizzard's recipe tracker:** tracks the recipe, so the objective tracker lists its materials with how many you have. Click again to stop tracking.
+- **Automatic** (default) uses Auctionator when it's installed, and Blizzard's tracker otherwise.
+
+Every quality you own counts toward a material, and the cheapest quality is the one added. To buy a specific quality, click the material to pick it first (see below).
+
 ## Options
 Click the gear on the panel, type `/craftprofit`, or go to **Esc → Options → AddOns → Craft Profit**.
 
@@ -47,6 +56,7 @@ Click the gear on the panel, type `/craftprofit`, or go to **Esc → Options →
 | Panel size | Size of the whole panel, 60% to 150%. |
 | Panel position: Reset | Puts the panel back next to the profession window. |
 | Show amounts down to | Gold, silver (default) or copper. |
+| Missing materials button | Automatic (default), Auctionator shopping list, Blizzard's recipe tracker, or don't show it. |
 | Animate multicraft & resourcefulness procs | On by default. |
 | Coin sound on procs | On by default. |
 | Show this session's total | On by default. |
