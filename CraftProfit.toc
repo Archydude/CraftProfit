@@ -1,0 +1,21 @@
+## Interface: 120100, 120105
+## Title: Craft Profit
+## Notes: Shows your profit or loss on a craft or a crafting order, priced with TSM or Auctionator. Type /craftprofit for options.
+## Author: Archdude
+## Version: 1.2.1
+## OptionalDeps: TradeSkillMaster, Auctionator
+## SavedVariables: CraftProfitDB
+## IconTexture: Interface\Icons\INV_Misc_Coin_02
+## Category-enUS: Professions
+## X-License: MIT
+
+Constants.lua
+Blizzard.lua
+Prices.lua
+Format.lua
+Simulation.lua
+Model.lua
+Panel.lua
+Results.lua
+Options.lua
+Core.lua
