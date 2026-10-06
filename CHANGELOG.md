@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.3.1
+- Missing materials button: by default, a click now adds to the Auctionator shopping list and a Shift-click tracks the recipe in Blizzard's objective tracker. Without Auctionator, a click tracks the recipe. The Auctionator-only and Blizzard-only options are still there.
+- Ctrl-click the missing materials button to clear the "Craft Profit" shopping list. There's also a Clear button in the options.
+- A divider line between the materials and their total cost.
+- Shorter panel: the commission and the consortium cut are now one line, "Commission (after 10% cut)", and the sale price and the AH cut are one line, "Sells for (after 5% AH cut)".
+- Shorter missing materials tooltip: just the materials and what a click does.
+- Fixed: a panel tooltip didn't update after clicking until you moved the mouse away and back (for example "track" / "stop tracking").
+
 ## 1.3.0
 - Missing materials button: when you're short of materials, click the orange button under Materials cost to add just what's missing to an Auctionator shopping list ("Craft Profit"), or to track the recipe in Blizzard's objective tracker.
   - New option to choose which: Automatic (Auctionator when installed), Auctionator, Blizzard, or hide the button.

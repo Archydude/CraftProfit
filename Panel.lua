@@ -128,6 +128,29 @@ local function addGap()
 	contentHeight = contentHeight + Layout.GAP
 end
 
+local dividers = {}
+local dividerCount = 0
+
+-- A thin line across the panel, like the one above a sum.
+local function addDivider()
+	dividerCount = dividerCount + 1
+	local line = dividers[dividerCount]
+	if not line then
+		line = frame:CreateTexture(nil, "ARTWORK")
+		line:SetColorTexture(1, 1, 1, 0.25)
+		dividers[dividerCount] = line
+	end
+	contentHeight = contentHeight + Layout.DIVIDER_GAP
+	local y = -Layout.PAD_TOP - contentHeight
+	line:ClearAllPoints()
+	line:SetPoint("TOPLEFT", Layout.PAD_SIDE, y)
+	line:SetPoint("TOPRIGHT", -Layout.PAD_SIDE, y)
+	-- At least one screen pixel, whatever the panel size.
+	PixelUtil.SetHeight(line, 1, 1)
+	line:Show()
+	contentHeight = contentHeight + line:GetHeight() + Layout.DIVIDER_GAP
+end
+
 local function signedMoney(amount)
 	return Color(ns.AmountColor(amount), (amount > 0 and "+" or "") .. Money(amount))
 end
@@ -145,20 +168,28 @@ local function materialTooltip(material)
 	end
 end
 
-local function missingTooltip(model, target)
+-- What sending the missing materials to `target` does, for the tooltip.
+local function missingAction(model, target)
+	if target == "auctionator" then
+		return format("add these to Auctionator's \"%s\" shopping list", ns.SHOPPING_LIST)
+	elseif ns.Shopping.IsTracked(model) then
+		return "stop tracking this recipe"
+	end
+	return "track this recipe"
+end
+
+-- `shiftTarget` is where a Shift-click goes, when that's somewhere else.
+local function missingTooltip(model, target, shiftTarget)
 	return function(tip)
 		tip:SetText("Missing materials")
 		for _, material in ipairs(model.missing) do tip:AddLine(Item(material.itemID, material.qty), 1, 1, 1) end
 		tip:AddLine(" ")
-		if target == "auctionator" then
-			tip:AddLine(Color("simulated", format("Click: add these to Auctionator's \"%s\" shopping list", ns.SHOPPING_LIST)))
-			tip:AddLine("Click again to add them again, for another craft. Vendor and soulbound materials are listed in chat instead.", 1, 1, 1, true)
-			tip:AddLine("Buys the cheapest quality, or the one you picked by clicking a material.", 1, 1, 1, true)
-		elseif ns.Shopping.IsTracked(model) then
-			tip:AddLine(Color("simulated", "Click: stop tracking this recipe"))
-		else
-			tip:AddLine(Color("simulated", "Click: track this recipe"))
-			tip:AddLine("Blizzard's objective tracker lists all its materials with how many you have.", 1, 1, 1, true)
+		tip:AddLine(Color("simulated", "Click: " .. missingAction(model, target)))
+		if shiftTarget then
+			tip:AddLine(Color("simulated", "Shift-click: " .. missingAction(model, shiftTarget)))
+		end
+		if ns.Shopping.CanClear() then
+			tip:AddLine(Color("simulated", format("Ctrl-click: clear the \"%s\" shopping list", ns.SHOPPING_LIST)))
 		end
 	end
 end
@@ -181,7 +212,10 @@ local function drawMissingButton(model)
 		addRow(Color("muted", format("%d material%s missing (Auctionator is not loaded)", count, plural)))
 		return
 	end
-	addRow(Color("missing", text), nil, nil, function() ns.Shopping.Send(model) end, missingTooltip(model, target))
+	local shiftTarget = ns.Shopping.Target(true)
+	if shiftTarget == target then shiftTarget = nil end
+	addRow(Color("missing", text), nil, nil, function() ns.Shopping.Send(model, IsShiftKeyDown(), IsControlKeyDown()) end,
+		missingTooltip(model, target, shiftTarget))
 end
 
 local function drawMaterials(model)
@@ -200,6 +234,7 @@ local function drawMaterials(model)
 		local amount = material.price and Money(material.price * material.qty) or Color("warning", "no price")
 		addRow(Item(material.itemID, material.qty) .. tag, amount, nil, onClick, tooltip)
 	end
+	addDivider()
 	addRow("Materials cost", Money(-model.cost))
 	drawMissingButton(model)
 end
@@ -256,15 +291,24 @@ local function drawFooter(model)
 	addRow(Color("muted", "Prices: " .. ns.Prices.SourceLabel()))
 end
 
+-- " (after 10% cut)", in grey, for an amount shown after a cut. Empty when
+-- there's no cut.
+local function cutNote(cut, gross, name)
+	if not (cut and cut > 0 and gross > 0) then return "" end
+	return " " .. Color("muted", format("(after %d%% %s)", math.floor(cut / gross * 100 + 0.5), name))
+end
+
 local function drawCraft(model)
 	addRow(model.title, nil, fonts.title)
 	local output = model.output
 	if output then
 		addRow(format("Makes %sx %s", output.qtyText, output.link))
 		if output.sale then
-			addRow("Sells for", Money(output.sale))
+			-- One line, after the AH cut.
 			if output.ahCut then
-				addRow(Color("muted", format("AH cut (%d%%)", ns.AH_CUT * 100)), Color("muted", Money(-output.ahCut)))
+				addRow("Sells for" .. cutNote(output.ahCut, output.sale, "AH cut"), Money(output.sale - output.ahCut))
+			else
+				addRow("Sells for", Money(output.sale))
 			end
 		else
 			addRow("Sells for", Color("warning", "no price"))
@@ -276,9 +320,8 @@ end
 
 local function drawOrder(model)
 	addRow(model.title, nil, fonts.title)
-	addRow("Commission", Money(model.commission))
-	addRow(Color("muted", "Consortium cut"), Color("muted", Money(-model.consortiumCut)))
-	addRow("You receive", Money(model.receive))
+	-- One line, after the consortium's cut.
+	addRow("Commission" .. cutNote(model.consortiumCut, model.commission, "cut"), Money(model.receive))
 
 	drawMaterials(model)
 	if #model.materials == 0 then
@@ -327,11 +370,27 @@ local function buildModel()
 	end
 end
 
+-- A redraw can change the row under the mouse (tracked, simulated...), so its
+-- tooltip is drawn again, or hidden if the row isn't clickable any more.
+local function refreshTooltip()
+	for _, row in ipairs(rows) do
+		local button = row.button
+		if button and GameTooltip:IsOwned(button) then
+			if button:IsVisible() and button.tooltip then
+				button:GetScript("OnEnter")(button)
+			else
+				GameTooltip:Hide()
+			end
+			return
+		end
+	end
+end
+
 -- Redraws right away. Prefer Panel.Refresh, which batches redraws.
 function Panel.Render()
 	refreshQueued = false
 	if not frame then return end
-	rowCount, contentHeight, profitRow = 0, 0, nil
+	rowCount, dividerCount, contentHeight, profitRow = 0, 0, 0, nil
 
 	local model = buildModel()
 	Panel.current = model
@@ -344,12 +403,14 @@ function Panel.Render()
 		rows[i].right:Hide()
 		if rows[i].button then rows[i].button:Hide() end
 	end
+	for i = dividerCount + 1, #dividers do dividers[i]:Hide() end
 	if model then
 		frame:SetHeight(Layout.PAD_TOP + contentHeight + Layout.PAD_BOTTOM)
 		frame:Show()
 	else
 		frame:Hide()
 	end
+	refreshTooltip()
 end
 
 -- Redraws once at the end of this frame, however many times it's called.

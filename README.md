@@ -42,9 +42,11 @@ When you're short of materials, an orange button shows under **Materials cost**.
 
 - **Auctionator shopping list:** adds just what you're missing, with the amount and quality, to Auctionator's **Craft Profit** shopping list. Open it in Auctionator's Shopping tab at the auction house. Clicking again (or on another recipe) adds to the amounts already on the list. Vendor-sold and soulbound materials are listed in chat instead.
 - **Blizzard's recipe tracker:** tracks the recipe, so the objective tracker lists its materials with how many you have. Click again to stop tracking.
-- **Automatic** (default) uses Auctionator when it's installed, and Blizzard's tracker otherwise.
+- **Both** (default): a click adds to the Auctionator list, a **Shift-click** tracks the recipe. Without Auctionator, a click tracks the recipe.
 
 Every quality you own counts toward a material, and the cheapest quality is the one added. To buy a specific quality, click the material to pick it first (see below).
+
+**Ctrl-click** the button to clear the Craft Profit shopping list (when the button uses Auctionator). There's also a **Clear** button for it in the options, for when nothing is missing and the button is gone.
 
 ## Options
 Click the gear on the panel, type `/craftprofit`, or go to **Esc → Options → AddOns → Craft Profit**.
@@ -56,7 +58,8 @@ Click the gear on the panel, type `/craftprofit`, or go to **Esc → Options →
 | Panel size | Size of the whole panel, 60% to 150%. |
 | Panel position: Reset | Puts the panel back next to the profession window. |
 | Show amounts down to | Gold, silver (default) or copper. |
-| Missing materials button | Automatic (default), Auctionator shopping list, Blizzard's recipe tracker, or don't show it. |
+| Missing materials button | Click: Auctionator, Shift-click: Blizzard (default), Auctionator shopping list, Blizzard's recipe tracker, or don't show it. |
+| Auctionator shopping list: Clear | Empties the Craft Profit shopping list. |
 | Animate multicraft & resourcefulness procs | On by default. |
 | Coin sound on procs | On by default. |
 | Show this session's total | On by default. |

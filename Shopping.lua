@@ -31,12 +31,14 @@ local function call(fn, ...)
 	if ok then return result end
 end
 
--- Where the button sends missing materials: "auctionator", "blizzard", or nil
--- when it's turned off or Auctionator was picked but isn't loaded.
-function Shopping.Target()
+-- Where a click on the button sends missing materials: "auctionator",
+-- "blizzard", or nil when it's turned off or Auctionator was picked but isn't
+-- loaded. In "auto", a click goes to Auctionator and a Shift-click to Blizzard
+-- (a click too, without Auctionator).
+function Shopping.Target(shift)
 	local choice = ns.db.missingTarget
 	if choice == "off" then return end
-	if choice == "blizzard" then return "blizzard" end
+	if choice == "blizzard" or (choice == "auto" and shift) then return "blizzard" end
 	if auctionatorAPI() then return "auctionator" end
 	if choice == "auto" then return "blizzard" end
 end
@@ -161,13 +163,42 @@ local function sendToAuctionator(api, missing)
 	end)
 end
 
+-- Empties the shopping list. Auctionator's API can't delete a list, so an empty
+-- one is left behind; the next add fills it again.
+function Shopping.Clear()
+	local api = auctionatorAPI()
+	local listName = format("Auctionator's \"%s\" shopping list", ns.SHOPPING_LIST)
+	if not api then
+		say(ns.Color("warning", "Auctionator is not loaded."))
+		return
+	end
+	local items = call(api.GetShoppingListItems, ns.SHOPPING_LIST)
+	if not items or #items == 0 then
+		say(listName .. " is already empty.")
+	elseif pcall(api.CreateShoppingList, ADDON_NAME, ns.SHOPPING_LIST, {}) then
+		say("Cleared " .. listName .. ".")
+	else
+		say(ns.Color("warning", "Auctionator couldn't clear the shopping list."))
+	end
+end
+
 ---------------------------------------------------------------------------
 -- The button
 ---------------------------------------------------------------------------
 
--- What the panel's button does for this model.
-function Shopping.Send(model)
-	local target = Shopping.Target()
+-- Whether Ctrl-click on the button clears the shopping list: when the button
+-- uses Auctionator at all.
+function Shopping.CanClear()
+	return Shopping.Target(false) == "auctionator" or Shopping.Target(true) == "auctionator"
+end
+
+-- What the panel's button does for this model, with the modifier keys held.
+function Shopping.Send(model, shift, ctrl)
+	if ctrl and Shopping.CanClear() then
+		Shopping.Clear()
+		return
+	end
+	local target = Shopping.Target(shift)
 	if target == "blizzard" then
 		toggleTracked(model)
 	elseif target == "auctionator" and #model.missing > 0 then
