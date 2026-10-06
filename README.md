@@ -7,9 +7,11 @@ A small panel next to your profession window that tells you, in gold, whether a 
 
 - **Procs:** when a craft procs multicraft or resourcefulness, the bonus gold pops up over the Profit line with a coin sound, a **Procs** section lists the extra items and returned materials with their value, and Profit/Loss changes to what that craft really made. It goes back to the normal forecast on your next craft without a proc, or when you pick another recipe.
 
+- **Missing materials:** one click adds what you're short to an Auctionator shopping list; Shift-click tracks the recipe in Blizzard's objective tracker.
+
 - **Session total:** under Profit/Loss, what all your crafts made since you logged in on this character (a `/reload` keeps it). Crafts without a price, like enchants, aren't counted.
 
-It's a lightweight alternative to CraftSim if you only want the money question answered. It doesn't simulate procs in advance; it shows you the gold when they happen.
+It only answers the money question, and stays light. It doesn't simulate procs in advance; it shows you the gold when they happen.
 
 Requires **TradeSkillMaster** or **Auctionator** for prices. Built for WoW Midnight 12.1.
 
