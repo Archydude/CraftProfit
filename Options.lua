@@ -78,18 +78,19 @@ function Options.Create()
 		ns.Panel.Place()
 	end, "Put the panel back next to the profession window.")
 
-	dropdown("missingTarget", "Missing materials button", {
+	dropdown("missingTarget", "Shopping list button", {
 		{ "auto", "Click: Auctionator, Shift-click: Blizzard" },
 		{ "auctionator", "Auctionator shopping list" },
 		{ "blizzard", "Blizzard's recipe tracker" },
 		{ "off", "Don't show it" },
-	}, format("When you're short of materials, the panel shows a button for them.\n\n" ..
-		"Auctionator: adds just what you're missing to the \"%s\" shopping list.\n\n" ..
-		"Blizzard: tracks the recipe, so the objective tracker lists its materials.\n\n" ..
+	}, format("A row under Materials cost for buying what you're short of.\n\n" ..
+		"Auctionator: a click opens a menu that adds what's missing for 1, 5, 10 or any number of crafts " ..
+		"to the \"%s\" shopping list.\n\n" ..
+		"Blizzard: a click tracks the recipe, so the objective tracker lists its materials.\n\n" ..
 		"The default does both: a click for Auctionator, a Shift-click for Blizzard. " ..
 		"Without Auctionator, a click goes to Blizzard.", ns.SHOPPING_LIST))
 	button("Auctionator shopping list", "Clear", ns.Shopping.Clear,
-		format("Empties the \"%s\" shopping list. Ctrl-click the missing materials button does the same.", ns.SHOPPING_LIST))
+		format("Empties the \"%s\" shopping list. Ctrl-click the Shopping list button does the same.", ns.SHOPPING_LIST))
 
 	layout:AddInitializer(CreateSettingsListSectionHeaderInitializer("Prices"))
 	dropdown("provider", "Price addon", {

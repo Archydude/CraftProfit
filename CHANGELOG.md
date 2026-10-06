@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.4.0
+- Buy for several crafts: clicking the button (now called "Shopping list") opens a menu to add what's missing for 1, 5 or 10 crafts, or any number you type. Each line shows how many items it would add. The last number you typed stays in the menu until you log out.
+- The menu can also track the recipe and clear the shopping list. Shift-click and Ctrl-click still do that directly.
+- With Auctionator, the Shopping list row now always shows (grey when nothing's missing for one craft), since you may still be short for more crafts.
+
 ## 1.3.1
 - Missing materials button: by default, a click now adds to the Auctionator shopping list and a Shift-click tracks the recipe in Blizzard's objective tracker. Without Auctionator, a click tracks the recipe. The Auctionator-only and Blizzard-only options are still there.
 - Ctrl-click the missing materials button to clear the "Craft Profit" shopping list. There's also a Clear button in the options.

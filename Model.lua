@@ -7,7 +7,9 @@
 --   title
 --   recipe        { recipeID, isRecraft }, for Blizzard's recipe tracker
 --   materials     see Model.Materials
---   missing       see Model.Missing
+--   missing       what's missing for one craft, see Model.Missing
+--   missingFor    function(crafts) -> what's missing for that many crafts
+--   shoppable     there are materials you supply that the shopping list can buy
 --   cost         what the listed materials cost (simulated ones included)
 --   total         forecast profit, or nil when there's no sale price
 --   realCost      what the materials in the form cost (procs use this)
@@ -91,10 +93,11 @@ local function owned(itemID)
 	return C_Item.GetItemCount(itemID, true, false, true, true) or 0
 end
 
--- What you're short of for one craft: { { itemID, qty } ... }. Every quality you
--- own counts toward a slot, as in the form, and the cheapest quality is the one
--- to buy. A what-if pick (`overrides`) counts and buys only that quality.
-function Model.Missing(schematic, provided, overrides)
+-- What you're short of for `crafts` crafts (default 1): { { itemID, qty } ... }.
+-- Every quality you own counts toward a slot, as in the form, and the cheapest
+-- quality is the one to buy. A what-if pick (`overrides`) counts and buys only
+-- that quality.
+function Model.Missing(schematic, provided, overrides, crafts)
 	local list, byItem = {}, {}
 	for slotIndex, slot in ipairs(schematic.reagentSlotSchematics) do
 		if slot.required and not provided[slotIndex] then
@@ -108,7 +111,7 @@ function Model.Missing(schematic, provided, overrides)
 				end
 				buyID = cheapestQuality(slot)
 			end
-			local short = slot.quantityRequired - have
+			local short = slot.quantityRequired * (crafts or 1) - have
 			if buyID and short > 0 then
 				local entry = byItem[buyID]
 				if not entry then
@@ -121,6 +124,20 @@ function Model.Missing(schematic, provided, overrides)
 		end
 	end
 	return list
+end
+
+-- Shopping fields of a model: what's missing for one craft, a function for any
+-- number of crafts, and whether there's anything you supply that can be bought.
+local function addShopping(model, schematic, provided, overrides)
+	model.missing = Model.Missing(schematic, provided, overrides)
+	model.missingFor = function(crafts) return Model.Missing(schematic, provided, overrides, crafts) end
+	model.shoppable = false
+	for slotIndex, slot in ipairs(schematic.reagentSlotSchematics) do
+		if slot.required and not provided[slotIndex] and cheapestQuality(slot) then
+			model.shoppable = true
+			break
+		end
+	end
 end
 
 -- Total cost of a material list. With `notes`, also records missing materials
@@ -190,7 +207,7 @@ function Model.Craft(ctx)
 
 	model.materials = Model.Materials(schematic, transaction, {}, picks)
 	model.cost = costOf(model.materials, notes)
-	model.missing = Model.Missing(schematic, {}, picks)
+	addShopping(model, schematic, {}, picks)
 	if model.total then model.total = model.total - model.cost end
 
 	-- Real crafts use what's in the form, never the what-if picks.
@@ -222,7 +239,7 @@ function Model.Order(ctx)
 
 	model.materials = Model.Materials(schematic, transaction, ctx.provided, picks)
 	model.cost = costOf(model.materials, notes)
-	model.missing = Model.Missing(schematic, ctx.provided, picks)
+	addShopping(model, schematic, ctx.provided, picks)
 
 	-- While simulating: the quality the picked materials give, and whether it meets
 	-- the order. Only for items that come in qualities; others are always "quality 1".

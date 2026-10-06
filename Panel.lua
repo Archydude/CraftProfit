@@ -51,7 +51,7 @@ local function createRowButton()
 	local highlight = button:CreateTexture(nil, "HIGHLIGHT")
 	highlight:SetAllPoints()
 	highlight:SetColorTexture(1, 1, 1, 0.08)
-	button:SetScript("OnClick", function(self, mouseButton) self.onClick(mouseButton) end)
+	button:SetScript("OnClick", function(self, mouseButton) self.onClick(mouseButton, self) end)
 	button:SetScript("OnEnter", function(self)
 		if not self.tooltip then return end
 		GameTooltip:SetOwner(self, "ANCHOR_LEFT")
@@ -66,7 +66,7 @@ local function createRowButton()
 	return button
 end
 
--- Adds a row: text on the left, an amount on the right. `onClick(mouseButton)`
+-- Adds a row: text on the left, an amount on the right. `onClick(mouseButton, button)`
 -- and `tooltip(GameTooltip)` make the row clickable. Returns the row.
 local function addRow(left, right, font, onClick, tooltip)
 	rowCount = rowCount + 1
@@ -168,25 +168,27 @@ local function materialTooltip(material)
 	end
 end
 
--- What sending the missing materials to `target` does, for the tooltip.
-local function missingAction(model, target)
-	if target == "auctionator" then
-		return format("add these to Auctionator's \"%s\" shopping list", ns.SHOPPING_LIST)
-	elseif ns.Shopping.IsTracked(model) then
-		return "stop tracking this recipe"
-	end
-	return "track this recipe"
+-- What a click to Blizzard's tracker does, for the tooltip.
+local function trackAction(model)
+	return ns.Shopping.IsTracked(model) and "stop tracking this recipe" or "track this recipe"
 end
 
--- `shiftTarget` is where a Shift-click goes, when that's somewhere else.
-local function missingTooltip(model, target, shiftTarget)
+local function shoppingTooltip(model, target)
 	return function(tip)
-		tip:SetText("Missing materials")
-		for _, material in ipairs(model.missing) do tip:AddLine(Item(material.itemID, material.qty), 1, 1, 1) end
+		if #model.missing > 0 then
+			tip:SetText("Missing for 1 craft")
+			for _, material in ipairs(model.missing) do tip:AddLine(Item(material.itemID, material.qty), 1, 1, 1) end
+		else
+			tip:SetText("Nothing missing for 1 craft")
+		end
 		tip:AddLine(" ")
-		tip:AddLine(Color("simulated", "Click: " .. missingAction(model, target)))
-		if shiftTarget then
-			tip:AddLine(Color("simulated", "Shift-click: " .. missingAction(model, shiftTarget)))
+		if target == "auctionator" then
+			tip:AddLine(Color("simulated", "Click: add to the shopping list, for 1 or more crafts"))
+			if ns.Shopping.Target(true) == "blizzard" then
+				tip:AddLine(Color("simulated", "Shift-click: " .. trackAction(model)))
+			end
+		else
+			tip:AddLine(Color("simulated", "Click: " .. trackAction(model)))
 		end
 		if ns.Shopping.CanClear() then
 			tip:AddLine(Color("simulated", format("Ctrl-click: clear the \"%s\" shopping list", ns.SHOPPING_LIST)))
@@ -194,28 +196,29 @@ local function missingTooltip(model, target, shiftTarget)
 	end
 end
 
--- The button that sends missing materials to a shopping list or the tracker.
-local function drawMissingButton(model)
-	local count = #model.missing
-	if count == 0 or ns.db.missingTarget == "off" then return end
+-- The button for the shopping list (or Blizzard's tracker). With Auctionator it
+-- shows even when one craft is covered, since its menu buys for several.
+local function drawShoppingButton(model)
+	if ns.db.missingTarget == "off" or not model.shoppable then return end
 	local target = ns.Shopping.Target()
-	local plural = count == 1 and "" or "s"
-	local text
+	local missing = ns.Shopping.Total(model.missing)
+	if missing == 0 and target ~= "auctionator" then return end
 	addGap()
+	local text
 	if target == "auctionator" then
-		text = format("Add %d missing material%s to Auctionator", count, plural)
+		text = missing > 0 and format("Shopping list (%d missing)", missing) or "Shopping list"
 	elseif target == "blizzard" and ns.Shopping.IsTracked(model) then
-		text = format("%d material%s missing - recipe tracked", count, plural)
+		text = format("%d missing - recipe tracked", missing)
 	elseif target == "blizzard" then
-		text = format("Track recipe (%d material%s missing)", count, plural)
+		text = format("Track recipe (%d missing)", missing)
 	else
-		addRow(Color("muted", format("%d material%s missing (Auctionator is not loaded)", count, plural)))
+		addRow(Color("muted", format("%d missing (Auctionator is not loaded)", missing)))
 		return
 	end
-	local shiftTarget = ns.Shopping.Target(true)
-	if shiftTarget == target then shiftTarget = nil end
-	addRow(Color("missing", text), nil, nil, function() ns.Shopping.Send(model, IsShiftKeyDown(), IsControlKeyDown()) end,
-		missingTooltip(model, target, shiftTarget))
+	local onClick = function(_, button)
+		ns.Shopping.Click(model, button, IsShiftKeyDown(), IsControlKeyDown())
+	end
+	addRow(Color(missing > 0 and "missing" or "muted", text), nil, nil, onClick, shoppingTooltip(model, target))
 end
 
 local function drawMaterials(model)
@@ -236,7 +239,7 @@ local function drawMaterials(model)
 	end
 	addDivider()
 	addRow("Materials cost", Money(-model.cost))
-	drawMissingButton(model)
+	drawShoppingButton(model)
 end
 
 -- What multicraft / resourcefulness added on the last craft, listed above the

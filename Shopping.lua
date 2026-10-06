@@ -1,6 +1,6 @@
--- Craft Profit: the missing materials button. Sends what you're short of for a
--- craft to an Auctionator shopping list, or tracks the recipe in Blizzard's
--- objective tracker. Which one is an option.
+-- Craft Profit: the shopping list button. Adds what you're short of, for one or
+-- more crafts, to an Auctionator shopping list, or tracks the recipe in
+-- Blizzard's objective tracker. Which one is an option.
 local ADDON_NAME, ns = ...
 
 local Shopping = {}
@@ -126,7 +126,7 @@ end
 
 -- Sorts the missing materials into auction house, vendor and can't-buy, then
 -- adds the auction house ones to the list. Item info has to be loaded first.
-local function sendToAuctionator(api, missing)
+local function sendToAuctionator(api, missing, crafts)
 	local container = ContinuableContainer:Create()
 	for _, material in ipairs(missing) do
 		container:AddContinuable(Item:CreateFromItemID(material.itemID))
@@ -153,7 +153,8 @@ local function sendToAuctionator(api, missing)
 
 		if #auction > 0 then
 			if addToList(api, auction) then
-				say(format("Added to Auctionator's \"%s\" shopping list: %s.", ns.SHOPPING_LIST, itemList(auction)))
+				say(format("Added to Auctionator's \"%s\" shopping list, for %s: %s.",
+					ns.SHOPPING_LIST, Shopping.CraftsText(crafts), itemList(auction)))
 			else
 				say(ns.Color("warning", "Auctionator couldn't update the shopping list."))
 			end
@@ -186,14 +187,115 @@ end
 -- The button
 ---------------------------------------------------------------------------
 
+-- Craft counts the menu always offers.
+local PRESET_CRAFTS = { 1, 5, 10 }
+local MAX_CRAFTS = 999
+
+-- The last count typed into "Other amount...", offered in the menu until you
+-- log out or /reload.
+local customCrafts
+
+-- "1 craft", "5 crafts".
+function Shopping.CraftsText(crafts)
+	return format("%d craft%s", crafts, crafts == 1 and "" or "s")
+end
+
+-- How many items a missing list adds up to.
+function Shopping.Total(missing)
+	local total = 0
+	for _, material in ipairs(missing) do total = total + material.qty end
+	return total
+end
+
 -- Whether Ctrl-click on the button clears the shopping list: when the button
 -- uses Auctionator at all.
 function Shopping.CanClear()
 	return Shopping.Target(false) == "auctionator" or Shopping.Target(true) == "auctionator"
 end
 
--- What the panel's button does for this model, with the modifier keys held.
-function Shopping.Send(model, shift, ctrl)
+local function addForCrafts(model, crafts)
+	local missing = model.missingFor(crafts)
+	if #missing == 0 then
+		say(format("Nothing missing for %s.", Shopping.CraftsText(crafts)))
+		return
+	end
+	sendToAuctionator(auctionatorAPI(), missing, crafts)
+end
+
+-- The typed count from "Other amount...", remembered for the menu.
+local function acceptCustom(text, model)
+	local crafts = tonumber(text)
+	if not crafts or crafts < 1 then return end
+	crafts = math.min(math.floor(crafts), MAX_CRAFTS)
+	customCrafts = crafts
+	addForCrafts(model, crafts)
+end
+
+-- The popup's edit box (its name changed between game versions).
+local function popupEditBox(popup)
+	return popup.GetEditBox and popup:GetEditBox() or popup.editBox
+end
+
+-- "Other amount...": asks for a number of crafts.
+StaticPopupDialogs.CRAFTPROFIT_CRAFTS = {
+	text = "Buy materials for how many crafts?",
+	button1 = "Add",
+	button2 = CANCEL,
+	hasEditBox = true,
+	maxLetters = #tostring(MAX_CRAFTS),
+	timeout = 0,
+	whileDead = true,
+	hideOnEscape = true,
+	OnShow = function(self)
+		local editBox = popupEditBox(self)
+		editBox:SetNumeric(true)
+		editBox:SetText(tostring(customCrafts or ""))
+		editBox:HighlightText()
+	end,
+	OnAccept = function(self, model)
+		acceptCustom(popupEditBox(self):GetText(), model)
+	end,
+	EditBoxOnEnterPressed = function(editBox, model)
+		acceptCustom(editBox:GetText(), model)
+		editBox:GetParent():Hide()
+	end,
+	EditBoxOnEscapePressed = function(editBox)
+		editBox:GetParent():Hide()
+	end,
+}
+
+-- The menu a click on the button opens.
+local function openMenu(owner, model)
+	GameTooltip:Hide()
+	MenuUtil.CreateContextMenu(owner, function(_, root)
+		root:CreateTitle(format("Add to \"%s\" list", ns.SHOPPING_LIST))
+
+		local counts = { unpack(PRESET_CRAFTS) }
+		if customCrafts and not tContains(counts, customCrafts) then
+			counts[#counts + 1] = customCrafts
+			table.sort(counts)
+		end
+		for _, crafts in ipairs(counts) do
+			local total = Shopping.Total(model.missingFor(crafts))
+			local note = total > 0 and format("(%d missing)", total) or "(nothing missing)"
+			local button = root:CreateButton(format("For %s %s", Shopping.CraftsText(crafts), ns.Color("muted", note)),
+				function() addForCrafts(model, crafts) end)
+			button:SetEnabled(total > 0)
+		end
+		root:CreateButton("Other amount...", function() StaticPopup_Show("CRAFTPROFIT_CRAFTS", nil, nil, model) end)
+
+		root:CreateDivider()
+		if Shopping.Target(true) == "blizzard" then
+			root:CreateButton(Shopping.IsTracked(model) and "Stop tracking recipe" or "Track recipe",
+				function() toggleTracked(model) end)
+		end
+		root:CreateButton("Clear shopping list", Shopping.Clear)
+	end)
+end
+
+-- What a click on the panel's button does, with the modifier keys held.
+-- `owner` is the button, for the menu to open from.
+function Shopping.Click(model, owner, shift, ctrl)
 	if ctrl and Shopping.CanClear() then
 		Shopping.Clear()
 		return
@@ -201,7 +303,7 @@ function Shopping.Send(model, shift, ctrl)
 	local target = Shopping.Target(shift)
 	if target == "blizzard" then
 		toggleTracked(model)
-	elseif target == "auctionator" and #model.missing > 0 then
-		sendToAuctionator(auctionatorAPI(), model.missing)
+	elseif target == "auctionator" then
+		openMenu(owner, model)
 	end
 end
