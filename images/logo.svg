@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="400" height="400" viewBox="0 0 400 400">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#1b2a44"/>
+      <stop offset="1" stop-color="#0b1220"/>
+    </linearGradient>
+    <linearGradient id="gold" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#f6d77a"/>
+      <stop offset="1" stop-color="#b8862b"/>
+    </linearGradient>
+    <linearGradient id="coin" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#ffe89a"/>
+      <stop offset="1" stop-color="#c8922e"/>
+    </linearGradient>
+  </defs>
+
+  <!-- background tile -->
+  <rect x="8" y="8" width="384" height="384" rx="56" fill="url(#bg)"/>
+  <rect x="8" y="8" width="384" height="384" rx="56" fill="none" stroke="url(#gold)" stroke-width="10"/>
+
+  <!-- anvil -->
+  <path d="M70 250 H250 C250 272 232 284 206 286 L214 318 H106 L114 286 C90 284 70 272 70 250 Z" fill="#5d6f8c"/>
+  <path d="M250 250 H300 C292 262 276 266 250 266 Z" fill="#5d6f8c"/>
+  <rect x="70" y="244" width="180" height="12" rx="4" fill="#7f93b2"/>
+  <rect x="96" y="318" width="128" height="16" rx="5" fill="#46566f"/>
+
+  <!-- stacked coins -->
+  <ellipse cx="150" cy="228" rx="54" ry="16" fill="#a8761f"/>
+  <rect x="96" y="208" width="108" height="20" fill="#c8922e"/>
+  <ellipse cx="150" cy="208" rx="54" ry="16" fill="url(#coin)"/>
+  <ellipse cx="150" cy="190" rx="54" ry="16" fill="#a8761f"/>
+  <rect x="96" y="170" width="108" height="20" fill="#c8922e"/>
+  <ellipse cx="150" cy="170" rx="54" ry="16" fill="url(#coin)"/>
+
+  <!-- profit arrow -->
+  <polyline points="196,214 248,160 280,186 336,110" fill="none" stroke="#57d36b" stroke-width="18" stroke-linecap="round" stroke-linejoin="round"/>
+  <polygon points="350,92 350,150 300,104" fill="#57d36b"/>
+</svg>
