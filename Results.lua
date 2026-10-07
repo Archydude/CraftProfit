@@ -27,6 +27,21 @@ function Results.ResetSession()
 	ns.Panel.Refresh()
 end
 
+-- Clicking the session row asks first, so a stray click can't wipe it.
+StaticPopupDialogs.CRAFTPROFIT_RESET_SESSION = {
+	text = "Reset this session's total?",
+	button1 = "Reset",
+	button2 = CANCEL,
+	OnAccept = function() Results.ResetSession() end,
+	timeout = 0,
+	whileDead = true,
+	hideOnEscape = true,
+}
+
+function Results.ConfirmResetSession()
+	StaticPopup_Show("CRAFTPROFIT_RESET_SESSION")
+end
+
 ---------------------------------------------------------------------------
 -- Celebration: "+1,234g" floating up from Profit/Loss, a gold border flash, a coin
 ---------------------------------------------------------------------------

@@ -265,6 +265,11 @@ local function resetTooltip(tip)
 	tip:AddLine("The panel shows what this craft would make with the qualities you picked. Your real craft still uses what's in the form.", 1, 1, 1, true)
 end
 
+local function sessionTooltip(tip)
+	tip:SetText("This session")
+	tip:AddLine(Color("simulated", "Click: reset to zero"))
+end
+
 local function drawFooter(model)
 	local total = drawProcs(model)
 
@@ -278,7 +283,7 @@ local function drawFooter(model)
 		-- Gold label like Profit/Loss, but in the small font so it doesn't compete with it.
 		addGap()
 		addRow(format("%s (%d craft%s)", Color("heading", "This session"), session.crafts, session.crafts == 1 and "" or "s"),
-			Color(ns.AmountColor(session.total), Money(session.total)))
+			Color(ns.AmountColor(session.total), Money(session.total)), nil, ns.Results.ConfirmResetSession, sessionTooltip)
 	end
 
 	local notes = model.notes

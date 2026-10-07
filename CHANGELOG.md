@@ -1,5 +1,8 @@
 # Changelog
 
+## 1.4.1
+- Reset the session total right from the panel: click the "This session" row, then confirm. (The Reset button in the options still works too.)
+
 ## 1.4.0
 - Buy for several crafts: clicking the button (now called "Shopping list") opens a menu to add what's missing for 1, 5 or 10 crafts, or any number you type. Each line shows how many items it would add. The last number you typed stays in the menu until you log out.
 - The menu can also track the recipe and clear the shopping list. Shift-click and Ctrl-click still do that directly.

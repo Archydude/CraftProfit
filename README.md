@@ -1,6 +1,6 @@
 # Craft Profit
 
-A small panel next to your profession window that tells you, in gold, whether a craft or a crafting order makes or loses money.
+A lightweight addon: one small panel next to your profession window that tells you, in gold, whether a craft or a crafting order makes or loses money.
 
 - **Crafting page:** what the item sells for, minus the 5% auction house cut, minus your materials.
 - **Crafting orders:** the commission you receive (after the consortium cut), minus the materials **you** supply, plus any sellable patron rewards.
@@ -9,9 +9,9 @@ A small panel next to your profession window that tells you, in gold, whether a 
 
 - **Shopping list:** adds what you're short of, for one or more crafts, to an Auctionator shopping list, or tracks the recipe in Blizzard's objective tracker.
 
-- **Session total:** under Profit/Loss, what all your crafts made since you logged in on this character (a `/reload` keeps it). Crafts without a price, like enchants, aren't counted.
+- **Session total:** under Profit/Loss, what all your crafts made since you logged in on this character (a `/reload` keeps it). Crafts without a price, like enchants, aren't counted. Click it to reset it to zero.
 
-It only answers the money question, and stays light. It doesn't simulate procs in advance; it shows you the gold when they happen.
+It stays light: no libraries, nothing running until you open your profession window, and it redraws only when something changes. It doesn't simulate procs in advance; it shows you the gold when they happen.
 
 Requires **TradeSkillMaster** or **Auctionator** for prices. Built for WoW Midnight 12.1.
 
