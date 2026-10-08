@@ -11,7 +11,7 @@ A lightweight addon: one small panel next to your profession window that tells y
 
 - **Session total:** under Profit/Loss, what all your crafts made since you logged in on this character (a `/reload` keeps it). Crafts without a price, like enchants, aren't counted. Click it to reset it to zero.
 
-It stays light: no libraries, nothing running until you open your profession window, and it redraws only when something changes. It doesn't simulate procs in advance; it shows you the gold when they happen.
+It stays light: nothing runs until you open your profession window. It doesn't simulate procs in advance; it shows you the gold when they happen.
 
 Requires **TradeSkillMaster** or **Auctionator** for prices. Built for WoW Midnight 12.1.
 
@@ -31,7 +31,7 @@ Open your profession and pick a recipe, or open a crafting order. The panel appe
 ### What if I used another quality?
 **Click a material** that comes in several qualities (it has a quality icon) to try its next quality. Changed materials are marked **simulated**.
 
-- **Crafting page:** the panel updates the material cost, asks the game which quality the item would come out at, and re-prices the sale.
+- **Crafting page:** the panel updates the material cost, the quality the item would come out at, and the sale price.
 - **Crafting orders:** works on the materials you supply. The panel shows the quality you'd get and warns in red when it's below the order's minimum quality, so you can see whether a cheaper quality still does the job.
 
 - **Right-click** a material to put it back, or click the blue note at the bottom to reset all of them.
@@ -78,4 +78,4 @@ Click the gear on the panel, type `/craftprofit`, or go to **Esc → Options →
 
 ## Notes
 - With Auctionator, prices come from your own auction house scans. With TSM, the TSM desktop app keeps them up to date for you.
-- Craft Profit reads some of Blizzard's profession window data directly, so a big Blizzard update to that window may need a patch here.
+- A big Blizzard update to the profession window may need a Craft Profit update too.

@@ -23,7 +23,7 @@
   - Pick a quality by clicking a material first, and that's the quality added.
 
 ## 1.2.1
-- Code cleanup, no visible changes: split into smaller files, separated the math from the drawing, and kept all reads of Blizzard's crafting window in one place, so future Blizzard patches are quicker to fix.
+- Behind-the-scenes cleanup, no visible changes. Future Blizzard patches will be quicker to support.
 
 ## 1.2.0
 - What-if qualities: click a material in the panel to try its next quality. Right-click a material, or click the note at the bottom, to go back to what's in the form.
