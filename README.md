@@ -7,7 +7,7 @@ A lightweight addon: one small panel next to your profession window that tells y
 
 - **Procs:** when a craft procs multicraft or resourcefulness, the bonus gold pops up over the Profit line with a coin sound, a **Procs** section lists the extra items and returned materials with their value, and Profit/Loss changes to what that craft really made. It goes back to the normal forecast on your next craft without a proc, or when you pick another recipe.
 
-- **Shopping list:** adds what you're short of, for one or more crafts, to an Auctionator shopping list, or tracks the recipe in Blizzard's objective tracker.
+- **Shopping list:** adds what you're short of, for one or more crafts or for every patron order at once, to an Auctionator shopping list, or tracks the recipe in Blizzard's objective tracker.
 
 - **Session total:** under Profit/Loss, what all your crafts made since you logged in on this character (a `/reload` keeps it). Crafts without a price, like enchants, aren't counted. Click it to reset it to zero.
 
@@ -52,6 +52,8 @@ Under **Materials cost** there's a **Shopping list** row. It turns orange and sh
 Adding again (or on another recipe) adds to the amounts already on the list. Vendor-sold and soulbound materials are listed in chat instead. Every quality you own counts toward a material, and the cheapest quality is the one added. To buy a specific quality, click the material to pick it first (see above).
 
 Shortcuts: **Shift-click** tracks the recipe and **Ctrl-click** clears the list, without the menu.
+
+**Every patron order at once:** on the **Patron** orders tab, a **Shopping list** button sits at the right of the tabs. Click it and pick **For all patron orders** to add what you're missing for every order in the list, minus what the patrons provide. Materials you own count once across all the orders. Orders whose recipe you don't know are skipped. Ctrl-click clears the list. It adds the cheapest quality of each material, so check orders with a minimum quality before you buy. The button needs Auctionator.
 
 Which of these you get is set in the options: both (default), Auctionator only, Blizzard's tracker only (a click tracks the recipe; the row only shows when something's missing), or hidden. Without Auctionator, a click tracks the recipe. The options also have a **Clear** button for the list.
 

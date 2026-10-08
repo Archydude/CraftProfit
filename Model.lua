@@ -93,37 +93,62 @@ local function owned(itemID)
 	return C_Item.GetItemCount(itemID, true, false, true, true) or 0
 end
 
--- What you're short of for `crafts` crafts (default 1): { { itemID, qty } ... }.
--- Every quality you own counts toward a slot, as in the form, and the cheapest
--- quality is the one to buy. A what-if pick (`overrides`) counts and buys only
--- that quality.
-function Model.Missing(schematic, provided, overrides, crafts)
-	local list, byItem = {}, {}
-	for slotIndex, slot in ipairs(schematic.reagentSlotSchematics) do
-		if slot.required and not provided[slotIndex] then
-			local buyID = overrides and overrides[slotIndex]
-			local have = 0
-			if buyID then
-				have = owned(buyID)
-			else
-				for _, reagent in ipairs(slot.reagents) do
-					if reagent.itemID then have = have + owned(reagent.itemID) end
+-- What you're short of for several recipes at once: { { itemID, qty } ... }.
+-- `jobs` is a list of { schematic, provided, overrides, crafts }. What you own
+-- counts once across all of them, so two orders needing the same material don't
+-- both count the same stack. Every quality you own counts toward a slot, as in
+-- the form, and the cheapest quality is the one to buy. A what-if pick
+-- (`overrides`) counts and buys only that quality.
+function Model.MissingForAll(jobs)
+	-- One need per set of qualities that can fill a slot.
+	local needs, byKey = {}, {}
+	for _, job in ipairs(jobs) do
+		for slotIndex, slot in ipairs(job.schematic.reagentSlotSchematics) do
+			if slot.required and not job.provided[slotIndex] then
+				local buyID = job.overrides and job.overrides[slotIndex]
+				local counts = {}
+				if buyID then
+					counts[1] = buyID
+				else
+					for _, reagent in ipairs(slot.reagents) do
+						if reagent.itemID then counts[#counts + 1] = reagent.itemID end
+					end
+					buyID = cheapestQuality(slot)
 				end
-				buyID = cheapestQuality(slot)
-			end
-			local short = slot.quantityRequired * (crafts or 1) - have
-			if buyID and short > 0 then
-				local entry = byItem[buyID]
-				if not entry then
-					entry = { itemID = buyID, qty = 0 }
-					byItem[buyID] = entry
-					list[#list + 1] = entry
+				if buyID then
+					local key = table.concat(counts, ",")
+					local need = byKey[key]
+					if not need then
+						need = { counts = counts, itemID = buyID, qty = 0 }
+						byKey[key] = need
+						needs[#needs + 1] = need
+					end
+					need.qty = need.qty + slot.quantityRequired * (job.crafts or 1)
 				end
-				entry.qty = entry.qty + short
 			end
 		end
 	end
+
+	local list, byItem = {}, {}
+	for _, need in ipairs(needs) do
+		local short = need.qty
+		for _, itemID in ipairs(need.counts) do short = short - owned(itemID) end
+		if short > 0 then
+			local entry = byItem[need.itemID]
+			if not entry then
+				entry = { itemID = need.itemID, qty = 0 }
+				byItem[need.itemID] = entry
+				list[#list + 1] = entry
+			end
+			entry.qty = entry.qty + short
+		end
+	end
 	return list
+end
+
+-- What you're short of for `crafts` crafts (default 1) of one recipe.
+function Model.Missing(schematic, provided, overrides, crafts)
+	return Model.MissingForAll({ { schematic = schematic, provided = provided, overrides = overrides, crafts = crafts } })
 end
 
 -- Shopping fields of a model: what's missing for one craft, a function for any

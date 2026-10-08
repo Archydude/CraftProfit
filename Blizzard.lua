@@ -208,3 +208,49 @@ function Blizzard.ReagentQualityMarkup(itemID)
 	local info = C_TradeSkillUI.GetItemReagentQualityInfo(itemID)
 	return info and qualityIcon(info)
 end
+
+---------------------------------------------------------------------------
+-- The order list (Public / Guild / Patron / Personal tabs)
+---------------------------------------------------------------------------
+
+-- Calls onChange() when the order list, or which tab it shows, may have changed.
+function Blizzard.WatchOrderList(onChange)
+	local page = ProfessionsFrame.OrdersPage
+	hooksecurefunc(page, "SetCraftingOrderType", onChange)
+	hooksecurefunc(page, "ShowGeneric", onChange)
+	page.BrowseFrame:HookScript("OnShow", onChange)
+	page.BrowseFrame:HookScript("OnHide", onChange)
+end
+
+-- The order list, for placing things next to it.
+function Blizzard.OrderList()
+	return ProfessionsFrame.OrdersPage.BrowseFrame.OrderList
+end
+
+-- The orders listed on the Patron tab, or nil when it isn't showing. Grouped
+-- rows (one per recipe, before you pick one) aren't orders and are left out.
+function Blizzard.PatronOrders()
+	local page = ProfessionsFrame.OrdersPage
+	if not (page.BrowseFrame:IsVisible() and page.orderType == Enum.CraftingOrderType.Npc) then return end
+	local orders = {}
+	local provider = page.BrowseFrame.OrderList.ScrollBox:GetDataProvider()
+	if provider then
+		for _, data in provider:Enumerate() do
+			local order = data.option
+			if order and order.orderID and order.spellID then orders[#orders + 1] = order end
+		end
+	end
+	return orders
+end
+
+-- What crafting a listed order takes: { schematic, provided }, or nil when you
+-- don't know its recipe. `provided` marks the slots the customer fills.
+function Blizzard.OrderJob(order)
+	local recipeInfo = C_TradeSkillUI.GetRecipeInfo(order.spellID)
+	if not (recipeInfo and recipeInfo.learned) then return end
+	local schematic = C_TradeSkillUI.GetRecipeSchematic(order.spellID, order.isRecraft)
+	if not schematic then return end
+	local provided = {}
+	for _, reagent in ipairs(order.reagents or {}) do provided[reagent.slotIndex] = true end
+	return { schematic = schematic, provided = provided }
+end

@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.5.0
+- Every patron order at once: a Shopping list button on the Patron orders tab adds what you're missing for all the orders in the list to Auctionator's "Craft Profit" shopping list. What the patrons provide isn't added, and materials you own count once across all the orders. Orders whose recipe you don't know are skipped. Ctrl-click the button to clear the list.
+- It adds the cheapest quality of each material, so check orders with a minimum quality before you buy.
+
 ## 1.4.1
 - Reset the session total right from the panel: click the "This session" row, then confirm. (The Reset button in the options still works too.)
 

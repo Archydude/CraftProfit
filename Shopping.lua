@@ -126,7 +126,8 @@ end
 
 -- Sorts the missing materials into auction house, vendor and can't-buy, then
 -- adds the auction house ones to the list. Item info has to be loaded first.
-local function sendToAuctionator(api, missing, crafts)
+-- `forText` says what they're for in chat: "5 crafts", "3 patron orders".
+local function sendToAuctionator(api, missing, forText)
 	local container = ContinuableContainer:Create()
 	for _, material in ipairs(missing) do
 		container:AddContinuable(Item:CreateFromItemID(material.itemID))
@@ -154,7 +155,7 @@ local function sendToAuctionator(api, missing, crafts)
 		if #auction > 0 then
 			if addToList(api, auction) then
 				say(format("Added to Auctionator's \"%s\" shopping list, for %s: %s.",
-					ns.SHOPPING_LIST, Shopping.CraftsText(crafts), itemList(auction)))
+					ns.SHOPPING_LIST, forText, itemList(auction)))
 			else
 				say(ns.Color("warning", "Auctionator couldn't update the shopping list."))
 			end
@@ -213,13 +214,25 @@ function Shopping.CanClear()
 	return Shopping.Target(false) == "auctionator" or Shopping.Target(true) == "auctionator"
 end
 
-local function addForCrafts(model, crafts)
-	local missing = model.missingFor(crafts)
+Shopping.Say = say
+
+-- Adds missing materials ({ { itemID, qty } ... }) to the shopping list.
+-- `forText` says what they're for in chat: "5 crafts", "3 patron orders".
+function Shopping.AddMissing(missing, forText)
 	if #missing == 0 then
-		say(format("Nothing missing for %s.", Shopping.CraftsText(crafts)))
+		say(format("Nothing missing for %s.", forText))
 		return
 	end
-	sendToAuctionator(auctionatorAPI(), missing, crafts)
+	local api = auctionatorAPI()
+	if not api then
+		say(ns.Color("warning", "Auctionator is not loaded."))
+		return
+	end
+	sendToAuctionator(api, missing, forText)
+end
+
+local function addForCrafts(model, crafts)
+	Shopping.AddMissing(model.missingFor(crafts), Shopping.CraftsText(crafts))
 end
 
 -- The typed count from "Other amount...", remembered for the menu.
