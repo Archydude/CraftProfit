@@ -55,8 +55,21 @@ ns.DEFAULTS = {
 	procSound = true,     -- coin sound on procs
 	showSession = true,   -- show the total of this session's crafts
 	missingTarget = "auto", -- missing materials button: "auto" | "auctionator" | "blizzard" | "off"
+	concentrationFor = "profit", -- patron orders that need concentration get it by: "profit" | "knowledge"
 	rankTooltip = true,   -- best rank you can craft, on crafted items' tooltips
 	rankConcentration = true, -- add the concentration that rank takes
+}
+
+-- Patron order rewards that give profession knowledge: itemID -> points each.
+ns.KNOWLEDGE_ITEMS = {
+	[246330] = 1, -- Flicker
+	[246331] = 2, -- Glimmer
+}
+
+-- Choices for which patron orders get your concentration first.
+ns.CONCENTRATION_CHOICES = {
+	{ "profit", "Most profit (default)" },
+	{ "knowledge", "Knowledge first, then profit" },
 }
 
 -- The Auctionator shopping list the missing materials button adds to.

@@ -20,6 +20,10 @@ local plans = {}
 -- needing at least this rank. Not saved; a /reload turns it off.
 Planner.testMinQuality = nil
 
+-- For testing (/craftprofit testconcentration <amount>): pretend you have this much
+-- concentration. Not saved; a /reload turns it off.
+Planner.testConcentration = nil
+
 function Planner.SetTestMinQuality(rank)
 	Planner.testMinQuality = rank
 	wipe(plans)
@@ -105,7 +109,9 @@ local function predict(order, schematic, slots, mix)
 		reagents[#reagents + 1] = { reagent = { itemID = option.itemID }, dataSlotIndex = entry.dataSlotIndex, quantity = entry.qty }
 	end
 	local ok, info = pcall(C_TradeSkillUI.GetCraftingOperationInfo, order.spellID, reagents, nil, false)
-	if ok and info and info.craftingQuality then return info.craftingQuality, info.concentrationCost or 0 end
+	if ok and info and info.craftingQuality then
+		return info.craftingQuality, info.concentrationCost or 0, info.concentrationCurrencyID
+	end
 end
 
 -- A plan's picks: overrides (slotIndex -> itemID) for pricing and shopping, and
@@ -118,6 +124,48 @@ local function picksOf(slots, mix)
 		picks[#picks + 1] = { itemID = itemID, qty = entry.qty }
 	end
 	return overrides, picks
+end
+
+-- Shares out your concentration among the listed orders that need it to reach
+-- their minimum quality, in the order the option sets: "profit" (most gold per
+-- concentration point first, orders that lose gold last) or "knowledge" (most
+-- knowledge per point first, then by profit). Orders left without enough get
+-- row.noConcentration. Returns { have, used }, or nil when no order needs any.
+function Planner.SpendConcentration(rows, mode)
+	local needing, currencyID = {}, nil
+	for _, row in ipairs(rows) do
+		row.noConcentration = nil
+		local plan = row.plan
+		if plan and plan.concentration and not plan.unreachable then
+			needing[#needing + 1] = row
+			currencyID = currencyID or plan.currencyID
+		end
+	end
+	if #needing == 0 then return end
+	local info = currencyID and C_CurrencyInfo.GetCurrencyInfo(currencyID)
+	local have = Planner.testConcentration or info and info.quantity
+	if not have then return end
+
+	local function perPoint(row, amount) return amount / row.plan.concentration end
+	table.sort(needing, function(a, b)
+		if mode == "knowledge" then
+			local aKnow, bKnow = perPoint(a, a.model.knowledge or 0), perPoint(b, b.model.knowledge or 0)
+			if aKnow ~= bKnow then return aKnow > bKnow end
+		end
+		local aGain, bGain = a.model.total > 0, b.model.total > 0
+		if aGain ~= bGain then return aGain end
+		return perPoint(a, a.model.total) > perPoint(b, b.model.total)
+	end)
+
+	local left = have
+	for _, row in ipairs(needing) do
+		if row.plan.concentration <= left then
+			left = left - row.plan.concentration
+		else
+			row.noConcentration = true
+		end
+	end
+	return { have = have, used = have - left }
 end
 
 -- Which qualities a patron order should use, or nil when there's nothing to pick
@@ -150,7 +198,7 @@ function Planner.ForOrder(order, schematic, provided)
 	local mixes = mixesOf(slots)
 	local plan, withConcentration, predicted, best
 	for _, mix in ipairs(mixes) do
-		local quality, cost = predict(order, schematic, slots, mix)
+		local quality, cost, currencyID = predict(order, schematic, slots, mix)
 		if quality then
 			predicted = true
 			if quality >= minQuality then
@@ -158,7 +206,7 @@ function Planner.ForOrder(order, schematic, provided)
 				break
 			end
 			if not withConcentration and quality + 1 >= minQuality and cost > 0 then
-				withConcentration = { mix = mix, concentration = cost }
+				withConcentration = { mix = mix, concentration = cost, currencyID = currencyID }
 			end
 			if not best or quality > best.quality then best = { mix = mix, quality = quality } end
 		end

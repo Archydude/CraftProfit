@@ -60,5 +60,13 @@ SlashCmdList.CRAFTPROFIT = function(msg)
 			or "Testing off: patron orders use their real minimum quality.")
 		return
 	end
+	if command == "testconcentration" then
+		-- Testing: pretend you have this much concentration.
+		local amount = tonumber(value)
+		ns.Planner.testConcentration = amount
+		ns.Shopping.Say(amount and string.format("Testing: pretending you have %d concentration. /reload or /craftprofit testconcentration off to stop.", amount)
+			or "Testing off: your real concentration is used.")
+		return
+	end
 	ns.Options.Open()
 end

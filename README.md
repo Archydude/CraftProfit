@@ -65,7 +65,9 @@ At the bottom of the list:
 
 Either way, materials you own count once across all the orders, and what the patrons provide is never added.
 
-**Minimum quality:** for an order with a minimum quality, profit and the shopping list use the cheapest mix of material qualities that still reaches it, counting what the patron provides. Hover the order to see the minimum and the qualities picked. If only concentration gets you there, the order says **needs concentration** and its tooltip shows how much. If even the best materials can't reach it, it says **can't craft**, moves to the bottom of the list without a profit, and Add profitable and Add all skip it. Orders without a minimum use the cheapest quality of each material. Either way, what you own counts at what it would sell for after the 5% auction house cut, so a rank you have is only swapped for one to buy when that comes out cheaper.
+**Minimum quality:** for an order with a minimum quality, profit and the shopping list use the cheapest mix of material qualities that still reaches it, counting what the patron provides. Hover the order to see the minimum and the qualities picked. If only concentration gets you there, the order shows how much it takes, e.g. **(38 concentration)**. If even the best materials can't reach it, it says **can't craft**, moves to the bottom of the list without a profit, and Add profitable and Add all skip it. Orders without a minimum use the cheapest quality of each material. Either way, what you own counts at what it would sell for after the 5% auction house cut, so a rank you have is only swapped for one to buy when that comes out cheaper.
+
+**Concentration:** the orders that need concentration share what you have, and the top of the list shows how much they use. By default the orders that make the most gold per concentration point get it first; the options, or the choice at the bottom of the list, can put orders that reward profession knowledge first instead. Once it runs out, the rest say **not enough concentration** in red, their profit turns grey, and Add profitable and Add all skip them. Order tooltips also show how much knowledge a reward gives.
 
 Which of these you get is set in the options: both (default), Auctionator only, Blizzard's tracker only (a click tracks the recipe; the row only shows when something's missing), or hidden. Without Auctionator, a click tracks the recipe. The options also have a **Clear** button for the list.
 
@@ -79,7 +81,7 @@ Hover an item you can craft, in your bags, at the auction house or in a chat lin
 - It updates each time you open your profession window, so after you gain skill or spend specialization points, open the window once. Until you've opened it on a character, that character's tooltips show nothing.
 
 ## Options
-Click the gear on the panel, type `/craftprofit`, or go to **Esc → Options → AddOns → Craft Profit**.
+Click the gear on the panel or at the top of the Patron orders list, type `/craftprofit`, or go to **Esc → Options → AddOns → Craft Profit**.
 
 | Option | What it does |
 |---|---|
@@ -88,6 +90,7 @@ Click the gear on the panel, type `/craftprofit`, or go to **Esc → Options →
 | Panel size | Size of the whole panel, 60% to 150%. |
 | Panel position: Reset | Puts the panel back next to the profession window. |
 | Show amounts down to | Gold, silver (default) or copper. |
+| Patron orders: Spend concentration on | Most profit (default): the most gold per concentration point first. Knowledge first: orders that reward profession knowledge first, then by profit. Also at the bottom of the Patron orders list. |
 | Shopping list button | Click: Auctionator, Shift-click: Blizzard (default), Auctionator shopping list, Blizzard's recipe tracker, or don't show it. |
 | Auctionator shopping list: Clear | Empties the Craft Profit shopping list. |
 | Animate multicraft & resourcefulness procs | On by default. |

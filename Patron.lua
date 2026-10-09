@@ -12,6 +12,7 @@ local ICON_SIZE = 16        -- recipe icons in the menu
 local MENU_MAX_HEIGHT = 500 -- taller menus scroll
 local MENU_ROW_HEIGHT = 20
 local RIGHT_GAP = 24        -- between an order's name and its profit
+local GEAR_SIZE = 16        -- options button on the title row, as on the panel
 
 local button
 
@@ -30,7 +31,8 @@ local function iconText(icon)
 end
 
 -- The listed orders you can craft, most profitable first: { order, job, model,
--- plan, name, icon }. Also the orders whose recipe you don't know: { name, icon }.
+-- plan, noConcentration, name, icon }. Also the orders whose recipe you don't
+-- know: { name, icon }, and your concentration: { have, used } or nil.
 local function listOrders()
 	local rows, unknown = {}, {}
 	for _, order in ipairs(ns.Blizzard.PatronOrders() or {}) do
@@ -52,7 +54,8 @@ local function listOrders()
 		if aOut ~= bOut then return bOut end
 		return a.model.total > b.model.total
 	end)
-	return rows, unknown
+	local concentration = ns.Planner.SpendConcentration(rows, ns.db.concentrationFor)
+	return rows, unknown, concentration
 end
 
 -- What each order added to the shopping list this session (orderID -> { { itemID,
@@ -85,13 +88,25 @@ local function unreachableText(skipped)
 		skipped, skipped == 1 and "" or "s")
 end
 
--- The orders you can craft at their minimum quality, and how many you can't.
+local function shortText(skipped)
+	return format("Skipped %d order%s: not enough concentration left for %s.",
+		skipped, skipped == 1 and "" or "s", skipped == 1 and "it" or "them")
+end
+
+-- The orders you can craft at their minimum quality now, how many you can't
+-- reach at all, and how many are short of concentration.
 local function reachableRows(rows)
-	local list = {}
+	local list, unreachable, short = {}, 0, 0
 	for _, row in ipairs(rows) do
-		if not (row.plan and row.plan.unreachable) then list[#list + 1] = row end
+		if row.plan and row.plan.unreachable then
+			unreachable = unreachable + 1
+		elseif row.noConcentration then
+			short = short + 1
+		else
+			list[#list + 1] = row
+		end
 	end
-	return list, #rows - #list
+	return list, unreachable, short
 end
 
 -- The orders worth taking: they make gold, and you can reach their minimum quality.
@@ -105,9 +120,10 @@ end
 
 local function addAll()
 	local rows, unknown = listOrders()
-	local reachable, unreachable = reachableRows(rows)
+	local reachable, unreachable, short = reachableRows(rows)
 	ns.Shopping.AddMissing(missingForAll(reachable), ordersText(#reachable))
 	remember(reachable)
+	if short > 0 then ns.Shopping.Say(ns.Color("muted", shortText(short))) end
 	if unreachable > 0 then ns.Shopping.Say(ns.Color("muted", unreachableText(unreachable))) end
 	if #unknown > 0 then ns.Shopping.Say(ns.Color("muted", skippedText(#unknown))) end
 end
@@ -127,7 +143,7 @@ local READY_ICON = "|TInterface\\RaidFrame\\ReadyCheck-Ready:" .. ICON_SIZE .. "
 -- nothing missing means nothing worth buying either.)
 local function isReady(row)
 	if ns.Shopping.Total(row.model.missing) > 0 then return false end
-	return not (row.plan and row.plan.unreachable)
+	return not (row.noConcentration or row.plan and row.plan.unreachable)
 end
 
 -- " [rank icon]" after an order's name when it needs more than rank 1, like
@@ -144,11 +160,12 @@ local function qualityText(row, quality)
 	return ns.Blizzard.ItemQualityMarkup(row.order.spellID, quality) or format("rank %d", quality)
 end
 
--- Shown after an order's name when its minimum quality needs attention.
-local function planNote(plan)
-	if not plan then return "" end
-	if plan.concentration then return ns.Color("muted", " (needs concentration)") end
-	return ""
+-- Shown after an order's name when reaching its minimum quality takes concentration.
+local function concentrationNote(row)
+	local plan = row.plan
+	if not (plan and plan.concentration) or plan.unreachable then return "" end
+	if row.noConcentration then return ns.Color("loss", " (not enough concentration)") end
+	return ns.Color("muted", format(" (%d concentration)", plan.concentration))
 end
 
 -- Adds one order's missing materials. The menu stays open for the next one.
@@ -183,7 +200,7 @@ end
 
 local function showTooltip(self)
 	local rows, unknown = listOrders()
-	local reachable, unreachable = reachableRows(rows)
+	local reachable, unreachable, short = reachableRows(rows)
 	local total = ns.Shopping.Total(missingForAll(reachable))
 	GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
 	GameTooltip:SetText("Shopping list")
@@ -192,6 +209,7 @@ local function showTooltip(self)
 	GameTooltip:AddLine(" ")
 	GameTooltip:AddLine(format("%s: %s", ordersText(#reachable),
 		total > 0 and ns.Color("missing", format("%d missing", total)) or "nothing missing"))
+	if short > 0 then GameTooltip:AddLine(shortText(short), 0.53, 0.53, 0.53, true) end
 	if unreachable > 0 then GameTooltip:AddLine(unreachableText(unreachable), 0.53, 0.53, 0.53, true) end
 	if #unknown > 0 then GameTooltip:AddLine(skippedText(#unknown), 0.53, 0.53, 0.53, true) end
 	GameTooltip:AddLine(" ")
@@ -220,6 +238,7 @@ local function orderTooltip(tooltip, row)
 		for _, reward in ipairs(model.rewards) do
 			local text = reward.currency and ns.Format.Currency(reward.currency, reward.qty)
 				or ns.Format.Item(reward.itemID, reward.qty)
+			if reward.knowledge then text = text .. ns.Color("good", format(" (%d knowledge)", reward.knowledge * reward.qty)) end
 			local value = reward.value and ns.Format.Money(reward.value) or ns.Color("muted", "not sellable")
 			tooltip:AddDoubleLine(text, value, 1, 1, 1, 1, 1, 1)
 		end
@@ -235,6 +254,10 @@ local function orderTooltip(tooltip, row)
 		tooltip:AddLine("Minimum quality " .. qualityText(row, plan.minQuality), 1, 0.82, 0)
 		if plan.unreachable then
 			tooltip:AddLine("You can't reach it, even with the best materials.", 1, 0.4, 0.4, true)
+		elseif row.noConcentration then
+			tooltip:AddLine(format("Needs %d concentration, but there isn't enough left once the orders worth more get theirs.",
+				plan.concentration), 1, 0.4, 0.4, true)
+			tooltip:AddLine("Using:", 1, 1, 1)
 		elseif plan.concentration then
 			tooltip:AddLine(format("Reached with %d concentration, using:", plan.concentration), 1, 1, 1, true)
 		else
@@ -272,6 +295,41 @@ local function orderTooltip(tooltip, row)
 	tooltip:AddLine(ns.Color("simulated", "Shift-click: remove it from the shopping list"))
 end
 
+-- A gear in the list's top-right corner that opens the options, like the panel's.
+-- One button, laid over whichever list is open, and hidden once that list closes.
+local gear, gearMenu
+
+local function showGear(menu)
+	if not menu then return end
+	if not gear then
+		gear = CreateFrame("Button", nil, UIParent)
+		gear:SetSize(GEAR_SIZE, GEAR_SIZE)
+		gear:SetNormalTexture("Interface\\Buttons\\UI-OptionsButton")
+		gear:SetHighlightTexture("Interface\\Buttons\\UI-Common-MouseHilight", "ADD")
+		gear:SetScript("OnClick", function()
+			local manager = Menu and Menu.GetManager and Menu.GetManager()
+			if manager then manager:CloseMenus() end
+			ns.Options.Open()
+		end)
+		gear:SetScript("OnEnter", function(self)
+			GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+			GameTooltip:SetText("Craft Profit options")
+			GameTooltip:Show()
+		end)
+		gear:SetScript("OnLeave", GameTooltip_Hide)
+		-- Menus are reused by other addons, so the gear goes away as soon as ours closes.
+		gear:SetScript("OnUpdate", function(self)
+			if not (gearMenu and gearMenu:IsVisible()) then self:Hide() end
+		end)
+	end
+	gearMenu = menu
+	gear:SetFrameStrata(menu:GetFrameStrata())
+	gear:SetFrameLevel(menu:GetFrameLevel() + 50)
+	gear:ClearAllPoints()
+	gear:SetPoint("TOPRIGHT", menu, "TOPRIGHT", -8, -8)
+	gear:Show()
+end
+
 -- A menu action that leaves the menu open afterwards.
 local function keepOpen(action)
 	return function()
@@ -282,13 +340,18 @@ end
 
 local function openMenu(owner)
 	GameTooltip:Hide()
-	local rows, unknown = listOrders()
-	local reachable, unreachable = reachableRows(rows)
-	local total = ns.Shopping.Total(missingForAll(reachable))
-	MenuUtil.CreateContextMenu(owner, function(_, root)
+	local menu = MenuUtil.CreateContextMenu(owner, function(_, root)
+		-- Worked out here, so a refresh (after switching the concentration choice) redoes it.
+		local rows, unknown, concentration = listOrders()
+		local reachable, unreachable, short = reachableRows(rows)
+		local total = ns.Shopping.Total(missingForAll(reachable))
 		-- Long lists scroll instead of running off the screen.
 		if root.SetScrollMode then root:SetScrollMode(MENU_MAX_HEIGHT) end
 		root:CreateTitle("Patron orders")
+		if concentration then
+			root:CreateTitle(ns.Color("muted", format("Concentration: these orders use %d of your %d",
+				concentration.used, concentration.have)))
+		end
 		for _, row in ipairs(rows) do
 			local unreachableRow = row.plan and row.plan.unreachable
 			local missing = ns.Shopping.Total(row.model.missing)
@@ -300,12 +363,16 @@ local function openMenu(owner)
 			elseif isReady(row) then
 				note = " " .. READY_ICON
 			end
-			local item = root:CreateButton(iconText(row.icon) .. row.name .. minQualityText(row) .. note .. planNote(row.plan), function()
+			local item = root:CreateButton(iconText(row.icon) .. row.name .. minQualityText(row) .. note .. concentrationNote(row), function()
 				if IsShiftKeyDown() then return removeOrder(row) end
 				if unreachableRow then return MenuResponse and MenuResponse.Open end
 				return addOrder(row)
 			end)
-			rightText(item, unreachableRow and ns.Color("loss", "can't craft") or signedMoney(row.model.total))
+			-- Short of concentration: the profit in grey, since you can't take it right now.
+			local right = unreachableRow and ns.Color("loss", "can't craft")
+				or row.noConcentration and ns.Color("muted", (row.model.total > 0 and "+" or "") .. ns.Format.Money(row.model.total))
+				or signedMoney(row.model.total)
+			rightText(item, right)
 			item:SetTooltip(function(tooltip) orderTooltip(tooltip, row) end)
 		end
 		for _, row in ipairs(unknown) do
@@ -325,18 +392,33 @@ local function openMenu(owner)
 		best:SetTooltip(function(tooltip)
 			GameTooltip_SetTitle(tooltip, "Add profitable orders")
 			tooltip:AddLine("Adds what you're missing for every order that makes a profit and whose minimum quality "
-				.. "you can reach, at the cheapest qualities that reach it.", 1, 1, 1, true)
+				.. "you can reach, at the cheapest qualities that reach it. Orders left without enough concentration "
+				.. "are skipped.", 1, 1, 1, true)
 		end)
 		local all = root:CreateButton(format("Add all %s %s", ordersText(#reachable), missingNote(total)), keepOpen(addAll))
 		all:SetEnabled(total > 0)
-		if unreachable > 0 then
+		if unreachable > 0 or short > 0 then
 			all:SetTooltip(function(tooltip)
 				GameTooltip_SetTitle(tooltip, "Add all orders")
-				tooltip:AddLine(unreachableText(unreachable), 1, 1, 1, true)
+				if short > 0 then tooltip:AddLine(shortText(short), 1, 1, 1, true) end
+				if unreachable > 0 then tooltip:AddLine(unreachableText(unreachable), 1, 1, 1, true) end
 			end)
 		end
 		root:CreateButton("Clear shopping list", keepOpen(ns.Shopping.Clear))
+
+		-- Which orders get your concentration first; the list redraws with the new shares.
+		root:CreateDivider()
+		root:CreateTitle("Spend concentration on")
+		local function isChosen(key) return ns.db.concentrationFor == key end
+		local function choose(key)
+			ns.db.concentrationFor = key
+			return MenuResponse and MenuResponse.Refresh
+		end
+		for _, choice in ipairs(ns.CONCENTRATION_CHOICES) do
+			root:CreateRadio(choice[2], isChosen, choose, choice[1])
+		end
 	end)
+	showGear(menu)
 end
 
 -- Shown on the Patron tab while it lists orders, when the shopping list uses

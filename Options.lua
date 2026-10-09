@@ -92,6 +92,14 @@ function Options.Create()
 	button("Auctionator shopping list", "Clear", ns.Shopping.Clear,
 		format("Empties the \"%s\" shopping list. Ctrl-click the Shopping list button does the same.", ns.SHOPPING_LIST))
 
+	layout:AddInitializer(CreateSettingsListSectionHeaderInitializer("Patron orders"))
+	dropdown("concentrationFor", "Spend concentration on", ns.CONCENTRATION_CHOICES,
+		"In the Patron orders list, orders that only reach their minimum quality with concentration share what " ..
+		"you have. They get it in this order until it runs out; the rest say \"not enough concentration\".\n\n" ..
+		"Most profit: the most gold per concentration point first.\n\n" ..
+		"Knowledge first: orders that reward profession knowledge first, then the rest by profit.\n\n" ..
+		"You can also switch it at the bottom of the Patron orders list.")
+
 	layout:AddInitializer(CreateSettingsListSectionHeaderInitializer("Tooltips"))
 	checkbox("rankTooltip", "Show the best rank you can craft",
 		"On the tooltip of an item you can craft: the highest rank you can make it at with top-quality materials, " ..

@@ -355,6 +355,7 @@ function Model.Order(ctx)
 	-- What an NPC (patron) order gives on top of the commission. Sellable items
 	-- count toward profit; currencies (Moxie...) have no gold value.
 	model.rewards = {}
+	model.knowledge = 0
 	local rewardsValue = 0
 	for _, reward in ipairs(order.npcOrderRewards or {}) do
 		local qty = reward.count or 1
@@ -362,8 +363,10 @@ function Model.Order(ctx)
 		if itemID then
 			local price = ns.Prices.Sale(reward.itemLink, itemID)
 			local value = price and price * qty
+			local knowledge = ns.KNOWLEDGE_ITEMS[itemID]
 			rewardsValue = rewardsValue + (value or 0)
-			model.rewards[#model.rewards + 1] = { itemID = itemID, qty = qty, value = value }
+			model.knowledge = model.knowledge + (knowledge or 0) * qty
+			model.rewards[#model.rewards + 1] = { itemID = itemID, qty = qty, value = value, knowledge = knowledge }
 		elseif reward.currencyType then
 			local currency = C_CurrencyInfo.GetCurrencyInfo(reward.currencyType)
 			if currency then model.rewards[#model.rewards + 1] = { currency = currency, qty = qty } end

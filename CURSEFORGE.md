@@ -32,7 +32,7 @@ A lightweight panel that shows profit or loss on every craft and crafting order 
 Craft Profit is a **lightweight** panel next to your profession window that answers one question in gold: **profit or loss?** Open a profession, pick a recipe or a crafting order, and the answer is there.
 
 - **Profit on every craft** and every crafting order
-- **Patron orders ranked** by profit
+- **Patron orders optimized** for profit, concentration included
 - **What-if qualities:** is the better material worth it?
 - **Shopping list** for what you're missing
 - **Procs** and a **session total** that show what you really made
@@ -42,10 +42,10 @@ Craft Profit is a **lightweight** panel next to your profession window that answ
 What the item sells for at the quality you'll actually get, minus the 5% auction house cut and your materials. On orders: the commission after the consortium cut, minus only the materials **you** supply, plus sellable patron rewards.
 
 ### Which patron order pays best?
-The **Shopping list** button on the Patron orders tab lists every patron order with its profit or loss, most profitable first. Click one to shop for what you're missing.
+The **Shopping list** button on the Patron orders tab lists every patron order with its profit, best first. Each uses the cheapest material ranks that still meet its minimum quality, and your concentration goes where it earns the most, or to knowledge if you prefer. A green check marks orders you're ready for, and **Add profitable** shops for the rest.
 
 ### What if I used another quality?
-Click a material to try its next quality. The cost, the item's quality and the profit update right away, and on orders the panel warns you when you'd fall below the minimum quality.
+Click a material to try its next quality. The cost, the item's quality and the profit update right away. On an order, the panel also tells you when buying a cheaper rank beats using yours.
 
 ### Shopping list
 Click the **Shopping list** row to add what you're missing for 1, 5, 10 or any number of crafts to an **Auctionator** shopping list. Shift-click tracks the recipe instead.
@@ -54,12 +54,11 @@ Click the **Shopping list** row to add what you're missing for 1, 5, 10 or any n
 When a craft procs **multicraft** or **resourcefulness**, the bonus gold pops up with a coin sound, and a running total adds up what you've made this session.
 
 ### Can I craft it at max rank?
-Hover any item you can craft to see your **Craft Rank**: the highest rank this character can make it at with top-quality materials, plus the concentration it takes when that's what gets you there. It updates when you open your profession window.
+Hover any item you can craft to see your **Craft Rank**: the highest rank this character can make it at with top-quality materials, plus the concentration it takes. It updates when you open your profession window.
 
 ### Good to know
 - Needs **TradeSkillMaster** or **Auctionator** for prices.
-- Patron order profits price your materials at their cheapest quality, so check orders with a minimum quality.
-- Options: click the gear on the panel or type **/craftprofit**.
+- Options: click a gear or type **/craftprofit**.
 ```
 ---
 
@@ -67,11 +66,11 @@ Hover any item you can craft to see your **Craft Rank**: the highest rank this c
 
 ## B. Upload File form
 
-**File:** `dist\CraftProfit-1.7.0.zip`
+**File:** `dist\CraftProfit-1.8.0.zip`
 
 **Display name**
 ```
-Craft Profit 1.7.0
+Craft Profit 1.8.0
 ```
 
 **Release type:** `Release`
@@ -80,6 +79,18 @@ Craft Profit 1.7.0
 
 **Changelog** (paste only the newest part; paste older parts too if they never went up)
 ```markdown
+1.8.0
+- Patron orders, optimized: each order in the Patron list now uses the cheapest mix of material ranks that still meets its minimum quality, counting what the patron provides. Its profit, missing count and shopping list all follow those ranks. Hover an order to see its minimum quality and the ranks picked.
+- What you already own counts at what it would sell for after the 5% auction house cut, so a rank you have is only swapped for one to buy when that really comes out cheaper.
+- Orders you can't reach even with the best materials and concentration say "can't craft", move to the bottom of the list and are never added to the shopping list.
+- Concentration: orders that need it share what you have, most gold per concentration point first, or orders that reward knowledge (Flicker, Glimmer) first. The rest say "not enough concentration". Pick which at the bottom of the list, or in the new Patron orders section of the options.
+- Add profitable: adds what you're missing for every order that makes a profit and that you can craft. Add all now skips orders you can't craft.
+- A green check marks the orders you already have everything for, in the most profitable ranks.
+- Each order shows its minimum quality icon after its name, like Blizzard's order list.
+- Shift-click an order to take its materials back off the shopping list.
+- Add, Clear and the concentration choice keep the list open, and a gear next to its title opens the options.
+- On an open crafting order: when buying a different rank beats using the one you own, a blue line under that material says how much it saves. Click it to switch, and the shopping list buys it.
+
 1.7.0
 - Craft Rank on tooltips: hover an item you can craft, in your bags, at the auction house or in a chat link, to see the highest rank this character can make it at with top-quality materials. Max rank shows in green, a lower rank (like Rank 3 of 5) in orange.
 - When concentration reaches a higher rank, that rank is shown with the concentration it takes, e.g. "Max rank (38 concentration)".
