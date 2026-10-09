@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.7.0
+- Craft Rank on tooltips: hover an item you can craft, in your bags, at the auction house or in a chat link, to see the highest rank this character can make it at with top-quality materials. Max rank shows in green, a lower rank (like Rank 3 of 5) in orange.
+- When concentration reaches a higher rank, that rank is shown with the concentration it takes, e.g. "Max rank (38 concentration)".
+- New Tooltips options: turn the Craft Rank line off, or just the concentration.
+- It updates each time you open your profession window, so open it once on each character to start, and again after you gain skill or spend specialization points.
+
 ## 1.6.0
 - Patron orders, ranked: the Shopping list button on the Patron orders tab now opens a list of every patron order with its profit or loss in green or red gold, most profitable first, and how many materials you're missing for each.
 - Hover an order to see its commission, the materials you supply, its rewards (sellable ones with their value, currencies like Moxie listed too) and exactly what's missing.

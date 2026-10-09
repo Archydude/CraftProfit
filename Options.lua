@@ -92,6 +92,14 @@ function Options.Create()
 	button("Auctionator shopping list", "Clear", ns.Shopping.Clear,
 		format("Empties the \"%s\" shopping list. Ctrl-click the Shopping list button does the same.", ns.SHOPPING_LIST))
 
+	layout:AddInitializer(CreateSettingsListSectionHeaderInitializer("Tooltips"))
+	checkbox("rankTooltip", "Show the best rank you can craft",
+		"On the tooltip of an item you can craft: the highest rank you can make it at with top-quality materials, " ..
+		"using concentration if that reaches a higher rank.\n\n" ..
+		"Updates each time you open your profession window.")
+	checkbox("rankConcentration", "Show the concentration it takes",
+		"When the best rank needs concentration, add how much.")
+
 	layout:AddInitializer(CreateSettingsListSectionHeaderInitializer("Prices"))
 	dropdown("provider", "Price addon", {
 		{ "auto", "Automatic (TSM, then Auctionator)" },

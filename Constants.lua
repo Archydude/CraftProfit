@@ -55,6 +55,8 @@ ns.DEFAULTS = {
 	procSound = true,     -- coin sound on procs
 	showSession = true,   -- show the total of this session's crafts
 	missingTarget = "auto", -- missing materials button: "auto" | "auctionator" | "blizzard" | "off"
+	rankTooltip = true,   -- best rank you can craft, on crafted items' tooltips
+	rankConcentration = true, -- add the concentration that rank takes
 }
 
 -- The Auctionator shopping list the missing materials button adds to.

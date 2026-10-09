@@ -11,6 +11,8 @@ A lightweight addon: one small panel next to your profession window that tells y
 
 - **Session total:** under Profit/Loss, what all your crafts made since you logged in on this character (a `/reload` keeps it). Crafts without a price, like enchants, aren't counted. Click it to reset it to zero.
 
+- **Best rank on tooltips:** an item you can craft shows the highest rank you can make it at with top-quality materials, anywhere you see its tooltip.
+
 It stays light: nothing runs until you open your profession window. It doesn't simulate procs in advance; it shows you the gold when they happen.
 
 Requires **TradeSkillMaster** or **Auctionator** for prices. Built for WoW Midnight 12.1.
@@ -57,6 +59,15 @@ Shortcuts: **Shift-click** tracks the recipe and **Ctrl-click** clears the list,
 
 Which of these you get is set in the options: both (default), Auctionator only, Blizzard's tracker only (a click tracks the recipe; the row only shows when something's missing), or hidden. Without Auctionator, a click tracks the recipe. The options also have a **Clear** button for the list.
 
+### Best rank on tooltips
+Hover an item you can craft, in your bags, at the auction house or in a chat link, and its tooltip gets a **Craft Rank** line: the highest rank this character can make it at with the top quality of every material.
+
+- **Max rank** in green when you can make it at the top rank, or **Rank 3 of 5** in orange when you can't yet.
+- If concentration reaches a higher rank, that rank is shown, with the concentration it takes, e.g. **Max rank (38 concentration)**. You can hide the concentration in the options.
+- Optional and finishing materials aren't counted.
+- Only for this character's professions, and for recipes that come in ranks.
+- It updates each time you open your profession window, so after you gain skill or spend specialization points, open the window once. Until you've opened it on a character, that character's tooltips show nothing.
+
 ## Options
 Click the gear on the panel, type `/craftprofit`, or go to **Esc → Options → AddOns → Craft Profit**.
 
@@ -73,6 +84,8 @@ Click the gear on the panel, type `/craftprofit`, or go to **Esc → Options →
 | Coin sound on procs | On by default. |
 | Show this session's total | On by default. |
 | Session total: Reset | Starts the session total from zero. |
+| Show the best rank you can craft | The **Craft Rank** line on item tooltips. On by default. |
+| Show the concentration it takes | Adds the concentration when the best rank needs it. On by default. |
 | Price addon | Automatic (TSM, then Auctionator for anything TSM has no price for), TSM only, or Auctionator only. |
 | TSM price for materials / crafted items | Market value (default), lowest auction right now, historical price or region market average. |
 | Use vendor price for vendor items | On by default. |

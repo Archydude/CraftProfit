@@ -37,6 +37,7 @@ events:SetScript("OnEvent", function(self, event, ...)
 	local name = ...
 	if name == ADDON_NAME then
 		ns.db = loadSettings()
+		ns.Ranks.Init()
 		ns.Options.Create()
 	end
 	-- The profession window loads on demand; attach to it when it appears.

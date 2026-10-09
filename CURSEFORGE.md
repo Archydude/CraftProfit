@@ -35,7 +35,7 @@ No simulations to set up and nothing to configure. Open your profession, pick a 
 
 ### Light by design
 - **Small:** a download of about 30 KB.
-- **Quiet until you craft.** Nothing runs while you play; it wakes up when you open a profession.
+- **Quiet until you craft.** Apart from the Craft Rank line on tooltips, nothing runs while you play; it wakes up when you open a profession.
 - **Updates only when something changes** (a recipe, a material, your bags).
 - **Same qualities as the game.** The quality shown is the one Blizzard's crafting window expects.
 - **Never touches your crafts.** What you craft is always what's in Blizzard's crafting window.
@@ -76,6 +76,13 @@ Short of something? The **Shopping list** row under your materials turns orange 
 
 Vendor-sold and soulbound materials go to chat instead, since you can't buy them on the auction house. Want a specific quality? Click the material to pick it first, and that's the one added. No Auctionator? A click tracks the recipe.
 
+### Can I craft it at max rank?
+Hover any item you can craft, in your bags, at the auction house or in a chat link, and its tooltip shows your **Craft Rank**: the highest rank this character can make it at with top-quality materials.
+
+- **Max rank** in green, or **Rank 3 of 5** in orange when you can't reach the top yet.
+- If concentration gets you a higher rank, you see that rank and the concentration it takes: `Max rank (38 concentration)`.
+- It updates each time you open your profession window, so after you gain skill or spend specialization points, open it once.
+
 ### Procs, celebrated
 When a craft procs **multicraft** or **resourcefulness**, the bonus gold pops up over your profit with a coin sound and a gold flash. A **Procs** section lists the extra items and the materials you got back, and Profit/Loss shows what that craft **really** made.
 
@@ -93,6 +100,7 @@ Click the gear on the panel or type **/craftprofit**:
 - Proc animation and sound on or off
 - Session total on or off, with a reset button
 - Shopping list button: click for Auctionator and Shift-click for Blizzard (default), Auctionator only, Blizzard only, or hidden; plus a button to clear the shopping list
+- Craft Rank on tooltips on or off, with or without the concentration it takes
 - Price addon (Automatic, TSM only or Auctionator only), TSM price types for materials and for crafted items, vendor prices, auction house cut
 
 ### Good to know
@@ -100,6 +108,7 @@ Click the gear on the panel or type **/craftprofit**:
 - For recipes that make a varying amount, the average is used.
 - Crafts without a sale price (enchants, recrafts) show material cost only and aren't counted in the session total.
 - Patron order profits price the materials you supply at their cheapest quality. An order with a minimum quality may need better materials, so check it before you buy.
+- Craft Rank counts only required materials, not optional or finishing ones, and only the professions of the character you're on. Until you've opened your profession window on a character, its tooltips don't show it.
 ```
 ---
 
@@ -107,11 +116,11 @@ Click the gear on the panel or type **/craftprofit**:
 
 ## B. Upload File form
 
-**File:** `dist\CraftProfit-1.6.0.zip`
+**File:** `dist\CraftProfit-1.7.0.zip`
 
 **Display name**
 ```
-Craft Profit 1.6.0
+Craft Profit 1.7.0
 ```
 
 **Release type:** `Release`
@@ -120,6 +129,12 @@ Craft Profit 1.6.0
 
 **Changelog** (paste only the newest part; paste older parts too if they never went up)
 ```markdown
+1.7.0
+- Craft Rank on tooltips: hover an item you can craft, in your bags, at the auction house or in a chat link, to see the highest rank this character can make it at with top-quality materials. Max rank shows in green, a lower rank (like Rank 3 of 5) in orange.
+- When concentration reaches a higher rank, that rank is shown with the concentration it takes, e.g. "Max rank (38 concentration)".
+- New Tooltips options: turn the Craft Rank line off, or just the concentration.
+- It updates each time you open your profession window, so open it once on each character to start, and again after you gain skill or spend specialization points.
+
 1.6.0
 - Patron orders, ranked: the Shopping list button on the Patron orders tab now opens a list of every patron order with its profit or loss in green or red gold, most profitable first, and how many materials you're missing for each.
 - Hover an order to see its commission, the materials you supply, its rewards (sellable ones with their value, currencies like Moxie listed too) and exactly what's missing.

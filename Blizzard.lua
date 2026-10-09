@@ -37,6 +37,15 @@ function Blizzard.Watch(onChange, owner)
 	EventRegistry:RegisterCallback("Professions.TransactionUpdated", onChange, owner)
 end
 
+-- Whether the profession window shows this character's own profession, not a
+-- linked or guild member's one or an NPC's.
+function Blizzard.IsOwnProfession()
+	if not (ProfessionsFrame and ProfessionsFrame:IsShown()) then return false end
+	if Professions and Professions.InLocalCraftingMode then return Professions.InLocalCraftingMode() end
+	return not (C_TradeSkillUI.IsNPCCrafting() or C_TradeSkillUI.IsTradeSkillGuild()
+		or C_TradeSkillUI.IsTradeSkillGuildMember() or C_TradeSkillUI.IsTradeSkillLinked())
+end
+
 -- Which page is showing: "order", "craft" or nil.
 function Blizzard.ActivePage()
 	if ProfessionsFrame.OrdersPage.OrderView:IsVisible() and currentOrder then
