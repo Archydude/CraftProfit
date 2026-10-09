@@ -34,7 +34,7 @@ Craft Profit is a **lightweight** addon: one small panel next to your profession
 No simulations to set up and nothing to configure. Open your profession, pick a recipe or a crafting order, and the answer is there.
 
 ### Light by design
-- **Small:** a download of about 30 KB.
+- **Small:** a download of about 40 KB.
 - **Quiet until you craft.** Apart from the Craft Rank line on tooltips, nothing runs while you play; it wakes up when you open a profession.
 - **Updates only when something changes** (a recipe, a material, your bags).
 - **Same qualities as the game.** The quality shown is the one Blizzard's crafting window expects.
