@@ -36,7 +36,7 @@ Craft Profit is a **lightweight** panel next to your profession window that answ
 - **What-if qualities:** is the better material worth it?
 - **Shopping list** for what you're missing
 - **Procs** and a **session total** that show what you really made
-- **Craft Rank** on tooltips: can you craft it at max rank?
+- **Craft Rank** on tooltips: which of your characters crafts it best?
 
 ### Crafting page and crafting orders
 What the item sells for at the quality you'll actually get, minus the 5% auction house cut and your materials. On orders: the commission after the consortium cut, minus only the materials **you** supply, plus sellable patron rewards.
@@ -45,7 +45,7 @@ What the item sells for at the quality you'll actually get, minus the 5% auction
 The **Shopping list** button on the Patron orders tab lists every patron order with its profit, best first. Each uses the cheapest material ranks that still meet its minimum quality, and your concentration goes where it earns the most, or to knowledge if you prefer. A green check marks orders you're ready for, and **Add profitable** shops for the rest.
 
 ### What if I used another quality?
-Click a material to try its next quality. The cost, the item's quality and the profit update right away. On an order, the panel also tells you when buying a cheaper rank beats using yours.
+Click a material to try its next quality. The cost, quality and profit update right away. On an order, the panel also tells you when buying a cheaper rank beats using yours.
 
 ### Shopping list
 Click the **Shopping list** row to add what you're missing for 1, 5, 10 or any number of crafts to an **Auctionator** shopping list. Shift-click tracks the recipe instead.
@@ -53,8 +53,8 @@ Click the **Shopping list** row to add what you're missing for 1, 5, 10 or any n
 ### Procs and session total
 When a craft procs **multicraft** or **resourcefulness**, the bonus gold pops up with a coin sound, and a running total adds up what you've made this session.
 
-### Can I craft it at max rank?
-Hover any item you can craft to see your **Craft Rank**: the highest rank this character can make it at with top-quality materials, plus the concentration it takes. It updates when you open your profession window.
+### Which character crafts it best?
+Hover any item you can craft to see the **Craft Rank** of each of your characters that knows the recipe: the highest rank they can make it at with top-quality materials, plus the concentration it takes. Prefer just the current character? That's an option.
 
 ### Good to know
 - Needs **TradeSkillMaster** or **Auctionator** for prices.
@@ -68,11 +68,11 @@ Hover any item you can craft to see your **Craft Rank**: the highest rank this c
 
 ## B. Upload File form
 
-**File:** `dist\CraftProfit-1.8.0.zip`
+**File:** `dist\CraftProfit-1.9.0.zip`
 
 **Display name**
 ```
-Craft Profit 1.8.0
+Craft Profit 1.9.0
 ```
 
 **Release type:** `Release`
@@ -81,6 +81,11 @@ Craft Profit 1.8.0
 
 **Changelog** (paste only the newest part; paste older parts too if they never went up)
 ```markdown
+1.9.0
+- Craft Rank for all your characters: the tooltip lists every character that knows the recipe, in its class color, best rank first. Characters on another realm show their realm too.
+- New Tooltips option, Show it for: all your characters (default) or this character only.
+- A character shows up once you log in on it, if it already had Craft Rank from 1.7 or 1.8. Otherwise open its profession window once.
+
 1.8.0
 - Patron orders, optimized: each order in the Patron list now uses the cheapest mix of material ranks that still meets its minimum quality, counting what the patron provides. Its profit, missing count and shopping list all follow those ranks. Hover an order to see its minimum quality and the ranks picked.
 - What you already own counts at what it would sell for after the 5% auction house cut, so a rank you have is only swapped for one to buy when that really comes out cheaper.
