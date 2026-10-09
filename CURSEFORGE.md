@@ -29,86 +29,37 @@ A lightweight panel that shows profit or loss on every craft and crafting order 
 ```markdown
 ## Is this craft worth it?
 
-Craft Profit is a **lightweight** addon: one small panel next to your profession window that answers one question in gold, **profit or loss?**
+Craft Profit is a **lightweight** panel next to your profession window that answers one question in gold: **profit or loss?** Open a profession, pick a recipe or a crafting order, and the answer is there.
 
-No simulations to set up and nothing to configure. Open your profession, pick a recipe or a crafting order, and the answer is there.
+- **Profit on every craft** and every crafting order
+- **Patron orders ranked** by profit
+- **What-if qualities:** is the better material worth it?
+- **Shopping list** for what you're missing
+- **Procs** and a **session total** that show what you really made
+- **Craft Rank** on tooltips: can you craft it at max rank?
 
-### Light by design
-- **Small:** a download of about 40 KB.
-- **Quiet until you craft.** Apart from the Craft Rank line on tooltips, nothing runs while you play; it wakes up when you open a profession.
-- **Updates only when something changes** (a recipe, a material, your bags).
-- **Same qualities as the game.** The quality shown is the one Blizzard's crafting window expects.
-- **Never touches your crafts.** What you craft is always what's in Blizzard's crafting window.
-
-### Crafting page
-- What the item sells for, at the quality you'll actually get (concentration included)
-- Minus the 5% auction house cut
-- Minus what your materials are worth
-- = **Profit** in green or **Loss** in red
-
-### Crafting orders
-- The commission you receive, after the consortium cut
-- Minus only the materials **you** supply; what the customer provides isn't counted
-- Plus the value of sellable patron rewards (currencies like Moxie are listed too)
-- = **Profit** or **Loss**
+### Crafting page and crafting orders
+What the item sells for at the quality you'll actually get, minus the 5% auction house cut and your materials. On orders: the commission after the consortium cut, minus only the materials **you** supply, plus sellable patron rewards.
 
 ### Which patron order pays best?
-On the **Patron** orders tab, the **Shopping list** button lists every patron order with its **profit or loss** in green or red gold, most profitable first, before you take any of them.
-
-- Hover an order for its commission, the materials you supply, its rewards and exactly what you're missing.
-- Click an order to add what you're missing for it to the shopping list; the list stays open so you can add several. Or **Add all** to shop for every order at once.
-- What the patrons provide is never added, and what you own counts once across all the orders.
+The **Shopping list** button on the Patron orders tab lists every patron order with its profit or loss, most profitable first. Click one to shop for what you're missing.
 
 ### What if I used another quality?
-Click a material in the panel to try its next quality. The cost, the quality the item would come out at, and the profit update right away. Nothing in your bags or in Blizzard's crafting window changes.
+Click a material to try its next quality. The cost, the item's quality and the profit update right away, and on orders the panel warns you when you'd fall below the minimum quality.
 
-- On the **crafting page**: is the better quality worth the extra materials?
-- On **crafting orders**: does a cheaper quality still meet the order's minimum? The panel warns you in red when it doesn't.
+### Shopping list
+Click the **Shopping list** row to add what you're missing for 1, 5, 10 or any number of crafts to an **Auctionator** shopping list. Shift-click tracks the recipe instead.
 
-Right-click a material, or click the blue note, to go back to what's in the form.
-
-### Shopping list, for one craft or twenty
-Short of something? The **Shopping list** row under your materials turns orange and shows how many items you're missing. Hover it to see exactly what.
-
-- **Click:** a menu adds what you're missing for **1, 5 or 10 crafts**, or any number you type, to an **Auctionator** shopping list called "Craft Profit", with the right amounts and qualities. Each line shows how many items it would add. Add from more recipes and the amounts add up, so one trip to the auction house covers everything.
-- **Shift-click:** tracks the recipe in Blizzard's objective tracker instead.
-- **Ctrl-click:** clears the shopping list.
-
-Vendor-sold and soulbound materials go to chat instead, since you can't buy them on the auction house. Want a specific quality? Click the material to pick it first, and that's the one added. No Auctionator? A click tracks the recipe.
+### Procs and session total
+When a craft procs **multicraft** or **resourcefulness**, the bonus gold pops up with a coin sound, and a running total adds up what you've made this session.
 
 ### Can I craft it at max rank?
-Hover any item you can craft, in your bags, at the auction house or in a chat link, and its tooltip shows your **Craft Rank**: the highest rank this character can make it at with top-quality materials.
-
-- **Max rank** in green, or **Rank 3 of 5** in orange when you can't reach the top yet.
-- If concentration gets you a higher rank, you see that rank and the concentration it takes: `Max rank (38 concentration)`.
-- It updates each time you open your profession window, so after you gain skill or spend specialization points, open it once.
-
-### Procs, celebrated
-When a craft procs **multicraft** or **resourcefulness**, the bonus gold pops up over your profit with a coin sound and a gold flash. A **Procs** section lists the extra items and the materials you got back, and Profit/Loss shows what that craft **really** made.
-
-### Session total
-Right under Profit/Loss: `This session (12 crafts)  +8,431g`. Every craft's real result since you logged in, procs included. Click it to reset it.
-
-### Prices
-Uses **TradeSkillMaster** or **Auctionator** (you need one of them). Vendor-sold materials like vials and thread use the vendor price. Anything without a price is flagged, so you know when a number is incomplete.
-
-### Options
-Click the gear on the panel or type **/craftprofit**:
-- Show on the crafting page and/or on crafting orders
-- Panel size (60% to 150%), lock or reset its position; drag it anywhere
-- Show amounts down to gold, silver or copper
-- Proc animation and sound on or off
-- Session total on or off, with a reset button
-- Shopping list button: click for Auctionator and Shift-click for Blizzard (default), Auctionator only, Blizzard only, or hidden; plus a button to clear the shopping list
-- Craft Rank on tooltips on or off, with or without the concentration it takes
-- Price addon (Automatic, TSM only or Auctionator only), TSM price types for materials and for crafted items, vendor prices, auction house cut
+Hover any item you can craft to see your **Craft Rank**: the highest rank this character can make it at with top-quality materials, plus the concentration it takes when that's what gets you there. It updates when you open your profession window.
 
 ### Good to know
-- Materials you don't have yet are marked **missing**, and their cheapest quality is priced. Every quality you own (bags, bank, warband bank) counts toward what you have.
-- For recipes that make a varying amount, the average is used.
-- Crafts without a sale price (enchants, recrafts) show material cost only and aren't counted in the session total.
-- Patron order profits price the materials you supply at their cheapest quality. An order with a minimum quality may need better materials, so check it before you buy.
-- Craft Rank counts only required materials, not optional or finishing ones, and only the professions of the character you're on. Until you've opened your profession window on a character, its tooltips don't show it.
+- Needs **TradeSkillMaster** or **Auctionator** for prices.
+- Patron order profits price your materials at their cheapest quality, so check orders with a minimum quality.
+- Options: click the gear on the panel or type **/craftprofit**.
 ```
 ---
 
@@ -142,7 +93,7 @@ Craft Profit 1.7.0
 
 1.5.0
 - Every patron order at once: a Shopping list button on the Patron orders tab adds what you're missing for all the orders in the list to Auctionator's "Craft Profit" shopping list. What the patrons provide isn't added, and materials you own count once across all the orders. Orders whose recipe you don't know are skipped. Ctrl-click the button to clear the list.
-- It adds the cheapest quality of each material, so check orders with a minimum quality before you buy.
+- It adds the cheapest quality of each material, so check orders with a minimum quality.
 
 1.4.1
 - Reset the session total right from the panel: click the "This session" row, then confirm. (The Reset button in the options still works too.)
