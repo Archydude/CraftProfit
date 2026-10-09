@@ -59,6 +59,8 @@ Hover any item you can craft to see your **Craft Rank**: the highest rank this c
 ### Good to know
 - Needs **TradeSkillMaster** or **Auctionator** for prices.
 - Options: click a gear or type **/craftprofit**.
+
+**Feedback and bug reports are welcome** in the comments.
 ```
 ---
 
