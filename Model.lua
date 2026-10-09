@@ -93,6 +93,71 @@ local function owned(itemID)
 	return C_Item.GetItemCount(itemID, true, false, true, true) or 0
 end
 
+-- What using `qty` of a material really costs you, or nil without a price. What
+-- you'd buy costs its price; what you already own costs what you'd get selling it
+-- instead (after the auction house cut, when that option is on).
+function Model.EffectiveCost(itemID, qty)
+	local price = ns.Prices.Material(itemID)
+	if not price then return end
+	local own = math.min(owned(itemID), qty)
+	local keep = ns.db.ahCut and (1 - ns.AH_CUT) or 1
+	return own * price * keep + (qty - own) * price
+end
+
+-- For an order you have open: in each slot you fill from your bags, the rank that's
+-- cheaper to buy than to use yours, and still meets the order's minimum quality.
+-- slotIndex -> { itemID, saves, buyCost, ownValue }. Slots you've picked a quality
+-- for, or that are missing, are left alone.
+local function cheaperRanks(ctx, materials, picks)
+	local order, schematic, transaction, recipeInfo = ctx.order, ctx.schematic, ctx.transaction, ctx.recipeInfo
+	local minQuality = order.minQuality or 0
+	local needsQuality = minQuality > 1
+	if needsQuality and not (recipeInfo and recipeInfo.supportsQualities) then return {} end
+
+	local inSlot = {}
+	for _, material in ipairs(materials) do
+		if material.slot and ns.Blizzard.IsQualitySlot(material.slot) then
+			local list = inSlot[material.slotIndex] or {}
+			list[#list + 1] = material
+			inSlot[material.slotIndex] = list
+		end
+	end
+
+	local found = {}
+	for slotIndex, list in pairs(inSlot) do
+		local skip, ownValue, usedIDs = false, 0, {}
+		for _, material in ipairs(list) do
+			if material.simulated or material.estimated then skip = true end
+			local value = Model.EffectiveCost(material.itemID, material.qty)
+			if not value then skip = true else ownValue = ownValue + value end
+			usedIDs[material.itemID] = true
+		end
+		if not skip then
+			local slot = list[1].slot
+			for _, reagent in ipairs(slot.reagents) do
+				local itemID = reagent.itemID
+				local buyCost = itemID and not usedIDs[itemID] and Model.EffectiveCost(itemID, slot.quantityRequired)
+				local saves = buyCost and ownValue - buyCost
+				if saves and saves > 0 and (not found[slotIndex] or saves > found[slotIndex].saves) then
+					local meets = true
+					if needsQuality then
+						local overrides = {}
+						for k, v in pairs(picks or {}) do overrides[k] = v end
+						overrides[slotIndex] = itemID
+						local quality = ns.Blizzard.PredictQuality(recipeInfo.recipeID, schematic, transaction, overrides)
+						meets = quality ~= nil and quality >= minQuality
+					end
+					if meets then
+						found[slotIndex] = { itemID = itemID, saves = saves, buyCost = buyCost, ownValue = ownValue }
+					end
+				end
+			end
+		end
+	end
+	return found
+end
+Model.Owned = owned
+
 -- What you're short of for several recipes at once: { { itemID, qty } ... }.
 -- `jobs` is a list of { schematic, provided, overrides, crafts }. What you own
 -- counts once across all of them, so two orders needing the same material don't
@@ -241,13 +306,15 @@ function Model.Craft(ctx)
 	return model
 end
 
--- The open crafting order.
+-- The open crafting order, or one listed on the Patron tab.
 function Model.Order(ctx)
 	local order, schematic, transaction = ctx.order, ctx.schematic, ctx.transaction
 	-- What-if needs the order screen's form; not on recrafts, where the customer's item decides.
 	local canSimulate = (ctx.live and transaction and not order.isRecraft and schematic.hasCraftingOperationInfo) and true or false
 	local simulating = canSimulate and ns.Simulation.UseFor("order:" .. tostring(order.orderID)) or false
-	local picks = canSimulate and ns.Simulation.picks or nil
+	-- Without the form, ctx.overrides can set qualities (the Patron list's picks
+	-- for an order's minimum quality).
+	local picks = canSimulate and ns.Simulation.picks or ctx.overrides
 	local notes = {}
 	local model = {
 		kind = "order",
@@ -265,6 +332,7 @@ function Model.Order(ctx)
 	model.materials = Model.Materials(schematic, transaction, ctx.provided, picks)
 	model.cost = costOf(model.materials, notes)
 	addShopping(model, schematic, ctx.provided, picks)
+	model.cheaper = canSimulate and cheaperRanks(ctx, model.materials, picks) or {}
 
 	-- While simulating: the quality the picked materials give, and whether it meets
 	-- the order. Only for items that come in qualities; others are always "quality 1".

@@ -221,10 +221,26 @@ local function drawShoppingButton(model)
 	addRow(Color(missing > 0 and "missing" or "muted", text), nil, nil, onClick, shoppingTooltip(model, target))
 end
 
+-- The tooltip of a "saves" line: why the cheaper rank comes out ahead.
+local function cheaperTooltip(material, cheaper)
+	return function(tip)
+		tip:SetText("Cheaper to buy")
+		local qty = material.slot.quantityRequired
+		tip:AddDoubleLine(Item(cheaper.itemID, qty) .. " instead", Money(cheaper.buyCost), 1, 1, 1, 1, 1, 1)
+		local sellText = ns.db.ahCut and format("Yours sell for (after %d%% AH cut)", ns.AH_CUT * 100) or "Yours sell for"
+		tip:AddDoubleLine(sellText, Money(cheaper.ownValue), 1, 1, 1, 1, 1, 1)
+		tip:AddDoubleLine("You come out ahead", signedMoney(cheaper.saves), 1, 1, 1, 1, 1, 1)
+		tip:AddLine("The order still gets its minimum quality.", 0.53, 0.53, 0.53, true)
+		tip:AddLine(" ")
+		tip:AddLine(Color("simulated", "Click: use it, so the shopping list buys it"))
+	end
+end
+
 local function drawMaterials(model)
 	if #model.materials == 0 then return end
 	addSpacer()
 	addRow("Your materials", nil, fonts.heading)
+	local shownCheaper = {}
 	for _, material in ipairs(model.materials) do
 		local tag = (material.simulated and ("  " .. Color("simulated", "simulated")))
 			or (material.estimated and ("  " .. Color("missing", "missing")))
@@ -236,6 +252,15 @@ local function drawMaterials(model)
 		end
 		local amount = material.price and Money(material.price * material.qty) or Color("warning", "no price")
 		addRow(Item(material.itemID, material.qty) .. tag, amount, nil, onClick, tooltip)
+
+		-- A cheaper rank to buy instead of using yours, once per slot.
+		local cheaper = model.cheaper and model.cheaper[material.slotIndex]
+		if cheaper and not shownCheaper[material.slotIndex] then
+			shownCheaper[material.slotIndex] = true
+			local rank = ns.Blizzard.ReagentQualityMarkup(cheaper.itemID) or "Another rank"
+			addRow(Color("simulated", format("   %s saves %s: click to use it", rank, Money(cheaper.saves))), nil, nil,
+				function() ns.Simulation.Pick(material.slotIndex, cheaper.itemID) end, cheaperTooltip(material, cheaper))
+		end
 	end
 	addDivider()
 	addRow("Materials cost", Money(-model.cost))

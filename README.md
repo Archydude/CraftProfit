@@ -41,6 +41,8 @@ Open your profession and pick a recipe, or open a crafting order. The panel appe
 - Picked qualities reset when you choose another recipe.
 - If the game can't predict the quality for a mix (for example with materials you don't own), the panel says so and keeps the form's quality for the sale price.
 
+**Cheaper rank to buy:** on a crafting order, when the form uses a rank you own and buying another rank comes out cheaper, a blue line under that material says how much it saves, e.g. **[rank 1] saves 2g 40s**. What you own counts at what it would sell for after the 5% auction house cut, so the line only shows when buying really comes out ahead, and only for a rank that still meets the order's minimum quality. Click it to use that rank: the panel and the shopping list switch to it. Hover it for the numbers.
+
 ### Shopping list
 Under **Materials cost** there's a **Shopping list** row. It turns orange and shows a count when you're short of materials for one craft; hover it to see what's missing.
 
@@ -55,7 +57,15 @@ Adding again (or on another recipe) adds to the amounts already on the list. Ven
 
 Shortcuts: **Shift-click** tracks the recipe and **Ctrl-click** clears the list, without the menu.
 
-**Patron orders:** on the **Patron** orders tab, a **Shopping list** button sits at the right of the tabs. Click it for a list of every patron order with its profit or loss, in green or red, most profitable first, and how many materials you're missing for it. Hover an order to see its commission, rewards and material cost, and exactly what's missing. **Click an order** to add what you're missing for it to the shopping list, or pick **Add all** at the bottom to add what you're missing for every order at once (materials you own count once across all of them). What the patrons provide is never added. Profit is worked out like the panel does for an order you haven't opened: the materials you supply at their cheapest quality, and that's also the quality added, so check orders with a minimum quality before you buy. Orders whose recipe you don't know are listed greyed out. Ctrl-click the button clears the list. The button needs Auctionator.
+**Patron orders:** on the **Patron** orders tab, a **Shopping list** button sits at the right of the tabs. Click it for a list of every patron order with its profit or loss, in green or red, most profitable first, and how many materials you're missing for it. A green check marks the orders you already have everything for, in the qualities that make the most profit. Hover an order to see its commission, rewards and material cost, and exactly what's missing. **Click an order** to add what you're missing for it to the shopping list. Orders whose recipe you don't know are listed greyed out. Ctrl-click the button clears the list. The button needs Auctionator.
+
+At the bottom of the list:
+- **Add profitable** adds what you're missing for every order that makes a profit and whose minimum quality you can reach.
+- **Add all** adds what you're missing for every order at once, except the ones whose minimum quality you can't reach even with the best materials and concentration.
+
+Either way, materials you own count once across all the orders, and what the patrons provide is never added.
+
+**Minimum quality:** for an order with a minimum quality, profit and the shopping list use the cheapest mix of material qualities that still reaches it, counting what the patron provides. Hover the order to see the minimum and the qualities picked. If only concentration gets you there, the order says **needs concentration** and its tooltip shows how much. If even the best materials can't reach it, it says **can't craft**, moves to the bottom of the list without a profit, and Add profitable and Add all skip it. Orders without a minimum use the cheapest quality of each material. Either way, what you own counts at what it would sell for after the 5% auction house cut, so a rank you have is only swapped for one to buy when that comes out cheaper.
 
 Which of these you get is set in the options: both (default), Auctionator only, Blizzard's tracker only (a click tracks the recipe; the row only shows when something's missing), or hidden. Without Auctionator, a click tracks the recipe. The options also have a **Clear** button for the list.
 

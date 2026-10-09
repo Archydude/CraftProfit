@@ -45,6 +45,12 @@ function Simulation.Cycle(material, mouseButton)
 	ns.Panel.Refresh()
 end
 
+-- Picks one quality for a slot, like clicking through to it.
+function Simulation.Pick(slotIndex, itemID)
+	Simulation.picks[slotIndex] = itemID
+	ns.Panel.Refresh()
+end
+
 function Simulation.Reset()
 	wipe(Simulation.picks)
 	ns.Panel.Refresh()

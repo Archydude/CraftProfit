@@ -49,4 +49,16 @@ events:SetScript("OnEvent", function(self, event, ...)
 end)
 
 SLASH_CRAFTPROFIT1 = "/craftprofit"
-SlashCmdList.CRAFTPROFIT = function() ns.Options.Open() end
+SlashCmdList.CRAFTPROFIT = function(msg)
+	-- Testing: /craftprofit testquality <rank> (or "off") pretends every patron
+	-- order needs at least that rank, to see orders you can't reach.
+	local command, value = (msg or ""):lower():match("^%s*(%S+)%s*(%S*)")
+	if command == "testquality" then
+		local rank = tonumber(value)
+		ns.Planner.SetTestMinQuality(rank)
+		ns.Shopping.Say(rank and string.format("Testing: every patron order now needs at least rank %d. /reload or /craftprofit testquality off to stop.", rank)
+			or "Testing off: patron orders use their real minimum quality.")
+		return
+	end
+	ns.Options.Open()
+end
