@@ -117,6 +117,50 @@ local function addToList(api, items)
 	return ok
 end
 
+-- Takes { { name, tier, qty, link } ... } off the shopping list, lowering amounts
+-- and dropping lines that reach zero. Returns what came off ({ { link, qty } }),
+-- or nil when Auctionator couldn't update the list.
+local function removeFromList(api, items)
+	local lines, byKey = {}, {}
+	for _, searchString in ipairs(call(api.GetShoppingListItems, ns.SHOPPING_LIST) or {}) do
+		local line = { text = searchString }
+		local term = call(api.ConvertFromSearchString, searchString)
+		if type(term) == "table" and type(term.searchString) == "string" then
+			line.term = term
+			byKey[termKey(term)] = line
+		end
+		lines[#lines + 1] = line
+	end
+
+	local removed = {}
+	for _, item in ipairs(items) do
+		local line = byKey[termKey({ searchString = item.name, isExact = true, tier = item.tier })]
+		if line and not line.gone then
+			local have = line.term.quantity
+			if not have or have <= item.qty then
+				line.gone = true
+				removed[#removed + 1] = { link = item.link, qty = have or item.qty }
+			else
+				line.term.quantity = have - item.qty
+				line.text = nil -- rebuilt below with the new amount
+				removed[#removed + 1] = { link = item.link, qty = item.qty }
+			end
+		end
+	end
+	if #removed == 0 then return removed end
+
+	local searchStrings = {}
+	for _, line in ipairs(lines) do
+		if not line.gone then
+			local text = line.text or call(api.ConvertToSearchString, line.term)
+			if not text then return end
+			searchStrings[#searchStrings + 1] = text
+		end
+	end
+	if not pcall(api.CreateShoppingList, ADDON_NAME, ns.SHOPPING_LIST, searchStrings) then return end
+	return removed
+end
+
 -- "5x [Item], 2x [Item]" for the chat messages.
 local function itemList(items)
 	local parts = {}
@@ -229,6 +273,39 @@ function Shopping.AddMissing(missing, forText)
 		return
 	end
 	sendToAuctionator(api, missing, forText)
+end
+
+-- Takes materials ({ { itemID, qty } ... }) back off the shopping list.
+-- `forText` says what they were for in chat.
+function Shopping.RemoveMissing(missing, forText)
+	local api = auctionatorAPI()
+	if not api then
+		say(ns.Color("warning", "Auctionator is not loaded."))
+		return
+	end
+	local container = ContinuableContainer:Create()
+	for _, material in ipairs(missing) do
+		container:AddContinuable(Item:CreateFromItemID(material.itemID))
+	end
+	container:ContinueOnLoad(function()
+		local items = {}
+		for _, material in ipairs(missing) do
+			local name, link = C_Item.GetItemInfo(material.itemID)
+			if name then
+				local tier = C_TradeSkillUI.GetItemReagentQualityByItemInfo(material.itemID)
+				items[#items + 1] = { name = name, link = link or name, qty = material.qty, tier = tier and tier > 0 and tier or nil }
+			end
+		end
+		local removed = removeFromList(api, items)
+		if not removed then
+			say(ns.Color("warning", "Auctionator couldn't update the shopping list."))
+		elseif #removed == 0 then
+			say(format("Nothing on the shopping list for %s.", forText))
+		else
+			say(format("Removed from Auctionator's \"%s\" shopping list, for %s: %s.",
+				ns.SHOPPING_LIST, forText, itemList(removed)))
+		end
+	end)
 end
 
 local function addForCrafts(model, crafts)

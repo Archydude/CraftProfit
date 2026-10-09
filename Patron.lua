@@ -55,6 +55,20 @@ local function listOrders()
 	return rows, unknown
 end
 
+-- What each order added to the shopping list this session (orderID -> { { itemID,
+-- qty } ... }), so Shift-click can take the same amounts back off.
+local added = {}
+
+local function remember(rows)
+	for _, row in ipairs(rows) do
+		local list = added[row.order.orderID] or {}
+		for _, material in ipairs(row.model.missing) do
+			list[#list + 1] = { itemID = material.itemID, qty = material.qty }
+		end
+		added[row.order.orderID] = list
+	end
+end
+
 -- What's missing for all of these orders together.
 local function missingForAll(rows)
 	local jobs = {}
@@ -93,6 +107,7 @@ local function addAll()
 	local rows, unknown = listOrders()
 	local reachable, unreachable = reachableRows(rows)
 	ns.Shopping.AddMissing(missingForAll(reachable), ordersText(#reachable))
+	remember(reachable)
 	if unreachable > 0 then ns.Shopping.Say(ns.Color("muted", unreachableText(unreachable))) end
 	if #unknown > 0 then ns.Shopping.Say(ns.Color("muted", skippedText(#unknown))) end
 end
@@ -100,6 +115,7 @@ end
 local function addProfitable()
 	local rows = profitableRows(listOrders())
 	ns.Shopping.AddMissing(missingForAll(rows), "the " .. ordersText(#rows) .. " that make a profit")
+	remember(rows)
 end
 
 -- Green check for an order you have everything for.
@@ -112,6 +128,15 @@ local READY_ICON = "|TInterface\\RaidFrame\\ReadyCheck-Ready:" .. ICON_SIZE .. "
 local function isReady(row)
 	if ns.Shopping.Total(row.model.missing) > 0 then return false end
 	return not (row.plan and row.plan.unreachable)
+end
+
+-- " [rank icon]" after an order's name when it needs more than rank 1, like
+-- Blizzard's order list. (While testing, the pretend minimum.)
+local function minQualityText(row)
+	local minQuality = row.plan and row.plan.minQuality or row.order.minQuality or 0
+	if minQuality <= 1 then return "" end
+	local icon = ns.Blizzard.ItemQualityMarkup(row.order.spellID, minQuality)
+	return icon and " " .. icon or ""
 end
 
 -- An order's minimum quality as its icon, or "rank N".
@@ -129,6 +154,16 @@ end
 -- Adds one order's missing materials. The menu stays open for the next one.
 local function addOrder(row)
 	ns.Shopping.AddMissing(row.model.missing, row.name)
+	remember({ row })
+	return MenuResponse and MenuResponse.Open
+end
+
+-- Shift-click: takes off what this order added, or what it's missing now if it
+-- added nothing this session. The menu stays open.
+local function removeOrder(row)
+	local list = added[row.order.orderID] or row.model.missing
+	added[row.order.orderID] = nil
+	ns.Shopping.RemoveMissing(list, row.name)
 	return MenuResponse and MenuResponse.Open
 end
 
@@ -212,7 +247,13 @@ local function orderTooltip(tooltip, row)
 		end
 	end
 	-- What's missing only matters for an order you can craft.
-	if plan and plan.unreachable then return end
+	if plan and plan.unreachable then
+		if added[row.order.orderID] then
+			tooltip:AddLine(" ")
+			tooltip:AddLine(ns.Color("simulated", "Shift-click: remove it from the shopping list"))
+		end
+		return
+	end
 	tooltip:AddLine(" ")
 	local missing = ns.Shopping.Total(model.missing)
 	if missing > 0 then
@@ -227,6 +268,15 @@ local function orderTooltip(tooltip, row)
 		else
 			tooltip:AddLine("Nothing missing", 0.53, 0.53, 0.53)
 		end
+	end
+	tooltip:AddLine(ns.Color("simulated", "Shift-click: remove it from the shopping list"))
+end
+
+-- A menu action that leaves the menu open afterwards.
+local function keepOpen(action)
+	return function()
+		action()
+		return MenuResponse and MenuResponse.Open
 	end
 end
 
@@ -250,7 +300,8 @@ local function openMenu(owner)
 			elseif isReady(row) then
 				note = " " .. READY_ICON
 			end
-			local item = root:CreateButton(iconText(row.icon) .. row.name .. note .. planNote(row.plan), function()
+			local item = root:CreateButton(iconText(row.icon) .. row.name .. minQualityText(row) .. note .. planNote(row.plan), function()
+				if IsShiftKeyDown() then return removeOrder(row) end
 				if unreachableRow then return MenuResponse and MenuResponse.Open end
 				return addOrder(row)
 			end)
@@ -269,14 +320,14 @@ local function openMenu(owner)
 		local profitable = profitableRows(rows)
 		local profitableTotal = ns.Shopping.Total(missingForAll(profitable))
 		local best = root:CreateButton(format("Add profitable: %s %s", ordersText(#profitable), missingNote(profitableTotal)),
-			addProfitable)
+			keepOpen(addProfitable))
 		best:SetEnabled(profitableTotal > 0)
 		best:SetTooltip(function(tooltip)
 			GameTooltip_SetTitle(tooltip, "Add profitable orders")
 			tooltip:AddLine("Adds what you're missing for every order that makes a profit and whose minimum quality "
 				.. "you can reach, at the cheapest qualities that reach it.", 1, 1, 1, true)
 		end)
-		local all = root:CreateButton(format("Add all %s %s", ordersText(#reachable), missingNote(total)), addAll)
+		local all = root:CreateButton(format("Add all %s %s", ordersText(#reachable), missingNote(total)), keepOpen(addAll))
 		all:SetEnabled(total > 0)
 		if unreachable > 0 then
 			all:SetTooltip(function(tooltip)
@@ -284,7 +335,7 @@ local function openMenu(owner)
 				tooltip:AddLine(unreachableText(unreachable), 1, 1, 1, true)
 			end)
 		end
-		root:CreateButton("Clear shopping list", ns.Shopping.Clear)
+		root:CreateButton("Clear shopping list", keepOpen(ns.Shopping.Clear))
 	end)
 end
 
