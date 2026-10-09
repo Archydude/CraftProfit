@@ -243,14 +243,17 @@ function Blizzard.PatronOrders()
 	return orders
 end
 
--- What crafting a listed order takes: { schematic, provided }, or nil when you
--- don't know its recipe. `provided` marks the slots the customer fills.
+-- What crafting a listed order takes: { schematic, provided, name, icon }, or
+-- nil when you don't know its recipe (then also its name and icon, for the list).
+-- `provided` marks the slots the customer fills.
 function Blizzard.OrderJob(order)
 	local recipeInfo = C_TradeSkillUI.GetRecipeInfo(order.spellID)
-	if not (recipeInfo and recipeInfo.learned) then return end
+	if not (recipeInfo and recipeInfo.learned) then
+		return nil, recipeInfo and recipeInfo.name, recipeInfo and recipeInfo.icon
+	end
 	local schematic = C_TradeSkillUI.GetRecipeSchematic(order.spellID, order.isRecraft)
 	if not schematic then return end
 	local provided = {}
 	for _, reagent in ipairs(order.reagents or {}) do provided[reagent.slotIndex] = true end
-	return { schematic = schematic, provided = provided }
+	return { schematic = schematic, provided = provided, name = recipeInfo.name, icon = recipeInfo.icon }
 end

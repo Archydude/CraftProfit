@@ -13,7 +13,7 @@ Craft Profit
 
 **Summary**
 ```
-A lightweight panel that shows profit or loss on every craft and crafting order at a glance, with what-if qualities, proc tracking and a shopping list for missing materials. Prices from TSM or Auctionator.
+A lightweight panel that shows profit or loss on every craft and crafting order at a glance, ranks patron orders by profit, and adds what-if qualities, proc tracking and a shopping list for missing materials. Prices from TSM or Auctionator.
 ```
 
 **Main category:** `Professions`
@@ -52,6 +52,13 @@ No simulations to set up and nothing to configure. Open your profession, pick a 
 - Plus the value of sellable patron rewards (currencies like Moxie are listed too)
 - = **Profit** or **Loss**
 
+### Which patron order pays best?
+On the **Patron** orders tab, the **Shopping list** button lists every patron order with its **profit or loss** in green or red gold, most profitable first, before you take any of them.
+
+- Hover an order for its commission, the materials you supply, its rewards and exactly what you're missing.
+- Click an order to add what you're missing for it to the shopping list; the list stays open so you can add several. Or **Add all** to shop for every order at once.
+- What the patrons provide is never added, and what you own counts once across all the orders.
+
 ### What if I used another quality?
 Click a material in the panel to try its next quality. The cost, the quality the item would come out at, and the profit update right away. Nothing in your bags or in Blizzard's crafting window changes.
 
@@ -66,7 +73,6 @@ Short of something? The **Shopping list** row under your materials turns orange 
 - **Click:** a menu adds what you're missing for **1, 5 or 10 crafts**, or any number you type, to an **Auctionator** shopping list called "Craft Profit", with the right amounts and qualities. Each line shows how many items it would add. Add from more recipes and the amounts add up, so one trip to the auction house covers everything.
 - **Shift-click:** tracks the recipe in Blizzard's objective tracker instead.
 - **Ctrl-click:** clears the shopping list.
-- **Every patron order at once:** on the **Patron** orders tab, a **Shopping list** button adds what you're missing for all the orders in the list. What the patrons provide isn't added, and what you own counts once across all of them.
 
 Vendor-sold and soulbound materials go to chat instead, since you can't buy them on the auction house. Want a specific quality? Click the material to pick it first, and that's the one added. No Auctionator? A click tracks the recipe.
 
@@ -93,6 +99,7 @@ Click the gear on the panel or type **/craftprofit**:
 - Materials you don't have yet are marked **missing**, and their cheapest quality is priced. Every quality you own (bags, bank, warband bank) counts toward what you have.
 - For recipes that make a varying amount, the average is used.
 - Crafts without a sale price (enchants, recrafts) show material cost only and aren't counted in the session total.
+- Patron order profits price the materials you supply at their cheapest quality. An order with a minimum quality may need better materials, so check it before you buy.
 ```
 ---
 
@@ -100,11 +107,11 @@ Click the gear on the panel or type **/craftprofit**:
 
 ## B. Upload File form
 
-**File:** `dist\CraftProfit-1.5.0.zip`
+**File:** `dist\CraftProfit-1.6.0.zip`
 
 **Display name**
 ```
-Craft Profit 1.5.0
+Craft Profit 1.6.0
 ```
 
 **Release type:** `Release`
@@ -113,6 +120,11 @@ Craft Profit 1.5.0
 
 **Changelog** (paste only the newest part; paste older parts too if they never went up)
 ```markdown
+1.6.0
+- Patron orders, ranked: the Shopping list button on the Patron orders tab now opens a list of every patron order with its profit or loss in green or red gold, most profitable first, and how many materials you're missing for each.
+- Hover an order to see its commission, the materials you supply, its rewards (sellable ones with their value, currencies like Moxie listed too) and exactly what's missing.
+- Click an order to add what you're missing for it to the shopping list. The list stays open, so you can add several. Add all is still at the bottom, and orders you don't know the recipe for are listed greyed out.
+
 1.5.0
 - Every patron order at once: a Shopping list button on the Patron orders tab adds what you're missing for all the orders in the list to Auctionator's "Craft Profit" shopping list. What the patrons provide isn't added, and materials you own count once across all the orders. Orders whose recipe you don't know are skipped. Ctrl-click the button to clear the list.
 - It adds the cheapest quality of each material, so check orders with a minimum quality before you buy.
