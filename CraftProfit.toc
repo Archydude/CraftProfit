@@ -8,6 +8,7 @@
 ## IconTexture: Interface\Icons\INV_Misc_Coin_02
 ## Category-enUS: Professions
 ## X-License: MIT
+## X-Curse-Project-ID: 1723749
 
 Constants.lua
 Blizzard.lua
