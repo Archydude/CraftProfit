@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.10.0
+- Separate shopping lists: each character and profession now gets its own Auctionator list, like "Craft Profit - Thrall - Blacksmithing". Turn either off in the options to share lists as before.
+- What's already on the old "Craft Profit" list stays there; new materials go to the new lists.
+- Clear in the options, with no profession window open, empties the lists of all this character's professions.
+- Forget a character: Saved characters: Forget... in the Tooltips options takes a deleted, renamed or moved character off Craft Rank tooltips.
+
 ## 1.9.0
 - Craft Rank for all your characters: the tooltip lists every character that knows the recipe, in its class color, best rank first. Characters on another realm show their realm too.
 - New Tooltips option, Show it for: all your characters (default) or this character only.

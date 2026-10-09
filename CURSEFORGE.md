@@ -48,13 +48,13 @@ The **Shopping list** button on the Patron orders tab lists every patron order w
 Click a material to try its next quality. The cost, quality and profit update right away. On an order, the panel also tells you when buying a cheaper rank beats using yours.
 
 ### Shopping list
-Click the **Shopping list** row to add what you're missing for 1, 5, 10 or any number of crafts to an **Auctionator** shopping list. Shift-click tracks the recipe instead.
+Click the **Shopping list** row to add what you're missing for 1, 5, 10 or any number of crafts to an **Auctionator** shopping list, one per character and profession. Shift-click tracks the recipe instead.
 
 ### Procs and session total
 When a craft procs **multicraft** or **resourcefulness**, the bonus gold pops up with a coin sound, and a running total adds up what you've made this session.
 
 ### Which character crafts it best?
-Hover any item you can craft to see the **Craft Rank** of each of your characters that knows the recipe: the highest rank they can make it at with top-quality materials, plus the concentration it takes. Prefer just the current character? That's an option.
+Hover any item you can craft to see the **Craft Rank** of each of your characters that knows the recipe: the highest rank they can make it at with top-quality materials, plus the concentration it takes.
 
 ### Good to know
 - Needs **TradeSkillMaster** or **Auctionator** for prices.
@@ -68,11 +68,11 @@ Hover any item you can craft to see the **Craft Rank** of each of your character
 
 ## B. Upload File form
 
-**File:** `dist\CraftProfit-1.9.0.zip`
+**File:** `dist\CraftProfit-1.10.0.zip`
 
 **Display name**
 ```
-Craft Profit 1.9.0
+Craft Profit 1.10.0
 ```
 
 **Release type:** `Release`
@@ -81,6 +81,12 @@ Craft Profit 1.9.0
 
 **Changelog** (paste only the newest part; paste older parts too if they never went up)
 ```markdown
+1.10.0
+- Separate shopping lists: each character and profession now gets its own Auctionator list, like "Craft Profit - Thrall - Blacksmithing". Turn either off in the options to share lists as before.
+- What's already on the old "Craft Profit" list stays there; new materials go to the new lists.
+- Clear in the options, with no profession window open, empties the lists of all this character's professions.
+- Forget a character: Saved characters: Forget... in the Tooltips options takes a deleted, renamed or moved character off Craft Rank tooltips.
+
 1.9.0
 - Craft Rank for all your characters: the tooltip lists every character that knows the recipe, in its class color, best rank first. Characters on another realm show their realm too.
 - New Tooltips option, Show it for: all your characters (default) or this character only.
