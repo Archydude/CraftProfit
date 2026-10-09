@@ -72,13 +72,15 @@ Either way, materials you own count once across all the orders, and what the pat
 Which of these you get is set in the options: both (default), Auctionator only, Blizzard's tracker only (a click tracks the recipe; the row only shows when something's missing), or hidden. Without Auctionator, a click tracks the recipe. The options also have a **Clear** button for the list.
 
 ### Best rank on tooltips
-Hover an item you can craft, in your bags, at the auction house or in a chat link, and its tooltip gets a **Craft Rank** line: the highest rank this character can make it at with the top quality of every material.
+Hover an item you can craft, in your bags, at the auction house or in a chat link, and its tooltip gets a **Craft Rank** line: the highest rank each of your characters can make it at with the top quality of every material.
+
+- One line for each character that knows the recipe, in its class color, best rank first. Characters on another realm show their realm too. Switch to **this character only** in the options for a single line.
 
 - **Max rank** in green when you can make it at the top rank, or **Rank 3 of 5** in orange when you can't yet.
 - If concentration reaches a higher rank, that rank is shown, with the concentration it takes, e.g. **Max rank (38 concentration)**. You can hide the concentration in the options.
 - Optional and finishing materials aren't counted.
-- Only for this character's professions, and for recipes that come in ranks.
-- It updates each time you open your profession window, so after you gain skill or spend specialization points, open the window once. Until you've opened it on a character, that character's tooltips show nothing.
+- Only for recipes that come in ranks.
+- It updates each time you open your profession window, so after you gain skill or spend specialization points, open the window once on that character. A character shows up after you've opened its profession window once.
 
 ## Options
 Click the gear on the panel or at the top of the Patron orders list, type `/craftprofit`, or go to **Esc → Options → AddOns → Craft Profit**.
@@ -98,6 +100,7 @@ Click the gear on the panel or at the top of the Patron orders list, type `/craf
 | Show this session's total | On by default. |
 | Session total: Reset | Starts the session total from zero. |
 | Show the best rank you can craft | The **Craft Rank** line on item tooltips. On by default. |
+| Show it for | All your characters (default) or this character only. |
 | Show the concentration it takes | Adds the concentration when the best rank needs it. On by default. |
 | Price addon | Automatic (TSM, then Auctionator for anything TSM has no price for), TSM only, or Auctionator only. |
 | TSM price for materials / crafted items | Market value (default), lowest auction right now, historical price or region market average. |

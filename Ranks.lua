@@ -1,6 +1,6 @@
--- Craft Profit: on a crafted item's tooltip, the best rank this character can
--- craft it at with the top quality of every material, using concentration when
--- that reaches a higher rank.
+-- Craft Profit: on a crafted item's tooltip, the best rank each of your
+-- characters can craft it at with the top quality of every material, using
+-- concentration when that reaches a higher rank.
 --
 -- The game only gives addons your crafting skill while the profession window is
 -- open, so each recipe's best rank is worked out and saved then, and tooltips
@@ -18,17 +18,39 @@ local BATCH = 25
 -- of changes (opening the window, crafting) scans once.
 local SCAN_DELAY = 1
 
--- CraftProfitCharDB.professions[professionID] = {
---   parent = base profession (Blacksmithing), for dropping unlearned ones,
---   recipes = { [recipeID] = { best rank, max rank, concentration cost } },
---   items = { [itemID] = recipeID },  -- every item the recipe makes, any quality
+-- CraftProfitDB.characters["Name-Realm"] = {
+--   name, realm, class = for showing the character on tooltips,
+--   professions = { [professionID] = {
+--     parent = base profession (Blacksmithing), for dropping unlearned ones,
+--     recipes = { [recipeID] = { best rank, max rank, concentration cost } },
+--     items = { [itemID] = recipeID },  -- every item the recipe makes, any quality
+--   } },
 -- }
-local saved
+local characters
+local myKey, saved -- this character's key and professions, from login on
 
 function Ranks.Init()
-	CraftProfitCharDB = CraftProfitCharDB or {}
-	CraftProfitCharDB.professions = CraftProfitCharDB.professions or {}
-	saved = CraftProfitCharDB.professions
+	CraftProfitDB.characters = CraftProfitDB.characters or {}
+	characters = CraftProfitDB.characters
+end
+
+-- This character's entry, made on login. Ranks saved per character by 1.7 and
+-- 1.8 move into it.
+local function login()
+	local name, realm = UnitFullName("player")
+	realm = realm or GetNormalizedRealmName()
+	if not (name and realm) then return end
+	myKey = name .. "-" .. realm
+	local me = characters[myKey] or { professions = {} }
+	me.name, me.realm, me.class = name, realm, UnitClassBase("player")
+	characters[myKey] = me
+	if CraftProfitCharDB and CraftProfitCharDB.professions then
+		for professionID, profession in pairs(CraftProfitCharDB.professions) do
+			me.professions[professionID] = me.professions[professionID] or profession
+		end
+		CraftProfitCharDB.professions = nil
+	end
+	saved = me.professions
 end
 
 ---------------------------------------------------------------------------
@@ -152,10 +174,11 @@ events:RegisterEvent("PLAYER_LOGIN")
 events:RegisterEvent("TRADE_SKILL_LIST_UPDATE")
 events:RegisterEvent("TRADE_SKILL_DATA_SOURCE_CHANGED")
 events:SetScript("OnEvent", function(_, event)
-	if not saved then return end
+	if not characters then return end
 	if event == "PLAYER_LOGIN" then
-		dropUnlearned()
-	else
+		login()
+		if saved then dropUnlearned() end
+	elseif saved then
 		queueScan()
 	end
 end)
@@ -164,10 +187,10 @@ end)
 -- The tooltip line
 ---------------------------------------------------------------------------
 
--- The best saved rank for an item, and the recipe it's for.
-local function lookup(itemID)
+-- A character's best saved rank for an item, and the recipe it's for.
+local function lookup(professions, itemID)
 	local bestRank, bestRecipe
-	for _, profession in pairs(saved) do
+	for _, profession in pairs(professions) do
 		local recipeID = profession.items[itemID]
 		local rank = recipeID and profession.recipes[recipeID]
 		if rank and (not bestRank or rank[1] > bestRank[1]) then bestRank, bestRecipe = rank, recipeID end
@@ -175,22 +198,62 @@ local function lookup(itemID)
 	return bestRank, bestRecipe
 end
 
-local function onItem(tooltip, data)
-	if not (saved and ns.db and ns.db.rankTooltip) then return end
-	local itemID = data and data.id
-	if type(itemID) ~= "number" or (issecretvalue and issecretvalue(itemID)) then return end
-	local rank, recipeID = lookup(itemID)
-	if not rank then return end
-
+-- "Max rank <icon> (38 concentration)" and its color.
+local function rankText(rank, recipeID)
 	local best, max, cost = rank[1], rank[2], rank[3]
 	local text = best >= max and "Max rank" or format("Rank %d of %d", best, max)
 	local ok, icon = pcall(ns.Blizzard.ItemQualityMarkup, recipeID, best)
 	if ok and icon then text = text .. " " .. icon end
 	if ns.db.rankConcentration and cost > 0 then text = text .. format(" (%d concentration)", cost) end
+	local r, g, b = CreateColorFromHexString(best >= max and ns.Colors.good or ns.Colors.missing):GetRGB()
+	return text, r, g, b
+end
 
-	local color = best >= max and ns.Colors.good or ns.Colors.missing
-	local r, g, b = CreateColorFromHexString(color):GetRGB()
-	tooltip:AddDoubleLine("Craft Rank", text, 1, 0.82, 0, r, g, b)
+-- A character's name in its class color, with the realm when it's not this one.
+local function characterName(character)
+	local name = character.name or "?"
+	if character.realm and myKey and character.realm ~= characters[myKey].realm then
+		name = name .. "-" .. character.realm
+	end
+	local color = character.class and C_ClassColor.GetClassColor(character.class)
+	return color and color:WrapTextInColorCode(name) or name
+end
+
+-- Every character that can craft the item, best rank first, then this character.
+local function knownBy(itemID)
+	local list = {}
+	for key, character in pairs(characters) do
+		local rank, recipeID = lookup(character.professions or {}, itemID)
+		if rank then list[#list + 1] = { key = key, character = character, rank = rank, recipeID = recipeID } end
+	end
+	table.sort(list, function(a, b)
+		if a.rank[1] ~= b.rank[1] then return a.rank[1] > b.rank[1] end
+		if (a.key == myKey) ~= (b.key == myKey) then return a.key == myKey end
+		return a.key < b.key
+	end)
+	return list
+end
+
+local function onItem(tooltip, data)
+	if not (saved and ns.db and ns.db.rankTooltip) then return end
+	local itemID = data and data.id
+	if type(itemID) ~= "number" or (issecretvalue and issecretvalue(itemID)) then return end
+
+	if ns.db.rankCharacters ~= "all" then
+		local rank, recipeID = lookup(saved, itemID)
+		if not rank then return end
+		local text, r, g, b = rankText(rank, recipeID)
+		tooltip:AddDoubleLine("Craft Rank", text, 1, 0.82, 0, r, g, b)
+		return
+	end
+
+	local list = knownBy(itemID)
+	if #list == 0 then return end
+	tooltip:AddLine("Craft Rank", 1, 0.82, 0)
+	for _, entry in ipairs(list) do
+		local text, r, g, b = rankText(entry.rank, entry.recipeID)
+		tooltip:AddDoubleLine("  " .. characterName(entry.character), text, 1, 1, 1, r, g, b)
+	end
 end
 
 TooltipDataProcessor.AddTooltipPostCall(Enum.TooltipDataType.Item, onItem)

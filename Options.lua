@@ -105,6 +105,11 @@ function Options.Create()
 		"On the tooltip of an item you can craft: the highest rank you can make it at with top-quality materials, " ..
 		"using concentration if that reaches a higher rank.\n\n" ..
 		"Updates each time you open your profession window.")
+	dropdown("rankCharacters", "Show it for", {
+		{ "all", "All your characters" },
+		{ "current", "This character only" },
+	}, "All your characters: one line for each character that knows the recipe, best rank first.\n\n" ..
+		"A character shows up once you've opened its profession window, on any version of Craft Profit since 1.7.")
 	checkbox("rankConcentration", "Show the concentration it takes",
 		"When the best rank needs concentration, add how much.")
 

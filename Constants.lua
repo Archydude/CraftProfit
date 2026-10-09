@@ -58,6 +58,7 @@ ns.DEFAULTS = {
 	concentrationFor = "profit", -- patron orders that need concentration get it by: "profit" | "knowledge"
 	rankTooltip = true,   -- best rank you can craft, on crafted items' tooltips
 	rankConcentration = true, -- add the concentration that rank takes
+	rankCharacters = "all", -- whose ranks: "all" your characters | "current" one
 }
 
 -- Patron order rewards that give profession knowledge: itemID -> points each.
