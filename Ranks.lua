@@ -209,10 +209,11 @@ local function rankText(rank, recipeID)
 	return text, r, g, b
 end
 
--- A character's name in its class color, with the realm when it's not this one.
-local function characterName(character)
+-- A character's name in its class color, with the realm when it's not this one
+-- (or always, with withRealm).
+local function characterName(character, withRealm)
 	local name = character.name or "?"
-	if character.realm and myKey and character.realm ~= characters[myKey].realm then
+	if character.realm and (withRealm or (myKey and character.realm ~= characters[myKey].realm)) then
 		name = name .. "-" .. character.realm
 	end
 	local color = character.class and C_ClassColor.GetClassColor(character.class)
@@ -257,3 +258,46 @@ local function onItem(tooltip, data)
 end
 
 TooltipDataProcessor.AddTooltipPostCall(Enum.TooltipDataType.Item, onItem)
+
+---------------------------------------------------------------------------
+-- Forgetting characters you deleted, renamed or moved
+---------------------------------------------------------------------------
+
+function Ranks.Forget(key)
+	if not (characters and characters[key]) then return end
+	local name = characterName(characters[key], true)
+	characters[key] = nil
+	ns.Shopping.Say(format("Forgot %s's Craft Ranks.", name))
+end
+
+StaticPopupDialogs.CRAFTPROFIT_FORGET_CHARACTER = {
+	text = "Forget %s's Craft Ranks?",
+	button1 = "Forget",
+	button2 = CANCEL,
+	OnAccept = function(_, key) Ranks.Forget(key) end,
+	timeout = 0,
+	whileDead = true,
+	hideOnEscape = true,
+}
+
+-- A menu of your other saved characters; picking one asks, then forgets it.
+-- This character isn't listed, since it would be saved again right away.
+function Ranks.OpenForgetMenu()
+	MenuUtil.CreateContextMenu(UIParent, function(_, root)
+		root:CreateTitle("Forget a character")
+		local others = {}
+		for key, character in pairs(characters or {}) do
+			if key ~= myKey then others[#others + 1] = { key = key, character = character } end
+		end
+		table.sort(others, function(a, b) return a.key < b.key end)
+		if #others == 0 then
+			root:CreateButton(ns.Color("muted", "No other characters saved"), nop):SetEnabled(false)
+		end
+		for _, entry in ipairs(others) do
+			local name = characterName(entry.character, true)
+			root:CreateButton(name, function()
+				StaticPopup_Show("CRAFTPROFIT_FORGET_CHARACTER", name, nil, entry.key)
+			end)
+		end
+	end)
+end
