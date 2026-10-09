@@ -205,7 +205,7 @@ local function showTooltip(self)
 	GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
 	GameTooltip:SetText("Shopping list")
 	GameTooltip:AddLine("Every patron order with its profit or loss. Click one to add what you're missing for it to "
-		.. format("Auctionator's \"%s\" shopping list, or add the ones that make a profit, or all of them.", ns.SHOPPING_LIST), 1, 1, 1, true)
+		.. format("Auctionator's \"%s\" shopping list, or add the ones that make a profit, or all of them.", ns.Shopping.ListName()), 1, 1, 1, true)
 	GameTooltip:AddLine(" ")
 	GameTooltip:AddLine(format("%s: %s", ordersText(#reachable),
 		total > 0 and ns.Color("missing", format("%d missing", total)) or "nothing missing"))
@@ -213,7 +213,7 @@ local function showTooltip(self)
 	if unreachable > 0 then GameTooltip:AddLine(unreachableText(unreachable), 0.53, 0.53, 0.53, true) end
 	if #unknown > 0 then GameTooltip:AddLine(skippedText(#unknown), 0.53, 0.53, 0.53, true) end
 	GameTooltip:AddLine(" ")
-	GameTooltip:AddLine(ns.Color("simulated", format("Ctrl-click: clear the \"%s\" shopping list", ns.SHOPPING_LIST)))
+	GameTooltip:AddLine(ns.Color("simulated", format("Ctrl-click: clear the \"%s\" shopping list", ns.Shopping.ListName())))
 	GameTooltip:Show()
 end
 

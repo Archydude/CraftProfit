@@ -191,7 +191,7 @@ local function shoppingTooltip(model, target)
 			tip:AddLine(Color("simulated", "Click: " .. trackAction(model)))
 		end
 		if ns.Shopping.CanClear() then
-			tip:AddLine(Color("simulated", format("Ctrl-click: clear the \"%s\" shopping list", ns.SHOPPING_LIST)))
+			tip:AddLine(Color("simulated", format("Ctrl-click: clear the \"%s\" shopping list", ns.Shopping.ListName())))
 		end
 	end
 end

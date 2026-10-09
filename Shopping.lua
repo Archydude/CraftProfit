@@ -73,6 +73,38 @@ end
 -- Auctionator shopping list
 ---------------------------------------------------------------------------
 
+-- The profession whose window is open ("Blacksmithing"), or nil.
+local function openProfession()
+	if not (ProfessionsFrame and ProfessionsFrame:IsShown()) then return end
+	local info = C_TradeSkillUI.GetBaseProfessionInfo()
+	local name = info and info.professionName
+	if name and name ~= "" then return name end
+end
+
+-- The list materials go to: "Craft Profit", or one per character and/or per
+-- profession, as the options say ("Craft Profit - Snir - Blacksmithing").
+-- `profession` defaults to the open one; with none, the profession is left out.
+function Shopping.ListName(profession)
+	local parts = { ns.SHOPPING_LIST }
+	if ns.db.listPerCharacter then parts[#parts + 1] = UnitName("player") end
+	if ns.db.listPerProfession then parts[#parts + 1] = profession or openProfession() end
+	return table.concat(parts, " - ")
+end
+
+-- The lists Clear empties: the current one, or with one list per profession and
+-- no profession window open, the lists of all this character's professions.
+local function listsToClear()
+	local names = {}
+	if ns.db.listPerProfession and not openProfession() then
+		for _, index in pairs({ GetProfessions() }) do
+			local name = GetProfessionInfo(index)
+			if name then names[#names + 1] = Shopping.ListName(name) end
+		end
+	end
+	if #names == 0 then names[1] = Shopping.ListName() end
+	return names
+end
+
 -- One list line per material and quality, so adding the same one again adds up
 -- the amount.
 local function termKey(term)
@@ -81,10 +113,10 @@ end
 
 -- Adds { { name, tier, qty } ... } to the shopping list, keeping what's on it.
 -- Returns whether it worked.
-local function addToList(api, items)
+local function addToList(api, items, listName)
 	-- The API only makes whole lists, so read the old one and rebuild it.
 	local lines, byKey = {}, {}
-	for _, searchString in ipairs(call(api.GetShoppingListItems, ns.SHOPPING_LIST) or {}) do
+	for _, searchString in ipairs(call(api.GetShoppingListItems, listName) or {}) do
 		local line = { text = searchString }
 		local term = call(api.ConvertFromSearchString, searchString)
 		if type(term) == "table" and type(term.searchString) == "string" then
@@ -113,16 +145,16 @@ local function addToList(api, items)
 		if not text then return false end
 		searchStrings[#searchStrings + 1] = text
 	end
-	local ok = pcall(api.CreateShoppingList, ADDON_NAME, ns.SHOPPING_LIST, searchStrings)
+	local ok = pcall(api.CreateShoppingList, ADDON_NAME, listName, searchStrings)
 	return ok
 end
 
 -- Takes { { name, tier, qty, link } ... } off the shopping list, lowering amounts
 -- and dropping lines that reach zero. Returns what came off ({ { link, qty } }),
 -- or nil when Auctionator couldn't update the list.
-local function removeFromList(api, items)
+local function removeFromList(api, items, listName)
 	local lines, byKey = {}, {}
-	for _, searchString in ipairs(call(api.GetShoppingListItems, ns.SHOPPING_LIST) or {}) do
+	for _, searchString in ipairs(call(api.GetShoppingListItems, listName) or {}) do
 		local line = { text = searchString }
 		local term = call(api.ConvertFromSearchString, searchString)
 		if type(term) == "table" and type(term.searchString) == "string" then
@@ -157,7 +189,7 @@ local function removeFromList(api, items)
 			searchStrings[#searchStrings + 1] = text
 		end
 	end
-	if not pcall(api.CreateShoppingList, ADDON_NAME, ns.SHOPPING_LIST, searchStrings) then return end
+	if not pcall(api.CreateShoppingList, ADDON_NAME, listName, searchStrings) then return end
 	return removed
 end
 
@@ -172,6 +204,8 @@ end
 -- adds the auction house ones to the list. Item info has to be loaded first.
 -- `forText` says what they're for in chat: "5 crafts", "3 patron orders".
 local function sendToAuctionator(api, missing, forText)
+	-- Picked now: the window may close before the items load.
+	local listName = Shopping.ListName()
 	local container = ContinuableContainer:Create()
 	for _, material in ipairs(missing) do
 		container:AddContinuable(Item:CreateFromItemID(material.itemID))
@@ -197,9 +231,9 @@ local function sendToAuctionator(api, missing, forText)
 		end
 
 		if #auction > 0 then
-			if addToList(api, auction) then
+			if addToList(api, auction, listName) then
 				say(format("Added to Auctionator's \"%s\" shopping list, for %s: %s.",
-					ns.SHOPPING_LIST, forText, itemList(auction)))
+					listName, forText, itemList(auction)))
 			else
 				say(ns.Color("warning", "Auctionator couldn't update the shopping list."))
 			end
@@ -209,22 +243,31 @@ local function sendToAuctionator(api, missing, forText)
 	end)
 end
 
--- Empties the shopping list. Auctionator's API can't delete a list, so an empty
--- one is left behind; the next add fills it again.
+-- Empties the shopping list (see listsToClear). Auctionator's API can't delete a
+-- list, so an empty one is left behind; the next add fills it again.
 function Shopping.Clear()
 	local api = auctionatorAPI()
-	local listName = format("Auctionator's \"%s\" shopping list", ns.SHOPPING_LIST)
 	if not api then
 		say(ns.Color("warning", "Auctionator is not loaded."))
 		return
 	end
-	local items = call(api.GetShoppingListItems, ns.SHOPPING_LIST)
-	if not items or #items == 0 then
-		say(listName .. " is already empty.")
-	elseif pcall(api.CreateShoppingList, ADDON_NAME, ns.SHOPPING_LIST, {}) then
-		say("Cleared " .. listName .. ".")
-	else
-		say(ns.Color("warning", "Auctionator couldn't clear the shopping list."))
+	local names, cleared, failed = listsToClear(), {}, false
+	for _, name in ipairs(names) do
+		local items = call(api.GetShoppingListItems, name)
+		if items and #items > 0 then
+			if pcall(api.CreateShoppingList, ADDON_NAME, name, {}) then
+				cleared[#cleared + 1] = format("\"%s\"", name)
+			else
+				failed = true
+			end
+		end
+	end
+	if failed then say(ns.Color("warning", "Auctionator couldn't clear the shopping list.")) end
+	if #cleared > 0 then
+		say(format("Cleared Auctionator's %s shopping list%s.", table.concat(cleared, ", "), #cleared > 1 and "s" or ""))
+	elseif not failed then
+		say(#names > 1 and "Your Craft Profit shopping lists are already empty."
+			or format("Auctionator's \"%s\" shopping list is already empty.", names[1]))
 	end
 end
 
@@ -287,6 +330,7 @@ function Shopping.RemoveMissing(missing, forText)
 	for _, material in ipairs(missing) do
 		container:AddContinuable(Item:CreateFromItemID(material.itemID))
 	end
+	local listName = Shopping.ListName()
 	container:ContinueOnLoad(function()
 		local items = {}
 		for _, material in ipairs(missing) do
@@ -296,14 +340,14 @@ function Shopping.RemoveMissing(missing, forText)
 				items[#items + 1] = { name = name, link = link or name, qty = material.qty, tier = tier and tier > 0 and tier or nil }
 			end
 		end
-		local removed = removeFromList(api, items)
+		local removed = removeFromList(api, items, listName)
 		if not removed then
 			say(ns.Color("warning", "Auctionator couldn't update the shopping list."))
 		elseif #removed == 0 then
 			say(format("Nothing on the shopping list for %s.", forText))
 		else
 			say(format("Removed from Auctionator's \"%s\" shopping list, for %s: %s.",
-				ns.SHOPPING_LIST, forText, itemList(removed)))
+				listName, forText, itemList(removed)))
 		end
 	end)
 end
@@ -358,7 +402,7 @@ StaticPopupDialogs.CRAFTPROFIT_CRAFTS = {
 local function openMenu(owner, model)
 	GameTooltip:Hide()
 	MenuUtil.CreateContextMenu(owner, function(_, root)
-		root:CreateTitle(format("Add to \"%s\" list", ns.SHOPPING_LIST))
+		root:CreateTitle(format("Add to \"%s\" list", Shopping.ListName()))
 
 		local counts = { unpack(PRESET_CRAFTS) }
 		if customCrafts and not tContains(counts, customCrafts) then

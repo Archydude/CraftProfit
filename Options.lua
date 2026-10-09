@@ -89,8 +89,16 @@ function Options.Create()
 		"Blizzard: a click tracks the recipe, so the objective tracker lists its materials.\n\n" ..
 		"The default does both: a click for Auctionator, a Shift-click for Blizzard. " ..
 		"Without Auctionator, a click goes to Blizzard.", ns.SHOPPING_LIST))
+	checkbox("listPerCharacter", "One shopping list per character",
+		format("Each character gets its own Auctionator list, like \"%s - %s\".\n\n" ..
+			"Can be combined with one list per profession.", ns.SHOPPING_LIST, UnitName("player") or "Name"))
+	checkbox("listPerProfession", "One shopping list per profession",
+		format("Each profession gets its own Auctionator list, like \"%s - Blacksmithing\".\n\n" ..
+			"Can be combined with one list per character.", ns.SHOPPING_LIST))
 	button("Auctionator shopping list", "Clear", ns.Shopping.Clear,
-		format("Empties the \"%s\" shopping list. Ctrl-click the Shopping list button does the same.", ns.SHOPPING_LIST))
+		"Empties the shopping list. Ctrl-click the Shopping list button does the same.\n\n" ..
+		"With one list per profession, this clears the list of the profession window that's open, " ..
+		"or with none open, the lists of all this character's professions.")
 
 	layout:AddInitializer(CreateSettingsListSectionHeaderInitializer("Patron orders"))
 	dropdown("concentrationFor", "Spend concentration on", ns.CONCENTRATION_CHOICES,
@@ -112,6 +120,9 @@ function Options.Create()
 		"A character shows up once you've opened its profession window, on any version of Craft Profit since 1.7.")
 	checkbox("rankConcentration", "Show the concentration it takes",
 		"When the best rank needs concentration, add how much.")
+	button("Saved characters", "Forget...", ns.Ranks.OpenForgetMenu,
+		"Pick a character you deleted, renamed or moved, so its Craft Rank no longer shows on tooltips.\n\n" ..
+		"A character you still play comes back once you open its profession window again.")
 
 	layout:AddInitializer(CreateSettingsListSectionHeaderInitializer("Prices"))
 	dropdown("provider", "Price addon", {

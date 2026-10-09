@@ -57,6 +57,8 @@ Adding again (or on another recipe) adds to the amounts already on the list. Ven
 
 Shortcuts: **Shift-click** tracks the recipe and **Ctrl-click** clears the list, without the menu.
 
+**Separate lists:** each character and profession gets its own list, like **Craft Profit - Thrall - Blacksmithing**. Turn off **one shopping list per character** or **per profession** in the options to share lists instead.
+
 **Patron orders:** on the **Patron** orders tab, a **Shopping list** button sits at the right of the tabs. Click it for a list of every patron order with its profit or loss, in green or red, most profitable first, and how many materials you're missing for it. Like Blizzard's order list, an order that needs more than rank 1 shows its minimum quality icon after its name. A green check marks the orders you already have everything for, in the qualities that make the most profit. Hover an order to see its commission, rewards and material cost, and exactly what's missing. **Click an order** to add what you're missing for it to the shopping list, or **Shift-click** it to take that back off. Shift-click removes what the order added since you logged in, including through Add profitable or Add all, or what it's missing now if it added nothing. Orders whose recipe you don't know are listed greyed out. Ctrl-click the button clears the list. The button needs Auctionator.
 
 At the bottom of the list:
@@ -75,6 +77,7 @@ Which of these you get is set in the options: both (default), Auctionator only, 
 Hover an item you can craft, in your bags, at the auction house or in a chat link, and its tooltip gets a **Craft Rank** line: the highest rank each of your characters can make it at with the top quality of every material.
 
 - One line for each character that knows the recipe, in its class color, best rank first. Characters on another realm show their realm too. Switch to **this character only** in the options for a single line.
+- Deleted, renamed or moved a character? Forget it in the options (**Saved characters: Forget...**).
 
 - **Max rank** in green when you can make it at the top rank, or **Rank 3 of 5** in orange when you can't yet.
 - If concentration reaches a higher rank, that rank is shown, with the concentration it takes, e.g. **Max rank (38 concentration)**. You can hide the concentration in the options.
@@ -94,13 +97,15 @@ Click the gear on the panel or at the top of the Patron orders list, type `/craf
 | Show amounts down to | Gold, silver (default) or copper. |
 | Patron orders: Spend concentration on | Most profit (default): the most gold per concentration point first. Knowledge first: orders that reward profession knowledge first, then by profit. Also at the bottom of the Patron orders list. |
 | Shopping list button | Click: Auctionator, Shift-click: Blizzard (default), Auctionator shopping list, Blizzard's recipe tracker, or don't show it. |
-| Auctionator shopping list: Clear | Empties the Craft Profit shopping list. |
+| One shopping list per character / per profession | On by default. Either or both split the Craft Profit list, e.g. Craft Profit - Thrall - Blacksmithing. |
+| Auctionator shopping list: Clear | Empties the shopping list. With one list per profession and no profession window open, it empties all this character's profession lists. |
 | Animate multicraft & resourcefulness procs | On by default. |
 | Coin sound on procs | On by default. |
 | Show this session's total | On by default. |
 | Session total: Reset | Starts the session total from zero. |
 | Show the best rank you can craft | The **Craft Rank** line on item tooltips. On by default. |
 | Show it for | All your characters (default) or this character only. |
+| Saved characters: Forget... | Pick a character you deleted, renamed or moved to take it off Craft Rank tooltips. |
 | Show the concentration it takes | Adds the concentration when the best rank needs it. On by default. |
 | Price addon | Automatic (TSM, then Auctionator for anything TSM has no price for), TSM only, or Auctionator only. |
 | TSM price for materials / crafted items | Market value (default), lowest auction right now, historical price or region market average. |
