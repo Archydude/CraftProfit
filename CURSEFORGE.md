@@ -48,10 +48,10 @@ The **Shopping list** button on the Patron orders tab lists every patron order w
 Click a material to try its next quality. The cost, quality and profit update right away. On an order, the panel also tells you when buying a cheaper rank beats using yours.
 
 ### Shopping list
-Click the **Shopping list** row to add what you're missing for 1, 5, 10 or any number of crafts to an **Auctionator** shopping list, one per character and profession. Shift-click tracks the recipe instead.
+Click the **Shopping list** row to add what you're missing for 1, 5, 10 or any number of crafts to an **Auctionator** shopping list, one per character and profession. With **TSM**, you get a search to paste into its Shopping tab instead.
 
 ### Procs and session total
-When a craft procs **multicraft** or **resourcefulness**, the bonus gold pops up with a coin sound, and a running total adds up what you've made this session.
+**Multicraft** and **resourcefulness** procs pop up as bonus gold with a coin sound, and a session total adds up what you've made.
 
 ### Which character crafts it best?
 Hover any item you can craft to see the **Craft Rank** of each of your characters that knows the recipe: the highest rank they can make it at with top-quality materials, plus the concentration it takes.
@@ -68,11 +68,11 @@ Hover any item you can craft to see the **Craft Rank** of each of your character
 
 ## B. Upload File form
 
-**File:** `dist\CraftProfit-1.10.0.zip`
+**File:** `dist\CraftProfit-1.11.0.zip`
 
 **Display name**
 ```
-Craft Profit 1.10.0
+Craft Profit 1.11.0
 ```
 
 **Release type:** `Release`
@@ -81,6 +81,14 @@ Craft Profit 1.10.0
 
 **Changelog** (paste only the newest part; paste older parts too if they never went up)
 ```markdown
+1.11.0
+- TSM shopping: without Auctionator, the Shopping list row becomes "Copy TSM search", with the same menu for 1, 5, 10 or any number of crafts. It gives you a search to paste into TSM's Shopping tab, for exactly the ranks and amounts you're missing.
+- The Patron orders list now works with TSM too: click an order, or Copy profitable / Copy all, for a search to paste.
+- Both installed? Pick "Shop with": Auctionator shopping list or TSM search, at the bottom of the Shopping list menus or in the options.
+- Price age: with Auctionator prices, the bottom of the panel says how old the oldest price is ("seen today", or "oldest 4 days ago" in red from 3 days on), and each material's tooltip says when Auctionator last saw it.
+- Removed: tracking the recipe in Blizzard's objective tracker (Shift-click and the menu entry). Blizzard's own Track Recipe checkbox in the profession window does the same. The Shopping list button option is now just on or off.
+- Without Auctionator or TSM, the Shopping list row is hidden.
+
 1.10.0
 - Separate shopping lists: each character and profession now gets its own Auctionator list, like "Craft Profit - Thrall - Blacksmithing". Turn either off in the options to share lists as before.
 - What's already on the old "Craft Profit" list stays there; new materials go to the new lists.
