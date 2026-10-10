@@ -14,6 +14,13 @@ local function loadSettings()
 		db.matSource, db.saleSource, db.source = db.source, db.source, nil
 	end
 	db.shown = nil
+	-- Up to 1.10 the button had a choice of where to send materials, Blizzard's
+	-- recipe tracker included. Now it's on or off, plus which auction addon.
+	if db.missingTarget then
+		if db.missingTarget == "off" then db.shoppingButton = false end
+		if db.missingTarget == "auctionator" or db.missingTarget == "tsm" then db.listAddon = db.missingTarget end
+		db.missingTarget = nil
+	end
 	for key, value in pairs(ns.DEFAULTS) do
 		if db[key] == nil then db[key] = value end
 	end

@@ -9,6 +9,9 @@ local Layout = ns.Layout
 local Color, Money, Item = ns.Color, ns.Format.Money, ns.Format.Item
 local format = string.format
 
+-- Auctionator prices this many days old or older show in red.
+local STALE_DAYS = 3
+
 -- The model on screen (Results.lua matches crafts against it), or nil.
 Panel.current = nil
 
@@ -162,15 +165,16 @@ end
 local function materialTooltip(material)
 	return function(tip)
 		tip:SetItemByID(material.itemID)
+		local age = material.price and ns.Prices.MaterialAge(material.itemID)
+		if age ~= nil then
+			local stale = age == false or age >= STALE_DAYS
+			tip:AddLine(" ")
+			tip:AddLine(Color(stale and "warning" or "muted", "Auctionator price seen " .. ns.Prices.AgeText(age)))
+		end
 		tip:AddLine(" ")
 		tip:AddLine(Color("simulated", "Click: try the next quality"))
 		tip:AddLine(Color("simulated", "Right-click: back to what's in the form"))
 	end
-end
-
--- What a click to Blizzard's tracker does, for the tooltip.
-local function trackAction(model)
-	return ns.Shopping.IsTracked(model) and "stop tracking this recipe" or "track this recipe"
 end
 
 local function shoppingTooltip(model, target)
@@ -182,41 +186,31 @@ local function shoppingTooltip(model, target)
 			tip:SetText("Nothing missing for 1 craft")
 		end
 		tip:AddLine(" ")
-		if target == "auctionator" then
-			tip:AddLine(Color("simulated", "Click: add to the shopping list, for 1 or more crafts"))
-			if ns.Shopping.Target(true) == "blizzard" then
-				tip:AddLine(Color("simulated", "Shift-click: " .. trackAction(model)))
-			end
-		else
-			tip:AddLine(Color("simulated", "Click: " .. trackAction(model)))
-		end
+		tip:AddLine(Color("simulated", target == "tsm" and "Click: copy a TSM search, for 1 or more crafts"
+			or "Click: add to the shopping list, for 1 or more crafts"))
 		if ns.Shopping.CanClear() then
 			tip:AddLine(Color("simulated", format("Ctrl-click: clear the \"%s\" shopping list", ns.Shopping.ListName())))
 		end
 	end
 end
 
--- The button for the shopping list (or Blizzard's tracker). With Auctionator it
--- shows even when one craft is covered, since its menu buys for several.
+-- The button for the shopping list or the TSM search. It shows even when one
+-- craft is covered, since its menu buys for several. Hidden with nothing to send
+-- the materials to.
 local function drawShoppingButton(model)
-	if ns.db.missingTarget == "off" or not model.shoppable then return end
-	local target = ns.Shopping.Target()
+	if not model.shoppable then return end
+	local target = ns.Shopping.ListTarget()
+	if not target then return end
 	local missing = ns.Shopping.Total(model.missing)
-	if missing == 0 and target ~= "auctionator" then return end
 	addGap()
 	local text
 	if target == "auctionator" then
 		text = missing > 0 and format("Shopping list (%d missing)", missing) or "Shopping list"
-	elseif target == "blizzard" and ns.Shopping.IsTracked(model) then
-		text = format("%d missing - recipe tracked", missing)
-	elseif target == "blizzard" then
-		text = format("Track recipe (%d missing)", missing)
 	else
-		addRow(Color("muted", format("%d missing (Auctionator is not loaded)", missing)))
-		return
+		text = missing > 0 and format("Copy TSM search (%d missing)", missing) or "Copy TSM search"
 	end
 	local onClick = function(_, button)
-		ns.Shopping.Click(model, button, IsShiftKeyDown(), IsControlKeyDown())
+		ns.Shopping.Click(model, button, IsControlKeyDown())
 	end
 	addRow(Color(missing > 0 and "missing" or "muted", text), nil, nil, onClick, shoppingTooltip(model, target))
 end
@@ -295,6 +289,28 @@ local function sessionTooltip(tip)
 	tip:AddLine(Color("simulated", "Click: reset to zero"))
 end
 
+-- How old the oldest Auctionator price on the panel is: ", seen today",
+-- ", oldest 4 days ago" (in red once it's stale), or "" when prices come from TSM.
+local function priceAgeText(model)
+	local oldest
+	local function consider(age)
+		if age == false then
+			oldest = false
+		elseif age and oldest ~= false and (not oldest or age > oldest) then
+			oldest = age
+		end
+	end
+	for _, material in ipairs(model.materials or {}) do
+		if material.price then consider(ns.Prices.MaterialAge(material.itemID)) end
+	end
+	if model.output and model.output.sale then consider(ns.Prices.SaleAge(model.output.link)) end
+	if oldest == nil then return "" end
+	if oldest == 0 then return ", seen today" end
+	local text = ", oldest " .. ns.Prices.AgeText(oldest)
+	if oldest == false or oldest >= STALE_DAYS then return "|r" .. Color("warning", text) end
+	return text
+end
+
 local function drawFooter(model)
 	local total = drawProcs(model)
 
@@ -321,7 +337,7 @@ local function drawFooter(model)
 		addRow(Color("simulated", "Simulating other qualities. Click here to go back to what's in the form."),
 			nil, nil, ns.Simulation.Reset, resetTooltip)
 	end
-	addRow(Color("muted", "Prices: " .. ns.Prices.SourceLabel()))
+	addRow(Color("muted", "Prices: " .. ns.Prices.SourceLabel() .. priceAgeText(model)))
 end
 
 -- " (after 10% cut)", in grey, for an amount shown after a cut. Empty when
@@ -525,9 +541,8 @@ local function createFrame()
 
 	-- Item names arrive from the server after first use; redraw when they do.
 	frame:RegisterEvent("GET_ITEM_INFO_RECEIVED")
-	-- The missing materials button follows what you own and what's tracked.
+	-- The missing materials button follows what you own.
 	frame:RegisterEvent("BAG_UPDATE_DELAYED")
-	frame:RegisterEvent("TRACKED_RECIPE_UPDATE")
 	frame:SetScript("OnEvent", function(self)
 		if self:IsShown() then Panel.Refresh() end
 	end)

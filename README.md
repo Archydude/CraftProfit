@@ -7,7 +7,7 @@ A lightweight addon: one small panel next to your profession window that tells y
 
 - **Procs:** when a craft procs multicraft or resourcefulness, the bonus gold pops up over the Profit line with a coin sound, a **Procs** section lists the extra items and returned materials with their value, and Profit/Loss changes to what that craft really made. It goes back to the normal forecast on your next craft without a proc, or when you pick another recipe.
 
-- **Shopping list:** adds what you're short of, for one or more crafts or for every patron order at once, to an Auctionator shopping list, or tracks the recipe in Blizzard's objective tracker.
+- **Shopping list:** adds what you're short of, for one or more crafts or for every patron order at once, to an Auctionator shopping list, or as a TSM search to copy.
 
 - **Session total:** under Profit/Loss, what all your crafts made since you logged in on this character (a `/reload` keeps it). Crafts without a price, like enchants, aren't counted. Click it to reset it to zero.
 
@@ -50,16 +50,19 @@ Under **Materials cost** there's a **Shopping list** row. It turns orange and sh
 
 - **For 1 / 5 / 10 crafts:** adds what you're missing for that many crafts, with the amount and quality, to Auctionator's **Craft Profit** shopping list. Each line shows how many items it would add. Open the list in Auctionator's Shopping tab at the auction house.
 - **Other amount...:** type any number of crafts. The last number you typed stays in the menu until you log out or `/reload`.
-- **Track recipe:** tracks it in Blizzard's objective tracker, which lists its materials with how many you have.
 - **Clear shopping list.**
 
 Adding again (or on another recipe) adds to the amounts already on the list. Vendor-sold and soulbound materials are listed in chat instead. Every quality you own counts toward a material, and the cheapest quality is the one added. To buy a specific quality, click the material to pick it first (see above).
 
-Shortcuts: **Shift-click** tracks the recipe and **Ctrl-click** clears the list, without the menu.
+Shortcut: **Ctrl-click** clears the list, without the menu.
 
 **Separate lists:** each character and profession gets its own list, like **Craft Profit - Thrall - Blacksmithing**. Turn off **one shopping list per character** or **per profession** in the options to share lists instead.
 
-**Patron orders:** on the **Patron** orders tab, a **Shopping list** button sits at the right of the tabs. Click it for a list of every patron order with its profit or loss, in green or red, most profitable first, and how many materials you're missing for it. Like Blizzard's order list, an order that needs more than rank 1 shows its minimum quality icon after its name. A green check marks the orders you already have everything for, in the qualities that make the most profit. Hover an order to see its commission, rewards and material cost, and exactly what's missing. **Click an order** to add what you're missing for it to the shopping list, or **Shift-click** it to take that back off. Shift-click removes what the order added since you logged in, including through Add profitable or Add all, or what it's missing now if it added nothing. Orders whose recipe you don't know are listed greyed out. Ctrl-click the button clears the list. The button needs Auctionator.
+**TSM without Auctionator:** the row says **Copy TSM search** instead, with the same menu. Pick an amount and a box shows a search, already selected: press Ctrl+C and paste it into the search box on TSM's Shopping tab. It searches for exactly the ranks you're missing and stops at the amounts you need. With neither Auctionator nor TSM, the row is hidden.
+
+**Both installed?** Pick **Shop with: Auctionator shopping list** (default) or **TSM search to copy** at the bottom of the menu, at the bottom of the Patron orders list, or in the options.
+
+**Patron orders:** on the **Patron** orders tab, a **Shopping list** button sits at the right of the tabs. Click it for a list of every patron order with its profit or loss, in green or red, most profitable first, and how many materials you're missing for it. Like Blizzard's order list, an order that needs more than rank 1 shows its minimum quality icon after its name. A green check marks the orders you already have everything for, in the qualities that make the most profit. Hover an order to see its commission, rewards and material cost, and exactly what's missing. **Click an order** to add what you're missing for it to the shopping list, or **Shift-click** it to take that back off. Shift-click removes what the order added since you logged in, including through Add profitable or Add all, or what it's missing now if it added nothing. Orders whose recipe you don't know are listed greyed out. Ctrl-click the button clears the list. The button needs Auctionator or TSM: with only TSM, clicking an order (or **Copy profitable**, **Copy all**) gives you a TSM search to copy instead.
 
 At the bottom of the list:
 - **Add profitable** adds what you're missing for every order that makes a profit and whose minimum quality you can reach.
@@ -71,7 +74,7 @@ Either way, materials you own count once across all the orders, and what the pat
 
 **Concentration:** the orders that need concentration share what you have, and the top of the list shows how much they use. By default the orders that make the most gold per concentration point get it first; the options, or the choice at the bottom of the list, can put orders that reward profession knowledge first instead. Once it runs out, the rest say **not enough concentration** in red, their profit turns grey, and Add profitable and Add all skip them. Order tooltips also show how much knowledge a reward gives.
 
-Which of these you get is set in the options: both (default), Auctionator only, Blizzard's tracker only (a click tracks the recipe; the row only shows when something's missing), or hidden. Without Auctionator, a click tracks the recipe. The options also have a **Clear** button for the list.
+You can hide the Shopping list row and the Patron orders button in the options. The options also have a **Clear** button for the list.
 
 ### Best rank on tooltips
 Hover an item you can craft, in your bags, at the auction house or in a chat link, and its tooltip gets a **Craft Rank** line: the highest rank each of your characters can make it at with the top quality of every material.
@@ -96,7 +99,8 @@ Click the gear on the panel or at the top of the Patron orders list, type `/craf
 | Panel position: Reset | Puts the panel back next to the profession window. |
 | Show amounts down to | Gold, silver (default) or copper. |
 | Patron orders: Spend concentration on | Most profit (default): the most gold per concentration point first. Knowledge first: orders that reward profession knowledge first, then by profit. Also at the bottom of the Patron orders list. |
-| Shopping list button | Click: Auctionator, Shift-click: Blizzard (default), Auctionator shopping list, Blizzard's recipe tracker, or don't show it. |
+| Show the Shopping list button | The Shopping list row and the Patron orders button. On by default; hidden anyway without Auctionator or TSM. |
+| Shop with | With Auctionator and TSM both installed: Auctionator shopping list (default) or TSM search to copy. Also at the bottom of the Shopping list menus. |
 | One shopping list per character / per profession | On by default. Either or both split the Craft Profit list, e.g. Craft Profit - Thrall - Blacksmithing. |
 | Auctionator shopping list: Clear | Empties the shopping list. With one list per profession and no profession window open, it empties all this character's profession lists. |
 | Animate multicraft & resourcefulness procs | On by default. |
@@ -113,5 +117,5 @@ Click the gear on the panel or at the top of the Patron orders list, type `/craf
 | Subtract auction house cut (5%) | On by default. |
 
 ## Notes
-- With Auctionator, prices come from your own auction house scans. With TSM, the TSM desktop app keeps them up to date for you.
+- With Auctionator, prices come from your own auction house scans. With TSM, the TSM desktop app keeps them up to date for you. With Auctionator, the bottom of the panel says how old its oldest price is (**seen today**, or **oldest 4 days ago** in red once it's 3 days or more), and each material's tooltip says when Auctionator last saw it. Visit the auction house to refresh them.
 - A big Blizzard update to the profession window may need a Craft Profit update too.

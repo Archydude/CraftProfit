@@ -63,6 +63,8 @@ end
 local added = {}
 
 local function remember(rows)
+	-- A TSM search adds nothing to the list, so there's nothing to take back off.
+	if ns.Shopping.ListTarget() ~= "auctionator" then return end
 	for _, row in ipairs(rows) do
 		local list = added[row.order.orderID] or {}
 		for _, material in ipairs(row.model.missing) do
@@ -134,6 +136,12 @@ local function addProfitable()
 	remember(rows)
 end
 
+-- With only TSM, materials go to a TSM search to copy instead of a shopping list,
+-- and there's no list to take things back off or clear.
+local function usingTSM()
+	return ns.Shopping.ListTarget() == "tsm"
+end
+
 -- Green check for an order you have everything for.
 local READY_ICON = "|TInterface\\RaidFrame\\ReadyCheck-Ready:" .. ICON_SIZE .. "|t"
 
@@ -168,9 +176,11 @@ local function concentrationNote(row)
 	return ns.Color("muted", format(" (%d concentration)", plan.concentration))
 end
 
--- Adds one order's missing materials. The menu stays open for the next one.
+-- Adds one order's missing materials. The menu stays open for the next one,
+-- except for a TSM search, whose popup needs the focus.
 local function addOrder(row)
 	ns.Shopping.AddMissing(row.model.missing, row.name)
+	if usingTSM() then return end
 	remember({ row })
 	return MenuResponse and MenuResponse.Open
 end
@@ -204,16 +214,22 @@ local function showTooltip(self)
 	local total = ns.Shopping.Total(missingForAll(reachable))
 	GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
 	GameTooltip:SetText("Shopping list")
-	GameTooltip:AddLine("Every patron order with its profit or loss. Click one to add what you're missing for it to "
-		.. format("Auctionator's \"%s\" shopping list, or add the ones that make a profit, or all of them.", ns.Shopping.ListName()), 1, 1, 1, true)
+	GameTooltip:AddLine(usingTSM()
+		and ("Every patron order with its profit or loss. Click one to copy a TSM search for what you're missing "
+			.. "for it, or copy one for the ones that make a profit, or all of them.")
+		or ("Every patron order with its profit or loss. Click one to add what you're missing for it to "
+			.. format("Auctionator's \"%s\" shopping list, or add the ones that make a profit, or all of them.", ns.Shopping.ListName())),
+		1, 1, 1, true)
 	GameTooltip:AddLine(" ")
 	GameTooltip:AddLine(format("%s: %s", ordersText(#reachable),
 		total > 0 and ns.Color("missing", format("%d missing", total)) or "nothing missing"))
 	if short > 0 then GameTooltip:AddLine(shortText(short), 0.53, 0.53, 0.53, true) end
 	if unreachable > 0 then GameTooltip:AddLine(unreachableText(unreachable), 0.53, 0.53, 0.53, true) end
 	if #unknown > 0 then GameTooltip:AddLine(skippedText(#unknown), 0.53, 0.53, 0.53, true) end
-	GameTooltip:AddLine(" ")
-	GameTooltip:AddLine(ns.Color("simulated", format("Ctrl-click: clear the \"%s\" shopping list", ns.Shopping.ListName())))
+	if ns.Shopping.CanClear() then
+		GameTooltip:AddLine(" ")
+		GameTooltip:AddLine(ns.Color("simulated", format("Ctrl-click: clear the \"%s\" shopping list", ns.Shopping.ListName())))
+	end
 	GameTooltip:Show()
 end
 
@@ -271,7 +287,7 @@ local function orderTooltip(tooltip, row)
 	end
 	-- What's missing only matters for an order you can craft.
 	if plan and plan.unreachable then
-		if added[row.order.orderID] then
+		if added[row.order.orderID] and not usingTSM() then
 			tooltip:AddLine(" ")
 			tooltip:AddLine(ns.Color("simulated", "Shift-click: remove it from the shopping list"))
 		end
@@ -284,7 +300,8 @@ local function orderTooltip(tooltip, row)
 		for _, material in ipairs(model.missing) do
 			tooltip:AddLine(ns.Format.Item(material.itemID, material.qty), 1, 1, 1)
 		end
-		tooltip:AddLine(ns.Color("simulated", "Click: add what's missing to the shopping list"))
+		tooltip:AddLine(ns.Color("simulated", usingTSM() and "Click: copy a TSM search for what's missing"
+			or "Click: add what's missing to the shopping list"))
 	else
 		if isReady(row) then
 			tooltip:AddLine(READY_ICON .. " You have everything, in the qualities that make the most profit.", 0.53, 1, 0.53, true)
@@ -292,7 +309,9 @@ local function orderTooltip(tooltip, row)
 			tooltip:AddLine("Nothing missing", 0.53, 0.53, 0.53)
 		end
 	end
-	tooltip:AddLine(ns.Color("simulated", "Shift-click: remove it from the shopping list"))
+	if not usingTSM() then
+		tooltip:AddLine(ns.Color("simulated", "Shift-click: remove it from the shopping list"))
+	end
 end
 
 -- A gear in the list's top-right corner that opens the options, like the panel's.
@@ -330,10 +349,12 @@ local function showGear(menu)
 	gear:Show()
 end
 
--- A menu action that leaves the menu open afterwards.
+-- A menu action that leaves the menu open afterwards (unless it shows a TSM
+-- search, whose popup needs the focus).
 local function keepOpen(action)
 	return function()
 		action()
+		if usingTSM() then return end
 		return MenuResponse and MenuResponse.Open
 	end
 end
@@ -345,6 +366,8 @@ local function openMenu(owner)
 		local rows, unknown, concentration = listOrders()
 		local reachable, unreachable, short = reachableRows(rows)
 		local total = ns.Shopping.Total(missingForAll(reachable))
+		local tsm = usingTSM()
+		local verb = tsm and "Copy" or "Add"
 		-- Long lists scroll instead of running off the screen.
 		if root.SetScrollMode then root:SetScrollMode(MENU_MAX_HEIGHT) end
 		root:CreateTitle("Patron orders")
@@ -364,7 +387,7 @@ local function openMenu(owner)
 				note = " " .. READY_ICON
 			end
 			local item = root:CreateButton(iconText(row.icon) .. row.name .. minQualityText(row) .. note .. concentrationNote(row), function()
-				if IsShiftKeyDown() then return removeOrder(row) end
+				if IsShiftKeyDown() and not tsm then return removeOrder(row) end
 				if unreachableRow then return MenuResponse and MenuResponse.Open end
 				return addOrder(row)
 			end)
@@ -386,25 +409,28 @@ local function openMenu(owner)
 		end
 		local profitable = profitableRows(rows)
 		local profitableTotal = ns.Shopping.Total(missingForAll(profitable))
-		local best = root:CreateButton(format("Add profitable: %s %s", ordersText(#profitable), missingNote(profitableTotal)),
+		local best = root:CreateButton(format("%s profitable: %s %s", verb, ordersText(#profitable), missingNote(profitableTotal)),
 			keepOpen(addProfitable))
 		best:SetEnabled(profitableTotal > 0)
 		best:SetTooltip(function(tooltip)
-			GameTooltip_SetTitle(tooltip, "Add profitable orders")
-			tooltip:AddLine("Adds what you're missing for every order that makes a profit and whose minimum quality "
+			GameTooltip_SetTitle(tooltip, verb .. " profitable orders")
+			tooltip:AddLine((tsm and "A TSM search for what you're missing for every order" or "Adds what you're missing for every order")
+				.. " that makes a profit and whose minimum quality "
 				.. "you can reach, at the cheapest qualities that reach it. Orders left without enough concentration "
 				.. "are skipped.", 1, 1, 1, true)
 		end)
-		local all = root:CreateButton(format("Add all %s %s", ordersText(#reachable), missingNote(total)), keepOpen(addAll))
+		local all = root:CreateButton(format("%s all %s %s", verb, ordersText(#reachable), missingNote(total)), keepOpen(addAll))
 		all:SetEnabled(total > 0)
 		if unreachable > 0 or short > 0 then
 			all:SetTooltip(function(tooltip)
-				GameTooltip_SetTitle(tooltip, "Add all orders")
+				GameTooltip_SetTitle(tooltip, verb .. " all orders")
 				if short > 0 then tooltip:AddLine(shortText(short), 1, 1, 1, true) end
 				if unreachable > 0 then tooltip:AddLine(unreachableText(unreachable), 1, 1, 1, true) end
 			end)
 		end
-		root:CreateButton("Clear shopping list", keepOpen(ns.Shopping.Clear))
+		if not tsm then root:CreateButton("Clear shopping list", keepOpen(ns.Shopping.Clear)) end
+
+		ns.Shopping.AddShopWithChoice(root)
 
 		-- Which orders get your concentration first; the list redraws with the new shares.
 		root:CreateDivider()
@@ -421,13 +447,13 @@ local function openMenu(owner)
 	showGear(menu)
 end
 
--- Shown on the Patron tab while it lists orders, when the shopping list uses
--- Auctionator.
+-- Shown on the Patron tab while it lists orders, when materials go to Auctionator's
+-- shopping list or a TSM search.
 function Patron.Refresh()
 	if not button then return end
 	ns.Planner.Reset()
 	local orders = ns.Blizzard.PatronOrders()
-	button:SetShown(orders ~= nil and #orders > 0 and ns.Shopping.CanClear())
+	button:SetShown(orders ~= nil and #orders > 0 and ns.Shopping.ListTarget() ~= nil)
 end
 
 function Patron.Init()
@@ -439,7 +465,7 @@ function Patron.Init()
 	-- On the row of order type tabs, at the list's right end.
 	button:SetPoint("BOTTOMRIGHT", list, "TOPRIGHT", -2, 2)
 	button:SetScript("OnClick", function(self)
-		if IsControlKeyDown() then
+		if IsControlKeyDown() and ns.Shopping.CanClear() then
 			ns.Shopping.Clear()
 		else
 			openMenu(self)

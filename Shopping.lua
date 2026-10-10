@@ -1,6 +1,5 @@
 -- Craft Profit: the shopping list button. Adds what you're short of, for one or
--- more crafts, to an Auctionator shopping list, or tracks the recipe in
--- Blizzard's objective tracker. Which one is an option.
+-- more crafts, to an Auctionator shopping list, or gives you a TSM search for it.
 local ADDON_NAME, ns = ...
 
 local Shopping = {}
@@ -31,42 +30,41 @@ local function call(fn, ...)
 	if ok then return result end
 end
 
--- Where a click on the button sends missing materials: "auctionator",
--- "blizzard", or nil when it's turned off or Auctionator was picked but isn't
--- loaded. In "auto", a click goes to Auctionator and a Shift-click to Blizzard
--- (a click too, without Auctionator).
-function Shopping.Target(shift)
-	local choice = ns.db.missingTarget
-	if choice == "off" then return end
-	if choice == "blizzard" or (choice == "auto" and shift) then return "blizzard" end
-	if auctionatorAPI() then return "auctionator" end
-	if choice == "auto" then return "blizzard" end
+local function tsmLoaded()
+	return TSM_API and TSM_API.GetCustomPriceValue and true or false
 end
 
----------------------------------------------------------------------------
--- Blizzard's recipe tracker
----------------------------------------------------------------------------
-
-function Shopping.IsTracked(model)
-	local recipe = model.recipe
-	return recipe and C_TradeSkillUI.IsRecipeTracked(recipe.recipeID, recipe.isRecraft) or false
+-- Whether both Auctionator and TSM are loaded, so there's a choice between them.
+function Shopping.HasBoth()
+	return auctionatorAPI() ~= nil and tsmLoaded()
 end
 
--- Tracks the recipe, or stops tracking it if it already is.
-local function toggleTracked(model)
-	local recipe = model.recipe
-	local name = C_TradeSkillUI.GetRecipeInfo(recipe.recipeID)
-	name = name and name.name or model.title
-	local track = not Shopping.IsTracked(model)
-	C_TradeSkillUI.SetRecipeTracked(recipe.recipeID, track, recipe.isRecraft)
-	if not track then
-		say(format("Stopped tracking %s.", name))
-	elseif Shopping.IsTracked(model) then
-		say(format("Tracking %s. Its materials are in your objective tracker.", name))
-	else
-		say(ns.Color("warning", format("Couldn't track %s. Try untracking another recipe.", name)))
+-- Where lists of missing materials go: "auctionator" (its shopping list), "tsm"
+-- (a search to copy into TSM's Shopping tab), or nil when that's turned off or
+-- neither is loaded. With both, the "Shop with" choice decides.
+function Shopping.ListTarget()
+	if not ns.db.shoppingButton then return end
+	local auctionator, tsm = auctionatorAPI() ~= nil, tsmLoaded()
+	if auctionator and tsm then return ns.db.listAddon == "tsm" and "tsm" or "auctionator" end
+	if auctionator then return "auctionator" end
+	if tsm then return "tsm" end
+end
+
+-- "Shop with" radios at the bottom of a menu, when both addons are loaded. The
+-- menu redraws for the new choice.
+function Shopping.AddShopWithChoice(root)
+	if not Shopping.HasBoth() then return end
+	root:CreateDivider()
+	root:CreateTitle("Shop with")
+	local function isChosen(key) return Shopping.ListTarget() == key end
+	local function choose(key)
+		ns.db.listAddon = key
+		ns.Panel.Refresh()
+		return MenuResponse and MenuResponse.Refresh
 	end
-	ns.Panel.Refresh()
+	for _, choice in ipairs(ns.LIST_ADDON_CHOICES) do
+		root:CreateRadio(choice[2], isChosen, choose, choice[1])
+	end
 end
 
 ---------------------------------------------------------------------------
@@ -200,12 +198,10 @@ local function itemList(items)
 	return table.concat(parts, ", ")
 end
 
--- Sorts the missing materials into auction house, vendor and can't-buy, then
--- adds the auction house ones to the list. Item info has to be loaded first.
--- `forText` says what they're for in chat: "5 crafts", "3 patron orders".
-local function sendToAuctionator(api, missing, forText)
-	-- Picked now: the window may close before the items load.
-	local listName = Shopping.ListName()
+-- Sorts the missing materials into auction house, vendor and can't-buy once their
+-- item info has loaded, then calls andThen(auction, vendor, bound), each a list of
+-- { itemID, name, link, tier, qty }.
+local function sortMissing(missing, andThen)
 	local container = ContinuableContainer:Create()
 	for _, material in ipairs(missing) do
 		container:AddContinuable(Item:CreateFromItemID(material.itemID))
@@ -216,7 +212,7 @@ local function sendToAuctionator(api, missing, forText)
 			local name, link, _, _, _, _, _, _, _, _, _, _, _, bindType = C_Item.GetItemInfo(material.itemID)
 			local tier = C_TradeSkillUI.GetItemReagentQualityByItemInfo(material.itemID)
 			local item = {
-				name = name, link = link or name, qty = material.qty,
+				itemID = material.itemID, name = name, link = link or name, qty = material.qty,
 				tier = tier and tier > 0 and tier or nil,
 			}
 			if not name then
@@ -229,7 +225,22 @@ local function sendToAuctionator(api, missing, forText)
 				auction[#auction + 1] = item
 			end
 		end
+		andThen(auction, vendor, bound)
+	end)
+end
 
+-- The materials no auction house search covers, listed in chat.
+local function sayUnbuyable(vendor, bound)
+	if #vendor > 0 then say("Buy from a vendor: " .. itemList(vendor) .. ".") end
+	if #bound > 0 then say("Not on the auction house (soulbound): " .. itemList(bound) .. ".") end
+end
+
+-- Adds the auction house materials to the list.
+-- `forText` says what they're for in chat: "5 crafts", "3 patron orders".
+local function sendToAuctionator(api, missing, forText)
+	-- Picked now: the window may close before the items load.
+	local listName = Shopping.ListName()
+	sortMissing(missing, function(auction, vendor, bound)
 		if #auction > 0 then
 			if addToList(api, auction, listName) then
 				say(format("Added to Auctionator's \"%s\" shopping list, for %s: %s.",
@@ -238,8 +249,50 @@ local function sendToAuctionator(api, missing, forText)
 				say(ns.Color("warning", "Auctionator couldn't update the shopping list."))
 			end
 		end
-		if #vendor > 0 then say("Buy from a vendor: " .. itemList(vendor) .. ".") end
-		if #bound > 0 then say("Not on the auction house (soulbound): " .. itemList(bound) .. ".") end
+		sayUnbuyable(vendor, bound)
+	end)
+end
+
+-- The popup with a TSM search to copy. It can't be edited, so a stray key
+-- doesn't break it.
+StaticPopupDialogs.CRAFTPROFIT_TSM_SEARCH = {
+	text = "TSM search for %s\n\nPress Ctrl+C to copy it, then paste it into the search box on TSM's Shopping tab.",
+	button1 = CLOSE,
+	hasEditBox = true,
+	editBoxWidth = 320,
+	timeout = 0,
+	whileDead = true,
+	hideOnEscape = true,
+	OnShow = function(self, data)
+		local editBox = self.GetEditBox and self:GetEditBox() or self.editBox
+		editBox:SetMaxLetters(0)
+		editBox:SetText(data or self.data or "")
+		editBox:HighlightText()
+		editBox:SetFocus()
+	end,
+	EditBoxOnTextChanged = function(editBox, data)
+		local search = data or editBox:GetParent().data
+		if search and editBox:GetText() ~= search then
+			editBox:SetText(search)
+			editBox:HighlightText()
+		end
+	end,
+	EditBoxOnEnterPressed = function(editBox) editBox:GetParent():Hide() end,
+	EditBoxOnEscapePressed = function(editBox) editBox:GetParent():Hide() end,
+}
+
+-- Shows a TSM Shopping search for the auction house materials. Each rank of a
+-- material is its own item, so "i:<itemID>" buys exactly that rank, and "/x<qty>"
+-- stops at the amount needed; ";" puts several in one search.
+local function copyTSMSearch(missing, forText)
+	sortMissing(missing, function(auction, vendor, bound)
+		if #auction > 0 then
+			local parts = {}
+			for _, item in ipairs(auction) do parts[#parts + 1] = format("i:%d/x%d", item.itemID, item.qty) end
+			say(format("TSM search for %s: %s.", forText, itemList(auction)))
+			StaticPopup_Show("CRAFTPROFIT_TSM_SEARCH", forText, nil, table.concat(parts, ";"))
+		end
+		sayUnbuyable(vendor, bound)
 	end)
 end
 
@@ -298,7 +351,7 @@ end
 -- Whether Ctrl-click on the button clears the shopping list: when the button
 -- uses Auctionator at all.
 function Shopping.CanClear()
-	return Shopping.Target(false) == "auctionator" or Shopping.Target(true) == "auctionator"
+	return Shopping.ListTarget() == "auctionator"
 end
 
 Shopping.Say = say
@@ -310,12 +363,14 @@ function Shopping.AddMissing(missing, forText)
 		say(format("Nothing missing for %s.", forText))
 		return
 	end
-	local api = auctionatorAPI()
-	if not api then
-		say(ns.Color("warning", "Auctionator is not loaded."))
-		return
+	local target = Shopping.ListTarget()
+	if target == "tsm" then
+		copyTSMSearch(missing, forText)
+	elseif target == "auctionator" then
+		sendToAuctionator(auctionatorAPI(), missing, forText)
+	else
+		say(ns.Color("warning", "Install Auctionator or TSM to shop for materials."))
 	end
-	sendToAuctionator(api, missing, forText)
 end
 
 -- Takes materials ({ { itemID, qty } ... }) back off the shopping list.
@@ -373,7 +428,7 @@ end
 -- "Other amount...": asks for a number of crafts.
 StaticPopupDialogs.CRAFTPROFIT_CRAFTS = {
 	text = "Buy materials for how many crafts?",
-	button1 = "Add",
+	button1 = OKAY,
 	button2 = CANCEL,
 	hasEditBox = true,
 	maxLetters = #tostring(MAX_CRAFTS),
@@ -402,7 +457,8 @@ StaticPopupDialogs.CRAFTPROFIT_CRAFTS = {
 local function openMenu(owner, model)
 	GameTooltip:Hide()
 	MenuUtil.CreateContextMenu(owner, function(_, root)
-		root:CreateTitle(format("Add to \"%s\" list", Shopping.ListName()))
+		local tsm = Shopping.ListTarget() == "tsm"
+		root:CreateTitle(tsm and "Copy a TSM search" or format("Add to \"%s\" list", Shopping.ListName()))
 
 		local counts = { unpack(PRESET_CRAFTS) }
 		if customCrafts and not tContains(counts, customCrafts) then
@@ -418,26 +474,20 @@ local function openMenu(owner, model)
 		end
 		root:CreateButton("Other amount...", function() StaticPopup_Show("CRAFTPROFIT_CRAFTS", nil, nil, model) end)
 
-		root:CreateDivider()
-		if Shopping.Target(true) == "blizzard" then
-			root:CreateButton(Shopping.IsTracked(model) and "Stop tracking recipe" or "Track recipe",
-				function() toggleTracked(model) end)
+		if not tsm then
+			root:CreateDivider()
+			root:CreateButton("Clear shopping list", Shopping.Clear)
 		end
-		root:CreateButton("Clear shopping list", Shopping.Clear)
+		Shopping.AddShopWithChoice(root)
 	end)
 end
 
--- What a click on the panel's button does, with the modifier keys held.
+-- What a click on the panel's button does. Ctrl-click clears the shopping list.
 -- `owner` is the button, for the menu to open from.
-function Shopping.Click(model, owner, shift, ctrl)
+function Shopping.Click(model, owner, ctrl)
 	if ctrl and Shopping.CanClear() then
 		Shopping.Clear()
-		return
-	end
-	local target = Shopping.Target(shift)
-	if target == "blizzard" then
-		toggleTracked(model)
-	elseif target == "auctionator" then
+	elseif Shopping.ListTarget() then
 		openMenu(owner, model)
 	end
 end

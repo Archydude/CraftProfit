@@ -5,7 +5,6 @@
 --   kind          "craft" | "order"
 --   key           recipeID or orderID (procs are matched against it)
 --   title
---   recipe        { recipeID, isRecraft }, for Blizzard's recipe tracker
 --   materials     see Model.Materials
 --   missing       what's missing for one craft, see Model.Missing
 --   missingFor    function(crafts) -> what's missing for that many crafts
@@ -254,7 +253,6 @@ function Model.Craft(ctx)
 	local model = {
 		kind = "craft",
 		key = recipeInfo.recipeID,
-		recipe = { recipeID = recipeInfo.recipeID, isRecraft = ctx.isRecraft },
 		title = schematic.name or "Craft",
 		canSimulate = true,
 		simulating = simulating,
@@ -319,7 +317,6 @@ function Model.Order(ctx)
 	local model = {
 		kind = "order",
 		key = order.orderID,
-		recipe = { recipeID = order.spellID, isRecraft = order.isRecraft or false },
 		title = "Crafting Order",
 		commission = order.tipAmount,
 		consortiumCut = order.consortiumCut,

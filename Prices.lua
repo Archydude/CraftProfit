@@ -59,6 +59,38 @@ function Prices.Sale(link, itemID)
 	end
 end
 
+-- How many days ago Auctionator last saw an item on the auction house (0 is
+-- today), or false when it's over three weeks or never. nil when prices don't
+-- come from Auctionator (TSM keeps its own data).
+local function auctionAge(fnName, arg)
+	if tsmAvailable() then return end
+	local api = auctionatorAPI()
+	local fn = api and api[fnName]
+	if not fn then return end
+	local ok, age = pcall(fn, ADDON_NAME, arg)
+	if not ok then return end
+	return type(age) == "number" and age or false
+end
+
+-- A material's price age (see auctionAge). Vendor prices don't age.
+function Prices.MaterialAge(itemID)
+	if ns.db.useVendor and Prices.Vendor(itemID) then return end
+	return auctionAge("GetAuctionAgeByItemID", itemID)
+end
+
+-- A crafted item's price age (see auctionAge).
+function Prices.SaleAge(link)
+	return auctionAge("GetAuctionAgeByItemLink", link)
+end
+
+-- "today", "yesterday", "3 days ago" or "over 3 weeks ago" for a price age, or nil.
+function Prices.AgeText(age)
+	if age == nil then return end
+	if age == false then return "over 3 weeks ago" end
+	if age == 0 then return "today" end
+	return age == 1 and "yesterday" or string.format("%d days ago", age)
+end
+
 -- Where prices currently come from, for the panel's footer.
 function Prices.SourceLabel()
 	if tsmAvailable() then return "TSM (" .. ns.db.matSource .. ")" end

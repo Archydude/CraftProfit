@@ -78,17 +78,18 @@ function Options.Create()
 		ns.Panel.Place()
 	end, "Put the panel back next to the profession window.")
 
-	dropdown("missingTarget", "Shopping list button", {
-		{ "auto", "Click: Auctionator, Shift-click: Blizzard" },
-		{ "auctionator", "Auctionator shopping list" },
-		{ "blizzard", "Blizzard's recipe tracker" },
-		{ "off", "Don't show it" },
-	}, format("A row under Materials cost for buying what you're short of.\n\n" ..
+	checkbox("shoppingButton", "Show the Shopping list button",
+		format("A row under Materials cost for buying what you're short of, and the Shopping list button " ..
+		"on the Patron orders tab.\n\n" ..
 		"Auctionator: a click opens a menu that adds what's missing for 1, 5, 10 or any number of crafts " ..
 		"to the \"%s\" shopping list.\n\n" ..
-		"Blizzard: a click tracks the recipe, so the objective tracker lists its materials.\n\n" ..
-		"The default does both: a click for Auctionator, a Shift-click for Blizzard. " ..
-		"Without Auctionator, a click goes to Blizzard.", ns.SHOPPING_LIST))
+		"TSM: the same menu gives you a search to copy into TSM's Shopping tab, for exactly the ranks " ..
+		"and amounts you're missing.\n\n" ..
+		"With neither Auctionator nor TSM installed, it's hidden.", ns.SHOPPING_LIST))
+	dropdown("listAddon", "Shop with", ns.LIST_ADDON_CHOICES,
+		"When Auctionator and TSM are both installed: add missing materials to Auctionator's shopping list, " ..
+		"or get a TSM search to copy. With only one of them, that one is used.\n\n" ..
+		"You can also switch it at the bottom of the Shopping list menus.")
 	checkbox("listPerCharacter", "One shopping list per character",
 		format("Each character gets its own Auctionator list, like \"%s - %s\".\n\n" ..
 			"Can be combined with one list per profession.", ns.SHOPPING_LIST, UnitName("player") or "Name"))

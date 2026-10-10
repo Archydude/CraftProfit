@@ -54,7 +54,8 @@ ns.DEFAULTS = {
 	procFx = true,        -- animate multicraft / resourcefulness procs
 	procSound = true,     -- coin sound on procs
 	showSession = true,   -- show the total of this session's crafts
-	missingTarget = "auto", -- missing materials button: "auto" | "auctionator" | "blizzard" | "off"
+	shoppingButton = true, -- the Shopping list row, and the button on the Patron orders tab
+	listAddon = "auctionator", -- with both installed, materials go to: "auctionator" | "tsm"
 	listPerCharacter = true,   -- a separate Auctionator list for each character
 	listPerProfession = true,  -- and/or for each profession
 	concentrationFor = "profit", -- patron orders that need concentration get it by: "profit" | "knowledge"
@@ -73,6 +74,12 @@ ns.KNOWLEDGE_ITEMS = {
 ns.CONCENTRATION_CHOICES = {
 	{ "profit", "Most profit (default)" },
 	{ "knowledge", "Knowledge first, then profit" },
+}
+
+-- Choices for where missing materials go when Auctionator and TSM are both installed.
+ns.LIST_ADDON_CHOICES = {
+	{ "auctionator", "Auctionator shopping list" },
+	{ "tsm", "TSM search to copy" },
 }
 
 -- The Auctionator shopping list the missing materials button adds to.
