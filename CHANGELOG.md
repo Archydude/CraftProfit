@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.12.0
+- Shift-click a material in the panel to add just what you're missing of it, for one craft, to the shopping list (or a TSM search). Pick a quality first by clicking it, and that quality is added.
+- Works on every material you're short of, including ones without qualities. Its tooltip shows how many are missing.
+
 ## 1.11.0
 - TSM shopping: without Auctionator, the Shopping list row becomes "Copy TSM search", with the same menu for 1, 5, 10 or any number of crafts. It gives you a search to paste into TSM's Shopping tab, for exactly the ranks and amounts you're missing.
 - The Patron orders list now works with TSM too: click an order, or Copy profitable / Copy all, for a search to paste.

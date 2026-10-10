@@ -35,7 +35,7 @@ Craft Profit is a **lightweight** panel next to your profession window that answ
 - **Patron orders optimized** for profit, concentration included
 - **What-if qualities:** is the better material worth it?
 - **Shopping list** for what you're missing
-- **Procs** and a **session total** that show what you really made
+- **Procs** and a **session total**
 - **Craft Rank** on tooltips: which of your characters crafts it best?
 
 ### Crafting page and crafting orders
@@ -48,7 +48,7 @@ The **Shopping list** button on the Patron orders tab lists every patron order w
 Click a material to try its next quality. The cost, quality and profit update right away. On an order, the panel also tells you when buying a cheaper rank beats using yours.
 
 ### Shopping list
-Click the **Shopping list** row to add what you're missing for 1, 5, 10 or any number of crafts to an **Auctionator** shopping list, one per character and profession. With **TSM**, you get a search to paste into its Shopping tab instead.
+Click the **Shopping list** row to add what you're missing for 1, 5, 10 or any number of crafts to an **Auctionator** shopping list, one per character and profession. Shift-click a material for just that one. With **TSM**, you get a search to paste into its Shopping tab instead.
 
 ### Procs and session total
 **Multicraft** and **resourcefulness** procs pop up as bonus gold with a coin sound, and a session total adds up what you've made.
@@ -68,11 +68,11 @@ Hover any item you can craft to see the **Craft Rank** of each of your character
 
 ## B. Upload File form
 
-**File:** `dist\CraftProfit-1.11.0.zip`
+**File:** `dist\CraftProfit-1.12.0.zip`
 
 **Display name**
 ```
-Craft Profit 1.11.0
+Craft Profit 1.12.0
 ```
 
 **Release type:** `Release`
@@ -81,6 +81,10 @@ Craft Profit 1.11.0
 
 **Changelog** (paste only the newest part; paste older parts too if they never went up)
 ```markdown
+1.12.0
+- Shift-click a material in the panel to add just what you're missing of it, for one craft, to the shopping list (or a TSM search). Pick a quality first by clicking it, and that quality is added.
+- Works on every material you're short of, including ones without qualities. Its tooltip shows how many are missing.
+
 1.11.0
 - TSM shopping: without Auctionator, the Shopping list row becomes "Copy TSM search", with the same menu for 1, 5, 10 or any number of crafts. It gives you a search to paste into TSM's Shopping tab, for exactly the ranks and amounts you're missing.
 - The Patron orders list now works with TSM too: click an order, or Copy profitable / Copy all, for a search to paste.
