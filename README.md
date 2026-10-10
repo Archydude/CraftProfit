@@ -56,6 +56,8 @@ Adding again (or on another recipe) adds to the amounts already on the list. Ven
 
 Shortcut: **Ctrl-click** clears the list, without the menu.
 
+**Just one material:** **Shift-click** a material in the panel to add only what you're missing of it, for one craft. Pick a quality first by clicking it, and that quality is what gets added. With TSM, you get a search for just that material.
+
 **Separate lists:** each character and profession gets its own list, like **Craft Profit - Thrall - Blacksmithing**. Turn off **one shopping list per character** or **per profession** in the options to share lists instead.
 
 **TSM without Auctionator:** the row says **Copy TSM search** instead, with the same menu. Pick an amount and a box shows a search, already selected: press Ctrl+C and paste it into the search box on TSM's Shopping tab. It searches for exactly the ranks you're missing and stops at the amounts you need. With neither Auctionator nor TSM, the row is hidden.

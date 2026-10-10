@@ -162,7 +162,28 @@ end
 -- Sections
 ---------------------------------------------------------------------------
 
-local function materialTooltip(material)
+-- How many of a material you're short of for one craft (0 when you have enough).
+local function missingOf(model, material)
+	for _, entry in ipairs(model.missing or {}) do
+		if entry.itemID == material.itemID then return entry.qty end
+	end
+	return 0
+end
+
+-- Shift-click on a material: just that material's missing amount, to the shopping
+-- list or a TSM search.
+local function shopMaterial(model, material)
+	local qty = missingOf(model, material)
+	if qty == 0 then
+		local name = C_Item.GetItemNameByID(material.itemID) or "that material"
+		ns.Shopping.Say(format("Nothing missing: you have enough %s for 1 craft.", name))
+		return
+	end
+	ns.Shopping.AddMissing({ { itemID = material.itemID, qty = qty } }, "1 craft")
+end
+
+-- `canCycle`: the material comes in qualities you can click through.
+local function materialTooltip(model, material, canCycle)
 	return function(tip)
 		tip:SetItemByID(material.itemID)
 		local age = material.price and ns.Prices.MaterialAge(material.itemID)
@@ -172,8 +193,16 @@ local function materialTooltip(material)
 			tip:AddLine(Color(stale and "warning" or "muted", "Auctionator price seen " .. ns.Prices.AgeText(age)))
 		end
 		tip:AddLine(" ")
-		tip:AddLine(Color("simulated", "Click: try the next quality"))
-		tip:AddLine(Color("simulated", "Right-click: back to what's in the form"))
+		if canCycle then
+			tip:AddLine(Color("simulated", "Click: try the next quality"))
+			tip:AddLine(Color("simulated", "Right-click: back to what's in the form"))
+		end
+		local missing = missingOf(model, material)
+		if missing > 0 and ns.Shopping.ListTarget() then
+			tip:AddLine(Color("simulated", format(ns.Shopping.ListTarget() == "tsm"
+				and "Shift-click: copy a TSM search for the %d missing"
+				or "Shift-click: add the %d missing to the shopping list", missing)))
+		end
 	end
 end
 
@@ -239,10 +268,19 @@ local function drawMaterials(model)
 		local tag = (material.simulated and ("  " .. Color("simulated", "simulated")))
 			or (material.estimated and ("  " .. Color("missing", "missing")))
 			or ""
+		-- Click cycles qualities; Shift-click shops for just this material.
 		local onClick, tooltip
-		if model.canSimulate and ns.Simulation.CanChange(material) then
-			onClick = function(mouseButton) ns.Simulation.Cycle(material, mouseButton) end
-			tooltip = materialTooltip(material)
+		local canCycle = model.canSimulate and ns.Simulation.CanChange(material)
+		local canShop = ns.Shopping.ListTarget() and missingOf(model, material) > 0
+		if canCycle or canShop then
+			onClick = function(mouseButton)
+				if IsShiftKeyDown() then
+					if ns.Shopping.ListTarget() then shopMaterial(model, material) end
+				elseif canCycle then
+					ns.Simulation.Cycle(material, mouseButton)
+				end
+			end
+			tooltip = materialTooltip(model, material, canCycle)
 		end
 		local amount = material.price and Money(material.price * material.qty) or Color("warning", "no price")
 		addRow(Item(material.itemID, material.qty) .. tag, amount, nil, onClick, tooltip)
