@@ -179,8 +179,13 @@ local function evaluate(data, model)
 end
 
 local function onCraftResult(data)
-	local panel, model = ns.Panel.Frame(), ns.Panel.current
-	if not (panel and panel:IsShown() and model and data) then return end
+	if not data then return end
+	local panel = ns.Panel.Frame()
+	local shown = panel and panel:IsShown()
+	-- A craft from the Patron orders list's hammer: the panel isn't showing that
+	-- order, so the list's numbers for it are used.
+	local model = ns.Craft.TakeCraftModel() or (shown and ns.Panel.current)
+	if not model then return end
 
 	local result = evaluate(data, model)
 
@@ -199,6 +204,11 @@ local function onCraftResult(data)
 	end
 
 	lastProc = result
+	if not shown then
+		-- Nothing on screen to animate; the coin sound still says it procced.
+		if ns.db.procSound and SOUNDKIT and SOUNDKIT.LOOT_WINDOW_COIN_SOUND then PlaySound(SOUNDKIT.LOOT_WINDOW_COIN_SOUND) end
+		return
+	end
 	ns.Panel.Render() -- now, so the animation starts from the updated Profit line
 	celebrate(result)
 end

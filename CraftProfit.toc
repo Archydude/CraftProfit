@@ -2,7 +2,7 @@
 ## Title: Craft Profit
 ## Notes: Shows your profit or loss on a craft or a crafting order, priced with TSM or Auctionator. Type /craftprofit for options.
 ## Author: Archdude
-## Version: 1.13.0
+## Version: 1.14.0
 ## OptionalDeps: TradeSkillMaster, Auctionator
 ## SavedVariables: CraftProfitDB
 ## SavedVariablesPerCharacter: CraftProfitCharDB
@@ -22,6 +22,7 @@ Panel.lua
 Best.lua
 Results.lua
 Planner.lua
+Craft.lua
 Patron.lua
 Ranks.lua
 Options.lua

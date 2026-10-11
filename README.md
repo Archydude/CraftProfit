@@ -9,7 +9,7 @@ A lightweight addon: one small panel next to your profession window that tells y
 
 - **Shopping list:** adds what you're short of, for one or more crafts or for every patron order at once, to an Auctionator shopping list, or as a TSM search to copy.
 
-- **Session total:** under Profit/Loss, what all your crafts made since you logged in on this character (a `/reload` keeps it). Crafts without a price, like enchants, aren't counted. Click it to reset it to zero.
+- **Session total:** under Profit/Loss, what all your crafts made since you logged in on this character (a `/reload` keeps it), including orders crafted from the Patron orders list. Crafts without a price, like enchants, aren't counted. Click it to reset it to zero.
 
 - **Best rank on tooltips:** an item you can craft shows the highest rank you can make it at with top-quality materials, anywhere you see its tooltip.
 
@@ -69,6 +69,8 @@ Shortcut: **Ctrl-click** clears the list, without the menu.
 **Both installed?** Pick **Shop with: Auctionator shopping list** (default) or **TSM search to copy** at the bottom of the menu, at the bottom of the Patron orders list, or in the options.
 
 **Patron orders:** on the **Patron** orders tab, a **Shopping list** button sits at the right of the tabs. Click it for a list of every patron order with its profit or loss, in green or red, most profitable first, and how many materials you're missing for it. Like Blizzard's order list, an order that needs more than rank 1 shows its minimum quality icon after its name. A green check marks the orders you already have everything for, in the qualities that make the most profit. Hover an order to see its commission, rewards and material cost, and exactly what's missing. **Click an order** to add what you're missing for it to the shopping list, or **Shift-click** it to take that back off. Shift-click removes what the order added since you logged in, including through Add profitable or Add all, or what it's missing now if it added nothing. Orders whose recipe you don't know are listed greyed out. Ctrl-click the button clears the list. The button needs Auctionator or TSM: with only TSM, clicking an order (or **Copy profitable**, **Copy all**) gives you a TSM search to copy instead.
+
+**Craft from the list:** an order with the green check gets a small button at the end of its row. Each click does the next step of that order, and its icon shows which: a scroll to **start** it, a hammer to **craft** it with the qualities the list picked (and concentration, if its minimum quality needs it), a watch while it's crafting, then coins to **complete** it and collect the rewards. The game asks for a click for each step, and only one order can be started at a time, so while one is in progress only that order shows a hammer, marked **started**, **crafting...** or **crafted**. Chat confirms each step, and says so if the game turns one down (the recipe needs an anvil nearby, say).
 
 At the bottom of the list:
 - **Add profitable** adds what you're missing for every order that makes a profit and whose minimum quality you can reach.

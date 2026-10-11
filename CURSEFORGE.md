@@ -32,7 +32,7 @@ A lightweight panel that shows profit or loss on every craft and crafting order 
 Craft Profit is a **lightweight** panel next to your profession window that answers one question in gold: **profit or loss?** Pick a recipe or a crafting order, and the answer is there.
 
 - **Profit on every craft** and crafting order
-- **Patron orders ranked** by profit, concentration included
+- **Patron orders ranked** by profit, and crafted right from the list
 - **The most profitable materials**, put in for you
 - **What-if qualities**
 - **Shopping list** for what you're missing
@@ -43,7 +43,7 @@ Craft Profit is a **lightweight** panel next to your profession window that answ
 What the item sells for at the quality you'll get, minus the 5% auction house cut and your materials. On orders: the commission after the consortium cut, minus only the materials **you** supply, plus sellable patron rewards.
 
 ### Which patron order pays best?
-The **Shopping list** button on the Patron orders tab lists every patron order with its profit, best first, using the cheapest material ranks that meet its minimum quality. Your concentration goes where it earns the most, or to knowledge. **Add profitable** shops for what you're missing.
+The **Shopping list** button on the Patron orders tab lists every patron order with its profit, best first, using the cheapest material ranks that meet its minimum quality. Your concentration goes where it earns the most, or to knowledge. **Add profitable** shops for what you're missing, and a button on each ready order starts, crafts and completes it, one click per step.
 
 ### The most profitable materials, put in for you
 Tick **Use Most Profitable Reagents** on the crafting order form and every order you open gets the cheapest materials that still reach its minimum quality, with concentration when it needs it.
@@ -72,11 +72,11 @@ Hover an item you can craft to see each character's **Craft Rank**: the highest 
 
 ## B. Upload File form
 
-**File:** `dist\CraftProfit-1.13.0.zip`
+**File:** `dist\CraftProfit-1.14.0.zip`
 
 **Display name**
 ```
-Craft Profit 1.13.0
+Craft Profit 1.14.0
 ```
 
 **Release type:** `Release`
@@ -85,6 +85,13 @@ Craft Profit 1.13.0
 
 **Changelog** (paste only the newest part; paste older parts too if they never went up)
 ```markdown
+1.14.0
+- Craft patron orders right from the list: an order you have everything for gets a small button at the end of its row. Each click does the next step, and its icon shows which: a scroll to start the order, a hammer to craft it with the qualities the list picked (and concentration if its minimum quality needs it), a watch while it crafts, then coins to complete it and collect the rewards. Chat confirms each step.
+- Only one order can be started at a time, so while one is in progress only that order shows the button. It stays in the list until it's complete.
+- Orders crafted from the list count toward the session total, resourcefulness included.
+- The Patron orders list now opens under its button and stays put while you work through it, with taller rows and bigger icons.
+- An order's tooltip shows its profit or loss at the bottom, under the rewards and what's missing, with the click hints after it.
+
 1.13.0
 - Use Most Profitable Reagents: a new checkbox on the crafting order form, next to Blizzard's Use Best Quality Reagents. While it's on, every order you open gets the most profitable materials put in by itself: the cheapest qualities that still reach the order's minimum quality, the same ones the Patron orders list prices it with. Concentration is turned on when the minimum quality needs it.
 - A slot you change afterwards stays as you set it. Unticking the checkbox puts back Blizzard's own pick. Only one of the two checkboxes can be on at a time.

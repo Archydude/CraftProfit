@@ -8,13 +8,57 @@ ns.Patron = Patron
 
 local format = string.format
 
-local ICON_SIZE = 16        -- recipe icons in the menu
+local ICON_SIZE = 20        -- recipe icons in the menu
 local MENU_MAX_HEIGHT = 500 -- taller menus scroll
-local MENU_ROW_HEIGHT = 20
+local MENU_ROW_HEIGHT = 26  -- order rows
 local RIGHT_GAP = 24        -- between an order's name and its profit
 local GEAR_SIZE = 16        -- options button on the title row, as on the panel
+local HAMMER_SIZE = 20      -- the craft button at the end of each order's row
+local HAMMER_GAP = 6        -- between an order's profit and its hammer
+-- The picture for each step of an order (see Craft.Step): the first atlas the
+-- game has, or else the file. Item icons are cropped to hide their border.
+local STEP_ICONS = {
+	claim = { file = "Interface\\Icons\\INV_Scroll_03" },                -- a scroll: take the order
+	craft = { atlases = { "Cursor_Repair_32", "worldquest-icon-blacksmithing" },
+		file = "Interface\\Icons\\Trade_BlackSmithing" },                 -- the hammer
+	crafting = { file = "Interface\\Icons\\INV_Misc_PocketWatch_01" },   -- a watch: wait for the cast
+	complete = { file = "Interface\\Icons\\INV_Misc_Coin_01" },          -- coins: hand it in for the rewards
+}
+local ICON_CROP = { 0.08, 0.92, 0.08, 0.92 }
+
+local function setStepIcon(button, step)
+	local icon = STEP_ICONS[step]
+	for _, atlas in ipairs(icon.atlases or {}) do
+		if C_Texture.GetAtlasInfo(atlas) then
+			button:SetNormalAtlas(atlas)
+			return
+		end
+	end
+	button:SetNormalTexture(icon.file)
+	button:GetNormalTexture():SetTexCoord(unpack(ICON_CROP))
+end
+
+-- A clickable button on a menu row. Menu rows reuse their parts, and those come
+-- back without their layer or mouse settings, so they're set every time
+-- (Blizzard's own helper does that, when there is one).
+local function attachButton(frame)
+	if MenuTemplates and MenuTemplates.AttachBasicButton then
+		return MenuTemplates.AttachBasicButton(frame, HAMMER_SIZE, HAMMER_SIZE)
+	end
+	local button = frame:AttachFrame("Button")
+	button:SetFrameStrata(frame:GetFrameStrata())
+	button:SetFrameLevel(frame:GetFrameLevel() + 2)
+	button:SetSize(HAMMER_SIZE, HAMMER_SIZE)
+	button:EnableMouse(true)
+	button:Show()
+	return button
+end
 
 local button
+
+-- The widest order row since the list was opened. Each step changes a row's
+-- note and profit, and the list redraws; without this it changed width each time.
+local widestRow = 0
 
 -- "1 patron order", "5 patron orders".
 local function ordersText(count)
@@ -35,7 +79,19 @@ end
 -- know: { name, icon }, and your concentration: { have, used } or nil.
 local function listOrders()
 	local rows, unknown = {}, {}
+	-- The order you've started stays in the list until it's complete, even once
+	-- the game drops it from the Patron tab.
+	local orders, listed = {}, {}
 	for _, order in ipairs(ns.Blizzard.PatronOrders() or {}) do
+		if not ns.Craft.IsCompleted(order.orderID) then
+			orders[#orders + 1] = order
+			listed[order.orderID] = true
+		end
+	end
+	local claimed = ns.Craft.ClaimedPatronOrder()
+	if claimed and not listed[claimed.orderID] then table.insert(orders, 1, claimed) end
+
+	for _, order in ipairs(orders) do
 		local job, name, icon = ns.Blizzard.OrderJob(order)
 		if job then
 			-- What you supply at its cheapest quality, or for an order with a minimum
@@ -194,17 +250,61 @@ local function removeOrder(row)
 	return MenuResponse and MenuResponse.Open
 end
 
--- Puts `text` at the right end of a menu row, after a gap.
-local function rightText(item, text)
+local function hammerTooltip(self)
+	GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+	GameTooltip:SetText("Craft this order")
+	GameTooltip:AddLine(ns.Color("simulated", ns.Craft.StepText(self.step, self.row)))
+	GameTooltip:AddLine("Each click does the next step: start, craft, complete.", 0.53, 0.53, 0.53, true)
+	GameTooltip:Show()
+end
+
+-- Leaving the hammer for the rest of its row: the row never noticed the mouse
+-- leave, so it won't show its tooltip again by itself.
+local function hammerLeave(self)
+	if GameTooltip:IsOwned(self) then GameTooltip:Hide() end
+	local frame = self:GetParent()
+	if not (frame and frame:IsMouseOver() and self.rowTooltip) then return end
+	if MenuUtil and MenuUtil.ShowTooltipEx then
+		MenuUtil.ShowTooltipEx(frame, GameTooltip, self.rowTooltip)
+	else
+		GameTooltip:SetOwner(frame, "ANCHOR_RIGHT")
+		self.rowTooltip(GameTooltip)
+		GameTooltip:Show()
+	end
+end
+
+-- Puts `text` at the right end of a menu row, after a gap, and then the hammer
+-- for `step` (see Craft.Step). Rows without a step keep the hammer's room, so
+-- the amounts line up. `rowTooltip(tooltip)` is the row's own tooltip.
+local function rightText(item, text, row, step, rowTooltip)
 	item:AddInitializer(function(frame)
 		local label = frame.fontString
 		local right = frame:AttachFontString()
 		right:SetFontObject(label and label:GetFontObject() or "GameFontHighlight")
-		right:SetPoint("RIGHT")
+		right:SetPoint("RIGHT", -(HAMMER_SIZE + HAMMER_GAP), 0)
 		right:SetJustifyH("RIGHT")
 		right:SetText(text)
+		if step then
+			local hammer = attachButton(frame)
+			-- Above the row's own highlight, so it shows and takes the click.
+			hammer:SetFrameLevel(frame:GetFrameLevel() + 2)
+			-- Blizzard's helper passes the mouse on to the row too, so coming straight
+			-- onto the button showed the row's tooltip over the button's.
+			if hammer.SetPropagateMouseMotion then hammer:SetPropagateMouseMotion(false) end
+			hammer:SetPoint("RIGHT")
+			setStepIcon(hammer, step)
+			-- While the craft is under way there's nothing to click; the tooltip still shows.
+			hammer:SetEnabled(step ~= "crafting")
+			hammer:SetHighlightTexture("Interface\\Buttons\\UI-Common-MouseHilight", "ADD")
+			hammer.row, hammer.step, hammer.rowTooltip = row, step, rowTooltip
+			hammer:SetScript("OnClick", function(self) ns.Craft.Do(self.row, self.step) end)
+			hammer:SetScript("OnEnter", hammerTooltip)
+			hammer:SetScript("OnLeave", hammerLeave)
+		end
 		local width = (label and label:GetUnboundedStringWidth() or 0) + RIGHT_GAP + right:GetUnboundedStringWidth()
-		return width, MENU_ROW_HEIGHT
+			+ HAMMER_GAP + HAMMER_SIZE
+		widestRow = math.max(widestRow, width)
+		return widestRow, MENU_ROW_HEIGHT
 	end)
 end
 
@@ -244,7 +344,12 @@ local function orderTooltip(tooltip, row)
 	line("Materials you supply", -model.cost, true)
 	local rewards = model.total - model.receive + model.cost
 	if rewards > 0 then line("Sellable rewards", rewards) end
-	line(model.total >= 0 and "Profit" or "Loss", model.total, true)
+	-- Profit or loss goes under everything else but the click hints, as the sum of
+	-- it all, in gold like the panel's.
+	local function addTotal()
+		tooltip:AddLine(" ")
+		tooltip:AddDoubleLine(model.total >= 0 and "Profit" or "Loss", signedMoney(model.total), 1, 0.82, 0, 1, 1, 1)
+	end
 
 	-- Every reward, as on the panel: sellable items with their value, the rest
 	-- (currencies like Moxie, bound items) just listed.
@@ -285,33 +390,34 @@ local function orderTooltip(tooltip, row)
 			end
 		end
 	end
+	-- What clicking the row does: listed last, under the profit or loss.
+	local hints = {}
+	local shiftHint = "Shift-click: remove it from the shopping list"
+
 	-- What's missing only matters for an order you can craft.
 	if plan and plan.unreachable then
-		if added[row.order.orderID] and not usingTSM() then
-			tooltip:AddLine(" ")
-			tooltip:AddLine(ns.Color("simulated", "Shift-click: remove it from the shopping list"))
-		end
-		return
-	end
-	tooltip:AddLine(" ")
-	local missing = ns.Shopping.Total(model.missing)
-	if missing > 0 then
-		tooltip:AddLine(ns.Color("missing", format("%d missing", missing)))
-		for _, material in ipairs(model.missing) do
-			tooltip:AddLine(ns.Format.Item(material.itemID, material.qty), 1, 1, 1)
-		end
-		tooltip:AddLine(ns.Color("simulated", usingTSM() and "Click: copy a TSM search for what's missing"
-			or "Click: add what's missing to the shopping list"))
+		if added[row.order.orderID] and not usingTSM() then hints[#hints + 1] = shiftHint end
 	else
-		if isReady(row) then
+		tooltip:AddLine(" ")
+		local missing = ns.Shopping.Total(model.missing)
+		if missing > 0 then
+			tooltip:AddLine(ns.Color("missing", format("%d missing", missing)))
+			for _, material in ipairs(model.missing) do
+				tooltip:AddLine(ns.Format.Item(material.itemID, material.qty), 1, 1, 1)
+			end
+			hints[#hints + 1] = usingTSM() and "Click: copy a TSM search for what's missing"
+				or "Click: add what's missing to the shopping list"
+		elseif isReady(row) then
 			tooltip:AddLine(READY_ICON .. " You have everything, in the qualities that make the most profit.", 0.53, 1, 0.53, true)
 		else
 			tooltip:AddLine("Nothing missing", 0.53, 0.53, 0.53)
 		end
+		if not usingTSM() then hints[#hints + 1] = shiftHint end
 	end
-	if not usingTSM() then
-		tooltip:AddLine(ns.Color("simulated", "Shift-click: remove it from the shopping list"))
-	end
+
+	addTotal()
+	if #hints > 0 then tooltip:AddLine(" ") end
+	for _, hint in ipairs(hints) do tooltip:AddLine(ns.Color("simulated", hint)) end
 end
 
 -- A gear in the list's top-right corner that opens the options, like the panel's.
@@ -359,9 +465,21 @@ local function keepOpen(action)
 	end
 end
 
+-- Opens the list under the Shopping list button. A context menu would open at
+-- the mouse instead, and go back to it every time it redraws.
+local function openUnder(owner, generator)
+	if not (Menu and Menu.GetManager and Menu.PopulateDescription and MenuVariants and AnchorUtil) then
+		return MenuUtil.CreateContextMenu(owner, generator)
+	end
+	local description = MenuUtil.CreateRootMenuDescription(MenuVariants.GetDefaultContextMenuMixin())
+	Menu.PopulateDescription(generator, owner, description)
+	local anchor = AnchorUtil.CreateAnchor("TOPLEFT", owner, "BOTTOMLEFT", 0, -2)
+	return Menu.GetManager():OpenMenu(owner, description, anchor)
+end
+
 local function openMenu(owner)
 	GameTooltip:Hide()
-	local menu = MenuUtil.CreateContextMenu(owner, function(_, root)
+	local menu = openUnder(owner, function(_, root)
 		-- Worked out here, so a refresh (after switching the concentration choice) redoes it.
 		local rows, unknown, concentration = listOrders()
 		local reachable, unreachable, short = reachableRows(rows)
@@ -378,8 +496,16 @@ local function openMenu(owner)
 		for _, row in ipairs(rows) do
 			local unreachableRow = row.plan and row.plan.unreachable
 			local missing = ns.Shopping.Total(row.model.missing)
+			local step = ns.Craft.Step(row, isReady(row))
 			local note = ""
-			if unreachableRow then
+			if step == "complete" then
+				-- Crafted: the materials are used up, so nothing's "missing".
+				note = ns.Color("good", " (crafted)")
+			elseif step == "crafting" then
+				note = ns.Color("good", " (crafting...)")
+			elseif step == "craft" then
+				note = ns.Color("good", " (started)")
+			elseif unreachableRow then
 				-- Nothing to buy for an order you can't craft.
 			elseif missing > 0 then
 				note = ns.Color("missing", format(" (%d missing)", missing))
@@ -395,8 +521,9 @@ local function openMenu(owner)
 			local right = unreachableRow and ns.Color("loss", "can't craft")
 				or row.noConcentration and ns.Color("muted", (row.model.total > 0 and "+" or "") .. ns.Format.Money(row.model.total))
 				or signedMoney(row.model.total)
-			rightText(item, right)
-			item:SetTooltip(function(tooltip) orderTooltip(tooltip, row) end)
+			local function rowTooltip(tooltip) orderTooltip(tooltip, row) end
+			rightText(item, right, row, step, rowTooltip)
+			item:SetTooltip(rowTooltip)
 		end
 		for _, row in ipairs(unknown) do
 			local item = root:CreateButton(iconText(row.icon) .. row.name .. ns.Color("muted", "  recipe not known"))
@@ -447,6 +574,19 @@ local function openMenu(owner)
 	showGear(menu)
 end
 
+function Patron.IsMenuOpen()
+	return gearMenu ~= nil and gearMenu:IsVisible()
+end
+
+-- Redraws the list if it's open, e.g. after an order's next step. It opens in
+-- the same place, under the button.
+function Patron.Reopen()
+	if not (Patron.IsMenuOpen() and button) then return end
+	-- What you own has changed (materials used up, rewards in).
+	ns.Planner.Reset()
+	openMenu(button)
+end
+
 -- Shown on the Patron tab while it lists orders, when materials go to Auctionator's
 -- shopping list or a TSM search.
 function Patron.Refresh()
@@ -468,6 +608,8 @@ function Patron.Init()
 		if IsControlKeyDown() and ns.Shopping.CanClear() then
 			ns.Shopping.Clear()
 		else
+			-- Opened afresh: it may fit narrower now.
+			widestRow = 0
 			openMenu(self)
 		end
 	end)

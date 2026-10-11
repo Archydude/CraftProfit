@@ -52,6 +52,7 @@ events:SetScript("OnEvent", function(self, event, ...)
 		ns.Panel.Init()
 		ns.Patron.Init()
 		ns.Best.Init()
+		ns.Craft.Init()
 	end
 	if ns.Panel.Frame() then self:UnregisterEvent("ADDON_LOADED") end
 end)
