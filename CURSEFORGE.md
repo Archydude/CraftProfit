@@ -13,7 +13,7 @@ Craft Profit
 
 **Summary**
 ```
-A lightweight panel that shows profit or loss on every craft and crafting order at a glance, ranks patron orders by profit, and adds what-if qualities, proc tracking and a shopping list for missing materials. Prices from TSM or Auctionator.
+Profit or loss on every craft and crafting order, with patron orders ranked by profit and crafted from one list. Prices from TSM or Auctionator.
 ```
 
 **Main category:** `Professions`
