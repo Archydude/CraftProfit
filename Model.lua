@@ -15,6 +15,7 @@
 --   realProfit    forecast profit with the form's materials, or nil
 --   canSimulate   materials can be clicked for what-if qualities
 --   simulating    some materials are what-if qualities
+--   best          (orders) more profitable materials than the form's, or nil
 --   notes         { estimated = bool, missing = count, [1..n] = extra notes }
 local _, ns = ...
 
@@ -304,6 +305,34 @@ function Model.Craft(ctx)
 	return model
 end
 
+-- For an order open in the form: the materials that make it the most gold while
+-- still reaching its minimum quality (the same picks as the Patron orders list),
+-- when the form has something else. { picks = slotIndex -> itemID, list = { {
+-- itemID, qty } ... }, concentrate, gain = gold more than the form makes }, or nil.
+local function bestMaterials(ctx, model)
+	local order, schematic, transaction = ctx.order, ctx.schematic, ctx.transaction
+	local plan = ns.Planner.ForOrder(order, schematic, ctx.provided)
+	if not (plan and plan.overrides and next(plan.overrides)) or plan.unreachable then return end
+
+	local concentrate = plan.concentration ~= nil and not ns.Blizzard.IsConcentrating(transaction)
+	local differs = concentrate
+	for slotIndex, itemID in pairs(plan.overrides) do
+		local inForm = ns.Blizzard.Allocated(transaction, slotIndex)
+		local qty = schematic.reagentSlotSchematics[slotIndex].quantityRequired
+		if not (#inForm == 1 and inForm[1].itemID == itemID and inForm[1].qty == qty) then differs = true end
+	end
+	if not differs then return end
+
+	local planned = Model.Order({ order = order, schematic = schematic, provided = ctx.provided, overrides = plan.overrides })
+	local gain = planned.total - model.realProfit
+	-- Also worth it when it makes less, if the form misses the minimum quality.
+	local minQuality = order.minQuality or 0
+	local belowMinimum = minQuality > 1 and ctx.recipeInfo
+		and (ns.Blizzard.PredictQuality(ctx.recipeInfo.recipeID, schematic, transaction, {}) or 0) < minQuality
+	if gain <= 0 and not belowMinimum then return end
+	return { picks = plan.overrides, list = plan.picks, concentrate = concentrate, gain = gain }
+end
+
 -- The open crafting order, or one listed on the Patron tab.
 function Model.Order(ctx)
 	local order, schematic, transaction = ctx.order, ctx.schematic, ctx.transaction
@@ -374,5 +403,6 @@ function Model.Order(ctx)
 	-- Real crafts use what's in the form, never the what-if picks.
 	model.realCost = simulating and costOf(Model.Materials(schematic, transaction, ctx.provided)) or model.cost
 	model.realProfit = model.receive - model.realCost + rewardsValue
+	model.best = canSimulate and bestMaterials(ctx, model) or nil
 	return model
 end

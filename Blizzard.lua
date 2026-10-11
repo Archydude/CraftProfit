@@ -2,8 +2,9 @@
 -- (frame fields, the crafting form's "transaction", mixin methods). Blizzard can
 -- change these in any patch, so they live here and nowhere else.
 --
--- The addon only ever reads them and follows them with hooks, so it can't
--- interfere with Blizzard's own crafting code.
+-- The addon reads them and follows them with hooks. The one exception is
+-- Blizzard.UseMaterials, which fills the order form the way Blizzard's own
+-- quality picker does, and only when the player clicks for it.
 local _, ns = ...
 
 local Blizzard = {}
@@ -117,6 +118,89 @@ function Blizzard.Allocated(transaction, slotIndex)
 		end
 	end
 	return list
+end
+
+-- Puts materials in the open order's form, the way Blizzard's quality picker
+-- does: `picks` is slotIndex -> itemID, the full amount each. With `concentrate`,
+-- also turns on concentration. A slot you don't own enough for is left as it is;
+-- returns those as { { itemID, qty short } ... }.
+function Blizzard.UseMaterials(picks, concentrate)
+	local view = ProfessionsFrame.OrdersPage.OrderView
+	local form = view.OrderDetails and view.OrderDetails.SchematicForm
+	local transaction, schematic = form and form.transaction, form and form.recipeSchematic
+	if not (transaction and schematic) then return {} end
+	local charOnly = transaction.ShouldUseCharacterInventoryOnly and transaction:ShouldUseCharacterInventoryOnly()
+	local short, changed = {}, false
+	for slotIndex, itemID in pairs(picks) do
+		local slot = schematic.reagentSlotSchematics[slotIndex]
+		local reagent
+		for _, candidate in ipairs(slot and slot.reagents or {}) do
+			if candidate.itemID == itemID then reagent = candidate end
+		end
+		if reagent then
+			local qty = slot.quantityRequired
+			local have = ProfessionsUtil and ProfessionsUtil.GetReagentQuantityInPossession
+				and ProfessionsUtil.GetReagentQuantityInPossession(reagent, charOnly) or ns.Model.Owned(itemID)
+			if have >= qty then
+				transaction:OverwriteAllocation(slotIndex, reagent, qty)
+				changed = true
+			else
+				short[#short + 1] = { itemID = itemID, qty = qty - have }
+			end
+		end
+	end
+	if changed then
+		-- Keeps the form from putting its own choice back on its next refresh.
+		transaction:SetManuallyAllocated(true)
+		form:UpdateAllSlots()
+	end
+	if concentrate and transaction.SetApplyConcentration then transaction:SetApplyConcentration(true) end
+	return short
+end
+
+-- The order form's "Use Best Quality Reagents" checkbox.
+function Blizzard.OrderBestQualityBox()
+	local details = ProfessionsFrame.OrdersPage.OrderView.OrderDetails
+	return details and details.SchematicForm and details.SchematicForm.AllocateBestQualityCheckbox
+end
+
+-- Turns Blizzard's "Use Best Quality Reagents" off: its setting and its checkbox.
+function Blizzard.StopBestQuality()
+	if Professions.ShouldAllocateBestQualityReagents() then
+		Professions.SetShouldAllocateBestQualityReagents(false)
+	end
+	local box = Blizzard.OrderBestQualityBox()
+	if box then box:SetChecked(false) end
+end
+
+-- Calls onBestQuality(checked) after the player clicks "Use Best Quality
+-- Reagents" on the order form (Blizzard has re-filled the form by then), and
+-- onOrder() when the order screen shows an order.
+function Blizzard.WatchOrderForm(onBestQuality, onOrder, owner)
+	local view = ProfessionsFrame.OrdersPage.OrderView
+	view.OrderDetails.SchematicForm:RegisterCallback(ProfessionsRecipeSchematicFormMixin.Event.UseBestQualityModified,
+		function(_, checked) onBestQuality(checked) end, owner)
+	hooksecurefunc(view, "SetOrder", onOrder)
+end
+
+-- Fills the open order's form the way Blizzard does by itself (lowest or best
+-- quality, following its checkbox), as unticking that checkbox does. With
+-- `stopConcentration`, also turns concentration off.
+function Blizzard.ResetMaterials(stopConcentration)
+	local view = ProfessionsFrame.OrdersPage.OrderView
+	local form = view.OrderDetails and view.OrderDetails.SchematicForm
+	local transaction = form and form.transaction
+	if not (transaction and view:IsVisible() and view.order) then return end
+	Professions.AllocateAllBasicReagents(transaction, Professions.ShouldAllocateBestQualityReagents())
+	-- Puts back what the customer provides, as Blizzard does after re-filling.
+	if view.SchematicPostInit then view:SchematicPostInit() end
+	form:UpdateAllSlots()
+	if stopConcentration and transaction.SetApplyConcentration then transaction:SetApplyConcentration(false) end
+end
+
+-- Whether the order form is applying concentration.
+function Blizzard.IsConcentrating(transaction)
+	return transaction and transaction.IsApplyingConcentration and transaction:IsApplyingConcentration() or false
 end
 
 -- A material that comes in several qualities (Blizzard's own rule for showing

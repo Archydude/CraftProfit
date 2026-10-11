@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.13.0
+- Use Most Profitable Reagents: a new checkbox on the crafting order form, next to Blizzard's Use Best Quality Reagents. While it's on, every order you open gets the most profitable materials put in by itself: the cheapest qualities that still reach the order's minimum quality, the same ones the Patron orders list prices it with. Concentration is turned on when the minimum quality needs it.
+- A slot you change afterwards stays as you set it. Unticking the checkbox puts back Blizzard's own pick. Only one of the two checkboxes can be on at a time.
+- Without the checkbox, a blue "Use the most profitable materials" row under the materials puts them in once, and says how much more gold they make. With it on, the row shows when a material couldn't go in because you're short of it.
+
 ## 1.12.0
 - Shift-click a material in the panel to add just what you're missing of it, for one craft, to the shopping list (or a TSM search). Pick a quality first by clicking it, and that quality is added.
 - Works on every material you're short of, including ones without qualities. Its tooltip shows how many are missing.

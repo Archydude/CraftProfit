@@ -29,32 +29,36 @@ A lightweight panel that shows profit or loss on every craft and crafting order 
 ```markdown
 ## Is this craft worth it?
 
-Craft Profit is a **lightweight** panel next to your profession window that answers one question in gold: **profit or loss?** Open a profession, pick a recipe or a crafting order, and the answer is there.
+Craft Profit is a **lightweight** panel next to your profession window that answers one question in gold: **profit or loss?** Pick a recipe or a crafting order, and the answer is there.
 
-- **Profit on every craft** and every crafting order
-- **Patron orders optimized** for profit, concentration included
-- **What-if qualities:** is the better material worth it?
+- **Profit on every craft** and crafting order
+- **Patron orders ranked** by profit, concentration included
+- **The most profitable materials**, put in for you
+- **What-if qualities**
 - **Shopping list** for what you're missing
 - **Procs** and a **session total**
-- **Craft Rank** on tooltips: which of your characters crafts it best?
+- **Craft Rank** on tooltips
 
-### Crafting page and crafting orders
-What the item sells for at the quality you'll actually get, minus the 5% auction house cut and your materials. On orders: the commission after the consortium cut, minus only the materials **you** supply, plus sellable patron rewards.
+### Crafts and orders
+What the item sells for at the quality you'll get, minus the 5% auction house cut and your materials. On orders: the commission after the consortium cut, minus only the materials **you** supply, plus sellable patron rewards.
 
 ### Which patron order pays best?
-The **Shopping list** button on the Patron orders tab lists every patron order with its profit, best first. Each uses the cheapest material ranks that still meet its minimum quality, and your concentration goes where it earns the most, or to knowledge if you prefer. A green check marks orders you're ready for, and **Add profitable** shops for the rest.
+The **Shopping list** button on the Patron orders tab lists every patron order with its profit, best first, using the cheapest material ranks that meet its minimum quality. Your concentration goes where it earns the most, or to knowledge. **Add profitable** shops for what you're missing.
+
+### The most profitable materials, put in for you
+Tick **Use Most Profitable Reagents** on the crafting order form and every order you open gets the cheapest materials that still reach its minimum quality, with concentration when it needs it.
 
 ### What if I used another quality?
-Click a material to try its next quality. The cost, quality and profit update right away. On an order, the panel also tells you when buying a cheaper rank beats using yours.
+Click a material to try its next quality; cost, quality and profit update right away.
 
 ### Shopping list
-Click the **Shopping list** row to add what you're missing for 1, 5, 10 or any number of crafts to an **Auctionator** shopping list, one per character and profession. Shift-click a material for just that one. With **TSM**, you get a search to paste into its Shopping tab instead.
+Add what you're missing for any number of crafts to an **Auctionator** shopping list, or get a search to paste into **TSM**.
 
 ### Procs and session total
-**Multicraft** and **resourcefulness** procs pop up as bonus gold with a coin sound, and a session total adds up what you've made.
+**Multicraft** and **resourcefulness** procs pop up as bonus gold, and a session total adds up what you've made.
 
 ### Which character crafts it best?
-Hover any item you can craft to see the **Craft Rank** of each of your characters that knows the recipe: the highest rank they can make it at with top-quality materials, plus the concentration it takes.
+Hover an item you can craft to see each character's **Craft Rank**: the highest rank they can make it at, plus the concentration it takes.
 
 ### Good to know
 - Needs **TradeSkillMaster** or **Auctionator** for prices.
@@ -68,11 +72,11 @@ Hover any item you can craft to see the **Craft Rank** of each of your character
 
 ## B. Upload File form
 
-**File:** `dist\CraftProfit-1.12.0.zip`
+**File:** `dist\CraftProfit-1.13.0.zip`
 
 **Display name**
 ```
-Craft Profit 1.12.0
+Craft Profit 1.13.0
 ```
 
 **Release type:** `Release`
@@ -81,6 +85,11 @@ Craft Profit 1.12.0
 
 **Changelog** (paste only the newest part; paste older parts too if they never went up)
 ```markdown
+1.13.0
+- Use Most Profitable Reagents: a new checkbox on the crafting order form, next to Blizzard's Use Best Quality Reagents. While it's on, every order you open gets the most profitable materials put in by itself: the cheapest qualities that still reach the order's minimum quality, the same ones the Patron orders list prices it with. Concentration is turned on when the minimum quality needs it.
+- A slot you change afterwards stays as you set it. Unticking the checkbox puts back Blizzard's own pick. Only one of the two checkboxes can be on at a time.
+- Without the checkbox, a blue "Use the most profitable materials" row under the materials puts them in once, and says how much more gold they make. With it on, the row shows when a material couldn't go in because you're short of it.
+
 1.12.0
 - Shift-click a material in the panel to add just what you're missing of it, for one craft, to the shopping list (or a TSM search). Pick a quality first by clicking it, and that quality is added.
 - Works on every material you're short of, including ones without qualities. Its tooltip shows how many are missing.

@@ -59,6 +59,7 @@ ns.DEFAULTS = {
 	listPerCharacter = true,   -- a separate Auctionator list for each character
 	listPerProfession = true,  -- and/or for each profession
 	concentrationFor = "profit", -- patron orders that need concentration get it by: "profit" | "knowledge"
+	bestMaterials = false, -- "Use Most Profitable Reagents" on the order form: put them in every order you open
 	rankTooltip = true,   -- best rank you can craft, on crafted items' tooltips
 	rankConcentration = true, -- add the concentration that rank takes
 	rankCharacters = "all", -- whose ranks: "all" your characters | "current" one

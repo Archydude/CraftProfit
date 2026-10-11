@@ -405,12 +405,39 @@ local function drawCraft(model)
 	drawFooter(model)
 end
 
+local function bestTooltip(best)
+	return function(tip)
+		tip:SetText("Use the most profitable materials")
+		tip:AddLine("Puts these in the order form:", 1, 1, 1)
+		for _, pick in ipairs(best.list) do tip:AddLine(Item(pick.itemID, pick.qty), 1, 1, 1) end
+		if best.concentrate then tip:AddLine("and turns on concentration, which it needs.", 1, 1, 1, true) end
+		tip:AddLine("The cheapest materials that still reach the order's minimum quality. What you own counts at what it would sell for.",
+			0.53, 0.53, 0.53, true)
+		if best.gain > 0 then
+			tip:AddDoubleLine("You come out ahead", signedMoney(best.gain), 1, 1, 1, 1, 1, 1)
+		end
+	end
+end
+
+-- A row that puts the most profitable materials in the form, when it has others.
+-- With "Use Most Profitable Reagents" on, it only shows when something couldn't
+-- go in (you're short of it) or you changed a slot since.
+local function drawBest(model)
+	local best = model.best
+	if not best then return end
+	addGap()
+	local text = Color("simulated", "Use the most profitable materials")
+	if best.gain > 0 then text = text .. " " .. signedMoney(best.gain) end
+	addRow(text, nil, nil, function() ns.Best.Use(best) end, bestTooltip(best))
+end
+
 local function drawOrder(model)
 	addRow(model.title, nil, fonts.title)
 	-- One line, after the consortium's cut.
 	addRow("Commission" .. cutNote(model.consortiumCut, model.commission, "cut"), Money(model.receive))
 
 	drawMaterials(model)
+	drawBest(model)
 	if #model.materials == 0 then
 		addSpacer()
 		addRow(Color("good", "Customer provides all materials"))
@@ -498,6 +525,7 @@ function Panel.Render()
 		frame:Hide()
 	end
 	refreshTooltip()
+	ns.Best.Check(model)
 end
 
 -- Redraws once at the end of this frame, however many times it's called.
@@ -581,7 +609,9 @@ local function createFrame()
 	frame:RegisterEvent("GET_ITEM_INFO_RECEIVED")
 	-- The missing materials button follows what you own.
 	frame:RegisterEvent("BAG_UPDATE_DELAYED")
-	frame:SetScript("OnEvent", function(self)
+	frame:SetScript("OnEvent", function(self, event)
+		-- What you own changes which materials are the most profitable.
+		if event == "BAG_UPDATE_DELAYED" then ns.Planner.Reset() end
 		if self:IsShown() then Panel.Refresh() end
 	end)
 

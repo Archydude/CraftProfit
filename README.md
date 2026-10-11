@@ -43,6 +43,10 @@ Open your profession and pick a recipe, or open a crafting order. The panel appe
 
 **Cheaper rank to buy:** on a crafting order, when the form uses a rank you own and buying another rank comes out cheaper, a blue line under that material says how much it saves, e.g. **[rank 1] saves 2g 40s**. What you own counts at what it would sell for after the 5% auction house cut, so the line only shows when buying really comes out ahead, and only for a rank that still meets the order's minimum quality. Click it to use that rank: the panel and the shopping list switch to it. Hover it for the numbers.
 
+**Use the most profitable materials:** on a crafting order, when the form holds materials that make less gold than they could, a blue row under the materials says how much more the best ones make. Click it to put them in Blizzard's form: the cheapest qualities that still reach the order's minimum quality, with what you own counted at what it would sell for. These are the same materials the Patron orders list prices each order with. If reaching the minimum quality takes concentration, it turns that on too. A material you don't have enough of stays as it was, and chat says what to buy. Hover the row to see what it puts in.
+
+**Use Most Profitable Reagents:** a checkbox on the crafting order form, next to Blizzard's **Use Best Quality Reagents**. While it's on, every order you open gets the most profitable materials put in by itself. A slot you change afterwards stays as you set it. Unticking it puts back the materials Blizzard picks by itself, and turns concentration back off if the checkbox turned it on. Only one of the two checkboxes can be on: checking one unchecks the other. It shows wherever Blizzard's checkbox does, on orders whose materials come in qualities.
+
 ### Shopping list
 Under **Materials cost** there's a **Shopping list** row. It turns orange and shows a count when you're short of materials for one craft; hover it to see what's missing.
 

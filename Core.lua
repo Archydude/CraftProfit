@@ -51,6 +51,7 @@ events:SetScript("OnEvent", function(self, event, ...)
 	if name == "Blizzard_Professions" or (name == ADDON_NAME and C_AddOns.IsAddOnLoaded("Blizzard_Professions")) then
 		ns.Panel.Init()
 		ns.Patron.Init()
+		ns.Best.Init()
 	end
 	if ns.Panel.Frame() then self:UnregisterEvent("ADDON_LOADED") end
 end)
