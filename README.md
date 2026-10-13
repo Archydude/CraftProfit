@@ -94,7 +94,8 @@ Hover an item you can craft, in your bags, at the auction house or in a chat lin
 
 - **Max rank** in green when you can make it at the top rank, or **Rank 3 of 5** in orange when you can't yet.
 - If concentration reaches a higher rank, that rank is shown, with the concentration it takes, e.g. **Max rank (38 concentration)**. You can hide the concentration in the options.
-- Optional and finishing materials aren't counted.
+- **with optional reagents:** a second line under it when optional reagents make the item harder to craft, like the ones that raise its item level. It shows the best rank with the one that makes it hardest in each optional slot, at its top rank. Only shown when it's lower than without them, or takes more concentration.
+- Finishing materials aren't counted.
 - Only for recipes that come in ranks.
 - It updates each time you open your profession window, so after you gain skill or spend specialization points, open the window once on that character. A character shows up after you've opened its profession window once.
 

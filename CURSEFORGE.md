@@ -49,7 +49,7 @@ The **Shopping list** button on the Patron orders tab lists every patron order w
 Tick **Use Most Profitable Reagents** on the crafting order form and every order you open gets the cheapest materials that still reach its minimum quality, with concentration when it needs it. Add **Optimize Concentration** to use the least concentration instead.
 
 ### What if I used another quality?
-Click a material to try its next quality; cost, quality and profit update right away.
+Click a material to try its next quality; profit updates right away.
 
 ### Shopping list
 One click adds what you're missing for a craft to an **Auctionator** shopping list or a **TSM** search. Shift-click for more crafts.
@@ -58,7 +58,7 @@ One click adds what you're missing for a craft to an **Auctionator** shopping li
 **Multicraft** and **resourcefulness** procs pop up as bonus gold, and a session total adds up what you've made.
 
 ### Which character crafts it best?
-Hover an item you can craft to see each character's **Craft Rank**: the highest rank they can make it at, plus the concentration it takes.
+Hover an item you can craft to see each character's **Craft Rank**: the highest rank they can make it at, plus the concentration it takes, and the rank with item level reagents added.
 
 ### Good to know
 - Needs **TradeSkillMaster** or **Auctionator** for prices.
@@ -72,11 +72,11 @@ Hover an item you can craft to see each character's **Craft Rank**: the highest 
 
 ## B. Upload File form
 
-**File:** `dist\CraftProfit-1.15.0.zip`
+**File:** `dist\CraftProfit-1.16.0.zip`
 
 **Display name**
 ```
-Craft Profit 1.15.0
+Craft Profit 1.16.0
 ```
 
 **Release type:** `Release`
@@ -85,6 +85,9 @@ Craft Profit 1.15.0
 
 **Changelog** (paste only the newest part; paste older parts too if they never went up)
 ```markdown
+1.16.0
+- Craft Rank: a new "with optional reagents" line under a character's rank, when optional reagents make the item harder to craft, like the ones that raise its item level. It shows the best rank with the hardest one in each optional slot, at its top rank, and the concentration it takes. Open your profession window once to update it.
+
 1.15.0
 - Optimize concentration: a new checkbox in the Patron orders list, on the crafting order form and in the options. Orders that need concentration to reach their minimum quality use the material qualities that need the least of it, and the cheapest of those, so your concentration covers more orders. The materials cost more.
 - The crafting order form stacks its checkboxes: Optimize Concentration, Use Most Profitable Reagents, then Blizzard's Use Best Quality Reagents.

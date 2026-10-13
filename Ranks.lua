@@ -1,6 +1,7 @@
 -- Craft Profit: on a crafted item's tooltip, the best rank each of your
 -- characters can craft it at with the top quality of every material, using
--- concentration when that reaches a higher rank.
+-- concentration when that reaches a higher rank. Also the best rank with the
+-- optional reagents that make it hardest (the ones that raise its item level).
 --
 -- The game only gives addons your crafting skill while the profession window is
 -- open, so each recipe's best rank is worked out and saved then, and tooltips
@@ -12,8 +13,9 @@ ns.Ranks = Ranks
 
 local format = string.format
 
--- Recipes worked out per frame, so opening the window doesn't stutter.
-local BATCH = 25
+-- Questions to the game per frame (a recipe takes one, plus one for each
+-- optional reagent it tries), so opening the window doesn't stutter.
+local CALLS_PER_FRAME = 60
 -- Seconds to wait after the recipe list changes before scanning it, so a burst
 -- of changes (opening the window, crafting) scans once.
 local SCAN_DELAY = 1
@@ -22,7 +24,8 @@ local SCAN_DELAY = 1
 --   name, realm, class = for showing the character on tooltips,
 --   professions = { [professionID] = {
 --     parent = base profession (Blacksmithing), for dropping unlearned ones,
---     recipes = { [recipeID] = { best rank, max rank, concentration cost } },
+--     recipes = { [recipeID] = { best rank, max rank, concentration cost,
+--                                with optional reagents: best rank, concentration cost } },
 --     items = { [itemID] = recipeID },  -- every item the recipe makes, any quality
 --   } },
 -- }
@@ -76,21 +79,86 @@ local function topQualityReagents(schematic)
 	return list
 end
 
--- { best, max, cost } for a learned recipe, and the item it makes, or nil.
+local calls = 0 -- questions asked this frame
+
+-- How a craft with these reagents turns out, or nil.
+local function operation(recipeID, reagents)
+	calls = calls + 1
+	local ok, info = pcall(C_TradeSkillUI.GetCraftingOperationInfo, recipeID, reagents, nil, false)
+	return ok and info and info.craftingQuality and info or nil
+end
+
+local function difficultyOf(info)
+	return (info.baseDifficulty or 0) + (info.bonusDifficulty or 0)
+end
+
+-- The best rank and its concentration cost. Concentration lifts a craft to the
+-- next rank, for the cost the game quotes.
+local function bestOf(info, max)
+	local best = info.craftingQuality
+	if best < max and (info.concentrationCost or 0) > 0 then return best + 1, info.concentrationCost end
+	return best, 0
+end
+
+-- A slot's reagents, each at its top rank: a reagent's ranks come one after
+-- another, lowest first, and a higher rank makes the craft easier.
+local function topRanks(slot)
+	local list, lastQuality = {}, nil
+	for _, reagent in ipairs(slot.reagents) do
+		if reagent.itemID then
+			local quality = C_TradeSkillUI.GetItemReagentQualityByItemInfo(reagent.itemID) or 0
+			if quality > 0 and lastQuality and quality > lastQuality then
+				list[#list] = reagent.itemID -- the next rank of the same reagent
+			else
+				list[#list + 1] = reagent.itemID
+			end
+			lastQuality = quality > 0 and quality or nil
+		end
+	end
+	return list
+end
+
+-- Adds to `reagents` the optional reagent in each slot that makes the craft
+-- hardest (the one that raises its item level the most), at its top rank.
+-- Returns how it turns out then, or nil when none makes it harder.
+local function withHardestOptional(recipeID, schematic, reagents, info)
+	local harder
+	for _, slot in ipairs(schematic.reagentSlotSchematics) do
+		if slot.reagentType == Enum.CraftingReagentType.Modifying and not slot.hiddenInCraftingForm then
+			local hardest, hardestInfo
+			for _, itemID in ipairs(topRanks(slot)) do
+				local entry = { reagent = { itemID = itemID }, dataSlotIndex = slot.dataSlotIndex, quantity = slot.quantityRequired }
+				reagents[#reagents + 1] = entry
+				local trial = operation(recipeID, reagents)
+				reagents[#reagents] = nil
+				if trial and difficultyOf(trial) > difficultyOf(hardestInfo or info) then hardest, hardestInfo = entry, trial end
+			end
+			if hardest then
+				reagents[#reagents + 1] = hardest
+				info, harder = hardestInfo, hardestInfo
+			end
+		end
+	end
+	return harder
+end
+
+-- { best, max, cost, best and cost with optional reagents } for a learned recipe,
+-- and the item it makes, or nil. The last two are nil when no optional reagent
+-- makes it harder.
 local function rankOf(recipeID, recipeInfo)
 	local schematic = C_TradeSkillUI.GetRecipeSchematic(recipeID, false)
 	if not (schematic and schematic.hasCraftingOperationInfo) then return end
 	local max = recipeInfo.maxQuality or (recipeInfo.qualityIDs and #recipeInfo.qualityIDs)
 	if not max or max < 2 then return end
-	local ok, info = pcall(C_TradeSkillUI.GetCraftingOperationInfo, recipeID, topQualityReagents(schematic), nil, false)
-	if not (ok and info and info.craftingQuality) then return end
+	local reagents = topQualityReagents(schematic)
+	local info = operation(recipeID, reagents)
+	if not info then return end
 
-	local best, cost = info.craftingQuality, 0
-	-- Concentration lifts a craft to the next rank, for the cost the game quotes.
-	if best < max and (info.concentrationCost or 0) > 0 then
-		best, cost = best + 1, info.concentrationCost
-	end
-	return { best, max, cost }, schematic.outputItemID
+	local best, cost = bestOf(info, max)
+	local rank = { best, max, cost }
+	local harder = withHardestOptional(recipeID, schematic, reagents, info)
+	if harder then rank[4], rank[5] = bestOf(harder, max) end
+	return rank, schematic.outputItemID
 end
 
 -- The profession the window shows right now (Midnight Blacksmithing) and its base (Blacksmithing).
@@ -122,7 +190,8 @@ local function scan()
 			scanRun = nil
 			return
 		end
-		for _ = 1, BATCH do
+		calls = 0
+		while calls < CALLS_PER_FRAME do
 			i = i + 1
 			local recipeID = recipeIDs[i]
 			if not recipeID then
@@ -130,6 +199,7 @@ local function scan()
 				scanRun = nil
 				return
 			end
+			calls = calls + 1 -- even a recipe that's skipped costs a little
 			local info = C_TradeSkillUI.GetRecipeInfo(recipeID)
 			if info and info.learned and info.supportsQualities
 				and not (info.isRecraft or info.isSalvageRecipe or info.isDummyRecipe) then
@@ -198,9 +268,11 @@ local function lookup(professions, itemID)
 	return bestRank, bestRecipe
 end
 
--- "Max rank <icon> (38 concentration)" and its color.
-local function rankText(rank, recipeID)
-	local best, max, cost = rank[1], rank[2], rank[3]
+-- "Max rank <icon> (38 concentration)" and its color. `best` and `cost` replace
+-- the rank's own, for the rank with optional reagents.
+local function rankText(rank, recipeID, best, cost)
+	local max = rank[2]
+	best, cost = best or rank[1], cost or rank[3]
 	local text = best >= max and "Max rank" or format("Rank %d of %d", best, max)
 	local ok, icon = pcall(ns.Blizzard.ItemQualityMarkup, recipeID, best)
 	if ok and icon then text = text .. " " .. icon end
@@ -235,6 +307,14 @@ local function knownBy(itemID)
 	return list
 end
 
+-- The rank with optional reagents, when it's worse than without them.
+local function harderText(rank, recipeID)
+	if not rank[4] or (rank[4] == rank[1] and rank[5] == rank[3]) then return end
+	return rankText(rank, recipeID, rank[4], rank[5])
+end
+
+local HARDER_LABEL = "with optional reagents"
+
 local function onItem(tooltip, data)
 	if not (saved and ns.db and ns.db.rankTooltip) then return end
 	local itemID = data and data.id
@@ -245,6 +325,8 @@ local function onItem(tooltip, data)
 		if not rank then return end
 		local text, r, g, b = rankText(rank, recipeID)
 		tooltip:AddDoubleLine("Craft Rank", text, 1, 0.82, 0, r, g, b)
+		text, r, g, b = harderText(rank, recipeID)
+		if text then tooltip:AddDoubleLine("  " .. HARDER_LABEL, text, 0.53, 0.53, 0.53, r, g, b) end
 		return
 	end
 
@@ -254,6 +336,8 @@ local function onItem(tooltip, data)
 	for _, entry in ipairs(list) do
 		local text, r, g, b = rankText(entry.rank, entry.recipeID)
 		tooltip:AddDoubleLine("  " .. characterName(entry.character), text, 1, 1, 1, r, g, b)
+		text, r, g, b = harderText(entry.rank, entry.recipeID)
+		if text then tooltip:AddDoubleLine("    " .. HARDER_LABEL, text, 0.53, 0.53, 0.53, r, g, b) end
 	end
 end
 
