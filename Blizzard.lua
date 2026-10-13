@@ -237,21 +237,26 @@ end
 
 -- Asks the game how a craft with these materials turns out. The game may reject a
 -- made-up material list (that's what what-if builds), so these calls are guarded.
+-- Also returns whether the answer includes concentration.
 local function operationInfo(recipeID, reagents, transaction)
 	local guid = transaction:GetAllocationItemGUID()
 	local concentrating = transaction.IsApplyingConcentration and transaction:IsApplyingConcentration() or false
 	local ok, info = pcall(C_TradeSkillUI.GetCraftingOperationInfo, recipeID, reagents, guid, concentrating)
 	if not (ok and info) and concentrating then
 		-- Changed materials can raise the concentration cost past what you have.
+		concentrating = false
 		ok, info = pcall(C_TradeSkillUI.GetCraftingOperationInfo, recipeID, reagents, guid, false)
 	end
-	return ok and info or nil
+	if not (ok and info) then return nil end
+	return info, concentrating
 end
 
--- The quality tier the game predicts for these materials, or nil.
+-- The quality tier the game predicts for these materials, or nil. Also the
+-- concentration that prediction spends, or nil when it uses none.
 function Blizzard.PredictQuality(recipeID, schematic, transaction, overrides)
-	local info = operationInfo(recipeID, reagentsForPrediction(schematic, transaction, overrides), transaction)
-	return info and info.craftingQuality
+	local info, concentrating = operationInfo(recipeID, reagentsForPrediction(schematic, transaction, overrides), transaction)
+	if not info then return nil end
+	return info.craftingQuality, concentrating and (info.concentrationCost or 0) or nil
 end
 
 -- The item a craft makes at its predicted quality: link, itemID, and whether the

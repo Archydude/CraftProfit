@@ -364,11 +364,13 @@ function Model.Order(ctx)
 	-- the order. Only for items that come in qualities; others are always "quality 1".
 	local recipeInfo = ctx.recipeInfo
 	if simulating and recipeInfo and recipeInfo.supportsQualities then
-		local quality = ns.Blizzard.PredictQuality(recipeInfo.recipeID, schematic, transaction, picks)
+		local quality, concentration = ns.Blizzard.PredictQuality(recipeInfo.recipeID, schematic, transaction, picks)
 		local markup = quality and ns.Blizzard.ItemQualityMarkup(order.spellID, quality)
 		if markup then
 			model.simulatedQuality = {
 				markup = markup,
+				-- The concentration that quality spends, or nil without it.
+				concentration = concentration,
 				-- Icon of the order's minimum quality, when the pick falls short of it.
 				belowMinimum = (order.minQuality or 0) > 1 and quality < order.minQuality
 					and ns.Blizzard.ItemQualityMarkup(order.spellID, order.minQuality) or nil,

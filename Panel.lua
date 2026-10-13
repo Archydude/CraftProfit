@@ -447,7 +447,10 @@ local function drawOrder(model)
 	if quality then
 		-- Set apart from the costs, in the same blue as the "simulated" tags.
 		addGap()
-		addRow(Color("simulated", "Simulated quality:") .. " " .. quality.markup)
+		-- Say when the form's concentration is what reaches it.
+		local concentration = quality.concentration
+			and Color("simulated", format(" (%d concentration)",quality.concentration)) or ""
+		addRow(Color("simulated", "Simulated quality:") .. " " .. quality.markup .. concentration)
 		if quality.belowMinimum then
 			addRow(Color("loss", "Below the order's minimum quality (") .. quality.belowMinimum .. Color("loss", ")"))
 		end
