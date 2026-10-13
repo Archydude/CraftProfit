@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.15.0
+- Optimize concentration: a new checkbox in the Patron orders list, on the crafting order form and in the options. Orders that need concentration to reach their minimum quality use the material qualities that need the least of it, and the cheapest of those, so your concentration covers more orders. The materials cost more.
+- The crafting order form stacks its checkboxes: Optimize Concentration, Use Most Profitable Reagents, then Blizzard's Use Best Quality Reagents.
+- Shopping list: a click adds what you're missing for one craft right away. Shift-click opens the menu for 1, 5, 10 or any number of crafts.
+- Simulated quality says how much concentration it uses, like "(38 concentration)", when concentration is on.
+- The Patron orders list updates right away when you switch "Spend concentration on". "Knowledge first, then profit" is now just "Knowledge first".
+
 ## 1.14.0
 - Craft patron orders right from the list: an order you have everything for gets a small button at the end of its row. Each click does the next step, and its icon shows which: a scroll to start the order, a hammer to craft it with the qualities the list picked (and concentration if its minimum quality needs it), a watch while it crafts, then coins to complete it and collect the rewards. Chat confirms each step.
 - Only one order can be started at a time, so while one is in progress only that order shows the button. It stays in the list until it's complete.

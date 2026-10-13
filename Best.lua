@@ -1,7 +1,7 @@
 -- Craft Profit: the most profitable materials for a crafting order. The panel's
 -- "Use the most profitable materials" row puts them in once; the "Use Most
--- Profitable Reagents" checkbox on the order form, under Blizzard's "Use Best
--- Quality Reagents", puts them in every order you open. Under it, "Optimize
+-- Profitable Reagents" checkbox on the order form, above Blizzard's "Use Best
+-- Quality Reagents", puts them in every order you open. Above it, "Optimize
 -- Concentration" picks the ones that need the least concentration instead.
 local _, ns = ...
 
@@ -111,11 +111,11 @@ local function onConcentrationClick(self)
 	showConcentrationTooltip(self)
 end
 
--- A checkbox like Blizzard's, under `above`, with a clickable label.
-local function addCheckbox(parent, above, text, setting, onClickHandler, tooltip)
+-- A checkbox like Blizzard's, above `below`, with a clickable label.
+local function addCheckbox(parent, below, text, setting, onClickHandler, tooltip)
 	local box = CreateFrame("CheckButton", nil, parent, "UICheckButtonTemplate")
-	box:SetSize(above:GetSize())
-	box:SetPoint("TOPLEFT", above, "BOTTOMLEFT", 0, -ROW_GAP)
+	box:SetSize(below:GetSize())
+	box:SetPoint("BOTTOMLEFT", below, "TOPLEFT", 0, ROW_GAP)
 	local label = box:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
 	label:SetPoint("LEFT", box, "RIGHT", LABEL_GAP, 0)
 	label:SetText(LIGHTGRAY_FONT_COLOR:WrapTextInColorCode(text))
@@ -130,13 +130,11 @@ local function addCheckbox(parent, above, text, setting, onClickHandler, tooltip
 	return box
 end
 
--- Adds the checkboxes under Blizzard's, which moves up to make room. Safe to
--- call more than once.
+-- Adds the checkboxes above Blizzard's, stacked upward. Safe to call more than once.
 function Best.Init()
 	if checkbox then return end
 	local blizzardBox = ns.Blizzard.OrderBestQualityBox()
 	if not blizzardBox then return end
-	ns.Blizzard.RaiseOrderBestQualityBox(2 * (blizzardBox:GetHeight() + ROW_GAP))
 	-- On Blizzard's checkbox, so they show only where that one does: recipes whose
 	-- materials come in qualities.
 	checkbox = addCheckbox(blizzardBox, blizzardBox, LABEL, "bestMaterials", onClick, showTooltip)

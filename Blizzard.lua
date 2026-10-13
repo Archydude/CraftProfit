@@ -164,16 +164,6 @@ function Blizzard.OrderBestQualityBox()
 	return details and details.SchematicForm and details.SchematicForm.AllocateBestQualityCheckbox
 end
 
--- Moves "Use Best Quality Reagents" up by `height`, to make room under it. It's
--- anchored to the form's bottom left, and the order form never moves it again.
-function Blizzard.RaiseOrderBestQualityBox(height)
-	local box = Blizzard.OrderBestQualityBox()
-	local point, relativeTo, relativePoint, x, y = box:GetPoint(1)
-	if not point then return end
-	box:ClearAllPoints()
-	box:SetPoint(point, relativeTo, relativePoint, x, y + height)
-end
-
 -- Turns Blizzard's "Use Best Quality Reagents" off: its setting and its checkbox.
 function Blizzard.StopBestQuality()
 	if Professions.ShouldAllocateBestQualityReagents() then

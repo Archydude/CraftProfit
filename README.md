@@ -45,12 +45,12 @@ Open your profession and pick a recipe, or open a crafting order. The panel appe
 
 **Use the most profitable materials:** on a crafting order, when the form holds materials that make less gold than they could, a blue row under the materials says how much more the best ones make. Click it to put them in Blizzard's form: the cheapest qualities that still reach the order's minimum quality, with what you own counted at what it would sell for. These are the same materials the Patron orders list prices each order with. If reaching the minimum quality takes concentration, it turns that on too. A material you don't have enough of stays as it was, and chat says what to buy. Hover the row to see what it puts in.
 
-**Use Most Profitable Reagents:** a checkbox on the crafting order form, under Blizzard's **Use Best Quality Reagents**. While it's on, every order you open gets the most profitable materials put in by itself. A slot you change afterwards stays as you set it. Unticking it puts back the materials Blizzard picks by itself, and turns concentration back off if the checkbox turned it on. Only one of the two checkboxes can be on: checking one unchecks the other. It shows wherever Blizzard's checkbox does, on orders whose materials come in qualities.
+**Use Most Profitable Reagents:** a checkbox on the crafting order form, above Blizzard's **Use Best Quality Reagents**. While it's on, every order you open gets the most profitable materials put in by itself. A slot you change afterwards stays as you set it. Unticking it puts back the materials Blizzard picks by itself, and turns concentration back off if the checkbox turned it on. Only one of the two checkboxes can be on: checking one unchecks the other. It shows wherever Blizzard's checkbox does, on orders whose materials come in qualities.
 
 ### Shopping list
 Under **Materials cost** there's a **Shopping list** row. It turns orange and shows a count when you're short of materials for one craft; hover it to see what's missing.
 
-**Click** it to open a menu:
+**Click** it to add what you're missing for one craft. **Shift-click** it to open a menu:
 
 - **For 1 / 5 / 10 crafts:** adds what you're missing for that many crafts, with the amount and quality, to Auctionator's **Craft Profit** shopping list. Each line shows how many items it would add. Open the list in Auctionator's Shopping tab at the auction house.
 - **Other amount...:** type any number of crafts. The last number you typed stays in the menu until you log out or `/reload`.
@@ -82,7 +82,7 @@ Either way, materials you own count once across all the orders, and what the pat
 
 **Concentration:** the orders that need concentration share what you have, and the top of the list shows how much they use. By default the orders that make the most gold per concentration point get it first; the options, or the choice at the bottom of the list, can put orders that reward profession knowledge first instead. Once it runs out, the rest say **not enough concentration** in red, their profit turns grey, and Add profitable and Add all skip them. Order tooltips also show how much knowledge a reward gives.
 
-**Optimize concentration:** a checkbox at the bottom of the list, also on the crafting order form (under Use Most Profitable Reagents) and in the options. With it on, an order that needs concentration uses the material qualities that need the least of it, and the cheapest of those, so your concentration covers more orders. The materials cost more. Use Most Profitable Reagents and the blue row on the order form pick the same materials.
+**Optimize concentration:** a checkbox at the bottom of the list, also on the crafting order form (above Use Most Profitable Reagents) and in the options. With it on, an order that needs concentration uses the material qualities that need the least of it, and the cheapest of those, so your concentration covers more orders. The materials cost more. Use Most Profitable Reagents and the blue row on the order form pick the same materials.
 
 You can hide the Shopping list row and the Patron orders button in the options. The options also have a **Clear** button for the list.
 
