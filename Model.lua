@@ -308,7 +308,8 @@ end
 -- For an order open in the form: the materials that make it the most gold while
 -- still reaching its minimum quality (the same picks as the Patron orders list),
 -- when the form has something else. { picks = slotIndex -> itemID, list = { {
--- itemID, qty } ... }, concentrate, gain = gold more than the form makes }, or nil.
+-- itemID, qty } ... }, concentrate, concentration = what it takes or nil, gain =
+-- gold more than the form makes }, or nil.
 local function bestMaterials(ctx, model)
 	local order, schematic, transaction = ctx.order, ctx.schematic, ctx.transaction
 	local plan = ns.Planner.ForOrder(order, schematic, ctx.provided)
@@ -329,8 +330,13 @@ local function bestMaterials(ctx, model)
 	local minQuality = order.minQuality or 0
 	local belowMinimum = minQuality > 1 and ctx.recipeInfo
 		and (ns.Blizzard.PredictQuality(ctx.recipeInfo.recipeID, schematic, transaction, {}) or 0) < minQuality
-	if gain <= 0 and not belowMinimum then return end
-	return { picks = plan.overrides, list = plan.picks, concentrate = concentrate, gain = gain }
+	-- Or, with "Optimize concentration" on, when it takes less than the form does.
+	local savesConcentration = ns.db.leastConcentration and plan.concentration and ctx.recipeInfo
+		and ns.Blizzard.IsConcentrating(transaction)
+		and (ns.Blizzard.FormConcentrationCost(ctx.recipeInfo.recipeID, schematic, transaction) or 0) > plan.concentration
+	if gain <= 0 and not belowMinimum and not savesConcentration then return end
+	return { picks = plan.overrides, list = plan.picks, concentrate = concentrate, concentration = plan.concentration,
+		savesConcentration = savesConcentration and true or false, gain = gain }
 end
 
 -- The open crafting order, or one listed on the Patron tab.

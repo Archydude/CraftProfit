@@ -11,8 +11,10 @@ function Options.Open()
 	if category then Settings.OpenToCategory(category:GetID()) end
 end
 
--- Any change re-places and redraws the panel.
+-- Any change re-places and redraws the panel. Prices and the concentration
+-- choice change the patron orders' picks too.
 local function onChanged()
+	ns.Planner.Reset()
 	ns.Panel.Place()
 	ns.Panel.Refresh()
 end
@@ -107,6 +109,9 @@ function Options.Create()
 		"you have. They get it in this order until it runs out; the rest say \"not enough concentration\".\n\n" ..
 		"Most profit: the most gold per concentration point first.\n\n" ..
 		"Knowledge first: orders that reward profession knowledge first, then the rest by profit.\n\n" ..
+		"You can also switch it at the bottom of the Patron orders list.")
+	checkbox("leastConcentration", ns.LEAST_CONCENTRATION, ns.LEAST_CONCENTRATION_TIP ..
+		"\n\nAlso picks the materials for Use Most Profitable Reagents on the order form. " ..
 		"You can also switch it at the bottom of the Patron orders list.")
 
 	layout:AddInitializer(CreateSettingsListSectionHeaderInitializer("Tooltips"))

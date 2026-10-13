@@ -172,7 +172,10 @@ end
 -- (or the game can't predict the quality):
 --   { overrides, picks }                             no minimum: the cheapest of each
 --   { minQuality, overrides, picks }                 cheapest mix that reaches the minimum
---   { minQuality, overrides, picks, concentration }  only reached with concentration
+--   { minQuality, overrides, picks, concentration }  only reached with concentration:
+--                                                    the cheapest mix that does it, or with the
+--                                                    "Optimize concentration" option, the mix that
+--                                                    takes the least (the cheapest of those)
 --   { minQuality, overrides, picks, unreachable }    not even the top qualities reach it
 function Planner.ForOrder(order, schematic, provided)
 	if order.isRecraft then return end
@@ -196,6 +199,7 @@ function Planner.ForOrder(order, schematic, provided)
 	end
 
 	local mixes = mixesOf(slots)
+	local least = ns.db.leastConcentration
 	local plan, withConcentration, predicted, best
 	for _, mix in ipairs(mixes) do
 		local quality, cost, currencyID = predict(order, schematic, slots, mix)
@@ -205,7 +209,9 @@ function Planner.ForOrder(order, schematic, provided)
 				plan = { mix = mix }
 				break
 			end
-			if not withConcentration and quality + 1 >= minQuality and cost > 0 then
+			-- Mixes come cheapest first, so a later one only wins on less concentration.
+			if quality + 1 >= minQuality and cost > 0
+				and (not withConcentration or least and cost < withConcentration.concentration) then
 				withConcentration = { mix = mix, concentration = cost, currencyID = currencyID }
 			end
 			if not best or quality > best.quality then best = { mix = mix, quality = quality } end

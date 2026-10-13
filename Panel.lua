@@ -411,10 +411,18 @@ local function bestTooltip(best)
 		tip:AddLine("Puts these in the order form:", 1, 1, 1)
 		for _, pick in ipairs(best.list) do tip:AddLine(Item(pick.itemID, pick.qty), 1, 1, 1) end
 		if best.concentrate then tip:AddLine("and turns on concentration, which it needs.", 1, 1, 1, true) end
-		tip:AddLine("The cheapest materials that still reach the order's minimum quality. What you own counts at what it would sell for.",
-			0.53, 0.53, 0.53, true)
+		if ns.db.leastConcentration and best.concentration then
+			tip:AddLine(format("The materials that reach the order's minimum quality with the least concentration (%d), "
+				.. "and the cheapest of those. What you own counts at what it would sell for.", best.concentration),
+				0.53, 0.53, 0.53, true)
+		else
+			tip:AddLine("The cheapest materials that still reach the order's minimum quality. What you own counts at what it would sell for.",
+				0.53, 0.53, 0.53, true)
+		end
 		if best.gain > 0 then
 			tip:AddDoubleLine("You come out ahead", signedMoney(best.gain), 1, 1, 1, 1, 1, 1)
+		elseif best.savesConcentration then
+			tip:AddDoubleLine("Costs more, saves concentration", signedMoney(best.gain), 1, 1, 1, 1, 1, 1)
 		end
 	end
 end

@@ -59,6 +59,7 @@ ns.DEFAULTS = {
 	listPerCharacter = true,   -- a separate Auctionator list for each character
 	listPerProfession = true,  -- and/or for each profession
 	concentrationFor = "profit", -- patron orders that need concentration get it by: "profit" | "knowledge"
+	leastConcentration = false, -- orders that need concentration: the qualities that need the least, cheapest of those
 	bestMaterials = false, -- "Use Most Profitable Reagents" on the order form: put them in every order you open
 	rankTooltip = true,   -- best rank you can craft, on crafted items' tooltips
 	rankConcentration = true, -- add the concentration that rank takes
@@ -71,10 +72,16 @@ ns.KNOWLEDGE_ITEMS = {
 	[246331] = 2, -- Glimmer
 }
 
+-- The "Optimize concentration" option, in the Patron orders list and the options.
+ns.LEAST_CONCENTRATION = "Optimize concentration"
+ns.LEAST_CONCENTRATION_TIP = "Orders that only reach their minimum quality with concentration use the material " ..
+	"qualities that need the least of it, and the cheapest of those. The materials cost more, but your " ..
+	"concentration lasts for more orders.\n\nOff: the cheapest materials that reach it, whatever concentration they take."
+
 -- Choices for which patron orders get your concentration first.
 ns.CONCENTRATION_CHOICES = {
 	{ "profit", "Most profit (default)" },
-	{ "knowledge", "Knowledge first, then profit" },
+	{ "knowledge", "Knowledge first" },
 }
 
 -- Choices for where missing materials go when Auctionator and TSM are both installed.

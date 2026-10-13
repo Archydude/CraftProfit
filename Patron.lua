@@ -380,7 +380,8 @@ local function orderTooltip(tooltip, row)
 				plan.concentration), 1, 0.4, 0.4, true)
 			tooltip:AddLine("Using:", 1, 1, 1)
 		elseif plan.concentration then
-			tooltip:AddLine(format("Reached with %d concentration, using:", plan.concentration), 1, 1, 1, true)
+			tooltip:AddLine(format(ns.db.leastConcentration and "Reached with %d concentration, the least it can take, using:"
+				or "Reached with %d concentration, using:", plan.concentration), 1, 1, 1, true)
 		else
 			tooltip:AddLine("Reached with the cheapest qualities that do it:", 1, 1, 1, true)
 		end
@@ -477,6 +478,26 @@ local function openUnder(owner, generator)
 	return Menu.GetManager():OpenMenu(owner, description, anchor)
 end
 
+-- For a choice that changes the orders' rows: a menu refresh only re-ticks the
+-- checkboxes, so the list is opened again once the click is done.
+local function redrawn()
+	C_Timer.After(0, Patron.Reopen)
+	return MenuResponse and MenuResponse.Open
+end
+
+local function leastConcentrationTooltip(tooltip)
+	GameTooltip_SetTitle(tooltip, ns.LEAST_CONCENTRATION)
+	tooltip:AddLine(ns.LEAST_CONCENTRATION_TIP, 1, 1, 1, true)
+end
+
+-- Turns "Optimize concentration" on or off. Every order's picks change,
+-- including the open order's "Use the most profitable materials".
+function Patron.SetLeastConcentration(on)
+	ns.db.leastConcentration = on
+	ns.Planner.Reset()
+	ns.Panel.Refresh()
+end
+
 local function openMenu(owner)
 	GameTooltip:Hide()
 	local menu = openUnder(owner, function(_, root)
@@ -565,11 +586,17 @@ local function openMenu(owner)
 		local function isChosen(key) return ns.db.concentrationFor == key end
 		local function choose(key)
 			ns.db.concentrationFor = key
-			return MenuResponse and MenuResponse.Refresh
+			return redrawn()
 		end
 		for _, choice in ipairs(ns.CONCENTRATION_CHOICES) do
 			root:CreateRadio(choice[2], isChosen, choose, choice[1])
 		end
+		-- The orders' picks change, so they're worked out again.
+		local least = root:CreateCheckbox(ns.LEAST_CONCENTRATION, function() return ns.db.leastConcentration end, function()
+			Patron.SetLeastConcentration(not ns.db.leastConcentration)
+			return redrawn()
+		end)
+		least:SetTooltip(leastConcentrationTooltip)
 	end)
 	showGear(menu)
 end

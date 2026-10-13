@@ -1,7 +1,8 @@
 -- Craft Profit: the most profitable materials for a crafting order. The panel's
 -- "Use the most profitable materials" row puts them in once; the "Use Most
--- Profitable Reagents" checkbox on the order form, next to Blizzard's "Use Best
--- Quality Reagents", puts them in every order you open.
+-- Profitable Reagents" checkbox on the order form, under Blizzard's "Use Best
+-- Quality Reagents", puts them in every order you open. Under it, "Optimize
+-- Concentration" picks the ones that need the least concentration instead.
 local _, ns = ...
 
 local Best = {}
@@ -10,8 +11,9 @@ ns.Best = Best
 local format = string.format
 
 local LABEL = "Use Most Profitable Reagents"
-local LABEL_GAP = 2   -- checkbox to its label
-local BLIZZARD_GAP = 24 -- Blizzard's checkbox label to ours
+local CONCENTRATION_LABEL = "Optimize Concentration"
+local LABEL_GAP = 2 -- checkbox to its label
+local ROW_GAP = 0   -- between the stacked checkboxes
 
 local checkbox
 
@@ -91,26 +93,55 @@ local function onBlizzardBestQuality(checked)
 	forgetOrder()
 end
 
--- Adds the checkbox next to Blizzard's. Safe to call more than once.
+local function showConcentrationTooltip(self)
+	GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+	GameTooltip:SetText(CONCENTRATION_LABEL)
+	GameTooltip:AddLine(ns.LEAST_CONCENTRATION_TIP, 1, 1, 1, true)
+	GameTooltip:AddLine(" ")
+	GameTooltip:AddLine("Picks the materials for Use Most Profitable Reagents and the Patron orders list. "
+		.. "The same as Optimize concentration at the bottom of that list.", 0.53, 0.53, 0.53, true)
+	GameTooltip:Show()
+end
+
+local function onConcentrationClick(self)
+	local on = self:GetChecked() and true or false
+	PlaySound(on and SOUNDKIT.IG_MAINMENU_OPTION_CHECKBOX_ON or SOUNDKIT.IG_MAINMENU_OPTION_CHECKBOX_OFF)
+	-- New picks go in by themselves while Use Most Profitable Reagents is on.
+	ns.Patron.SetLeastConcentration(on)
+	showConcentrationTooltip(self)
+end
+
+-- A checkbox like Blizzard's, under `above`, with a clickable label.
+local function addCheckbox(parent, above, text, setting, onClickHandler, tooltip)
+	local box = CreateFrame("CheckButton", nil, parent, "UICheckButtonTemplate")
+	box:SetSize(above:GetSize())
+	box:SetPoint("TOPLEFT", above, "BOTTOMLEFT", 0, -ROW_GAP)
+	local label = box:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
+	label:SetPoint("LEFT", box, "RIGHT", LABEL_GAP, 0)
+	label:SetText(LIGHTGRAY_FONT_COLOR:WrapTextInColorCode(text))
+	-- The label is clickable too, like Blizzard's.
+	box:SetHitRectInsets(0, -(label:GetStringWidth() + LABEL_GAP), 0, 0)
+	box:SetChecked(ns.db[setting])
+	box:SetScript("OnClick", onClickHandler)
+	box:SetScript("OnEnter", tooltip)
+	box:SetScript("OnLeave", GameTooltip_Hide)
+	-- The setting can change elsewhere (options, the Patron orders list).
+	box:SetScript("OnShow", function(self) self:SetChecked(ns.db[setting]) end)
+	return box
+end
+
+-- Adds the checkboxes under Blizzard's, which moves up to make room. Safe to
+-- call more than once.
 function Best.Init()
 	if checkbox then return end
 	local blizzardBox = ns.Blizzard.OrderBestQualityBox()
 	if not blizzardBox then return end
-	-- On Blizzard's checkbox, so it shows only where that one does: recipes whose
+	ns.Blizzard.RaiseOrderBestQualityBox(2 * (blizzardBox:GetHeight() + ROW_GAP))
+	-- On Blizzard's checkbox, so they show only where that one does: recipes whose
 	-- materials come in qualities.
-	checkbox = CreateFrame("CheckButton", nil, blizzardBox, "UICheckButtonTemplate")
-	checkbox:SetSize(blizzardBox:GetSize())
-	checkbox:SetPoint("LEFT", blizzardBox.text or blizzardBox, "RIGHT", BLIZZARD_GAP, 0)
-	local label = checkbox:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
-	label:SetPoint("LEFT", checkbox, "RIGHT", LABEL_GAP, 0)
-	label:SetText(LIGHTGRAY_FONT_COLOR:WrapTextInColorCode(LABEL))
-	-- The label is clickable too, like Blizzard's.
-	checkbox:SetHitRectInsets(0, -(label:GetStringWidth() + LABEL_GAP), 0, 0)
-	checkbox:SetChecked(ns.db.bestMaterials)
-	checkbox:SetScript("OnClick", onClick)
-	checkbox:SetScript("OnEnter", showTooltip)
-	checkbox:SetScript("OnLeave", GameTooltip_Hide)
-	checkbox:SetScript("OnShow", function(self) self:SetChecked(ns.db.bestMaterials) end)
+	checkbox = addCheckbox(blizzardBox, blizzardBox, LABEL, "bestMaterials", onClick, showTooltip)
+	addCheckbox(blizzardBox, checkbox, CONCENTRATION_LABEL, "leastConcentration", onConcentrationClick,
+		showConcentrationTooltip)
 
 	ns.Blizzard.WatchOrderForm(onBlizzardBestQuality, forgetOrder, checkbox)
 end
