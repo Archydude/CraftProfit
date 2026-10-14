@@ -72,11 +72,11 @@ Hover an item you can craft to see each character's **Craft Rank**: the highest 
 
 ## B. Upload File form
 
-**File:** `dist\CraftProfit-1.16.0.zip`
+**File:** `dist\CraftProfit-1.16.1.zip`
 
 **Display name**
 ```
-Craft Profit 1.16.0
+Craft Profit 1.16.1
 ```
 
 **Release type:** `Release`
@@ -85,6 +85,9 @@ Craft Profit 1.16.0
 
 **Changelog** (paste only the newest part; paste older parts too if they never went up)
 ```markdown
+1.16.1
+- Fixed: the game could stutter for a few seconds after you opened your profession window, while Craft Rank updated. It now updates in the background without slowing the game down.
+
 1.16.0
 - Craft Rank: a new "with optional reagents" line under a character's rank, when optional reagents make the item harder to craft, like the ones that raise its item level. It shows the best rank with the hardest one in each optional slot, at its top rank, and the concentration it takes. Open your profession window once to update it.
 
