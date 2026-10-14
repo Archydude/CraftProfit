@@ -13,9 +13,9 @@ ns.Ranks = Ranks
 
 local format = string.format
 
--- Questions to the game per frame (a recipe takes one, plus one for each
--- optional reagent it tries), so opening the window doesn't stutter.
-local CALLS_PER_FRAME = 60
+-- Milliseconds the scan may spend each frame, so it never slows the game down.
+-- One question to the game can take about a millisecond, so this is a few of them.
+local FRAME_BUDGET_MS = 2
 -- Seconds to wait after the recipe list changes before scanning it, so a burst
 -- of changes (opening the window, crafting) scans once.
 local SCAN_DELAY = 1
@@ -79,12 +79,18 @@ local function topQualityReagents(schematic)
 	return list
 end
 
-local calls = 0 -- questions asked this frame
+local deadline = 0 -- when this frame's share of the scan runs out
+
+-- The scan runs as a coroutine; this pauses it until the next frame once this
+-- frame's share is used up.
+local function pauseIfDue()
+	if debugprofilestop() > deadline then coroutine.yield() end
+end
 
 -- How a craft with these reagents turns out, or nil.
 local function operation(recipeID, reagents)
-	calls = calls + 1
 	local ok, info = pcall(C_TradeSkillUI.GetCraftingOperationInfo, recipeID, reagents, nil, false)
+	pauseIfDue()
 	return ok and info and info.craftingQuality and info or nil
 end
 
@@ -169,55 +175,74 @@ local function shownProfession()
 	return child.professionID, base and base.professionID
 end
 
-local scanRun -- the scan in progress; a newer one replaces it
+-- Works out the rank of every recipe in the list and saves them. Runs as a
+-- coroutine, a little each frame.
+local function scanAll(professionID, recipeIDs, parentID)
+	local result = { parent = parentID, recipes = {}, items = {} }
+	for _, recipeID in ipairs(recipeIDs) do
+		local info = C_TradeSkillUI.GetRecipeInfo(recipeID)
+		if info and info.learned and info.supportsQualities
+			and not (info.isRecraft or info.isSalvageRecipe or info.isDummyRecipe) then
+			local rank, outputID = rankOf(recipeID, info)
+			if rank then
+				result.recipes[recipeID] = rank
+				for _, itemID in ipairs(info.qualityItemIDs or {}) do result.items[itemID] = recipeID end
+				if outputID then result.items[outputID] = recipeID end
+			end
+		end
+		pauseIfDue()
+	end
+	saved[professionID] = result
+end
+
+local scanRun -- the scan in progress; a scan of another profession replaces it
+local rescan  -- the recipe list changed during the scan: scan again once it's done
+local queueScan
 
 local function scan()
 	if not ns.Blizzard.IsOwnProfession() then return end
 	local professionID, parentID = shownProfession()
 	if not professionID then return end
+	-- Already scanning this profession: finish first, then go again.
+	if scanRun and scanRun.professionID == professionID then
+		rescan = true
+		return
+	end
 	local recipeIDs = (C_TradeSkillUI.GetAllRecipeIDs or C_TradeSkillUI.GetFilteredRecipeIDs)()
 	if not recipeIDs or #recipeIDs == 0 then return end
 
-	local result = { parent = parentID, recipes = {}, items = {} }
-	local run = {}
-	scanRun = run
-	local i = 0
+	local run = { professionID = professionID, thread = coroutine.create(scanAll) }
+	scanRun, rescan = run, false
 	local function step()
-		-- Stop without saving if a newer scan started, the window closed or it
-		-- switched profession: the game's answers would be wrong from here on.
 		if scanRun ~= run then return end
+		-- Stop without saving if the window closed or switched profession: the
+		-- game's answers would be wrong from here on.
 		if not ns.Blizzard.IsOwnProfession() or shownProfession() ~= professionID then
-			scanRun = nil
+			scanRun, rescan = nil, false
 			return
 		end
-		calls = 0
-		while calls < CALLS_PER_FRAME do
-			i = i + 1
-			local recipeID = recipeIDs[i]
-			if not recipeID then
-				saved[professionID] = result
-				scanRun = nil
-				return
-			end
-			calls = calls + 1 -- even a recipe that's skipped costs a little
-			local info = C_TradeSkillUI.GetRecipeInfo(recipeID)
-			if info and info.learned and info.supportsQualities
-				and not (info.isRecraft or info.isSalvageRecipe or info.isDummyRecipe) then
-				local rank, outputID = rankOf(recipeID, info)
-				if rank then
-					result.recipes[recipeID] = rank
-					for _, itemID in ipairs(info.qualityItemIDs or {}) do result.items[itemID] = recipeID end
-					if outputID then result.items[outputID] = recipeID end
-				end
-			end
+		deadline = debugprofilestop() + FRAME_BUDGET_MS
+		local ok, err = coroutine.resume(run.thread, professionID, recipeIDs, parentID)
+		if not ok then
+			scanRun = nil
+			geterrorhandler()(err)
+			return
 		end
-		C_Timer.After(0, step)
+		if coroutine.status(run.thread) ~= "dead" then
+			C_Timer.After(0, step)
+			return
+		end
+		scanRun = nil
+		if rescan then
+			rescan = false
+			queueScan()
+		end
 	end
 	step()
 end
 
 local scanQueued
-local function queueScan()
+function queueScan()
 	if scanQueued or not ns.Blizzard.IsOwnProfession() then return end
 	scanQueued = true
 	C_Timer.After(SCAN_DELAY, function()
