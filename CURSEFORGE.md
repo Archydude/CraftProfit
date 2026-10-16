@@ -52,7 +52,7 @@ Tick **Use Most Profitable Reagents** on the crafting order form and every order
 Click a material to try its next quality; profit updates right away.
 
 ### Shopping list
-One click adds what you're missing for a craft to an **Auctionator** shopping list or a **TSM** search. Shift-click for more crafts.
+One click adds what you're missing for a craft to an **Auctionator** shopping list or a **TSM** search, in the ranks that reach an order's minimum quality. Shift-click for more crafts. The Auctionator list checks itself off as the materials come in.
 
 ### Procs and session total
 **Multicraft** and **resourcefulness** procs pop up as bonus gold, and a session total adds up what you've made.
@@ -72,11 +72,11 @@ Hover an item you can craft to see each character's **Craft Rank**: the highest 
 
 ## B. Upload File form
 
-**File:** `dist\CraftProfit-1.16.1.zip`
+**File:** `dist\CraftProfit-1.17.0.zip`
 
 **Display name**
 ```
-Craft Profit 1.16.1
+Craft Profit 1.17.0
 ```
 
 **Release type:** `Release`
@@ -85,6 +85,12 @@ Craft Profit 1.16.1
 
 **Changelog** (paste only the newest part; paste older parts too if they never went up)
 ```markdown
+1.17.0
+- The shopping list checks itself off: materials Craft Profit added to your Auctionator shopping list come off as you get them, whether bought, looted, taken from the mailbox or crafted. Chat says what came off, and when the list is done. Moving things between your bags, bank and warband bank doesn't count, and lines you add yourself in Auctionator stay. Turn it off with "Check off what you get" in the options.
+- Fixed: on a crafting order with a minimum quality, the Shopping list could add a rank that doesn't reach it (usually the cheapest). It now adds the ranks that do, the same ones the Patron orders list picks.
+- Fixed: optional and finishing reagents that raise your skill no longer count toward an order's minimum quality in Craft Profit's suggestions. With one in the form, a cheaper rank could be suggested that only reached the minimum thanks to it.
+- Optimize Concentration on the crafting order form fades while Use Most Profitable Reagents is off, since it doesn't change the form then. It still sets the Patron orders list's picks.
+
 1.16.1
 - Fixed: the game could stutter for a few seconds after you opened your profession window, while Craft Rank updated. It now updates in the background without slowing the game down.
 

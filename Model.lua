@@ -144,7 +144,8 @@ local function cheaperRanks(ctx, materials, picks)
 						local overrides = {}
 						for k, v in pairs(picks or {}) do overrides[k] = v end
 						overrides[slotIndex] = itemID
-						local quality = ns.Blizzard.PredictQuality(recipeInfo.recipeID, schematic, transaction, overrides)
+						-- Without your skill boosters: the cheaper rank has to do it on its own.
+						local quality = ns.Blizzard.PredictQuality(recipeInfo.recipeID, schematic, transaction, overrides, ctx.provided)
 						meets = quality ~= nil and quality >= minQuality
 					end
 					if meets then
@@ -327,13 +328,15 @@ local function bestMaterials(ctx, model)
 	local planned = Model.Order({ order = order, schematic = schematic, provided = ctx.provided, overrides = plan.overrides })
 	local gain = planned.total - model.realProfit
 	-- Also worth it when it makes less, if the form misses the minimum quality.
+	-- The form is judged without your skill boosters, like the plan.
 	local minQuality = order.minQuality or 0
 	local belowMinimum = minQuality > 1 and ctx.recipeInfo
-		and (ns.Blizzard.PredictQuality(ctx.recipeInfo.recipeID, schematic, transaction, {}) or 0) < minQuality
+		and (ns.Blizzard.PredictQuality(ctx.recipeInfo.recipeID, schematic, transaction, {}, ctx.provided) or 0) < minQuality
 	-- Or, with "Optimize concentration" on, when it takes less than the form does.
 	local savesConcentration = ns.db.leastConcentration and plan.concentration and ctx.recipeInfo
 		and ns.Blizzard.IsConcentrating(transaction)
-		and (ns.Blizzard.FormConcentrationCost(ctx.recipeInfo.recipeID, schematic, transaction) or 0) > plan.concentration
+		and (ns.Blizzard.FormConcentrationCost(ctx.recipeInfo.recipeID, schematic, transaction, ctx.provided) or 0)
+			> plan.concentration
 	if gain <= 0 and not belowMinimum and not savesConcentration then return end
 	return { picks = plan.overrides, list = plan.picks, concentrate = concentrate, concentration = plan.concentration,
 		savesConcentration = savesConcentration and true or false, gain = gain }
@@ -363,12 +366,24 @@ function Model.Order(ctx)
 
 	model.materials = Model.Materials(schematic, transaction, ctx.provided, picks)
 	model.cost = costOf(model.materials, notes)
-	addShopping(model, schematic, ctx.provided, picks)
+	local recipeInfo = ctx.recipeInfo
+	-- When the form doesn't reach the order's minimum quality (without your skill
+	-- boosters), the shopping list buys the ranks that do: the Patron orders list's
+	-- picks. Otherwise any rank you own counts, and the cheapest one is bought.
+	-- What-if picks always win: they're the ranks you chose.
+	local shopPicks = picks
+	if canSimulate and not simulating and recipeInfo then
+		local plan = ns.Planner.ForOrder(order, schematic, ctx.provided)
+		if plan and plan.minQuality and plan.overrides and next(plan.overrides) and not plan.unreachable
+			and (ns.Blizzard.PredictQuality(recipeInfo.recipeID, schematic, transaction, {}, ctx.provided) or 0) < plan.minQuality then
+			shopPicks = plan.overrides
+		end
+	end
+	addShopping(model, schematic, ctx.provided, shopPicks)
 	model.cheaper = canSimulate and cheaperRanks(ctx, model.materials, picks) or {}
 
 	-- While simulating: the quality the picked materials give, and whether it meets
 	-- the order. Only for items that come in qualities; others are always "quality 1".
-	local recipeInfo = ctx.recipeInfo
 	if simulating and recipeInfo and recipeInfo.supportsQualities then
 		local quality, concentration = ns.Blizzard.PredictQuality(recipeInfo.recipeID, schematic, transaction, picks)
 		local markup = quality and ns.Blizzard.ItemQualityMarkup(order.spellID, quality)

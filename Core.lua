@@ -25,6 +25,7 @@ local function loadSettings()
 		if db[key] == nil then db[key] = value end
 	end
 	db.session = db.session or { total = 0, crafts = 0 }
+	db.listItems = db.listItems or {} -- what Craft Profit put on each shopping list (see Shopping.lua)
 	return db
 end
 

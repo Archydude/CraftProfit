@@ -15,7 +15,18 @@ local CONCENTRATION_LABEL = "Optimize Concentration"
 local LABEL_GAP = 2 -- checkbox to its label
 local ROW_GAP = 0   -- between the stacked checkboxes
 
-local checkbox
+local checkbox, concentrationBox
+
+-- How faded Optimize Concentration is while it doesn't change the form.
+local DIMMED_ALPHA = 0.45
+
+-- Optimize Concentration only changes the form through Use Most Profitable
+-- Reagents, so it's dimmed (box, check and label) while that's off. It stays
+-- clickable: it still sets the Patron orders list's picks.
+local function updateDim()
+	if not concentrationBox then return end
+	concentrationBox:SetAlpha(ns.db.bestMaterials and 1 or DIMMED_ALPHA)
+end
 
 -- What the checkbox already put in for the open order, so each set goes in once
 -- and a slot you change afterwards stays as you set it. Cleared for each order.
@@ -79,6 +90,7 @@ local function onClick(self)
 		-- Back to what Blizzard puts in by itself, like unticking its checkbox.
 		ns.Blizzard.ResetMaterials(concentrated)
 	end
+	updateDim()
 	forgetOrder()
 	ns.Panel.Refresh()
 	showTooltip(self)
@@ -89,6 +101,7 @@ local function onBlizzardBestQuality(checked)
 	if checked and ns.db.bestMaterials then
 		ns.db.bestMaterials = false
 		checkbox:SetChecked(false)
+		updateDim()
 	end
 	forgetOrder()
 end
@@ -97,6 +110,10 @@ local function showConcentrationTooltip(self)
 	GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
 	GameTooltip:SetText(CONCENTRATION_LABEL)
 	GameTooltip:AddLine(ns.LEAST_CONCENTRATION_TIP, 1, 1, 1, true)
+	if not ns.db.bestMaterials then
+		GameTooltip:AddLine(" ")
+		GameTooltip:AddLine("Use Most Profitable Reagents is off, so this doesn't change the form right now.", 1, 0.82, 0, true)
+	end
 	GameTooltip:AddLine(" ")
 	GameTooltip:AddLine("Picks the materials for Use Most Profitable Reagents and the Patron orders list. "
 		.. "The same as Optimize concentration at the bottom of that list.", 0.53, 0.53, 0.53, true)
@@ -126,7 +143,10 @@ local function addCheckbox(parent, below, text, setting, onClickHandler, tooltip
 	box:SetScript("OnEnter", tooltip)
 	box:SetScript("OnLeave", GameTooltip_Hide)
 	-- The setting can change elsewhere (options, the Patron orders list).
-	box:SetScript("OnShow", function(self) self:SetChecked(ns.db[setting]) end)
+	box:SetScript("OnShow", function(self)
+		self:SetChecked(ns.db[setting])
+		updateDim()
+	end)
 	return box
 end
 
@@ -138,8 +158,9 @@ function Best.Init()
 	-- On Blizzard's checkbox, so they show only where that one does: recipes whose
 	-- materials come in qualities.
 	checkbox = addCheckbox(blizzardBox, blizzardBox, LABEL, "bestMaterials", onClick, showTooltip)
-	addCheckbox(blizzardBox, checkbox, CONCENTRATION_LABEL, "leastConcentration", onConcentrationClick,
-		showConcentrationTooltip)
+	concentrationBox = addCheckbox(blizzardBox, checkbox, CONCENTRATION_LABEL, "leastConcentration",
+		onConcentrationClick, showConcentrationTooltip)
+	updateDim()
 
 	ns.Blizzard.WatchOrderForm(onBlizzardBestQuality, forgetOrder, checkbox)
 end

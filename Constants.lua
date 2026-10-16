@@ -58,6 +58,7 @@ ns.DEFAULTS = {
 	listAddon = "auctionator", -- with both installed, materials go to: "auctionator" | "tsm"
 	listPerCharacter = true,   -- a separate Auctionator list for each character
 	listPerProfession = true,  -- and/or for each profession
+	checkOff = true,           -- take materials off the Auctionator list as you get them
 	concentrationFor = "profit", -- patron orders that need concentration get it by: "profit" | "knowledge"
 	leastConcentration = false, -- orders that need concentration: the qualities that need the least, cheapest of those
 	bestMaterials = false, -- "Use Most Profitable Reagents" on the order form: put them in every order you open

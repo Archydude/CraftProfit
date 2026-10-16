@@ -109,10 +109,10 @@ local function termKey(term)
 	return format("%s|%s|%s", term.searchString:lower(), tostring(term.tier), tostring(term.isExact))
 end
 
--- Adds { { name, tier, qty } ... } to the shopping list, keeping what's on it.
--- Returns whether it worked.
-local function addToList(api, items, listName)
-	-- The API only makes whole lists, so read the old one and rebuild it.
+-- The lines of a shopping list, and the ones Auctionator could read by termKey.
+-- The API only makes whole lists, so changing one means reading it, changing the
+-- lines and writing it back (writeList).
+local function readList(api, listName)
 	local lines, byKey = {}, {}
 	for _, searchString in ipairs(call(api.GetShoppingListItems, listName) or {}) do
 		local line = { text = searchString }
@@ -123,7 +123,28 @@ local function addToList(api, items, listName)
 		end
 		lines[#lines + 1] = line
 	end
+	return lines, byKey
+end
 
+-- Writes the lines back, leaving out the ones marked gone. A line whose amount
+-- changed has its text cleared, so it's rebuilt from its term. Returns whether
+-- it worked.
+local function writeList(api, listName, lines)
+	local searchStrings = {}
+	for _, line in ipairs(lines) do
+		if not line.gone then
+			local text = line.text or call(api.ConvertToSearchString, line.term)
+			if not text then return false end
+			searchStrings[#searchStrings + 1] = text
+		end
+	end
+	return (pcall(api.CreateShoppingList, ADDON_NAME, listName, searchStrings))
+end
+
+-- Adds { { name, tier, qty } ... } to the shopping list, keeping what's on it.
+-- Returns whether it worked.
+local function addToList(api, items, listName)
+	local lines, byKey = readList(api, listName)
 	for _, item in ipairs(items) do
 		local term = { searchString = item.name, isExact = true, tier = item.tier, quantity = item.qty }
 		local line = byKey[termKey(term)]
@@ -136,59 +157,40 @@ local function addToList(api, items, listName)
 			lines[#lines + 1] = line
 		end
 	end
-
-	local searchStrings = {}
-	for _, line in ipairs(lines) do
-		local text = line.text or call(api.ConvertToSearchString, line.term)
-		if not text then return false end
-		searchStrings[#searchStrings + 1] = text
-	end
-	local ok = pcall(api.CreateShoppingList, ADDON_NAME, listName, searchStrings)
-	return ok
+	return writeList(api, listName, lines)
 end
 
--- Takes { { name, tier, qty, link } ... } off the shopping list, lowering amounts
--- and dropping lines that reach zero. Returns what came off ({ { link, qty } }),
--- or nil when Auctionator couldn't update the list.
-local function removeFromList(api, items, listName)
-	local lines, byKey = {}, {}
-	for _, searchString in ipairs(call(api.GetShoppingListItems, listName) or {}) do
-		local line = { text = searchString }
-		local term = call(api.ConvertFromSearchString, searchString)
-		if type(term) == "table" and type(term.searchString) == "string" then
-			line.term = term
-			byKey[termKey(term)] = line
-		end
-		lines[#lines + 1] = line
-	end
+-- The list line for an item ({ name, tier }), or nil.
+local function lineFor(byKey, item)
+	local line = byKey[termKey({ searchString = item.name, isExact = true, tier = item.tier })]
+	if line and not line.gone then return line end
+end
 
-	local removed = {}
+-- Takes { { name, tier, qty, link, itemID } ... } off the shopping list, lowering
+-- amounts and dropping lines that reach zero. Returns what came off ({ { link,
+-- qty, itemID, gone } }, gone when its whole line went) and how many lines are
+-- left, or nil when Auctionator couldn't update the list.
+local function removeFromList(api, items, listName)
+	local lines, byKey = readList(api, listName)
+	local removed, left = {}, #lines
 	for _, item in ipairs(items) do
-		local line = byKey[termKey({ searchString = item.name, isExact = true, tier = item.tier })]
-		if line and not line.gone then
+		local line = lineFor(byKey, item)
+		if line then
 			local have = line.term.quantity
 			if not have or have <= item.qty then
 				line.gone = true
-				removed[#removed + 1] = { link = item.link, qty = have or item.qty }
+				left = left - 1
+				removed[#removed + 1] = { link = item.link, qty = have or item.qty, itemID = item.itemID, gone = true }
 			else
 				line.term.quantity = have - item.qty
-				line.text = nil -- rebuilt below with the new amount
-				removed[#removed + 1] = { link = item.link, qty = item.qty }
+				line.text = nil -- rebuilt with the new amount
+				removed[#removed + 1] = { link = item.link, qty = item.qty, itemID = item.itemID }
 			end
 		end
 	end
-	if #removed == 0 then return removed end
-
-	local searchStrings = {}
-	for _, line in ipairs(lines) do
-		if not line.gone then
-			local text = line.text or call(api.ConvertToSearchString, line.term)
-			if not text then return end
-			searchStrings[#searchStrings + 1] = text
-		end
-	end
-	if not pcall(api.CreateShoppingList, ADDON_NAME, listName, searchStrings) then return end
-	return removed
+	if #removed == 0 then return removed, left end
+	if not writeList(api, listName, lines) then return end
+	return removed, left
 end
 
 -- "5x [Item], 2x [Item]" for the chat messages.
@@ -197,6 +199,125 @@ local function itemList(items)
 	for _, item in ipairs(items) do parts[#parts + 1] = format("%dx %s", item.qty, item.link) end
 	return table.concat(parts, ", ")
 end
+
+---------------------------------------------------------------------------
+-- Checking off what you get
+---------------------------------------------------------------------------
+-- With the "Check off what you get" option on, materials come off the list as
+-- your count of them goes up: bought, looted, from the mailbox, crafted. The count
+-- is the one "missing" uses (bags, bank, warband bank), so moving things between
+-- them changes nothing.
+--
+-- ns.db.listItems[listName][itemID] = { name, tier }: the lines Craft Profit put on
+-- each list, saved, since a list outlives the session. Lines you add yourself in
+-- Auctionator are left alone, and an entry goes once its line is gone.
+
+-- How many of each listed item you had when last counted (itemID -> count), this
+-- session. Only a rise since then is checked off: what you use up just lowers it.
+local lastCount = {}
+
+-- After a loading screen, counts are only taken, not checked off, for this long:
+-- the bags and banks may still be filling in.
+local SETTLE_SECONDS = 5
+local settledAt = math.huge
+
+-- Remembers what was just added to a list ({ { itemID, name, tier } ... }).
+local function track(listName, items)
+	local tracked = ns.db.listItems[listName] or {}
+	ns.db.listItems[listName] = tracked
+	for _, item in ipairs(items) do
+		tracked[item.itemID] = { name = item.name, tier = item.tier }
+		-- Counted fresh: an item that came off a list earlier isn't counted anymore.
+		lastCount[item.itemID] = ns.Model.Owned(item.itemID)
+	end
+end
+
+local function forgetList(listName)
+	ns.db.listItems[listName] = nil
+end
+
+-- Every list this character's materials can go to: one per profession and/or the
+-- one without a profession, as the options say.
+local function myLists()
+	local names, seen = {}, {}
+	local function add(name)
+		if not seen[name] then
+			seen[name] = true
+			names[#names + 1] = name
+		end
+	end
+	if ns.db.listPerProfession then
+		for _, index in pairs({ GetProfessions() }) do
+			local profession = GetProfessionInfo(index)
+			if profession then add(Shopping.ListName(profession)) end
+		end
+	end
+	add(Shopping.ListName())
+	return names
+end
+
+-- Takes what you got (itemID -> amount) off one list. Uses up `gained`, so an item
+-- on two lists isn't checked off twice. Entries whose line is gone are forgotten.
+local function checkOffList(api, listName, tracked, gained)
+	local _, byKey = readList(api, listName)
+	local items = {}
+	for itemID, info in pairs(tracked) do
+		if not lineFor(byKey, info) then
+			tracked[itemID] = nil
+		elseif (gained[itemID] or 0) > 0 then
+			local _, link = C_Item.GetItemInfo(itemID)
+			items[#items + 1] = { itemID = itemID, name = info.name, tier = info.tier, qty = gained[itemID], link = link or info.name }
+		end
+	end
+	if not next(tracked) then forgetList(listName) end
+	if #items == 0 then return end
+	local removed, left = removeFromList(api, items, listName)
+	if not removed or #removed == 0 then return end
+	for _, item in ipairs(removed) do
+		gained[item.itemID] = gained[item.itemID] - item.qty
+		if item.gone then tracked[item.itemID] = nil end
+	end
+	if not next(tracked) then forgetList(listName) end
+	say(format("Checked off Auctionator's \"%s\" shopping list: %s.%s", listName, itemList(removed),
+		left == 0 and " That's everything on it." or ""))
+end
+
+-- Checks off what you got since the last count. `settling`: only take the counts.
+local function checkOff(settling)
+	local api = auctionatorAPI()
+	if not (ns.db and ns.db.checkOff and api) then
+		lastCount = {} -- start over when it's turned back on
+		return
+	end
+	settling = settling or GetTime() < settledAt
+	local lists, gained, anyGained = myLists(), {}, false
+	for _, listName in ipairs(lists) do
+		for itemID in pairs(ns.db.listItems[listName] or {}) do
+			if gained[itemID] == nil then
+				local now, before = ns.Model.Owned(itemID), lastCount[itemID]
+				lastCount[itemID] = now
+				gained[itemID] = (not settling and before and now > before) and now - before or 0
+				anyGained = anyGained or gained[itemID] > 0
+			end
+		end
+	end
+	if not anyGained then return end
+	for _, listName in ipairs(lists) do
+		local tracked = ns.db.listItems[listName]
+		if tracked then checkOffList(api, listName, tracked, gained) end
+	end
+end
+
+local counter = CreateFrame("Frame")
+counter:RegisterEvent("PLAYER_ENTERING_WORLD")
+counter:RegisterEvent("BAG_UPDATE_DELAYED")
+counter:SetScript("OnEvent", function(_, event)
+	if event == "PLAYER_ENTERING_WORLD" then
+		settledAt = GetTime() + SETTLE_SECONDS
+		C_Timer.After(SETTLE_SECONDS, function() checkOff(true) end)
+	end
+	checkOff()
+end)
 
 -- Sorts the missing materials into auction house, vendor and can't-buy once their
 -- item info has loaded, then calls andThen(auction, vendor, bound), each a list of
@@ -243,6 +364,7 @@ local function sendToAuctionator(api, missing, forText)
 	sortMissing(missing, function(auction, vendor, bound)
 		if #auction > 0 then
 			if addToList(api, auction, listName) then
+				track(listName, auction)
 				say(format("Added to Auctionator's \"%s\" shopping list, for %s: %s.",
 					listName, forText, itemList(auction)))
 			else
@@ -310,9 +432,12 @@ function Shopping.Clear()
 		if items and #items > 0 then
 			if pcall(api.CreateShoppingList, ADDON_NAME, name, {}) then
 				cleared[#cleared + 1] = format("\"%s\"", name)
+				forgetList(name)
 			else
 				failed = true
 			end
+		else
+			forgetList(name)
 		end
 	end
 	if failed then say(ns.Color("warning", "Auctionator couldn't clear the shopping list.")) end

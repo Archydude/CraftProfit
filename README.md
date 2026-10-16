@@ -7,7 +7,7 @@ A lightweight addon: one small panel next to your profession window that tells y
 
 - **Procs:** when a craft procs multicraft or resourcefulness, the bonus gold pops up over the Profit line with a coin sound, a **Procs** section lists the extra items and returned materials with their value, and Profit/Loss changes to what that craft really made. It goes back to the normal forecast on your next craft without a proc, or when you pick another recipe.
 
-- **Shopping list:** adds what you're short of, for one or more crafts or for every patron order at once, to an Auctionator shopping list, or as a TSM search to copy.
+- **Shopping list:** adds what you're short of, for one or more crafts or for every patron order at once, to an Auctionator shopping list, or as a TSM search to copy. The Auctionator list checks materials off as you get them.
 
 - **Session total:** under Profit/Loss, what all your crafts made since you logged in on this character (a `/reload` keeps it), including orders crafted from the Patron orders list. Crafts without a price, like enchants, aren't counted. Click it to reset it to zero.
 
@@ -41,7 +41,7 @@ Open your profession and pick a recipe, or open a crafting order. The panel appe
 - Picked qualities reset when you choose another recipe.
 - If the game can't predict the quality for a mix (for example with materials you don't own), the panel says so and keeps the form's quality for the sale price.
 
-**Cheaper rank to buy:** on a crafting order, when the form uses a rank you own and buying another rank comes out cheaper, a blue line under that material says how much it saves, e.g. **[rank 1] saves 2g 40s**. What you own counts at what it would sell for after the 5% auction house cut, so the line only shows when buying really comes out ahead, and only for a rank that still meets the order's minimum quality. Click it to use that rank: the panel and the shopping list switch to it. Hover it for the numbers.
+**Cheaper rank to buy:** on a crafting order, when the form uses a rank you own and buying another rank comes out cheaper, a blue line under that material says how much it saves, e.g. **[rank 1] saves 2g 40s**. What you own counts at what it would sell for after the 5% auction house cut, so the line only shows when buying really comes out ahead, and only for a rank that still meets the order's minimum quality on its own, without an optional or finishing reagent that raises your skill. Click it to use that rank: the panel and the shopping list switch to it. Hover it for the numbers.
 
 **Use the most profitable materials:** on a crafting order, when the form holds materials that make less gold than they could, a blue row under the materials says how much more the best ones make. Click it to put them in Blizzard's form: the cheapest qualities that still reach the order's minimum quality, with what you own counted at what it would sell for. These are the same materials the Patron orders list prices each order with. If reaching the minimum quality takes concentration, it turns that on too. A material you don't have enough of stays as it was, and chat says what to buy. Hover the row to see what it puts in.
 
@@ -56,9 +56,11 @@ Under **Materials cost** there's a **Shopping list** row. It turns orange and sh
 - **Other amount...:** type any number of crafts. The last number you typed stays in the menu until you log out or `/reload`.
 - **Clear shopping list.**
 
-Adding again (or on another recipe) adds to the amounts already on the list. Vendor-sold and soulbound materials are listed in chat instead. Every quality you own counts toward a material, and the cheapest quality is the one added. To buy a specific quality, click the material to pick it first (see above).
+Adding again (or on another recipe) adds to the amounts already on the list. Vendor-sold and soulbound materials are listed in chat instead. Every quality you own counts toward a material, and the cheapest quality is the one added. On a crafting order whose minimum quality the form doesn't reach, the list adds the qualities that do reach it instead, the same ones the Patron orders list picks. To buy a specific quality, click the material to pick it first (see above).
 
 Shortcut: **Ctrl-click** clears the list, without the menu.
+
+**Checked off as you get them:** materials come off the list as they arrive: bought at the auction house, looted, taken from the mailbox or crafted. (Auction house items that aren't commodities come by mail, so they're checked off once you take them out.) Chat says what came off, and when the list is done. Only what Craft Profit added is checked off: lines you add yourself in Auctionator stay. Moving things between your bags, bank and warband bank doesn't count. Turn off **Check off what you get** in the options to keep the list until you clear it.
 
 **Just one material:** **Shift-click** a material in the panel to add only what you're missing of it, for one craft. Pick a quality first by clicking it, and that quality is what gets added. With TSM, you get a search for just that material.
 
@@ -78,7 +80,7 @@ At the bottom of the list:
 
 Either way, materials you own count once across all the orders, and what the patrons provide is never added.
 
-**Minimum quality:** for an order with a minimum quality, profit and the shopping list use the cheapest mix of material qualities that still reaches it, counting what the patron provides. Hover the order to see the minimum and the qualities picked. If only concentration gets you there, the order shows how much it takes, e.g. **(38 concentration)**. If even the best materials can't reach it, it says **can't craft**, moves to the bottom of the list without a profit, and Add profitable and Add all skip it. Orders without a minimum use the cheapest quality of each material. Either way, what you own counts at what it would sell for after the 5% auction house cut, so a rank you have is only swapped for one to buy when that comes out cheaper.
+**Minimum quality:** for an order with a minimum quality, profit and the shopping list use the cheapest mix of material qualities that still reaches it, counting what the patron provides. Hover the order to see the minimum and the qualities picked. If only concentration gets you there, the order shows how much it takes, e.g. **(38 concentration)**. If even the best materials can't reach it, it says **can't craft**, moves to the bottom of the list without a profit, and Add profitable and Add all skip it. Orders without a minimum use the cheapest quality of each material. Optional and finishing reagents that raise your skill never count toward reaching the minimum here: they're used up by the craft, so the picks get there without them. Either way, what you own counts at what it would sell for after the 5% auction house cut, so a rank you have is only swapped for one to buy when that comes out cheaper.
 
 **Concentration:** the orders that need concentration share what you have, and the top of the list shows how much they use. By default the orders that make the most gold per concentration point get it first; the options, or the choice at the bottom of the list, can put orders that reward profession knowledge first instead. Once it runs out, the rest say **not enough concentration** in red, their profit turns grey, and Add profitable and Add all skip them. Order tooltips also show how much knowledge a reward gives.
 
@@ -114,6 +116,7 @@ Click the gear on the panel or at the top of the Patron orders list, type `/craf
 | Show the Shopping list button | The Shopping list row and the Patron orders button. On by default; hidden anyway without Auctionator or TSM. |
 | Shop with | With Auctionator and TSM both installed: Auctionator shopping list (default) or TSM search to copy. Also at the bottom of the Shopping list menus. |
 | One shopping list per character / per profession | On by default. Either or both split the Craft Profit list, e.g. Craft Profit - Thrall - Blacksmithing. |
+| Check off what you get | On by default. Materials come off the Auctionator shopping list as you get them: bought, looted, from the mailbox or crafted. |
 | Auctionator shopping list: Clear | Empties the shopping list. With one list per profession and no profession window open, it empties all this character's profession lists. |
 | Animate multicraft & resourcefulness procs | On by default. |
 | Coin sound on procs | On by default. |

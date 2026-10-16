@@ -235,6 +235,46 @@ local function reagentsForPrediction(schematic, transaction, overrides)
 	return list
 end
 
+local function skillOf(info)
+	return (info.baseSkill or 0) + (info.bonusSkill or 0)
+end
+
+-- Leaves out the optional and finishing reagents you put in that raise your skill
+-- (found by asking the game without each one). Advice on what to buy or use has
+-- to reach the minimum quality without them: they're used up by the craft, and
+-- you may not have one next time. Reagents that do something else (an embellishment
+-- that makes the craft harder, say) stay, and so does whatever the customer provides
+-- (`provided`, slotIndex -> true).
+local function withoutBoosters(recipeID, schematic, transaction, reagents, provided)
+	local slotOf = {}
+	for slotIndex, slot in ipairs(schematic.reagentSlotSchematics) do
+		if slot.dataSlotIndex then slotOf[slot.dataSlotIndex] = slotIndex end
+	end
+	local guid = transaction:GetAllocationItemGUID()
+	local function skillWith(list)
+		local ok, info = pcall(C_TradeSkillUI.GetCraftingOperationInfo, recipeID, list, guid, false)
+		return ok and info and skillOf(info) or nil
+	end
+
+	local full, kept = nil, {}
+	for i, reagent in ipairs(reagents) do
+		local slotIndex = slotOf[reagent.dataSlotIndex]
+		local slot = slotIndex and schematic.reagentSlotSchematics[slotIndex]
+		local boosts = false
+		if slot and slot.reagentType ~= Enum.CraftingReagentType.Basic and not (provided and provided[slotIndex]) then
+			full = full or skillWith(reagents)
+			local without = {}
+			for j, other in ipairs(reagents) do
+				if j ~= i then without[#without + 1] = other end
+			end
+			local skill = full and skillWith(without)
+			boosts = skill ~= nil and skill < full
+		end
+		if not boosts then kept[#kept + 1] = reagent end
+	end
+	return kept
+end
+
 -- Asks the game how a craft with these materials turns out. The game may reject a
 -- made-up material list (that's what what-if builds), so these calls are guarded.
 -- Also returns whether the answer includes concentration.
@@ -251,17 +291,29 @@ local function operationInfo(recipeID, reagents, transaction)
 	return info, concentrating
 end
 
+-- The reagents to predict with. `advice`: for advice on what to buy or use, so
+-- leave out your skill boosters; it's the slots the customer provides
+-- (slotIndex -> true, {} for none), which always stay.
+local function predictionReagents(recipeID, schematic, transaction, overrides, advice)
+	local reagents = reagentsForPrediction(schematic, transaction, overrides)
+	if advice then reagents = withoutBoosters(recipeID, schematic, transaction, reagents, advice) end
+	return reagents
+end
+
 -- The quality tier the game predicts for these materials, or nil. Also the
--- concentration that prediction spends, or nil when it uses none.
-function Blizzard.PredictQuality(recipeID, schematic, transaction, overrides)
-	local info, concentrating = operationInfo(recipeID, reagentsForPrediction(schematic, transaction, overrides), transaction)
+-- concentration that prediction spends, or nil when it uses none. `advice`: see
+-- predictionReagents.
+function Blizzard.PredictQuality(recipeID, schematic, transaction, overrides, advice)
+	local reagents = predictionReagents(recipeID, schematic, transaction, overrides, advice)
+	local info, concentrating = operationInfo(recipeID, reagents, transaction)
 	if not info then return nil end
 	return info.craftingQuality, concentrating and (info.concentrationCost or 0) or nil
 end
 
 -- The concentration crafting with what's in the form would take, or nil.
-function Blizzard.FormConcentrationCost(recipeID, schematic, transaction)
-	local info = operationInfo(recipeID, reagentsForPrediction(schematic, transaction, {}), transaction)
+-- `advice`: see predictionReagents.
+function Blizzard.FormConcentrationCost(recipeID, schematic, transaction, advice)
+	local info = operationInfo(recipeID, predictionReagents(recipeID, schematic, transaction, {}, advice), transaction)
 	return info and info.concentrationCost
 end
 
