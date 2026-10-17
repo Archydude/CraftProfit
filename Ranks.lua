@@ -167,6 +167,53 @@ local function rankOf(recipeID, recipeInfo)
 	return rank, schematic.outputItemID
 end
 
+-- Testing (/craftprofit testrank): prints how the open crafting order turns out
+-- next to how Craft Rank works it out for the same recipe. False when no order is open.
+function Ranks.Explain()
+	local ctx = ns.Blizzard.OrderContext()
+	if not (ctx and ctx.live and ctx.transaction) then return false end
+	local order, transaction = ctx.order, ctx.transaction
+	local recipeID = order.spellID
+	local function say(...) print("|cffffd100Craft Profit:|r " .. format(...)) end
+	local function line(label, info)
+		if not info then return say("%s: no answer", label) end
+		say("%s: rank %s, difficulty %d + %d, skill %d + %d, concentration %d", label, tostring(info.craftingQuality),
+			info.baseDifficulty or 0, info.bonusDifficulty or 0, info.baseSkill or 0, info.bonusSkill or 0, info.concentrationCost or 0)
+	end
+	local function list(label, reagents)
+		for _, entry in ipairs(reagents) do
+			local itemID = entry.reagent and entry.reagent.itemID or entry.itemID
+			say("  %s: slot %s, %s x%s (rank %s)", label, tostring(entry.dataSlotIndex), itemID and (C_Item.GetItemNameByID(itemID) or itemID) or "?",
+				tostring(entry.quantity), itemID and tostring(C_TradeSkillUI.GetItemReagentQualityByItemInfo(itemID)) or "-")
+		end
+	end
+	local outsideScan = deadline
+	deadline = math.huge -- not in a scan: never pause
+
+	local guid = transaction:GetAllocationItemGUID()
+	local formReagents = transaction:CreateCraftingReagentInfoTbl()
+	say("Recipe %d, recraft %s, customer's item %s, concentrating %s", recipeID, tostring(order.isRecraft),
+		guid and "yes" or "no", tostring(ns.Blizzard.IsConcentrating(transaction)))
+	list("order", formReagents)
+	local ok, info = pcall(C_TradeSkillUI.GetCraftingOperationInfo, recipeID, formReagents, guid, false)
+	line("Order form", ok and info or nil)
+	line("Order materials, without the customer's item", operation(recipeID, formReagents))
+
+	local schematic = C_TradeSkillUI.GetRecipeSchematic(recipeID, false)
+	local reagents = schematic and topQualityReagents(schematic) or {}
+	local top = operation(recipeID, reagents)
+	line("Craft Rank, top materials", top)
+	local harder = top and withHardestOptional(recipeID, schematic, reagents, top)
+	line("Craft Rank, hardest optional reagents", harder)
+	list("craft rank", reagents)
+	for professionID, profession in pairs(saved or {}) do
+		local rank = profession.recipes[recipeID]
+		if rank then say("Saved (profession %d): best %s of %s, concentration %s", professionID, tostring(rank[1]), tostring(rank[2]), tostring(rank[3])) end
+	end
+	deadline = outsideScan
+	return true
+end
+
 -- The profession the window shows right now (Midnight Blacksmithing) and its base (Blacksmithing).
 local function shownProfession()
 	local child = C_TradeSkillUI.GetChildProfessionInfo()

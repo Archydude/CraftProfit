@@ -50,6 +50,27 @@ end
 -- game's menus, rebuilt after each step, so its floaters sit on UIParent).
 local floaters, listFloaters = {}, {}
 
+local POP_SCALE, POP_SECONDS = 1.7, 0.3
+local RISE_HEIGHT, RISE_DELAY, RISE_SECONDS = 55, 0.4, 2
+
+-- Fast at first, slowing to a stop.
+local function easeOut(progress)
+	progress = math.min(math.max(progress, 0), 1)
+	return 1 - (1 - progress) ^ 2
+end
+
+-- Puts the floater where it is `elapsed` seconds into its animation: scaled
+-- about its bottom right corner, which sits at its anchor, raised as it rises.
+-- Offsets are in the floater's own scale, hence the division.
+local function moveFloater(floater)
+	local anchor, elapsed = floater.anchor, floater.elapsed or 0
+	local scale = POP_SCALE + (1 - POP_SCALE) * easeOut(elapsed / POP_SECONDS)
+	local rise = RISE_HEIGHT * easeOut((elapsed - RISE_DELAY) / RISE_SECONDS)
+	floater:SetScale(scale)
+	floater:ClearAllPoints()
+	floater:SetPoint("BOTTOMRIGHT", anchor[1], anchor[2], anchor[3] / scale, (anchor[4] + rise) / scale)
+end
+
 local function createFloater(parent, pool)
 	local floater = CreateFrame("Frame", nil, parent)
 	floater:SetSize(Layout.WIDTH - 2 * Layout.PAD_SIDE, 44)
@@ -59,28 +80,24 @@ local function createFloater(parent, pool)
 	floater.label = floater:CreateFontString(nil, "OVERLAY", "GameFontNormal")
 	floater.label:SetPoint("BOTTOMRIGHT", floater.amount, "TOPRIGHT", 0, 2)
 
-	-- Pops in big, settles, floats up and fades.
+	-- Pops in big, settles, floats up and fades. The pop and the rise move the frame
+	-- itself each frame: the coin icons in the text stay behind with Scale and
+	-- Translation animations.
 	local anim = floater:CreateAnimationGroup()
-	local pop = anim:CreateAnimation("Scale")
-	pop:SetScaleFrom(1.7, 1.7)
-	pop:SetScaleTo(1, 1)
-	pop:SetOrigin("BOTTOMRIGHT", 0, 0)
-	pop:SetDuration(0.3)
-	pop:SetSmoothing("OUT")
 	local fadeIn = anim:CreateAnimation("Alpha")
 	fadeIn:SetFromAlpha(0)
 	fadeIn:SetToAlpha(1)
 	fadeIn:SetDuration(0.15)
-	local rise = anim:CreateAnimation("Translation")
-	rise:SetOffset(0, 55)
-	rise:SetStartDelay(0.4)
-	rise:SetDuration(2)
-	rise:SetSmoothing("OUT")
 	local fadeOut = anim:CreateAnimation("Alpha")
 	fadeOut:SetFromAlpha(1)
 	fadeOut:SetToAlpha(0)
 	fadeOut:SetStartDelay(1.6)
 	fadeOut:SetDuration(0.8)
+	anim:SetScript("OnPlay", function() floater.elapsed = 0 end)
+	anim:SetScript("OnUpdate", function(_, elapsed)
+		floater.elapsed = floater.elapsed + elapsed
+		moveFloater(floater)
+	end)
 	anim:SetScript("OnFinished", function() floater:Hide() end)
 	floater.anim = anim
 
@@ -145,7 +162,12 @@ local function setFloaterText(floater, proc)
 	floater.amount:SetText(proc.bonus > 0 and ns.Color("profit", "+" .. ns.Format.Money(proc.bonus)) or "")
 end
 
-local function playFloater(floater)
+-- Starts the animation with the floater's bottom right corner at `relativeTo`'s
+-- `relativePoint`, offset by x, y.
+local function playFloater(floater, relativeTo, relativePoint, x, y)
+	floater.anchor = { relativeTo, relativePoint, x, y }
+	floater.elapsed = 0
+	moveFloater(floater)
 	floater:Show()
 	floater.anim:Stop()
 	floater.anim:Play()
@@ -167,14 +189,12 @@ local function celebrate(proc)
 
 	local floater = getFloater(panel, floaters)
 	setFloaterText(floater, proc)
-	floater:ClearAllPoints()
 	local anchor = ns.Panel.ProfitAnchor()
 	if anchor then
-		floater:SetPoint("BOTTOMRIGHT", anchor, "TOPRIGHT", 0, 4)
+		playFloater(floater, anchor, "TOPRIGHT", 0, 4)
 	else
-		floater:SetPoint("BOTTOMRIGHT", panel, "TOPRIGHT", -Layout.PAD_SIDE, 4)
+		playFloater(floater, panel, "TOPRIGHT", -Layout.PAD_SIDE, 4)
 	end
-	playFloater(floater)
 end
 
 -- On the Patron orders list, for an order crafted with its hammer: the gold
@@ -188,9 +208,7 @@ local function celebrateOnList(proc, list)
 	floater:SetFrameStrata(list:GetFrameStrata())
 	floater:SetFrameLevel(list:GetFrameLevel() + 50)
 	setFloaterText(floater, proc)
-	floater:ClearAllPoints()
-	floater:SetPoint("BOTTOMRIGHT", list, "TOPRIGHT", -Layout.PAD_SIDE, 4)
-	playFloater(floater)
+	playFloater(floater, list, "TOPRIGHT", -Layout.PAD_SIDE, 4)
 end
 
 ---------------------------------------------------------------------------

@@ -86,5 +86,10 @@ SlashCmdList.CRAFTPROFIT = function(msg)
 			or "Testing: open your profession window (or the Patron orders list) first.")
 		return
 	end
+	if command == "testrank" then
+		-- Testing: the open order next to Craft Rank's numbers for its recipe.
+		if not ns.Ranks.Explain() then ns.Shopping.Say("Testing: open a crafting order first.") end
+		return
+	end
 	ns.Options.Open()
 end
