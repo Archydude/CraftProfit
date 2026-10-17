@@ -498,7 +498,30 @@ function Patron.SetLeastConcentration(on)
 	ns.Panel.Refresh()
 end
 
-local function openMenu(owner)
+-- Whether the list opens as a scrolling box. Blizzard decides by adding up the
+-- rows, but counts each row at least as tall as the tallest one above it, so a
+-- list that fits can still come up as a full-height box with empty space at the
+-- bottom. The list checks once it's open and opens the other way if needed.
+local scrolls = true
+-- How much taller than MENU_MAX_HEIGHT a list that doesn't scroll may get (its
+-- top and bottom margins, plus some leeway) before it scrolls instead.
+local SCROLL_LEEWAY = 40
+
+-- Whether the open list should be opened the other way: a scrolling box whose rows
+-- all fit, or a list that runs too tall without scrolling.
+local function wrongScrolling(menu)
+	local box = menu.ScrollBox
+	if box and box:IsShown() then
+		local rows = box.GetDataProvider and box:GetDataProvider()
+		if not rows then return false end
+		local height = 0
+		for _, row in rows:Enumerate() do height = height + row:GetHeight() end
+		return height <= MENU_MAX_HEIGHT
+	end
+	return not scrolls and menu:GetHeight() > MENU_MAX_HEIGHT + SCROLL_LEEWAY
+end
+
+local function openMenu(owner, retried)
 	GameTooltip:Hide()
 	local menu = openUnder(owner, function(_, root)
 		-- Worked out here, so a refresh (after switching the concentration choice) redoes it.
@@ -508,7 +531,7 @@ local function openMenu(owner)
 		local tsm = usingTSM()
 		local verb = tsm and "Copy" or "Add"
 		-- Long lists scroll instead of running off the screen.
-		if root.SetScrollMode then root:SetScrollMode(MENU_MAX_HEIGHT) end
+		if scrolls and root.SetScrollMode then root:SetScrollMode(MENU_MAX_HEIGHT) end
 		root:CreateTitle("Patron orders")
 		if concentration then
 			root:CreateTitle(ns.Color("muted", format("Concentration: these orders use %d of your %d",
@@ -598,6 +621,10 @@ local function openMenu(owner)
 		end)
 		least:SetTooltip(leastConcentrationTooltip)
 	end)
+	if menu and not retried and wrongScrolling(menu) then
+		scrolls = not scrolls
+		return openMenu(owner, true)
+	end
 	showGear(menu)
 end
 

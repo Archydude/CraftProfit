@@ -1,5 +1,8 @@
 # Changelog
 
+## 1.18.2
+- Fixed: the Patron orders list stayed tall, with empty space at the bottom, after an order left it. It now fits its orders, and scrolls only when they don't fit.
+
 ## 1.18.1
 - Fixed: when a proc's bonus gold popped up and floated away, the gold, silver and copper coin icons stayed behind. They now move with the amount.
 

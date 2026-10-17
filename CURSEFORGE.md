@@ -72,11 +72,11 @@ Hover an item you can craft to see each character's **Craft Rank**: the highest 
 
 ## B. Upload File form
 
-**File:** `dist\CraftProfit-1.18.1.zip`
+**File:** `dist\CraftProfit-1.18.2.zip`
 
 **Display name**
 ```
-Craft Profit 1.18.1
+Craft Profit 1.18.2
 ```
 
 **Release type:** `Release`
@@ -85,6 +85,9 @@ Craft Profit 1.18.1
 
 **Changelog** (paste only the newest part; paste older parts too if they never went up)
 ```markdown
+1.18.2
+- Fixed: the Patron orders list stayed tall, with empty space at the bottom, after an order left it. It now fits its orders, and scrolls only when they don't fit.
+
 1.18.1
 - Fixed: when a proc's bonus gold popped up and floated away, the gold, silver and copper coin icons stayed behind. They now move with the amount.
 
