@@ -1,5 +1,8 @@
 # Changelog
 
+## 1.18.1
+- Fixed: when a proc's bonus gold popped up and floated away, the gold, silver and copper coin icons stayed behind. They now move with the amount.
+
 ## 1.18.0
 - Resourcefulness on the Patron orders list: when an order you craft from the list procs, the bonus gold pops up over the list and its border flashes gold, like on the panel. The same options turn the animation and the coin sound off.
 

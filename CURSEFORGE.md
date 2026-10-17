@@ -72,11 +72,11 @@ Hover an item you can craft to see each character's **Craft Rank**: the highest 
 
 ## B. Upload File form
 
-**File:** `dist\CraftProfit-1.18.0.zip`
+**File:** `dist\CraftProfit-1.18.1.zip`
 
 **Display name**
 ```
-Craft Profit 1.18.0
+Craft Profit 1.18.1
 ```
 
 **Release type:** `Release`
@@ -85,6 +85,9 @@ Craft Profit 1.18.0
 
 **Changelog** (paste only the newest part; paste older parts too if they never went up)
 ```markdown
+1.18.1
+- Fixed: when a proc's bonus gold popped up and floated away, the gold, silver and copper coin icons stayed behind. They now move with the amount.
+
 1.18.0
 - Resourcefulness on the Patron orders list: when an order you craft from the list procs, the bonus gold pops up over the list and its border flashes gold, like on the panel. The same options turn the animation and the coin sound off.
 
