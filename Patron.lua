@@ -605,6 +605,11 @@ function Patron.IsMenuOpen()
 	return gearMenu ~= nil and gearMenu:IsVisible()
 end
 
+-- The open Patron orders list's frame, or nil.
+function Patron.ListFrame()
+	if Patron.IsMenuOpen() then return gearMenu end
+end
+
 -- Redraws the list if it's open, e.g. after an order's next step. It opens in
 -- the same place, under the button.
 function Patron.Reopen()

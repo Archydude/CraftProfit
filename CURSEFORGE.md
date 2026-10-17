@@ -55,7 +55,7 @@ Click a material to try its next quality; profit updates right away.
 One click adds what you're missing for a craft to an **Auctionator** shopping list or a **TSM** search, in the ranks that reach an order's minimum quality. Shift-click for more crafts. The Auctionator list checks itself off as the materials come in.
 
 ### Procs and session total
-**Multicraft** and **resourcefulness** procs pop up as bonus gold, and a session total adds up what you've made.
+**Multicraft** and **resourcefulness** procs pop up as bonus gold, on the panel or the Patron orders list, and a session total adds up what you've made.
 
 ### Which character crafts it best?
 Hover an item you can craft to see each character's **Craft Rank**: the highest rank they can make it at, plus the concentration it takes, and the rank with item level reagents added.
@@ -72,11 +72,11 @@ Hover an item you can craft to see each character's **Craft Rank**: the highest 
 
 ## B. Upload File form
 
-**File:** `dist\CraftProfit-1.17.0.zip`
+**File:** `dist\CraftProfit-1.18.0.zip`
 
 **Display name**
 ```
-Craft Profit 1.17.0
+Craft Profit 1.18.0
 ```
 
 **Release type:** `Release`
@@ -85,6 +85,9 @@ Craft Profit 1.17.0
 
 **Changelog** (paste only the newest part; paste older parts too if they never went up)
 ```markdown
+1.18.0
+- Resourcefulness on the Patron orders list: when an order you craft from the list procs, the bonus gold pops up over the list and its border flashes gold, like on the panel. The same options turn the animation and the coin sound off.
+
 1.17.0
 - The shopping list checks itself off: materials Craft Profit added to your Auctionator shopping list come off as you get them, whether bought, looted, taken from the mailbox or crafted. Chat says what came off, and when the list is done. Moving things between your bags, bank and warband bank doesn't count, and lines you add yourself in Auctionator stay. Turn it off with "Check off what you get" in the options.
 - Fixed: on a crafting order with a minimum quality, the Shopping list could add a rank that doesn't reach it (usually the cheapest). It now adds the ranks that do, the same ones the Patron orders list picks.

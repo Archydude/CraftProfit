@@ -78,5 +78,13 @@ SlashCmdList.CRAFTPROFIT = function(msg)
 			or "Testing off: your real concentration is used.")
 		return
 	end
+	if command == "testproc" then
+		-- Testing: shows the proc animation without crafting.
+		local where = ns.Results.TestProc()
+		ns.Shopping.Say(where and string.format("Testing: a made-up resourcefulness proc on the %s.",
+			where == "list" and "Patron orders list" or "panel")
+			or "Testing: open your profession window (or the Patron orders list) first.")
+		return
+	end
 	ns.Options.Open()
 end

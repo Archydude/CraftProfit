@@ -46,12 +46,14 @@ end
 -- Celebration: "+1,234g" floating up from Profit/Loss, a gold border flash, a coin
 ---------------------------------------------------------------------------
 
-local floaters = {}
+-- The panel's floaters, and the Patron orders list's (that list is one of the
+-- game's menus, rebuilt after each step, so its floaters sit on UIParent).
+local floaters, listFloaters = {}, {}
 
-local function createFloater(panel)
-	local floater = CreateFrame("Frame", nil, panel)
+local function createFloater(parent, pool)
+	local floater = CreateFrame("Frame", nil, parent)
 	floater:SetSize(Layout.WIDTH - 2 * Layout.PAD_SIDE, 44)
-	floater:SetFrameLevel(panel:GetFrameLevel() + 10)
+	floater:SetFrameLevel(parent:GetFrameLevel() + 10)
 	floater.amount = floater:CreateFontString(nil, "OVERLAY", "GameFontNormalHuge")
 	floater.amount:SetPoint("BOTTOMRIGHT")
 	floater.label = floater:CreateFontString(nil, "OVERLAY", "GameFontNormal")
@@ -82,16 +84,16 @@ local function createFloater(panel)
 	anim:SetScript("OnFinished", function() floater:Hide() end)
 	floater.anim = anim
 
-	floaters[#floaters + 1] = floater
+	pool[#pool + 1] = floater
 	return floater
 end
 
 -- A floater that isn't playing, so quick procs in a row each get their own.
-local function getFloater(panel)
-	for _, floater in ipairs(floaters) do
+local function getFloater(parent, pool)
+	for _, floater in ipairs(pool) do
 		if not floater.anim:IsPlaying() then return floater end
 	end
-	return createFloater(panel)
+	return createFloater(parent, pool)
 end
 
 -- The panel border flashes gold, then fades back to grey.
@@ -108,22 +110,63 @@ local function flashBorder(panel)
 	end)
 end
 
-local function celebrate(proc)
-	if ns.db.procSound and SOUNDKIT and SOUNDKIT.LOOT_WINDOW_COIN_SOUND then
-		PlaySound(SOUNDKIT.LOOT_WINDOW_COIN_SOUND)
+-- The Patron orders list has no border of its own to color, so a gold one is laid
+-- over it and fades out.
+local listGlow
+local function flashList(list)
+	if not listGlow then
+		listGlow = CreateFrame("Frame", nil, UIParent, "BackdropTemplate")
+		listGlow:SetBackdrop({ edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border", edgeSize = 16 })
+		listGlow:SetBackdropBorderColor(1, 0.82, 0, 1)
+		listGlow:EnableMouse(false)
+		local fade = listGlow:CreateAnimationGroup()
+		local alpha = fade:CreateAnimation("Alpha")
+		alpha:SetFromAlpha(1)
+		alpha:SetToAlpha(0)
+		alpha:SetDuration(BORDER_FLASH_SECONDS)
+		alpha:SetSmoothing("IN")
+		fade:SetScript("OnFinished", function() listGlow:Hide() end)
+		listGlow.fade = fade
 	end
-	if not ns.db.procFx then return end
+	listGlow:SetFrameStrata(list:GetFrameStrata())
+	listGlow:SetFrameLevel(list:GetFrameLevel() + 40)
+	listGlow:ClearAllPoints()
+	listGlow:SetAllPoints(list)
+	listGlow:Show()
+	listGlow.fade:Stop()
+	listGlow.fade:Play()
+end
 
-	local panel = ns.Panel.Frame()
-	flashBorder(panel)
-
-	local floater = getFloater(panel)
+local function setFloaterText(floater, proc)
 	local parts = {}
 	if proc.multicraft > 0 then parts[#parts + 1] = format("Multicraft x%d", proc.multicraft) end
 	if #proc.saved > 0 then parts[#parts + 1] = "Resourcefulness" end
 	floater.label:SetText(ns.Color("heading", table.concat(parts, " + ") .. "!"))
 	floater.amount:SetText(proc.bonus > 0 and ns.Color("profit", "+" .. ns.Format.Money(proc.bonus)) or "")
+end
 
+local function playFloater(floater)
+	floater:Show()
+	floater.anim:Stop()
+	floater.anim:Play()
+end
+
+local function playCoin()
+	if ns.db.procSound and SOUNDKIT and SOUNDKIT.LOOT_WINDOW_COIN_SOUND then
+		PlaySound(SOUNDKIT.LOOT_WINDOW_COIN_SOUND)
+	end
+end
+
+-- On the panel: the gold floats up from Profit/Loss.
+local function celebrate(proc)
+	playCoin()
+	if not ns.db.procFx then return end
+
+	local panel = ns.Panel.Frame()
+	flashBorder(panel)
+
+	local floater = getFloater(panel, floaters)
+	setFloaterText(floater, proc)
 	floater:ClearAllPoints()
 	local anchor = ns.Panel.ProfitAnchor()
 	if anchor then
@@ -131,9 +174,23 @@ local function celebrate(proc)
 	else
 		floater:SetPoint("BOTTOMRIGHT", panel, "TOPRIGHT", -Layout.PAD_SIDE, 4)
 	end
-	floater:Show()
-	floater.anim:Stop()
-	floater.anim:Play()
+	playFloater(floater)
+end
+
+-- On the Patron orders list, for an order crafted with its hammer: the gold
+-- floats up from the list's top edge.
+local function celebrateOnList(proc, list)
+	playCoin()
+	if not ns.db.procFx then return end
+
+	flashList(list)
+	local floater = getFloater(UIParent, listFloaters)
+	floater:SetFrameStrata(list:GetFrameStrata())
+	floater:SetFrameLevel(list:GetFrameLevel() + 50)
+	setFloaterText(floater, proc)
+	floater:ClearAllPoints()
+	floater:SetPoint("BOTTOMRIGHT", list, "TOPRIGHT", -Layout.PAD_SIDE, 4)
+	playFloater(floater)
 end
 
 ---------------------------------------------------------------------------
@@ -183,8 +240,9 @@ local function onCraftResult(data)
 	local panel = ns.Panel.Frame()
 	local shown = panel and panel:IsShown()
 	-- A craft from the Patron orders list's hammer: the panel isn't showing that
-	-- order, so the list's numbers for it are used.
-	local model = ns.Craft.TakeCraftModel() or (shown and ns.Panel.current)
+	-- order, so the list's numbers for it are used, and procs show on the list.
+	local listModel = ns.Craft.TakeCraftModel()
+	local model = listModel or (shown and ns.Panel.current)
 	if not model then return end
 
 	local result = evaluate(data, model)
@@ -204,13 +262,35 @@ local function onCraftResult(data)
 	end
 
 	lastProc = result
+	local list = listModel and ns.Patron.ListFrame()
+	if list then
+		celebrateOnList(result, list)
+		return
+	end
 	if not shown then
 		-- Nothing on screen to animate; the coin sound still says it procced.
-		if ns.db.procSound and SOUNDKIT and SOUNDKIT.LOOT_WINDOW_COIN_SOUND then PlaySound(SOUNDKIT.LOOT_WINDOW_COIN_SOUND) end
+		playCoin()
 		return
 	end
 	ns.Panel.Render() -- now, so the animation starts from the updated Profit line
 	celebrate(result)
+end
+
+-- Testing (/craftprofit testproc): a made-up resourcefulness proc, on the Patron
+-- orders list when it's open, otherwise on the panel. Nothing is counted.
+-- Returns where it showed: "list", "panel" or nil.
+function Results.TestProc()
+	local proc = { multicraft = 0, saved = { { qty = 1 } }, bonus = 12345678 }
+	local list = ns.Patron.ListFrame()
+	if list then
+		celebrateOnList(proc, list)
+		return "list"
+	end
+	local panel = ns.Panel.Frame()
+	if panel and panel:IsShown() then
+		celebrate(proc)
+		return "panel"
+	end
 end
 
 function Results.Init()
