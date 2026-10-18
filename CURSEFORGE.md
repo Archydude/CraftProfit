@@ -43,22 +43,22 @@ Craft Profit is a **lightweight** panel next to your profession window that answ
 What the item sells for at the quality you'll get, minus the 5% auction house cut and your materials. On orders: the commission after the consortium cut, minus only the materials **you** supply, plus sellable patron rewards.
 
 ### Which patron order pays best?
-The **Shopping list** button on the Patron orders tab lists every patron order with its profit, best first, using the cheapest material ranks that meet its minimum quality. Your concentration goes where it earns the most, or to knowledge. **Add profitable** shops for what you're missing, and a button on each ready order starts, crafts and completes it, one click per step.
+The **Shopping list** button on the Patron orders tab lists every patron order by profit, priced with the cheapest material ranks that meet its minimum quality. Concentration goes where it earns the most, or to knowledge. **Add profitable** shops for what's missing, and each ready order starts, crafts and completes with one click per step.
 
 ### The most profitable materials, put in for you
-Tick **Use Most Profitable Reagents** on the crafting order form and every order you open gets the cheapest materials that still reach its minimum quality, with concentration when it needs it. Add **Optimize Concentration** to use the least concentration instead.
+Tick **Use Most Profitable Reagents** on the crafting page or order form: recipes get the materials for the rank that earns the most, orders the cheapest that reach their minimum quality. **Optimize Concentration** uses the least concentration instead.
 
 ### What if I used another quality?
 Click a material to try its next quality; profit updates right away.
 
 ### Shopping list
-One click adds what you're missing for a craft to an **Auctionator** shopping list or a **TSM** search, in the ranks that reach an order's minimum quality. Shift-click for more crafts. The Auctionator list checks itself off as the materials come in.
+One click adds what you're missing to an **Auctionator** shopping list or a **TSM** search. Shift-click for more crafts. The Auctionator list checks itself off as materials come in.
 
 ### Procs and session total
 **Multicraft** and **resourcefulness** procs pop up as bonus gold, on the panel or the Patron orders list, and a session total adds up what you've made.
 
 ### Which character crafts it best?
-Hover an item you can craft to see each character's **Craft Rank**: the highest rank they can make it at, plus the concentration it takes, and the rank with item level reagents added.
+Hover an item to see each character's **Craft Rank**: the highest rank they can make it at, and the concentration it takes.
 
 ### Good to know
 - Needs **TradeSkillMaster** or **Auctionator** for prices.
@@ -72,11 +72,11 @@ Hover an item you can craft to see each character's **Craft Rank**: the highest 
 
 ## B. Upload File form
 
-**File:** `dist\CraftProfit-1.18.2.zip`
+**File:** `dist\CraftProfit-1.19.0.zip`
 
 **Display name**
 ```
-Craft Profit 1.18.2
+Craft Profit 1.19.0
 ```
 
 **Release type:** `Release`
@@ -85,6 +85,10 @@ Craft Profit 1.18.2
 
 **Changelog** (paste only the newest part; paste older parts too if they never went up)
 ```markdown
+1.19.0
+- The most profitable materials on the crafting page: **Use Most Profitable Reagents** and **Optimize Concentration** now also sit above Blizzard's Use Best Quality Reagents on the crafting page, and the panel's "Use the most profitable materials" row shows there too. They pick the rank that makes the most gold after what its materials cost, and the cheapest materials that make it. Concentration stays as you set it: with it on, Optimize Concentration picks the qualities that reach the rank with the least of it. Items with no sale price get the cheapest materials that keep the rank they come out at now.
+- Shopping lists no longer have "Craft Profit" in their names: they're named after the character and profession, like "Thrall - Blacksmithing" (or "Crafting" with both of those options off). Your old lists move to the new names at your next login, along with what's on them.
+
 1.18.2
 - Fixed: the Patron orders list stayed tall, with empty space at the bottom, after an order left it. It now fits its orders, and scrolls only when they don't fit.
 

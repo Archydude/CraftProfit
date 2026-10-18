@@ -7,6 +7,8 @@ A lightweight addon: one small panel next to your profession window that tells y
 
 - **Procs:** when a craft procs multicraft or resourcefulness, the bonus gold pops up over the Profit line with a coin sound, a **Procs** section lists the extra items and returned materials with their value, and Profit/Loss changes to what that craft really made. It goes back to the normal forecast on your next craft without a proc, or when you pick another recipe.
 
+- **The most profitable materials:** one click, or a checkbox on the crafting page and the order form, puts in the material qualities that make the most gold.
+
 - **Shopping list:** adds what you're short of, for one or more crafts or for every patron order at once, to an Auctionator shopping list, or as a TSM search to copy. The Auctionator list checks materials off as you get them.
 
 - **Session total:** under Profit/Loss, what all your crafts made since you logged in on this character (a `/reload` keeps it), including orders crafted from the Patron orders list. Crafts without a price, like enchants, aren't counted. Click it to reset it to zero.
@@ -43,16 +45,19 @@ Open your profession and pick a recipe, or open a crafting order. The panel appe
 
 **Cheaper rank to buy:** on a crafting order, when the form uses a rank you own and buying another rank comes out cheaper, a blue line under that material says how much it saves, e.g. **[rank 1] saves 2g 40s**. What you own counts at what it would sell for after the 5% auction house cut, so the line only shows when buying really comes out ahead, and only for a rank that still meets the order's minimum quality on its own, without an optional or finishing reagent that raises your skill. Click it to use that rank: the panel and the shopping list switch to it. Hover it for the numbers.
 
-**Use the most profitable materials:** on a crafting order, when the form holds materials that make less gold than they could, a blue row under the materials says how much more the best ones make. Click it to put them in Blizzard's form: the cheapest qualities that still reach the order's minimum quality, with what you own counted at what it would sell for. These are the same materials the Patron orders list prices each order with. If reaching the minimum quality takes concentration, it turns that on too. A material you don't have enough of stays as it was, and chat says what to buy. Hover the row to see what it puts in.
+**Use the most profitable materials:** when the form holds materials that make less gold than they could, a blue row under the materials says how much more the best ones make. Click it to put them in Blizzard's form. What you own counts at what it would sell for. A material you don't have enough of stays as it was, and chat says what to buy. Hover the row to see what it puts in.
 
-**Use Most Profitable Reagents:** a checkbox on the crafting order form, above Blizzard's **Use Best Quality Reagents**. While it's on, every order you open gets the most profitable materials put in by itself. A slot you change afterwards stays as you set it. Unticking it puts back the materials Blizzard picks by itself, and turns concentration back off if the checkbox turned it on. Only one of the two checkboxes can be on: checking one unchecks the other. It shows wherever Blizzard's checkbox does, on orders whose materials come in qualities.
+- **On a crafting order:** the cheapest qualities that still reach the order's minimum quality, the same materials the Patron orders list prices each order with. If reaching the minimum quality takes concentration, it turns that on too.
+- **On the crafting page:** the rank that makes the most gold after what its materials cost, and the cheapest materials that make it. Concentration stays as you set it: with it on, the ranks it reaches count. With no sale price for the item, the row offers the cheapest materials that keep the rank it comes out at now.
+
+**Use Most Profitable Reagents:** a checkbox on the crafting order form and the crafting page, above Blizzard's **Use Best Quality Reagents**. While it's on, every order or recipe you open gets the most profitable materials put in by itself. A slot you change afterwards stays as you set it. Unticking it puts back the materials Blizzard picks by itself, and turns concentration back off if the checkbox turned it on. Only one of the two checkboxes can be on: checking one unchecks the other. It's the same setting on both pages. It shows wherever Blizzard's checkbox does, on orders and recipes whose materials come in qualities. Above it, **Optimize Concentration** (see Patron orders below) works the same way: on the crafting page, with concentration on, it picks the qualities that reach the rank with the least concentration.
 
 ### Shopping list
 Under **Materials cost** there's a **Shopping list** row. It turns orange and shows a count when you're short of materials for one craft; hover it to see what's missing.
 
 **Click** it to add what you're missing for one craft. **Shift-click** it to open a menu:
 
-- **For 1 / 5 / 10 crafts:** adds what you're missing for that many crafts, with the amount and quality, to Auctionator's **Craft Profit** shopping list. Each line shows how many items it would add. Open the list in Auctionator's Shopping tab at the auction house.
+- **For 1 / 5 / 10 crafts:** adds what you're missing for that many crafts, with the amount and quality, to an Auctionator shopping list (see Separate lists below). Each line shows how many items it would add. Open the list in Auctionator's Shopping tab at the auction house.
 - **Other amount...:** type any number of crafts. The last number you typed stays in the menu until you log out or `/reload`.
 - **Clear shopping list.**
 
@@ -64,7 +69,7 @@ Shortcut: **Ctrl-click** clears the list, without the menu.
 
 **Just one material:** **Shift-click** a material in the panel to add only what you're missing of it, for one craft. Pick a quality first by clicking it, and that quality is what gets added. With TSM, you get a search for just that material.
 
-**Separate lists:** each character and profession gets its own list, like **Craft Profit - Thrall - Blacksmithing**. Turn off **one shopping list per character** or **per profession** in the options to share lists instead.
+**Separate lists:** each character and profession gets its own list, like **Thrall - Blacksmithing**. Turn off **one shopping list per character** or **per profession** in the options to share lists instead; with both off, the list is called **Crafting**. Lists from before 1.19.0, named **Craft Profit - ...**, are moved to the new names the next time you log in, along with what's on them.
 
 **TSM without Auctionator:** the row says **Copy TSM search** instead, with the same menu. Pick an amount and a box shows a search, already selected: press Ctrl+C and paste it into the search box on TSM's Shopping tab. It searches for exactly the ranks you're missing and stops at the amounts you need. With neither Auctionator nor TSM, the row is hidden.
 
@@ -84,7 +89,7 @@ Either way, materials you own count once across all the orders, and what the pat
 
 **Concentration:** the orders that need concentration share what you have, and the top of the list shows how much they use. By default the orders that make the most gold per concentration point get it first; the options, or the choice at the bottom of the list, can put orders that reward profession knowledge first instead. Once it runs out, the rest say **not enough concentration** in red, their profit turns grey, and Add profitable and Add all skip them. Order tooltips also show how much knowledge a reward gives.
 
-**Optimize concentration:** a checkbox at the bottom of the list, also on the crafting order form (above Use Most Profitable Reagents) and in the options. With it on, an order that needs concentration uses the material qualities that need the least of it, and the cheapest of those, so your concentration covers more orders. The materials cost more. Use Most Profitable Reagents and the blue row on the order form pick the same materials.
+**Optimize concentration:** a checkbox at the bottom of the list, also on the crafting order form and the crafting page (above Use Most Profitable Reagents) and in the options. With it on, an order that needs concentration uses the material qualities that need the least of it, and the cheapest of those, so your concentration covers more orders. The materials cost more. Use Most Profitable Reagents and the blue row on the order form pick the same materials.
 
 You can hide the Shopping list row and the Patron orders button in the options. The options also have a **Clear** button for the list.
 
@@ -112,10 +117,10 @@ Click the gear on the panel or at the top of the Patron orders list, type `/craf
 | Panel position: Reset | Puts the panel back next to the profession window. |
 | Show amounts down to | Gold, silver (default) or copper. |
 | Patron orders: Spend concentration on | Most profit (default): the most gold per concentration point first. Knowledge first: orders that reward profession knowledge first, then by profit. Also at the bottom of the Patron orders list. |
-| Patron orders: Optimize concentration | Orders that need concentration use the qualities that need the least of it, the cheapest of those. Off by default. Also at the bottom of the Patron orders list and on the crafting order form. |
+| Patron orders: Optimize concentration | Orders that need concentration use the qualities that need the least of it, the cheapest of those. Off by default. Also at the bottom of the Patron orders list, on the crafting order form and on the crafting page. |
 | Show the Shopping list button | The Shopping list row and the Patron orders button. On by default; hidden anyway without Auctionator or TSM. |
 | Shop with | With Auctionator and TSM both installed: Auctionator shopping list (default) or TSM search to copy. Also at the bottom of the Shopping list menus. |
-| One shopping list per character / per profession | On by default. Either or both split the Craft Profit list, e.g. Craft Profit - Thrall - Blacksmithing. |
+| One shopping list per character / per profession | On by default. Either or both split the shopping list, e.g. Thrall - Blacksmithing. With both off, it's called Crafting. |
 | Check off what you get | On by default. Materials come off the Auctionator shopping list as you get them: bought, looted, from the mailbox or crafted. |
 | Auctionator shopping list: Clear | Empties the shopping list. With one list per profession and no profession window open, it empties all this character's profession lists. |
 | Animate multicraft & resourcefulness procs | On by default. |
