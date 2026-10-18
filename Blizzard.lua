@@ -3,8 +3,8 @@
 -- change these in any patch, so they live here and nowhere else.
 --
 -- The addon reads them and follows them with hooks. The one exception is
--- Blizzard.UseMaterials, which fills the order form the way Blizzard's own
--- quality picker does, and only when the player clicks for it.
+-- Blizzard.UseMaterials, which fills the form the way Blizzard's own quality
+-- picker does, and only when the player clicks or ticks a box for it.
 local _, ns = ...
 
 local Blizzard = {}
@@ -120,13 +120,25 @@ function Blizzard.Allocated(transaction, slotIndex)
 	return list
 end
 
--- Puts materials in the open order's form, the way Blizzard's quality picker
--- does: `picks` is slotIndex -> itemID, the full amount each. With `concentrate`,
--- also turns on concentration. A slot you don't own enough for is left as it is;
+-- The order screen's form.
+local function orderForm()
+	local details = ProfessionsFrame.OrdersPage.OrderView.OrderDetails
+	return details and details.SchematicForm
+end
+
+-- The form showing: the order screen's or the crafting page's, or nil.
+local function activeForm()
+	local page = Blizzard.ActivePage()
+	if page == "order" then return orderForm() end
+	if page == "craft" then return ProfessionsFrame.CraftingPage.SchematicForm end
+end
+
+-- Puts materials in the form showing, the way Blizzard's quality picker does:
+-- `picks` is slotIndex -> itemID, the full amount each. With `concentrate`, also
+-- turns on concentration. A slot you don't own enough for is left as it is;
 -- returns those as { { itemID, qty short } ... }.
 function Blizzard.UseMaterials(picks, concentrate)
-	local view = ProfessionsFrame.OrdersPage.OrderView
-	local form = view.OrderDetails and view.OrderDetails.SchematicForm
+	local form = activeForm()
 	local transaction, schematic = form and form.transaction, form and form.recipeSchematic
 	if not (transaction and schematic) then return {} end
 	local charOnly = transaction.ShouldUseCharacterInventoryOnly and transaction:ShouldUseCharacterInventoryOnly()
@@ -158,42 +170,48 @@ function Blizzard.UseMaterials(picks, concentrate)
 	return short
 end
 
--- The order form's "Use Best Quality Reagents" checkbox.
-function Blizzard.OrderBestQualityBox()
-	local details = ProfessionsFrame.OrdersPage.OrderView.OrderDetails
-	return details and details.SchematicForm and details.SchematicForm.AllocateBestQualityCheckbox
+-- The "Use Best Quality Reagents" checkboxes: the order form's and the crafting
+-- page's.
+function Blizzard.BestQualityBoxes()
+	local boxes = {}
+	for _, form in pairs({ orderForm(), ProfessionsFrame.CraftingPage.SchematicForm }) do
+		if form.AllocateBestQualityCheckbox then boxes[#boxes + 1] = form.AllocateBestQualityCheckbox end
+	end
+	return boxes
 end
 
--- Turns Blizzard's "Use Best Quality Reagents" off: its setting and its checkbox.
+-- Turns Blizzard's "Use Best Quality Reagents" off: its setting and its checkboxes.
 function Blizzard.StopBestQuality()
 	if Professions.ShouldAllocateBestQualityReagents() then
 		Professions.SetShouldAllocateBestQualityReagents(false)
 	end
-	local box = Blizzard.OrderBestQualityBox()
-	if box then box:SetChecked(false) end
+	for _, box in ipairs(Blizzard.BestQualityBoxes()) do box:SetChecked(false) end
 end
 
 -- Calls onBestQuality(checked) after the player clicks "Use Best Quality
--- Reagents" on the order form (Blizzard has re-filled the form by then), and
--- onOrder() when the order screen shows an order.
-function Blizzard.WatchOrderForm(onBestQuality, onOrder, owner)
-	local view = ProfessionsFrame.OrdersPage.OrderView
-	view.OrderDetails.SchematicForm:RegisterCallback(ProfessionsRecipeSchematicFormMixin.Event.UseBestQualityModified,
-		function(_, checked) onBestQuality(checked) end, owner)
-	hooksecurefunc(view, "SetOrder", onOrder)
+-- Reagents" on either form (Blizzard has re-filled the form by then), and
+-- onNewForm() when the order screen shows an order or the crafting page a recipe.
+function Blizzard.WatchForms(onBestQuality, onNewForm, owner)
+	for _, form in pairs({ orderForm(), ProfessionsFrame.CraftingPage.SchematicForm }) do
+		form:RegisterCallback(ProfessionsRecipeSchematicFormMixin.Event.UseBestQualityModified,
+			function(_, checked) onBestQuality(checked) end, owner)
+	end
+	hooksecurefunc(ProfessionsFrame.OrdersPage.OrderView, "SetOrder", onNewForm)
+	hooksecurefunc(ProfessionsFrame.CraftingPage.SchematicForm, "Init", onNewForm)
 end
 
--- Fills the open order's form the way Blizzard does by itself (lowest or best
+-- Fills the form showing the way Blizzard does by itself (lowest or best
 -- quality, following its checkbox), as unticking that checkbox does. With
 -- `stopConcentration`, also turns concentration off.
 function Blizzard.ResetMaterials(stopConcentration)
-	local view = ProfessionsFrame.OrdersPage.OrderView
-	local form = view.OrderDetails and view.OrderDetails.SchematicForm
+	local page, form = Blizzard.ActivePage(), activeForm()
 	local transaction = form and form.transaction
-	if not (transaction and view:IsVisible() and view.order) then return end
+	if not transaction then return end
+	if page == "craft" and transaction.SetManuallyAllocated then transaction:SetManuallyAllocated(false) end
 	Professions.AllocateAllBasicReagents(transaction, Professions.ShouldAllocateBestQualityReagents())
 	-- Puts back what the customer provides, as Blizzard does after re-filling.
-	if view.SchematicPostInit then view:SchematicPostInit() end
+	local view = ProfessionsFrame.OrdersPage.OrderView
+	if page == "order" and view.SchematicPostInit then view:SchematicPostInit() end
 	form:UpdateAllSlots()
 	if stopConcentration and transaction.SetApplyConcentration then transaction:SetApplyConcentration(false) end
 end
@@ -341,6 +359,16 @@ function Blizzard.ExpectedOutput(ctx, overrides)
 		transaction:GetAllocationItemGUID(), qualityID)
 	if not (ok and output) then return nil, nil, predicted end
 	return output.hyperlink, output.itemID, predicted
+end
+
+-- The item a craft makes at a quality tier, with what's in the form: link and
+-- itemID, or nil.
+function Blizzard.OutputAtQuality(recipeInfo, transaction, quality)
+	local qualityID = recipeInfo.qualityIDs and recipeInfo.qualityIDs[quality]
+	if not qualityID then return end
+	local ok, output = pcall(C_TradeSkillUI.GetRecipeOutputItemData, recipeInfo.recipeID,
+		transaction:CreateCraftingReagentInfoTbl(), transaction:GetAllocationItemGUID(), qualityID)
+	if ok and output then return output.hyperlink, output.itemID end
 end
 
 -- Inline icon for a quality, from the game's quality info.

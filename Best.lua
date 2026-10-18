@@ -1,8 +1,9 @@
--- Craft Profit: the most profitable materials for a crafting order. The panel's
--- "Use the most profitable materials" row puts them in once; the "Use Most
--- Profitable Reagents" checkbox on the order form, above Blizzard's "Use Best
--- Quality Reagents", puts them in every order you open. Above it, "Optimize
--- Concentration" picks the ones that need the least concentration instead.
+-- Craft Profit: the most profitable materials for a crafting order or a recipe.
+-- The panel's "Use the most profitable materials" row puts them in once; the
+-- "Use Most Profitable Reagents" checkbox, above Blizzard's "Use Best Quality
+-- Reagents" on the order form and on the crafting page, puts them in every order
+-- or recipe you open. Above it, "Optimize Concentration" picks the ones that need
+-- the least concentration instead.
 local _, ns = ...
 
 local Best = {}
@@ -15,7 +16,8 @@ local CONCENTRATION_LABEL = "Optimize Concentration"
 local LABEL_GAP = 2 -- checkbox to its label
 local ROW_GAP = 0   -- between the stacked checkboxes
 
-local checkbox, concentrationBox
+-- One of each on every form that has Blizzard's checkbox.
+local boxes, concentrationBoxes = {}, {}
 
 -- How faded Optimize Concentration is while it doesn't change the form.
 local DIMMED_ALPHA = 0.45
@@ -24,23 +26,25 @@ local DIMMED_ALPHA = 0.45
 -- Reagents, so it's dimmed (box, check and label) while that's off. It stays
 -- clickable: it still sets the Patron orders list's picks.
 local function updateDim()
-	if not concentrationBox then return end
-	concentrationBox:SetAlpha(ns.db.bestMaterials and 1 or DIMMED_ALPHA)
+	for _, box in ipairs(concentrationBoxes) do
+		box:SetAlpha(ns.db.bestMaterials and 1 or DIMMED_ALPHA)
+	end
 end
 
--- What the checkbox already put in for the open order, so each set goes in once
--- and a slot you change afterwards stays as you set it. Cleared for each order.
+-- What the checkbox already put in for the open order or recipe, so each set goes
+-- in once and a slot you change afterwards stays as you set it. Cleared for each
+-- order or recipe.
 local applied = {}
 -- Whether the checkbox turned concentration on for the open order.
 local concentrated = false
 
-local function forgetOrder()
+local function forget()
 	wipe(applied)
 	concentrated = false
 end
 
 local function keyOf(model)
-	local parts = { tostring(model.key), tostring(model.best.concentrate) }
+	local parts = { model.kind, tostring(model.key), tostring(model.best.concentrate) }
 	for _, pick in ipairs(model.best.list) do parts[#parts + 1] = pick.itemID end
 	return table.concat(parts, ":")
 end
@@ -57,10 +61,10 @@ function Best.Use(best, quiet)
 	end
 end
 
--- After each panel redraw: with the checkbox on, puts the order's best
--- materials in, once.
+-- After each panel redraw: with the checkbox on, puts the order's or recipe's
+-- best materials in, once.
 function Best.Check(model)
-	if not (ns.db.bestMaterials and model and model.kind == "order" and model.best) then return end
+	if not (ns.db.bestMaterials and model and model.best) then return end
 	local key = keyOf(model)
 	if applied[key] then return end
 	applied[key] = true
@@ -68,14 +72,27 @@ function Best.Check(model)
 	Best.Use(model.best, true)
 end
 
+local function onCraftPage()
+	return ns.Blizzard.ActivePage() == "craft"
+end
+
 local function showTooltip(self)
 	GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
 	GameTooltip:SetText(LABEL)
-	GameTooltip:AddLine("Puts the most profitable materials in every crafting order you open: the cheapest qualities "
-		.. "that still reach the order's minimum quality, with what you own counted at what it would sell for. "
-		.. "Turns on concentration when the minimum quality needs it.", 1, 1, 1, true)
+	if onCraftPage() then
+		GameTooltip:AddLine("Puts the most profitable materials in every recipe you pick: the rank that makes the "
+			.. "most gold after what its materials cost, and the cheapest materials that make it, with what you own "
+			.. "counted at what it would sell for. With no sale price, the cheapest materials that keep the rank.", 1, 1, 1, true)
+		GameTooltip:AddLine(" ")
+		GameTooltip:AddLine("Concentration stays as you set it. With it on, the ranks it reaches count.", 1, 1, 1, true)
+	else
+		GameTooltip:AddLine("Puts the most profitable materials in every crafting order you open: the cheapest qualities "
+			.. "that still reach the order's minimum quality, with what you own counted at what it would sell for. "
+			.. "Turns on concentration when the minimum quality needs it.", 1, 1, 1, true)
+	end
 	GameTooltip:AddLine(" ")
-	GameTooltip:AddLine("Turning it on turns off Use Best Quality Reagents, and the other way round.", 0.53, 0.53, 0.53, true)
+	GameTooltip:AddLine("Turning it on turns off Use Best Quality Reagents, and the other way round. "
+		.. "The same setting on the crafting page and the order form.", 0.53, 0.53, 0.53, true)
 	GameTooltip:Show()
 end
 
@@ -83,6 +100,7 @@ local function onClick(self)
 	local on = self:GetChecked() and true or false
 	ns.db.bestMaterials = on
 	PlaySound(on and SOUNDKIT.IG_MAINMENU_OPTION_CHECKBOX_ON or SOUNDKIT.IG_MAINMENU_OPTION_CHECKBOX_OFF)
+	for _, box in ipairs(boxes) do box:SetChecked(on) end
 	if on then
 		-- Both fill the same slots, so only one can be on.
 		ns.Blizzard.StopBestQuality()
@@ -91,7 +109,7 @@ local function onClick(self)
 		ns.Blizzard.ResetMaterials(concentrated)
 	end
 	updateDim()
-	forgetOrder()
+	forget()
 	ns.Panel.Refresh()
 	showTooltip(self)
 end
@@ -100,16 +118,23 @@ end
 local function onBlizzardBestQuality(checked)
 	if checked and ns.db.bestMaterials then
 		ns.db.bestMaterials = false
-		checkbox:SetChecked(false)
+		for _, box in ipairs(boxes) do box:SetChecked(false) end
 		updateDim()
 	end
-	forgetOrder()
+	forget()
 end
 
 local function showConcentrationTooltip(self)
 	GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
 	GameTooltip:SetText(CONCENTRATION_LABEL)
-	GameTooltip:AddLine(ns.LEAST_CONCENTRATION_TIP, 1, 1, 1, true)
+	if onCraftPage() then
+		GameTooltip:AddLine("With concentration on, uses the material qualities that reach the most profitable rank "
+			.. "with the least concentration, and the cheapest of those. The materials cost more, but your concentration "
+			.. "lasts for more crafts.\n\nOff: the cheapest materials for that rank, whatever concentration they take.",
+			1, 1, 1, true)
+	else
+		GameTooltip:AddLine(ns.LEAST_CONCENTRATION_TIP, 1, 1, 1, true)
+	end
 	if not ns.db.bestMaterials then
 		GameTooltip:AddLine(" ")
 		GameTooltip:AddLine("Use Most Profitable Reagents is off, so this doesn't change the form right now.", 1, 0.82, 0, true)
@@ -123,6 +148,7 @@ end
 local function onConcentrationClick(self)
 	local on = self:GetChecked() and true or false
 	PlaySound(on and SOUNDKIT.IG_MAINMENU_OPTION_CHECKBOX_ON or SOUNDKIT.IG_MAINMENU_OPTION_CHECKBOX_OFF)
+	for _, box in ipairs(concentrationBoxes) do box:SetChecked(on) end
 	-- New picks go in by themselves while Use Most Profitable Reagents is on.
 	ns.Patron.SetLeastConcentration(on)
 	showConcentrationTooltip(self)
@@ -150,17 +176,20 @@ local function addCheckbox(parent, below, text, setting, onClickHandler, tooltip
 	return box
 end
 
--- Adds the checkboxes above Blizzard's, stacked upward. Safe to call more than once.
+-- Adds the checkboxes above Blizzard's on each form, stacked upward. Safe to call
+-- more than once.
 function Best.Init()
-	if checkbox then return end
-	local blizzardBox = ns.Blizzard.OrderBestQualityBox()
-	if not blizzardBox then return end
+	if #boxes > 0 then return end
 	-- On Blizzard's checkbox, so they show only where that one does: recipes whose
 	-- materials come in qualities.
-	checkbox = addCheckbox(blizzardBox, blizzardBox, LABEL, "bestMaterials", onClick, showTooltip)
-	concentrationBox = addCheckbox(blizzardBox, checkbox, CONCENTRATION_LABEL, "leastConcentration",
-		onConcentrationClick, showConcentrationTooltip)
+	for _, blizzardBox in ipairs(ns.Blizzard.BestQualityBoxes()) do
+		local box = addCheckbox(blizzardBox, blizzardBox, LABEL, "bestMaterials", onClick, showTooltip)
+		boxes[#boxes + 1] = box
+		concentrationBoxes[#concentrationBoxes + 1] = addCheckbox(blizzardBox, box, CONCENTRATION_LABEL,
+			"leastConcentration", onConcentrationClick, showConcentrationTooltip)
+	end
+	if #boxes == 0 then return end
 	updateDim()
 
-	ns.Blizzard.WatchOrderForm(onBlizzardBestQuality, forgetOrder, checkbox)
+	ns.Blizzard.WatchForms(onBlizzardBestQuality, forget, boxes[1])
 end

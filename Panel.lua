@@ -386,40 +386,33 @@ local function cutNote(cut, gross, name)
 	return " " .. Color("muted", format("(after %d%% %s)", math.floor(cut / gross * 100 + 0.5), name))
 end
 
-local function drawCraft(model)
-	addRow(model.title, nil, fonts.title)
-	local output = model.output
-	if output then
-		addRow(format("Makes %sx %s", output.qtyText, output.link))
-		if output.sale then
-			-- One line, after the AH cut.
-			if output.ahCut then
-				addRow("Sells for" .. cutNote(output.ahCut, output.sale, "AH cut"), Money(output.sale - output.ahCut))
-			else
-				addRow("Sells for", Money(output.sale))
-			end
-		else
-			addRow("Sells for", Color("warning", "no price"))
+-- What the most profitable materials are, for the row's tooltip.
+local function bestExplanation(kind, best)
+	local least = ns.db.leastConcentration and best.concentration
+	if kind == "order" then
+		if least then
+			return format("The materials that reach the order's minimum quality with the least concentration (%d), "
+				.. "and the cheapest of those.", best.concentration)
 		end
+		return "The cheapest materials that still reach the order's minimum quality."
 	end
-	drawMaterials(model)
-	drawFooter(model)
+	if best.noPrice then
+		return "No sale price for this item, so: the cheapest materials that keep the rank it comes out at now."
+	end
+	if least then
+		return format("The rank that makes the most gold after what its materials cost, reached with the least "
+			.. "concentration (%d), and the cheapest materials of those.", best.concentration)
+	end
+	return "The rank that makes the most gold after what its materials cost, and the cheapest materials that make it."
 end
 
-local function bestTooltip(best)
+local function bestTooltip(kind, best)
 	return function(tip)
 		tip:SetText("Use the most profitable materials")
-		tip:AddLine("Puts these in the order form:", 1, 1, 1)
+		tip:AddLine("Puts these in the form:", 1, 1, 1)
 		for _, pick in ipairs(best.list) do tip:AddLine(Item(pick.itemID, pick.qty), 1, 1, 1) end
 		if best.concentrate then tip:AddLine("and turns on concentration, which it needs.", 1, 1, 1, true) end
-		if ns.db.leastConcentration and best.concentration then
-			tip:AddLine(format("The materials that reach the order's minimum quality with the least concentration (%d), "
-				.. "and the cheapest of those. What you own counts at what it would sell for.", best.concentration),
-				0.53, 0.53, 0.53, true)
-		else
-			tip:AddLine("The cheapest materials that still reach the order's minimum quality. What you own counts at what it would sell for.",
-				0.53, 0.53, 0.53, true)
-		end
+		tip:AddLine(bestExplanation(kind, best) .. " What you own counts at what it would sell for.", 0.53, 0.53, 0.53, true)
 		if best.gain > 0 then
 			tip:AddDoubleLine("You come out ahead", signedMoney(best.gain), 1, 1, 1, 1, 1, 1)
 		elseif best.savesConcentration then
@@ -437,7 +430,28 @@ local function drawBest(model)
 	addGap()
 	local text = Color("simulated", "Use the most profitable materials")
 	if best.gain > 0 then text = text .. " " .. signedMoney(best.gain) end
-	addRow(text, nil, nil, function() ns.Best.Use(best) end, bestTooltip(best))
+	addRow(text, nil, nil, function() ns.Best.Use(best) end, bestTooltip(model.kind, best))
+end
+
+local function drawCraft(model)
+	addRow(model.title, nil, fonts.title)
+	local output = model.output
+	if output then
+		addRow(format("Makes %sx %s", output.qtyText, output.link))
+		if output.sale then
+			-- One line, after the AH cut.
+			if output.ahCut then
+				addRow("Sells for" .. cutNote(output.ahCut, output.sale, "AH cut"), Money(output.sale - output.ahCut))
+			else
+				addRow("Sells for", Money(output.sale))
+			end
+		else
+			addRow("Sells for", Color("warning", "no price"))
+		end
+	end
+	drawMaterials(model)
+	drawBest(model)
+	drawFooter(model)
 end
 
 local function drawOrder(model)

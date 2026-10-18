@@ -15,7 +15,7 @@
 --   realProfit    forecast profit with the form's materials, or nil
 --   canSimulate   materials can be clicked for what-if qualities
 --   simulating    some materials are what-if qualities
---   best          (orders) more profitable materials than the form's, or nil
+--   best          more profitable materials than the form's, or nil
 --   notes         { estimated = bool, missing = count, [1..n] = extra notes }
 local _, ns = ...
 
@@ -246,11 +246,49 @@ local function costOf(materials, notes)
 	return cost
 end
 
--- The recipe selected on the crafting page.
+-- Whether the form has something other than `overrides` (slotIndex -> itemID,
+-- the full amount each) in those slots.
+local function differsFromForm(schematic, transaction, overrides)
+	for slotIndex, itemID in pairs(overrides) do
+		local inForm = ns.Blizzard.Allocated(transaction, slotIndex)
+		local qty = schematic.reagentSlotSchematics[slotIndex].quantityRequired
+		if not (#inForm == 1 and inForm[1].itemID == itemID and inForm[1].qty == qty) then return true end
+	end
+	return false
+end
+
+-- For the recipe on the crafting page: the materials that make the most gold
+-- (see Planner.ForCraft), when the form has something else. Same shape as
+-- bestMaterials below; concentration is left as you set it.
+local function bestCraftMaterials(ctx, model)
+	local schematic, transaction = ctx.schematic, ctx.transaction
+	local plan = ns.Planner.ForCraft(ctx)
+	if not (plan and differsFromForm(schematic, transaction, plan.overrides)) then return end
+
+	local planned = Model.Craft({ recipeInfo = ctx.recipeInfo, schematic = schematic, transaction = transaction,
+		isRecraft = ctx.isRecraft, overrides = plan.overrides })
+	-- With no sale price, there's no profit to compare: what the materials save.
+	local gain
+	if planned.total and model.realProfit then
+		gain = planned.total - model.realProfit
+	else
+		gain = model.realCost - planned.cost
+	end
+	-- Or, with "Optimize concentration" on, when it takes less than the form does.
+	local savesConcentration = ns.db.leastConcentration and plan.concentration
+		and (ns.Blizzard.FormConcentrationCost(ctx.recipeInfo.recipeID, schematic, transaction) or 0) > plan.concentration
+	if gain <= 0 and not savesConcentration then return end
+	return { picks = plan.overrides, list = plan.picks, concentrate = false, concentration = plan.concentration,
+		savesConcentration = savesConcentration and true or false, gain = gain, noPrice = plan.noPrice }
+end
+
+-- The recipe selected on the crafting page. With ctx.overrides (slotIndex ->
+-- itemID), prices those qualities instead of the form's, for comparing.
 function Model.Craft(ctx)
 	local recipeInfo, schematic, transaction = ctx.recipeInfo, ctx.schematic, ctx.transaction
-	local simulating = ns.Simulation.UseFor("craft:" .. recipeInfo.recipeID)
-	local picks = ns.Simulation.picks
+	local planning = ctx.overrides ~= nil
+	local simulating = not planning and ns.Simulation.UseFor("craft:" .. recipeInfo.recipeID)
+	local picks = planning and ctx.overrides or ns.Simulation.picks
 	local notes = {}
 	local model = {
 		kind = "craft",
@@ -303,6 +341,7 @@ function Model.Craft(ctx)
 	-- Real crafts use what's in the form, never the what-if picks.
 	model.realCost = simulating and costOf(Model.Materials(schematic, transaction, {})) or model.cost
 	model.realProfit = not simulating and model.total or nil
+	if not (planning or simulating or ctx.isRecraft) then model.best = bestCraftMaterials(ctx, model) end
 	return model
 end
 
@@ -317,13 +356,7 @@ local function bestMaterials(ctx, model)
 	if not (plan and plan.overrides and next(plan.overrides)) or plan.unreachable then return end
 
 	local concentrate = plan.concentration ~= nil and not ns.Blizzard.IsConcentrating(transaction)
-	local differs = concentrate
-	for slotIndex, itemID in pairs(plan.overrides) do
-		local inForm = ns.Blizzard.Allocated(transaction, slotIndex)
-		local qty = schematic.reagentSlotSchematics[slotIndex].quantityRequired
-		if not (#inForm == 1 and inForm[1].itemID == itemID and inForm[1].qty == qty) then differs = true end
-	end
-	if not differs then return end
+	if not (concentrate or differsFromForm(schematic, transaction, plan.overrides)) then return end
 
 	local planned = Model.Order({ order = order, schematic = schematic, provided = ctx.provided, overrides = plan.overrides })
 	local gain = planned.total - model.realProfit

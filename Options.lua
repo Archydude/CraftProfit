@@ -116,7 +116,7 @@ function Options.Create()
 		"Knowledge first: orders that reward profession knowledge first, then the rest by profit.\n\n" ..
 		"You can also switch it at the bottom of the Patron orders list.")
 	checkbox("leastConcentration", ns.LEAST_CONCENTRATION, ns.LEAST_CONCENTRATION_TIP ..
-		"\n\nAlso picks the materials for Use Most Profitable Reagents on the order form. " ..
+		"\n\nAlso picks the materials for Use Most Profitable Reagents on the order form and the crafting page. " ..
 		"You can also switch it at the bottom of the Patron orders list.")
 
 	layout:AddInitializer(CreateSettingsListSectionHeaderInitializer("Tooltips"))
