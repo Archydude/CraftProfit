@@ -91,8 +91,9 @@ ns.LIST_ADDON_CHOICES = {
 	{ "tsm", "TSM search to copy" },
 }
 
--- The Auctionator shopping list the missing materials button adds to.
-ns.SHOPPING_LIST = "Craft Profit"
+-- The Auctionator shopping list the missing materials button adds to, when the
+-- list isn't named after the character or profession.
+ns.SHOPPING_LIST = "Crafting"
 
 -- TSM price types offered in the options.
 ns.TSM_SOURCES = {

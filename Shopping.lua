@@ -79,13 +79,14 @@ local function openProfession()
 	if name and name ~= "" then return name end
 end
 
--- The list materials go to: "Craft Profit", or one per character and/or per
--- profession, as the options say ("Craft Profit - Snir - Blacksmithing").
+-- The list materials go to: one per character and/or per profession, as the
+-- options say ("Snir - Blacksmithing"), or "Crafting" with neither.
 -- `profession` defaults to the open one; with none, the profession is left out.
 function Shopping.ListName(profession)
-	local parts = { ns.SHOPPING_LIST }
+	local parts = {}
 	if ns.db.listPerCharacter then parts[#parts + 1] = UnitName("player") end
 	if ns.db.listPerProfession then parts[#parts + 1] = profession or openProfession() end
+	if #parts == 0 then return ns.SHOPPING_LIST end
 	return table.concat(parts, " - ")
 end
 
@@ -308,11 +309,108 @@ local function checkOff(settling)
 	end
 end
 
+---------------------------------------------------------------------------
+-- Lists from before the rename
+---------------------------------------------------------------------------
+-- Up to 1.18 the lists were named "Craft Profit - Snir - Blacksmithing", or just
+-- "Craft Profit". Each login moves every old list, any character's, onto today's
+-- name, adding up amounts the new list already has, and takes its check-off
+-- tracking along.
+
+local OLD_LIST = "Craft Profit"
+
+local function newListName(oldName)
+	if oldName == OLD_LIST then return ns.SHOPPING_LIST end
+	local prefix = OLD_LIST .. " - "
+	if oldName:sub(1, #prefix) == prefix then return oldName:sub(#prefix + 1) end
+end
+
+-- Auctionator's API can neither list nor delete lists, so this uses its list
+-- manager. Nil when that's changed.
+local function listManager()
+	local manager = Auctionator.Shopping and Auctionator.Shopping.ListManager
+	if manager and manager.GetCount and manager.GetByIndex and manager.Delete then return manager end
+end
+
+-- The names of all of Auctionator's shopping lists.
+local function allListNames()
+	local names, manager = {}, listManager()
+	if not manager then return names end
+	local ok, count = pcall(manager.GetCount, manager)
+	for index = 1, ok and count or 0 do
+		local listOK, list = pcall(manager.GetByIndex, manager, index)
+		local name = listOK and list and list.GetName and list:GetName()
+		if type(name) == "string" then names[#names + 1] = name end
+	end
+	return names
+end
+
+-- Deletes the list, or empties it when Auctionator's list manager has changed.
+-- Returns whether it's gone.
+local function deleteList(api, listName)
+	local manager = listManager()
+	if manager and pcall(manager.Delete, manager, listName) then return true end
+	pcall(api.CreateShoppingList, ADDON_NAME, listName, {})
+	return false
+end
+
+-- Returns whether the old list is gone.
+local function moveList(api, oldName, newName)
+	local searchStrings = call(api.GetShoppingListItems, oldName)
+	if searchStrings then
+		if #searchStrings > 0 then
+			local lines, byKey = readList(api, newName)
+			for _, searchString in ipairs(searchStrings) do
+				local term = call(api.ConvertFromSearchString, searchString)
+				local line = type(term) == "table" and type(term.searchString) == "string" and byKey[termKey(term)]
+				if not line then
+					lines[#lines + 1] = { text = searchString }
+				elseif line.term.quantity and term.quantity then
+					line.term.quantity = line.term.quantity + term.quantity
+					line.text = nil -- rebuilt with the new amount
+				end
+			end
+			if not writeList(api, newName, lines) then return false end
+		end
+	end
+	local tracked = ns.db.listItems[oldName]
+	if tracked then
+		local into = ns.db.listItems[newName] or {}
+		for itemID, item in pairs(tracked) do into[itemID] = into[itemID] or item end
+		ns.db.listItems[newName] = into
+		ns.db.listItems[oldName] = nil
+	end
+	return searchStrings ~= nil and deleteList(api, oldName)
+end
+
+local function moveOldLists()
+	local api = auctionatorAPI()
+	if not (api and ns.db) then return end
+	local oldNames, seen = {}, {}
+	local function add(name)
+		if not seen[name] and newListName(name) then
+			seen[name] = true
+			oldNames[#oldNames + 1] = name
+		end
+	end
+	for _, name in ipairs(allListNames()) do add(name) end
+	for name in pairs(ns.db.listItems) do add(name) end
+	local moved = 0
+	for _, oldName in ipairs(oldNames) do
+		if moveList(api, oldName, newListName(oldName)) then moved = moved + 1 end
+	end
+	if moved > 0 then
+		say(format("Renamed %d Auctionator shopping %s: \"%s\" is no longer part of the name.",
+			moved, moved == 1 and "list" or "lists", OLD_LIST))
+	end
+end
+
 local counter = CreateFrame("Frame")
 counter:RegisterEvent("PLAYER_ENTERING_WORLD")
 counter:RegisterEvent("BAG_UPDATE_DELAYED")
-counter:SetScript("OnEvent", function(_, event)
+counter:SetScript("OnEvent", function(_, event, isInitialLogin, isReload)
 	if event == "PLAYER_ENTERING_WORLD" then
+		if isInitialLogin or isReload then moveOldLists() end
 		settledAt = GetTime() + SETTLE_SECONDS
 		C_Timer.After(SETTLE_SECONDS, function() checkOff(true) end)
 	end

@@ -84,20 +84,21 @@ function Options.Create()
 		format("A row under Materials cost for buying what you're short of, and the Shopping list button " ..
 		"on the Patron orders tab.\n\n" ..
 		"Auctionator: a click opens a menu that adds what's missing for 1, 5, 10 or any number of crafts " ..
-		"to the \"%s\" shopping list.\n\n" ..
+		"to an Auctionator shopping list.\n\n" ..
 		"TSM: the same menu gives you a search to copy into TSM's Shopping tab, for exactly the ranks " ..
 		"and amounts you're missing.\n\n" ..
-		"With neither Auctionator nor TSM installed, it's hidden.", ns.SHOPPING_LIST))
+		"With neither Auctionator nor TSM installed, it's hidden."))
 	dropdown("listAddon", "Shop with", ns.LIST_ADDON_CHOICES,
 		"When Auctionator and TSM are both installed: add missing materials to Auctionator's shopping list, " ..
 		"or get a TSM search to copy. With only one of them, that one is used.\n\n" ..
 		"You can also switch it at the bottom of the Shopping list menus.")
 	checkbox("listPerCharacter", "One shopping list per character",
-		format("Each character gets its own Auctionator list, like \"%s - %s\".\n\n" ..
-			"Can be combined with one list per profession.", ns.SHOPPING_LIST, UnitName("player") or "Name"))
+		format("Each character gets its own Auctionator list, named after it, like \"%s\".\n\n" ..
+			"Can be combined with one list per profession: \"%s - Blacksmithing\".",
+			UnitName("player") or "Name", UnitName("player") or "Name"))
 	checkbox("listPerProfession", "One shopping list per profession",
-		format("Each profession gets its own Auctionator list, like \"%s - Blacksmithing\".\n\n" ..
-			"Can be combined with one list per character.", ns.SHOPPING_LIST))
+		format("Each profession gets its own Auctionator list, like \"Blacksmithing\".\n\n" ..
+			"Can be combined with one list per character. With neither, the list is \"%s\".", ns.SHOPPING_LIST))
 	checkbox("checkOff", "Check off what you get",
 		"Materials come off the Auctionator shopping list as you get them: bought, looted, from the mailbox " ..
 		"or crafted. Chat says what came off, and when the list is done.\n\n" ..
