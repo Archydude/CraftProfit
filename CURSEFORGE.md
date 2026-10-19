@@ -55,7 +55,7 @@ Click a material to try its next quality; profit updates right away.
 One click adds what you're missing to an **Auctionator** shopping list or a **TSM** search. Shift-click for more crafts. The Auctionator list checks itself off as materials come in.
 
 ### Procs and session total
-**Multicraft** and **resourcefulness** procs pop up as bonus gold, on the panel or the Patron orders list, and a session total adds up what you've made.
+**Multicraft** and **resourcefulness** procs pop up as bonus gold, on the panel or the Patron orders list, and a session total on both adds up what you've made.
 
 ### Which character crafts it best?
 Hover an item to see each character's **Craft Rank**: the highest rank they can make it at, and the concentration it takes.
@@ -72,11 +72,11 @@ Hover an item to see each character's **Craft Rank**: the highest rank they can 
 
 ## B. Upload File form
 
-**File:** `dist\CraftProfit-1.19.0.zip`
+**File:** `dist\CraftProfit-1.20.0.zip`
 
 **Display name**
 ```
-Craft Profit 1.19.0
+Craft Profit 1.20.0
 ```
 
 **Release type:** `Release`
@@ -85,6 +85,9 @@ Craft Profit 1.19.0
 
 **Changelog** (paste only the newest part; paste older parts too if they never went up)
 ```markdown
+1.20.0
+- The session total now also shows at the bottom of the Patron orders list, so you can follow it while you craft from the list. Click it to reset it, as on the panel.
+
 1.19.0
 - The most profitable materials on the crafting page: **Use Most Profitable Reagents** and **Optimize Concentration** now also sit above Blizzard's Use Best Quality Reagents on the crafting page, and the panel's "Use the most profitable materials" row shows there too. They pick the rank that makes the most gold after what its materials cost, and the cheapest materials that make it. Concentration stays as you set it: with it on, Optimize Concentration picks the qualities that reach the rank with the least of it. Items with no sale price get the cheapest materials that keep the rank they come out at now.
 - Shopping lists no longer have "Craft Profit" in their names: they're named after the character and profession, like "Thrall - Blacksmithing" (or "Crafting" with both of those options off). Your old lists move to the new names at your next login, along with what's on them.
