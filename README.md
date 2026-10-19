@@ -2,7 +2,7 @@
 
 A lightweight addon: one small panel next to your profession window that tells you, in gold, whether a craft or a crafting order makes or loses money.
 
-- **Crafting page:** what the item sells for, minus the 5% auction house cut, minus your materials.
+- **Crafting page:** what the item sells for, minus the 5% auction house cut, minus your materials. With nothing to sell (no auction price, an enchant, a recraft), it's a loss of what the materials cost.
 - **Crafting orders:** the commission you receive (after the consortium cut), minus the materials **you** supply, plus any sellable patron rewards.
 
 - **Procs:** when a craft procs multicraft or resourcefulness, the bonus gold pops up over the Profit line with a coin sound, a **Procs** section lists the extra items and returned materials with their value, and Profit/Loss changes to what that craft really made. It goes back to the normal forecast on your next craft without a proc, or when you pick another recipe.
@@ -11,7 +11,7 @@ A lightweight addon: one small panel next to your profession window that tells y
 
 - **Shopping list:** adds what you're short of, for one or more crafts or for every patron order at once, to an Auctionator shopping list, or as a TSM search to copy. The Auctionator list checks materials off as you get them.
 
-- **Session total:** under Profit/Loss, what all your crafts made since you logged in on this character (a `/reload` keeps it), including orders crafted from the Patron orders list, where it also shows at the bottom of the list. Crafts without a price, like enchants, aren't counted. Click it to reset it to zero.
+- **Session total:** under Profit/Loss, what all your crafts made since you logged in on this character (a `/reload` keeps it), including orders crafted from the Patron orders list, where it also shows at the bottom of the list. Crafts whose item has no sale price, like enchants and treatises, count as a loss of what their materials cost, less what resourcefulness gives back. Click it to reset it to zero.
 
 - **Best rank on tooltips:** an item you can craft shows the highest rank you can make it at with top-quality materials, anywhere you see its tooltip.
 

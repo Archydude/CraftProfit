@@ -249,7 +249,13 @@ local function evaluate(data, model)
 		-- quantity includes the multicraft extras.
 		proc.actual = data.quantity * unit - model.realCost + proc.savedValue
 	elseif model.realProfit then
+		-- Nothing to sell (no price, an enchant, a recraft) is a loss of what the
+		-- materials cost, less what resourcefulness gave back.
 		proc.actual = model.realProfit + proc.bonus
+	elseif model.kind == "craft" then
+		-- The same while what-if qualities are on screen: the real craft used the
+		-- form's materials.
+		proc.actual = proc.bonus - model.realCost
 	end
 	return proc
 end
@@ -266,7 +272,7 @@ local function onCraftResult(data)
 
 	local result = evaluate(data, model)
 
-	-- Crafts without a price (enchants, recrafts...) aren't counted.
+	-- Every craft counts, those with nothing to sell as a loss of what their materials cost.
 	if result.actual then
 		local session = ns.db.session
 		session.total = session.total + result.actual

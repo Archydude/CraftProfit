@@ -10,9 +10,9 @@
 --   missingFor    function(crafts) -> what's missing for that many crafts
 --   shoppable     there are materials you supply that the shopping list can buy
 --   cost         what the listed materials cost (simulated ones included)
---   total         forecast profit, or nil when there's no sale price
+--   total         forecast profit; with nothing to sell, a loss of what the materials cost
 --   realCost      what the materials in the form cost (procs use this)
---   realProfit    forecast profit with the form's materials, or nil
+--   realProfit    forecast profit with the form's materials, or nil while simulating
 --   canSimulate   materials can be clicked for what-if qualities
 --   simulating    some materials are what-if qualities
 --   best          more profitable materials than the form's, or nil
@@ -267,13 +267,8 @@ local function bestCraftMaterials(ctx, model)
 
 	local planned = Model.Craft({ recipeInfo = ctx.recipeInfo, schematic = schematic, transaction = transaction,
 		isRecraft = ctx.isRecraft, overrides = plan.overrides })
-	-- With no sale price, there's no profit to compare: what the materials save.
-	local gain
-	if planned.total and model.realProfit then
-		gain = planned.total - model.realProfit
-	else
-		gain = model.realCost - planned.cost
-	end
+	-- With no sale price, both are a loss of what the materials cost: the gain is what they save.
+	local gain = planned.total - model.realProfit
 	-- Or, with "Optimize concentration" on, when it takes less than the form does.
 	local savesConcentration = ns.db.leastConcentration and plan.concentration
 		and (ns.Blizzard.FormConcentrationCost(ctx.recipeInfo.recipeID, schematic, transaction) or 0) > plan.concentration
@@ -325,18 +320,18 @@ function Model.Craft(ctx)
 			end
 			if qtyMin ~= qtyMax then notes[#notes + 1] = "Average amount used for the sale price." end
 		else
-			notes[#notes + 1] = "No auction price for this item, so no profit shown."
+			notes[#notes + 1] = "No auction price for this item, so the loss is what the materials cost."
 		end
 	elseif ctx.isRecraft then
-		notes[#notes + 1] = "Recraft: showing material cost only."
+		notes[#notes + 1] = "Recraft: the loss is what the materials cost."
 	else
-		notes[#notes + 1] = "Nothing to sell from this recipe: material cost only."
+		notes[#notes + 1] = "Nothing to sell from this recipe: the loss is what the materials cost."
 	end
 
 	model.materials = Model.Materials(schematic, transaction, {}, picks)
 	model.cost = costOf(model.materials, notes)
 	addShopping(model, schematic, {}, picks)
-	if model.total then model.total = model.total - model.cost end
+	model.total = (model.total or 0) - model.cost
 
 	-- Real crafts use what's in the form, never the what-if picks.
 	model.realCost = simulating and costOf(Model.Materials(schematic, transaction, {})) or model.cost
