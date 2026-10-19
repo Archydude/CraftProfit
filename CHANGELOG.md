@@ -1,5 +1,8 @@
 # Changelog
 
+## 1.20.1
+- Fixed: crafts with nothing to sell (no auction price, like treatises, or an enchant or a recraft) didn't count what their materials cost. The panel now shows them as a Loss of that cost, and they count that way in the session total, less what resourcefulness gives back.
+
 ## 1.20.0
 - The session total now also shows at the bottom of the Patron orders list, so you can follow it while you craft from the list. Click it to reset it, as on the panel.
 
