@@ -66,7 +66,8 @@ function Options.Create()
 		"Play a coin sound when a craft procs multicraft or resourcefulness.")
 
 	checkbox("showSession", "Show this session's total",
-		"Adds up what every craft made since you logged in on this character. A /reload keeps it.")
+		"Adds up what every craft made since you logged in on this character. A /reload keeps it. Shown on the " ..
+		"panel and at the bottom of the Patron orders list.")
 	button("Session total", "Reset", ns.Results.ResetSession, "Start the session total from zero.")
 
 	dropdown("precision", "Show amounts down to", {

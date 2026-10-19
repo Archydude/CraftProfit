@@ -620,6 +620,23 @@ local function openMenu(owner, retried)
 			return redrawn()
 		end)
 		least:SetTooltip(leastConcentrationTooltip)
+
+		-- What your crafts made this session, as on the panel, which doesn't show on
+		-- this page.
+		local session = ns.db.session
+		if ns.db.showSession and session.crafts > 0 then
+			root:CreateDivider()
+			local item = root:CreateButton(format("%s (%d craft%s)", ns.Color("heading", "This session"), session.crafts,
+				session.crafts == 1 and "" or "s"), keepOpen(ns.Results.ConfirmResetSession))
+			local function sessionTooltip(tooltip)
+				GameTooltip_SetTitle(tooltip, "This session")
+				tooltip:AddLine("What all your crafts made since you logged in on this character, including orders "
+					.. "crafted from this list.", 1, 1, 1, true)
+				tooltip:AddLine(ns.Color("simulated", "Click: reset to zero"))
+			end
+			rightText(item, signedMoney(session.total), nil, nil, sessionTooltip)
+			item:SetTooltip(sessionTooltip)
+		end
 	end)
 	if menu and not retried and wrongScrolling(menu) then
 		scrolls = not scrolls

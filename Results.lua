@@ -25,6 +25,7 @@ end
 function Results.ResetSession()
 	ns.db.session = { total = 0, crafts = 0 }
 	ns.Panel.Refresh()
+	ns.Patron.Reopen()
 end
 
 -- Clicking the session row asks first, so a stray click can't wipe it.
@@ -276,6 +277,9 @@ local function onCraftResult(data)
 		-- A craft without procs: Profit/Loss goes back to the normal forecast.
 		lastProc = nil
 		ns.Panel.Refresh()
+		-- The list's session line has a new total. (After a proc it's redrawn at the
+		-- order's next step instead, so the bonus gold can finish floating up.)
+		if listModel then ns.Patron.Reopen() end
 		return
 	end
 
