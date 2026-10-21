@@ -25,7 +25,7 @@ end
 function Results.ResetSession()
 	ns.db.session = { total = 0, crafts = 0 }
 	ns.Panel.Refresh()
-	ns.Patron.Reopen()
+	ns.Patron.Redraw()
 end
 
 -- Clicking the session row asks first, so a stray click can't wipe it.
@@ -47,8 +47,8 @@ end
 -- Celebration: "+1,234g" floating up from Profit/Loss, a gold border flash, a coin
 ---------------------------------------------------------------------------
 
--- The panel's floaters, and the Patron orders list's (that list is one of the
--- game's menus, rebuilt after each step, so its floaters sit on UIParent).
+-- The panel's floaters, and the Patron tab's (those sit on UIParent, over the
+-- profession window, so the list's rows can't clip them).
 local floaters, listFloaters = {}, {}
 
 local POP_SCALE, POP_SECONDS = 1.7, 0.3
@@ -128,7 +128,7 @@ local function flashBorder(panel)
 	end)
 end
 
--- The Patron orders list has no border of its own to color, so a gold one is laid
+-- The Patron tab's order list has no border of its own to color, so a gold one is laid
 -- over it and fades out.
 local listGlow
 local function flashList(list)
@@ -198,9 +198,9 @@ local function celebrate(proc)
 	end
 end
 
--- On the Patron orders list, for an order crafted with its hammer: the gold
--- floats up from the list's top edge.
-local function celebrateOnList(proc, list)
+-- On the Patron tab, for an order crafted with its hammer: the gold floats up
+-- from `anchor` (the order's Profit), or else from the list's top edge.
+local function celebrateOnList(proc, list, anchor)
 	playCoin()
 	if not ns.db.procFx then return end
 
@@ -209,7 +209,11 @@ local function celebrateOnList(proc, list)
 	floater:SetFrameStrata(list:GetFrameStrata())
 	floater:SetFrameLevel(list:GetFrameLevel() + 50)
 	setFloaterText(floater, proc)
-	playFloater(floater, list, "TOPRIGHT", -Layout.PAD_SIDE, 4)
+	if anchor then
+		playFloater(floater, anchor, "TOPRIGHT", 0, 4)
+	else
+		playFloater(floater, list, "TOPRIGHT", -Layout.PAD_SIDE, 4)
+	end
 end
 
 ---------------------------------------------------------------------------
@@ -264,7 +268,7 @@ local function onCraftResult(data)
 	if not data then return end
 	local panel = ns.Panel.Frame()
 	local shown = panel and panel:IsShown()
-	-- A craft from the Patron orders list's hammer: the panel isn't showing that
+	-- A craft from the Patron tab's hammer: the panel isn't showing that
 	-- order, so the list's numbers for it are used, and procs show on the list.
 	local listModel = ns.Craft.TakeCraftModel()
 	local model = listModel or (shown and ns.Panel.current)
@@ -279,21 +283,22 @@ local function onCraftResult(data)
 		session.crafts = session.crafts + 1
 	end
 
+	-- The Patron tab's session total has a new amount.
+	ns.Patron.Redraw()
 	if result.multicraft == 0 and #result.saved == 0 then
 		-- A craft without procs: Profit/Loss goes back to the normal forecast.
 		lastProc = nil
 		ns.Panel.Refresh()
-		-- The list's session line has a new total. (After a proc it's redrawn at the
-		-- order's next step instead, so the bonus gold can finish floating up.)
-		if listModel then ns.Patron.Reopen() end
 		return
 	end
 
 	lastProc = result
-	local list = listModel and ns.Patron.ListFrame()
-	if list then
-		celebrateOnList(result, list)
-		return
+	if listModel then
+		local list, anchor = ns.Patron.ProcTarget(listModel.key)
+		if list then
+			celebrateOnList(result, list, anchor)
+			return
+		end
 	end
 	if not shown then
 		-- Nothing on screen to animate; the coin sound still says it procced.
@@ -309,7 +314,7 @@ end
 -- Returns where it showed: "list", "panel" or nil.
 function Results.TestProc()
 	local proc = { multicraft = 0, saved = { { qty = 1 } }, bonus = 12345678 }
-	local list = ns.Patron.ListFrame()
+	local list = ns.Patron.ProcTarget()
 	if list then
 		celebrateOnList(proc, list)
 		return "list"

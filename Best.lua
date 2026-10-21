@@ -24,7 +24,7 @@ local DIMMED_ALPHA = 0.45
 
 -- Optimize Concentration only changes the form through Use Most Profitable
 -- Reagents, so it's dimmed (box, check and label) while that's off. It stays
--- clickable: it still sets the Patron orders list's picks.
+-- clickable: it still sets the Patron tab's picks.
 local function updateDim()
 	for _, box in ipairs(concentrationBoxes) do
 		box:SetAlpha(ns.db.bestMaterials and 1 or DIMMED_ALPHA)
@@ -140,7 +140,7 @@ local function showConcentrationTooltip(self)
 		GameTooltip:AddLine("Use Most Profitable Reagents is off, so this doesn't change the form right now.", 1, 0.82, 0, true)
 	end
 	GameTooltip:AddLine(" ")
-	GameTooltip:AddLine("Picks the materials for Use Most Profitable Reagents and the Patron orders list. "
+	GameTooltip:AddLine("Picks the materials for Use Most Profitable Reagents and the Patron tab. "
 		.. "The same as Optimize concentration at the bottom of that list.", 0.53, 0.53, 0.53, true)
 	GameTooltip:Show()
 end
@@ -168,7 +168,7 @@ local function addCheckbox(parent, below, text, setting, onClickHandler, tooltip
 	box:SetScript("OnClick", onClickHandler)
 	box:SetScript("OnEnter", tooltip)
 	box:SetScript("OnLeave", GameTooltip_Hide)
-	-- The setting can change elsewhere (options, the Patron orders list).
+	-- The setting can change elsewhere (options, the Patron tab).
 	box:SetScript("OnShow", function(self)
 		self:SetChecked(ns.db[setting])
 		updateDim()

@@ -427,6 +427,141 @@ function Blizzard.PatronOrders()
 	return orders
 end
 
+-- The flat order list's columns (one row per order), by position.
+Blizzard.ORDER_COLUMNS = { name = 1, customer = 2, commission = 3, reagents = 4, expiration = 5 }
+
+local function orderTable()
+	return ProfessionsFrame.OrdersPage.tableBuilder
+end
+
+-- Whether the order list shows patron orders one per row, in the columns above
+-- (not grouped by recipe).
+function Blizzard.IsPatronTable()
+	local page = ProfessionsFrame.OrdersPage
+	if not (page.BrowseFrame:IsVisible() and page.orderType == Enum.CraftingOrderType.Npc) then return false end
+	local builder = orderTable()
+	local columns = builder and builder:GetColumns()
+	return columns ~= nil and #columns == 5
+end
+
+-- Calls onRow(row) each time the order list fills in a row, and onTable() after
+-- it lays out its columns again (another tab, or grouped rows).
+function Blizzard.WatchOrderRows(onRow, onTable)
+	local builder = orderTable()
+	hooksecurefunc(builder, "AddRow", function(_, row) onRow(row) end)
+	hooksecurefunc(builder, "Arrange", onTable)
+end
+
+-- The order list's rows, as a list the game sorts by itself (one per search), or nil.
+function Blizzard.OrderListRows()
+	return ProfessionsFrame.OrdersPage.BrowseFrame.OrderList.ScrollBox:GetDataProvider()
+end
+
+-- Puts the order list's rows in the order `before(a, b)` says (a and b are orders),
+-- until the game fills it in again.
+function Blizzard.SortOrderList(before)
+	local rows = Blizzard.OrderListRows()
+	if not (rows and rows.Sort) then return end
+	rows:Sort(function(a, b)
+		local aOrder, bOrder = a.option, b.option
+		if not (aOrder and bOrder) then return false end
+		return before(aOrder, bOrder)
+	end)
+end
+
+-- Takes an order off the order list, until the game fills it in again (by then
+-- the game has dropped it too).
+function Blizzard.RemoveListedOrder(orderID)
+	local rows = Blizzard.OrderListRows()
+	if not (rows and rows.RemoveAllByPredicate) then return end
+	rows:RemoveAllByPredicate(function(data)
+		return data.option ~= nil and data.option.orderID == orderID
+	end)
+end
+
+-- Calls onSort() after the player sorts the list by one of Blizzard's headers.
+function Blizzard.WatchSortOrder(onSort)
+	hooksecurefunc(ProfessionsFrame.OrdersPage, "SetSortOrder", onSort)
+end
+
+-- Shows the sort arrow on Blizzard's headers that sort the list now, or hides
+-- them all.
+function Blizzard.ShowSortArrows(shown)
+	local builder = orderTable()
+	if not builder then return end
+	for header in builder:EnumerateHeaders() do
+		if shown and header.UpdateArrow then
+			header:UpdateArrow()
+		elseif header.Arrow then
+			header.Arrow:Hide()
+		end
+	end
+end
+
+-- Calls fn(row) for every row of the order list on screen.
+function Blizzard.ForEachOrderRow(fn)
+	ProfessionsFrame.OrdersPage.BrowseFrame.OrderList.ScrollBox:ForEachFrame(fn)
+end
+
+-- A row's order, or nil for a grouped row.
+function Blizzard.RowOrder(row)
+	local data = row.rowData
+	local order = data and data.option
+	if order and order.orderID and order.spellID then return order end
+end
+
+-- A row's cell in a column (see ORDER_COLUMNS), or nil.
+function Blizzard.RowCell(row, column)
+	return row.cells and row.cells[column]
+end
+
+-- How wide the cells of columns `first` to `last` are together, with the gaps
+-- between them, as the list lays them out.
+function Blizzard.ColumnSpan(first, last)
+	local columns = orderTable():GetColumns()
+	local width = 0
+	for i = first, last do
+		local column = columns[i]
+		if not column then return end
+		width = width + column:GetCellWidth()
+		if i > first then
+			local left = column:GetCellPadding()
+			local _, previousRight = columns[i - 1]:GetCellPadding()
+			width = width + column:GetPadding() + left + previousRight
+		end
+	end
+	return width
+end
+
+-- Shows or hides a row's mouse-over highlight.
+function Blizzard.SetRowHighlight(row, shown)
+	if row.HighlightTexture then row.HighlightTexture:SetShown(shown) end
+end
+
+-- A column's header button (see ORDER_COLUMNS), or nil.
+function Blizzard.ColumnHeader(column)
+	local builder = orderTable()
+	local entry = builder and builder:GetColumns()[column]
+	return entry and entry:GetHeaderFrame()
+end
+
+-- Leaves `height` pixels free at the bottom of the order list, under its rows
+-- (0 gives them back).
+local listBottom
+function Blizzard.SetOrderListFooter(height)
+	local background = Blizzard.OrderList().Background
+	if not background then return end
+	if not listBottom then
+		for i = 1, background:GetNumPoints() do
+			local point, relativeTo, relativePoint, x, y = background:GetPoint(i)
+			if point == "BOTTOMRIGHT" then listBottom = { relativeTo, relativePoint, x, y } end
+		end
+		if not listBottom then return end
+	end
+	local relativeTo, relativePoint, x, y = unpack(listBottom)
+	background:SetPoint("BOTTOMRIGHT", relativeTo, relativePoint, x, y + height)
+end
+
 -- What crafting a listed order takes: { schematic, provided, name, icon }, or
 -- nil when you don't know its recipe (then also its name and icon, for the list).
 -- `provided` marks the slots the customer fills.

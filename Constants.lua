@@ -54,11 +54,13 @@ ns.DEFAULTS = {
 	procFx = true,        -- animate multicraft / resourcefulness procs
 	procSound = true,     -- coin sound on procs
 	showSession = true,   -- show the total of this session's crafts
-	shoppingButton = true, -- the Shopping list row, and the button on the Patron orders tab
+	shoppingButton = true, -- the Shopping list row, and the shopping buttons on the Patron tab
 	listAddon = "auctionator", -- with both installed, materials go to: "auctionator" | "tsm"
 	listPerCharacter = true,   -- a separate Auctionator list for each character
 	listPerProfession = true,  -- and/or for each profession
 	checkOff = true,           -- take materials off the Auctionator list as you get them
+	patronList = true,    -- Craft Profit's columns, buttons and footer on the Patron tab's order list
+	patronSort = false,   -- the Patron tab sorted by profit: "desc" | "asc", or false for Blizzard's sort
 	concentrationFor = "profit", -- patron orders that need concentration get it by: "profit" | "knowledge"
 	leastConcentration = false, -- orders that need concentration: the qualities that need the least, cheapest of those
 	bestMaterials = false, -- "Use Most Profitable Reagents" on the order form and crafting page: put them in every order or recipe you open
@@ -73,7 +75,7 @@ ns.KNOWLEDGE_ITEMS = {
 	[246331] = 2, -- Glimmer
 }
 
--- The "Optimize concentration" option, in the Patron orders list and the options.
+-- The "Optimize concentration" option, in the Patron tab's gear menu and the options.
 ns.LEAST_CONCENTRATION = "Optimize concentration"
 ns.LEAST_CONCENTRATION_TIP = "Orders that only reach their minimum quality with concentration use the material " ..
 	"qualities that need the least of it, and the cheapest of those. The materials cost more, but your " ..

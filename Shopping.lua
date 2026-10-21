@@ -60,6 +60,7 @@ function Shopping.AddShopWithChoice(root)
 	local function choose(key)
 		ns.db.listAddon = key
 		ns.Panel.Refresh()
+		ns.Patron.Redraw()
 		return MenuResponse and MenuResponse.Refresh
 	end
 	for _, choice in ipairs(ns.LIST_ADDON_CHOICES) do

@@ -1,33 +1,55 @@
--- Craft Profit: a Shopping list button on the Patron orders tab. Its menu lists
--- every patron order with its profit or loss; click one to add what you're
--- missing for it to the Auctionator shopping list, or add them all at once.
+-- Craft Profit: the Patron tab of the crafting orders page. Blizzard's own order
+-- list gets Craft Profit's columns in the room of three of its own (Patron Name,
+-- Commission, Reagents): Profit, Rewards, Materials and Actions. Actions has a
+-- button to shop for what's missing and one to start, craft and complete the
+-- order. Above the list, buttons add what's missing for the profitable
+-- orders or all of them; under it, the concentration they use, the session
+-- total and a menu of the list's choices.
 local _, ns = ...
 
 local Patron = {}
 ns.Patron = Patron
 
 local format = string.format
+local COLUMNS = ns.Blizzard.ORDER_COLUMNS
 
-local ICON_SIZE = 20        -- recipe icons in the menu
-local MENU_MAX_HEIGHT = 500 -- taller menus scroll
-local MENU_ROW_HEIGHT = 26  -- order rows
-local RIGHT_GAP = 24        -- between an order's name and its profit
-local GEAR_SIZE = 16        -- options button on the title row, as on the panel
-local HAMMER_SIZE = 20      -- the craft button at the end of each order's row
-local HAMMER_GAP = 6        -- between an order's profit and its hammer
--- The picture for each step of an order (see Craft.Step): the first atlas the
--- game has, or else the file. Item icons are cropped to hide their border.
-local STEP_ICONS = {
+local ICON_SIZE = 20        -- recipe icons in tooltips
+local ACTION_SIZE = 18      -- the buttons in the Actions column
+local ACTION_GAP = 6        -- between them
+local REWARD_SIZE = 16      -- reward icons in the Rewards column
+local REWARD_GAP = 6        -- between one reward and the next
+local MAX_REWARDS = 4       -- reward icons a row has room for
+local FOOTER_HEIGHT = 28    -- room under the rows for the footer
+local GEAR_SIZE = 16
+-- Our columns, in the room Blizzard's Patron Name, Commission, Reagents and
+-- time left columns take together. Time left is Blizzard's own cell and header,
+-- moved. Whatever room is left goes evenly between them.
+local LAYOUT = {
+	{ key = "materials", width = 90 },
+	{ key = "rewards", width = 115 },
+	{ key = "profit", width = 115 },
+	{ key = "time", width = 45 },
+	{ key = "actions", width = 70 },
+}
+-- That room, until the list can say, and how far Blizzard's header text sits
+-- in from its edge, until it can be measured on screen.
+local DEFAULT_AREA_WIDTH = 500
+local DEFAULT_HEADER_INSET = 8
+-- The picture on each action button: the first atlas the game has, or else the
+-- file. Item icons are cropped to hide their border. The craft button's picture
+-- shows the order's next step (see Craft.Step).
+local ACTION_ICONS = {
 	claim = { file = "Interface\\Icons\\INV_Scroll_03" },                -- a scroll: take the order
 	craft = { atlases = { "Cursor_Repair_32", "worldquest-icon-blacksmithing" },
 		file = "Interface\\Icons\\Trade_BlackSmithing" },                 -- the hammer
 	crafting = { file = "Interface\\Icons\\INV_Misc_PocketWatch_01" },   -- a watch: wait for the cast
 	complete = { file = "Interface\\Icons\\INV_Misc_Coin_01" },          -- coins: hand it in for the rewards
+	shop = { atlases = { "Perks-ShoppingCart", "Banker" }, file = "Interface\\Icons\\INV_Misc_Bag_10" }, -- shopping
 }
 local ICON_CROP = { 0.08, 0.92, 0.08, 0.92 }
 
-local function setStepIcon(button, step)
-	local icon = STEP_ICONS[step]
+local function setActionIcon(button, name)
+	local icon = ACTION_ICONS[name]
 	for _, atlas in ipairs(icon.atlases or {}) do
 		if C_Texture.GetAtlasInfo(atlas) then
 			button:SetNormalAtlas(atlas)
@@ -38,27 +60,19 @@ local function setStepIcon(button, step)
 	button:GetNormalTexture():SetTexCoord(unpack(ICON_CROP))
 end
 
--- A clickable button on a menu row. Menu rows reuse their parts, and those come
--- back without their layer or mouse settings, so they're set every time
--- (Blizzard's own helper does that, when there is one).
-local function attachButton(frame)
-	if MenuTemplates and MenuTemplates.AttachBasicButton then
-		return MenuTemplates.AttachBasicButton(frame, HAMMER_SIZE, HAMMER_SIZE)
+-- Where each of our columns starts, from the left of the room they share
+-- (`width` wide): key -> x.
+local function columnStarts(width)
+	local used = 0
+	for _, column in ipairs(LAYOUT) do used = used + column.width end
+	local gap = math.max(0, (width - used) / (#LAYOUT - 1))
+	local starts, x = {}, 0
+	for _, column in ipairs(LAYOUT) do
+		starts[column.key] = x
+		x = x + column.width + gap
 	end
-	local button = frame:AttachFrame("Button")
-	button:SetFrameStrata(frame:GetFrameStrata())
-	button:SetFrameLevel(frame:GetFrameLevel() + 2)
-	button:SetSize(HAMMER_SIZE, HAMMER_SIZE)
-	button:EnableMouse(true)
-	button:Show()
-	return button
+	return starts
 end
-
-local button
-
--- The widest order row since the list was opened. Each step changes a row's
--- note and profit, and the list redraws; without this it changed width each time.
-local widestRow = 0
 
 -- "1 patron order", "5 patron orders".
 local function ordersText(count)
@@ -70,17 +84,24 @@ local function signedMoney(amount)
 	return ns.Color(ns.AmountColor(amount), (amount > 0 and "+" or "") .. ns.Format.Money(amount))
 end
 
-local function iconText(icon)
-	return icon and format("|T%s:%d|t ", icon, ICON_SIZE) or ""
+local function iconText(icon, size)
+	return icon and format("|T%s:%d|t ", icon, size or ICON_SIZE) or ""
 end
+
+-- Green check for an order you have everything for.
+local READY_ICON = "|TInterface\\RaidFrame\\ReadyCheck-Ready:14|t"
+
+---------------------------------------------------------------------------
+-- The orders and what they're worth
+---------------------------------------------------------------------------
 
 -- The listed orders you can craft, most profitable first: { order, job, model,
 -- plan, noConcentration, name, icon }. Also the orders whose recipe you don't
--- know: { name, icon }, and your concentration: { have, used } or nil.
+-- know: { order, name, icon }, and your concentration: { have, used } or nil.
 local function listOrders()
 	local rows, unknown = {}, {}
-	-- The order you've started stays in the list until it's complete, even once
-	-- the game drops it from the Patron tab.
+	-- The order you've started counts until it's complete, even once the game
+	-- drops it from the Patron tab.
 	local orders, listed = {}, {}
 	for _, order in ipairs(ns.Blizzard.PatronOrders() or {}) do
 		if not ns.Craft.IsCompleted(order.orderID) then
@@ -101,10 +122,11 @@ local function listOrders()
 			local model = ns.Model.Order({ order = order, schematic = job.schematic, provided = job.provided, overrides = job.overrides })
 			rows[#rows + 1] = { order = order, job = job, model = model, plan = plan, name = job.name or "?", icon = job.icon }
 		else
-			unknown[#unknown + 1] = { name = name or "?", icon = icon }
+			unknown[#unknown + 1] = { order = order, name = name or "?", icon = icon }
 		end
 	end
-	-- Most profitable first; orders you can't craft go last, since their profit is moot.
+	-- Most profitable first, so concentration goes to them; orders you can't craft
+	-- go last, since their profit is moot.
 	table.sort(rows, function(a, b)
 		local aOut, bOut = a.plan and a.plan.unreachable or false, b.plan and b.plan.unreachable or false
 		if aOut ~= bOut then return bOut end
@@ -113,6 +135,10 @@ local function listOrders()
 	local concentration = ns.Planner.SpendConcentration(rows, ns.db.concentrationFor)
 	return rows, unknown, concentration
 end
+
+-- What the list shows, worked out by Patron.Redraw: rows and unknown as from
+-- listOrders, each also by orderID, and the concentration they use.
+local state = { rows = {}, unknown = {}, byID = {}, unknownByID = {} }
 
 -- What each order added to the shopping list this session (orderID -> { { itemID,
 -- qty } ... }), so Shift-click can take the same amounts back off.
@@ -176,30 +202,11 @@ local function profitableRows(rows)
 	return list
 end
 
-local function addAll()
-	local rows, unknown = listOrders()
-	local reachable, unreachable, short = reachableRows(rows)
-	ns.Shopping.AddMissing(missingForAll(reachable), ordersText(#reachable))
-	remember(reachable)
-	if short > 0 then ns.Shopping.Say(ns.Color("muted", shortText(short))) end
-	if unreachable > 0 then ns.Shopping.Say(ns.Color("muted", unreachableText(unreachable))) end
-	if #unknown > 0 then ns.Shopping.Say(ns.Color("muted", skippedText(#unknown))) end
-end
-
-local function addProfitable()
-	local rows = profitableRows(listOrders())
-	ns.Shopping.AddMissing(missingForAll(rows), "the " .. ordersText(#rows) .. " that make a profit")
-	remember(rows)
-end
-
--- With only TSM, materials go to a TSM search to copy instead of a shopping list,
--- and there's no list to take things back off or clear.
+-- With only TSM, materials go to a TSM search to copy instead of a shopping list:
+-- on the Patron tab, one running search (see tsmSearchRows).
 local function usingTSM()
 	return ns.Shopping.ListTarget() == "tsm"
 end
-
--- Green check for an order you have everything for.
-local READY_ICON = "|TInterface\\RaidFrame\\ReadyCheck-Ready:" .. ICON_SIZE .. "|t"
 
 -- Whether you own everything an order needs, in the qualities picked for the most
 -- profit: nothing's missing, and the minimum quality is reachable. (The picks
@@ -210,166 +217,123 @@ local function isReady(row)
 	return not (row.noConcentration or row.plan and row.plan.unreachable)
 end
 
--- " [rank icon]" after an order's name when it needs more than rank 1, like
--- Blizzard's order list. (While testing, the pretend minimum.)
-local function minQualityText(row)
-	local minQuality = row.plan and row.plan.minQuality or row.order.minQuality or 0
-	if minQuality <= 1 then return "" end
-	local icon = ns.Blizzard.ItemQualityMarkup(row.order.spellID, minQuality)
-	return icon and " " .. icon or ""
-end
-
 -- An order's minimum quality as its icon, or "rank N".
 local function qualityText(row, quality)
 	return ns.Blizzard.ItemQualityMarkup(row.order.spellID, quality) or format("rank %d", quality)
 end
 
--- Shown after an order's name when reaching its minimum quality takes concentration.
-local function concentrationNote(row)
-	local plan = row.plan
-	if not (plan and plan.concentration) or plan.unreachable then return "" end
-	if row.noConcentration then return ns.Color("loss", " (not enough concentration)") end
-	return ns.Color("muted", format(" (%d concentration)", plan.concentration))
+-- With TSM there's no list to add to, so the Patron tab keeps one running TSM
+-- search instead: the orders in it (ns.db.tsmOrders, orderID -> true, emptied at
+-- each login). It's worked out from what they're missing now each time it's
+-- shown, so what you've bought since drops out.
+
+-- The listed orders in the TSM search.
+local function tsmSearchRows()
+	local list = {}
+	for _, row in ipairs(state.rows) do
+		if ns.db.tsmOrders[row.order.orderID] then list[#list + 1] = row end
+	end
+	return list
 end
 
--- Adds one order's missing materials. The menu stays open for the next one,
--- except for a TSM search, whose popup needs the focus.
+local function inTSMSearch(row)
+	return ns.db.tsmOrders[row.order.orderID] == true
+end
+
+-- Shows the TSM search to copy, for every order in it.
+local function showTSMSearch()
+	local rows = tsmSearchRows()
+	if #rows == 0 then
+		ns.Shopping.Say("The TSM search is empty.")
+		return
+	end
+	ns.Shopping.AddMissing(missingForAll(rows), ordersText(#rows))
+end
+
+local function addToTSMSearch(rows)
+	for _, row in ipairs(rows) do ns.db.tsmOrders[row.order.orderID] = true end
+	showTSMSearch()
+end
+
+local function clearTSMSearch()
+	wipe(ns.db.tsmOrders)
+	ns.Shopping.Say("Cleared the TSM search.")
+end
+
+local function addAll()
+	local reachable, unreachable, short = reachableRows(state.rows)
+	if usingTSM() then
+		addToTSMSearch(reachable)
+	else
+		ns.Shopping.AddMissing(missingForAll(reachable), ordersText(#reachable))
+		remember(reachable)
+	end
+	if short > 0 then ns.Shopping.Say(ns.Color("muted", shortText(short))) end
+	if unreachable > 0 then ns.Shopping.Say(ns.Color("muted", unreachableText(unreachable))) end
+	if #state.unknown > 0 then ns.Shopping.Say(ns.Color("muted", skippedText(#state.unknown))) end
+end
+
+local function addProfitable()
+	local rows = profitableRows(state.rows)
+	if usingTSM() then return addToTSMSearch(rows) end
+	ns.Shopping.AddMissing(missingForAll(rows), "the " .. ordersText(#rows) .. " that make a profit")
+	remember(rows)
+end
+
 local function addOrder(row)
+	if usingTSM() then return addToTSMSearch({ row }) end
 	ns.Shopping.AddMissing(row.model.missing, row.name)
-	if usingTSM() then return end
 	remember({ row })
-	return MenuResponse and MenuResponse.Open
 end
 
 -- Shift-click: takes off what this order added, or what it's missing now if it
--- added nothing this session. The menu stays open.
+-- added nothing this session. With TSM, takes it out of the search.
 local function removeOrder(row)
+	if usingTSM() then
+		ns.db.tsmOrders[row.order.orderID] = nil
+		return showTSMSearch()
+	end
 	local list = added[row.order.orderID] or row.model.missing
 	added[row.order.orderID] = nil
 	ns.Shopping.RemoveMissing(list, row.name)
-	return MenuResponse and MenuResponse.Open
 end
 
-local function hammerTooltip(self)
-	GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
-	GameTooltip:SetText("Craft this order")
-	GameTooltip:AddLine(ns.Color("simulated", ns.Craft.StepText(self.step, self.row)))
-	GameTooltip:AddLine("Each click does the next step: start, craft, complete.", 0.53, 0.53, 0.53, true)
-	GameTooltip:Show()
+---------------------------------------------------------------------------
+-- Tooltips
+---------------------------------------------------------------------------
+
+-- The concentration an order takes, as "[icon]120", or "".
+local function concentrationText(row)
+	local plan = row.plan
+	if not (plan and plan.concentration) or plan.unreachable then return "" end
+	local info = plan.currencyID and C_CurrencyInfo.GetCurrencyInfo(plan.currencyID)
+	local text = iconText(info and info.iconFileID, 14) .. plan.concentration
+	return ns.Color(row.noConcentration and "loss" or "muted", text)
 end
 
--- Leaving the hammer for the rest of its row: the row never noticed the mouse
--- leave, so it won't show its tooltip again by itself.
-local function hammerLeave(self)
-	if GameTooltip:IsOwned(self) then GameTooltip:Hide() end
-	local frame = self:GetParent()
-	if not (frame and frame:IsMouseOver() and self.rowTooltip) then return end
-	if MenuUtil and MenuUtil.ShowTooltipEx then
-		MenuUtil.ShowTooltipEx(frame, GameTooltip, self.rowTooltip)
-	else
-		GameTooltip:SetOwner(frame, "ANCHOR_RIGHT")
-		self.rowTooltip(GameTooltip)
-		GameTooltip:Show()
-	end
-end
-
--- Puts `text` at the right end of a menu row, after a gap, and then the hammer
--- for `step` (see Craft.Step). Rows without a step keep the hammer's room, so
--- the amounts line up. `rowTooltip(tooltip)` is the row's own tooltip.
-local function rightText(item, text, row, step, rowTooltip)
-	item:AddInitializer(function(frame)
-		local label = frame.fontString
-		local right = frame:AttachFontString()
-		right:SetFontObject(label and label:GetFontObject() or "GameFontHighlight")
-		right:SetPoint("RIGHT", -(HAMMER_SIZE + HAMMER_GAP), 0)
-		right:SetJustifyH("RIGHT")
-		right:SetText(text)
-		if step then
-			local hammer = attachButton(frame)
-			-- Above the row's own highlight, so it shows and takes the click.
-			hammer:SetFrameLevel(frame:GetFrameLevel() + 2)
-			-- Blizzard's helper passes the mouse on to the row too, so coming straight
-			-- onto the button showed the row's tooltip over the button's.
-			if hammer.SetPropagateMouseMotion then hammer:SetPropagateMouseMotion(false) end
-			hammer:SetPoint("RIGHT")
-			setStepIcon(hammer, step)
-			-- While the craft is under way there's nothing to click; the tooltip still shows.
-			hammer:SetEnabled(step ~= "crafting")
-			hammer:SetHighlightTexture("Interface\\Buttons\\UI-Common-MouseHilight", "ADD")
-			hammer.row, hammer.step, hammer.rowTooltip = row, step, rowTooltip
-			hammer:SetScript("OnClick", function(self) ns.Craft.Do(self.row, self.step) end)
-			hammer:SetScript("OnEnter", hammerTooltip)
-			hammer:SetScript("OnLeave", hammerLeave)
-		end
-		local width = (label and label:GetUnboundedStringWidth() or 0) + RIGHT_GAP + right:GetUnboundedStringWidth()
-			+ HAMMER_GAP + HAMMER_SIZE
-		widestRow = math.max(widestRow, width)
-		return widestRow, MENU_ROW_HEIGHT
-	end)
-end
-
-local function showTooltip(self)
-	local rows, unknown = listOrders()
-	local reachable, unreachable, short = reachableRows(rows)
-	local total = ns.Shopping.Total(missingForAll(reachable))
-	GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
-	GameTooltip:SetText("Shopping list")
-	GameTooltip:AddLine(usingTSM()
-		and ("Every patron order with its profit or loss. Click one to copy a TSM search for what you're missing "
-			.. "for it, or copy one for the ones that make a profit, or all of them.")
-		or ("Every patron order with its profit or loss. Click one to add what you're missing for it to "
-			.. format("Auctionator's \"%s\" shopping list, or add the ones that make a profit, or all of them.", ns.Shopping.ListName())),
-		1, 1, 1, true)
-	GameTooltip:AddLine(" ")
-	GameTooltip:AddLine(format("%s: %s", ordersText(#reachable),
-		total > 0 and ns.Color("missing", format("%d missing", total)) or "nothing missing"))
-	if short > 0 then GameTooltip:AddLine(shortText(short), 0.53, 0.53, 0.53, true) end
-	if unreachable > 0 then GameTooltip:AddLine(unreachableText(unreachable), 0.53, 0.53, 0.53, true) end
-	if #unknown > 0 then GameTooltip:AddLine(skippedText(#unknown), 0.53, 0.53, 0.53, true) end
-	if ns.Shopping.CanClear() then
-		GameTooltip:AddLine(" ")
-		GameTooltip:AddLine(ns.Color("simulated", format("Ctrl-click: clear the \"%s\" shopping list", ns.Shopping.ListName())))
-	end
-	GameTooltip:Show()
-end
-
--- An order's row tooltip: where its profit comes from, and what's missing.
-local function orderTooltip(tooltip, row)
-	local model = row.model
+-- The Profit cell's tooltip: where the profit comes from.
+local function profitTooltip(row)
+	local model, plan = row.model, row.plan
+	local tooltip = GameTooltip
 	local function line(label, amount, signed)
 		tooltip:AddDoubleLine(label, signed and signedMoney(amount) or ns.Format.Money(amount), 1, 1, 1, 1, 1, 1)
 	end
 	GameTooltip_SetTitle(tooltip, iconText(row.icon) .. row.name)
+	if row.order.customerName and row.order.customerName ~= "" then
+		tooltip:AddLine(row.order.customerName, 0.53, 0.53, 0.53)
+	end
+	tooltip:AddLine(" ")
 	line("Commission (after cut)", model.receive)
 	line("Materials you supply", -model.cost, true)
 	local rewards = model.total - model.receive + model.cost
 	if rewards > 0 then line("Sellable rewards", rewards) end
-	-- Profit or loss goes under everything else but the click hints, as the sum of
-	-- it all, in gold like the panel's.
-	local function addTotal()
-		tooltip:AddLine(" ")
-		tooltip:AddDoubleLine(model.total >= 0 and "Profit" or "Loss", signedMoney(model.total), 1, 0.82, 0, 1, 1, 1)
-	end
-
-	-- Every reward, as on the panel: sellable items with their value, the rest
-	-- (currencies like Moxie, bound items) just listed.
-	if #model.rewards > 0 then
-		tooltip:AddLine(" ")
-		tooltip:AddLine("Rewards", 1, 0.82, 0)
-		for _, reward in ipairs(model.rewards) do
-			local text = reward.currency and ns.Format.Currency(reward.currency, reward.qty)
-				or ns.Format.Item(reward.itemID, reward.qty)
-			if reward.knowledge then text = text .. ns.Color("good", format(" (%d knowledge)", reward.knowledge * reward.qty)) end
-			local value = reward.value and ns.Format.Money(reward.value) or ns.Color("muted", "not sellable")
-			tooltip:AddDoubleLine(text, value, 1, 1, 1, 1, 1, 1)
-		end
-	end
+	tooltip:AddLine(" ")
+	tooltip:AddDoubleLine(model.total >= 0 and "Profit" or "Loss", signedMoney(model.total), 1, 0.82, 0, 1, 1, 1)
 	if model.notes.missing then
 		tooltip:AddLine("Some materials have no price, so the profit is too high.", 1, 0.4, 0.4, true)
 	end
 
 	-- The order's minimum quality, and the material qualities picked to reach it.
-	local plan = row.plan
 	if plan and plan.minQuality then
 		tooltip:AddLine(" ")
 		tooltip:AddLine("Minimum quality " .. qualityText(row, plan.minQuality), 1, 0.82, 0)
@@ -391,103 +355,790 @@ local function orderTooltip(tooltip, row)
 			end
 		end
 	end
-	-- What clicking the row does: listed last, under the profit or loss.
-	local hints = {}
-	local shiftHint = "Shift-click: remove it from the shopping list"
+end
 
-	-- What's missing only matters for an order you can craft.
-	if plan and plan.unreachable then
-		if added[row.order.orderID] and not usingTSM() then hints[#hints + 1] = shiftHint end
-	else
-		tooltip:AddLine(" ")
-		local missing = ns.Shopping.Total(model.missing)
-		if missing > 0 then
-			tooltip:AddLine(ns.Color("missing", format("%d missing", missing)))
-			for _, material in ipairs(model.missing) do
-				tooltip:AddLine(ns.Format.Item(material.itemID, material.qty), 1, 1, 1)
-			end
-			hints[#hints + 1] = usingTSM() and "Click: copy a TSM search for what's missing"
-				or "Click: add what's missing to the shopping list"
-		elseif isReady(row) then
-			tooltip:AddLine(READY_ICON .. " You have everything, in the qualities that make the most profit.", 0.53, 1, 0.53, true)
-		else
-			tooltip:AddLine("Nothing missing", 0.53, 0.53, 0.53)
+-- The Materials column's tooltip: what's missing, or why the order can't be crafted.
+local function materialsTooltip(row, step)
+	local tooltip = GameTooltip
+	GameTooltip_SetTitle(tooltip, iconText(row.icon) .. row.name)
+	if step == "craft" or step == "crafting" or step == "complete" then
+		tooltip:AddLine("You've started this order.", 1, 1, 1)
+		tooltip:AddLine(ns.Color("simulated", ns.Craft.StepText(step, row)))
+		return
+	end
+	if row.plan and row.plan.unreachable then
+		tooltip:AddLine("You can't reach its minimum quality, even with the best materials.", 1, 0.4, 0.4, true)
+		return
+	end
+	local missing = ns.Shopping.Total(row.model.missing)
+	if missing > 0 then
+		tooltip:AddLine(ns.Color("missing", format("%d missing", missing)))
+		for _, material in ipairs(row.model.missing) do
+			tooltip:AddLine(ns.Format.Item(material.itemID, material.qty), 1, 1, 1)
 		end
-		if not usingTSM() then hints[#hints + 1] = shiftHint end
+	elseif row.noConcentration then
+		tooltip:AddLine("You have the materials, but not enough concentration is left for it once the orders "
+			.. "worth more get theirs.", 1, 0.4, 0.4, true)
+	else
+		tooltip:AddLine(READY_ICON .. " You have everything, in the qualities that make the most profit.", 0.53, 1, 0.53, true)
 	end
-
-	addTotal()
-	if #hints > 0 then tooltip:AddLine(" ") end
-	for _, hint in ipairs(hints) do tooltip:AddLine(ns.Color("simulated", hint)) end
 end
 
--- A gear in the list's top-right corner that opens the options, like the panel's.
--- One button, laid over whichever list is open, and hidden once that list closes.
-local gear, gearMenu
+-- The shopping button's tooltip: what a click adds, and what Shift-click takes off.
+local function shopTooltip(row)
+	local tooltip = GameTooltip
+	local tsm = usingTSM()
+	GameTooltip_SetTitle(tooltip, tsm and "TSM search" or "Shopping list")
+	if tsm and inTSMSearch(row) then tooltip:AddLine("In the TSM search.", 0.53, 1, 0.53) end
+	local missing = ns.Shopping.Total(row.model.missing)
+	if missing > 0 then
+		tooltip:AddLine(ns.Color("missing", format("%d missing", missing)))
+		for _, material in ipairs(row.model.missing) do
+			tooltip:AddLine(ns.Format.Item(material.itemID, material.qty), 1, 1, 1)
+		end
+		tooltip:AddLine(" ")
+		tooltip:AddLine(ns.Color("simulated", tsm and "Click: add it to the TSM search, and copy the search"
+			or format("Click: add what's missing to the \"%s\" list", ns.Shopping.ListName())))
+	end
+	if tsm and inTSMSearch(row) then
+		tooltip:AddLine(ns.Color("simulated", "Shift-click: take it out of the TSM search"))
+	elseif added[row.order.orderID] and not tsm then
+		tooltip:AddLine(ns.Color("simulated", "Shift-click: remove it from the shopping list"))
+	end
+end
 
-local function showGear(menu)
-	if not menu then return end
-	if not gear then
-		gear = CreateFrame("Button", nil, UIParent)
-		gear:SetSize(GEAR_SIZE, GEAR_SIZE)
-		gear:SetNormalTexture("Interface\\Buttons\\UI-OptionsButton")
-		gear:SetHighlightTexture("Interface\\Buttons\\UI-Common-MouseHilight", "ADD")
-		gear:SetScript("OnClick", function()
-			local manager = Menu and Menu.GetManager and Menu.GetManager()
-			if manager then manager:CloseMenus() end
-			ns.Options.Open()
+-- An order's rewards besides the commission: { icon, qty, itemLink or
+-- currencyType, knowledge }.
+local function rewardsOf(order)
+	local list = {}
+	for _, reward in ipairs(order.npcOrderRewards or {}) do
+		local qty = reward.count or 1
+		local itemID, icon
+		if reward.itemLink then itemID, _, _, _, icon = C_Item.GetItemInfoInstant(reward.itemLink) end
+		if itemID then
+			list[#list + 1] = { icon = icon, qty = qty, itemLink = reward.itemLink, itemID = itemID,
+				knowledge = ns.KNOWLEDGE_ITEMS[itemID] }
+		elseif reward.currencyType then
+			local info = C_CurrencyInfo.GetCurrencyInfo(reward.currencyType)
+			if info then list[#list + 1] = { icon = info.iconFileID, qty = qty, currencyType = reward.currencyType } end
+		end
+	end
+	return list
+end
+
+local function rewardTooltip(button)
+	local reward = button.reward
+	GameTooltip:SetOwner(button, "ANCHOR_RIGHT")
+	if reward.itemLink then
+		GameTooltip:SetHyperlink(reward.itemLink)
+		if reward.knowledge then
+			GameTooltip:AddLine(" ")
+			GameTooltip:AddLine(format("%d profession knowledge", reward.knowledge * reward.qty), 0.53, 1, 0.53)
+		end
+		local price = ns.Prices.Sale(reward.itemLink, reward.itemID)
+		if price then
+			GameTooltip:AddLine(" ")
+			GameTooltip:AddDoubleLine(reward.qty > 1 and format("Worth (%d)", reward.qty) or "Worth",
+				ns.Format.Money(price * reward.qty), 1, 0.82, 0, 1, 1, 1)
+		end
+	else
+		GameTooltip:SetCurrencyByID(reward.currencyType, reward.qty)
+	end
+	GameTooltip:Show()
+end
+
+---------------------------------------------------------------------------
+-- Our columns on Blizzard's rows
+---------------------------------------------------------------------------
+
+-- Our columns, per row frame of Blizzard's list. Kept here, not on the rows.
+local cells = {}
+local active = false
+
+local function showRowTooltip(owner, row, fill)
+	ns.Blizzard.SetRowHighlight(row, true)
+	GameTooltip:SetOwner(owner, "ANCHOR_RIGHT")
+	fill()
+	GameTooltip:Show()
+end
+
+local function hideRowTooltip(owner, row)
+	ns.Blizzard.SetRowHighlight(row, false)
+	if GameTooltip:IsOwned(owner) then GameTooltip:Hide() end
+end
+
+-- A frame with its own tooltip that passes clicks on to the row (which opens
+-- the order).
+local function overlay(parent)
+	local frame = CreateFrame("Button", nil, parent)
+	frame:SetFrameLevel(parent:GetFrameLevel() + 3)
+	frame:SetPropagateMouseClicks(true)
+	return frame
+end
+
+-- The room our columns share on a row, from the start of Patron Name to the end
+-- of time left.
+local function areaWidth()
+	return ns.Blizzard.ColumnSpan(COLUMNS.customer, COLUMNS.expiration) or DEFAULT_AREA_WIDTH
+end
+
+local function widthOf(key)
+	for _, column in ipairs(LAYOUT) do
+		if column.key == key then return column.width end
+	end
+end
+
+-- Puts `frame` at `x` in `parent`, `width` wide, the full height.
+local function place(frame, parent, x, width)
+	frame:ClearAllPoints()
+	frame:SetPoint("TOPLEFT", parent, "TOPLEFT", x, 0)
+	frame:SetPoint("BOTTOMLEFT", parent, "BOTTOMLEFT", x, 0)
+	frame:SetWidth(width)
+end
+
+-- Puts a row's own columns in place for the room they share.
+local function layoutColumns(area, frames)
+	local starts = columnStarts(area:GetWidth() > 0 and area:GetWidth() or areaWidth())
+	for _, column in ipairs(LAYOUT) do
+		local frame = frames[column.key]
+		if frame then place(frame, area, starts[column.key], column.width) end
+	end
+end
+
+-- Blizzard's frames we moved into our columns (its time left cell and header),
+-- with where it had put them, to put them back when Craft Profit's columns are
+-- turned off. The list lays them out again by itself on another tab.
+local moved = setmetatable({}, { __mode = "k" })
+
+local function moveInto(frame, parent, x, width)
+	local _, relativeTo = frame:GetPoint(1)
+	if relativeTo ~= parent then
+		local points = {}
+		for i = 1, frame:GetNumPoints() do points[i] = { frame:GetPoint(i) } end
+		moved[frame] = { parent = parent, points = points, width = frame:GetWidth() }
+	end
+	place(frame, parent, x, width)
+end
+
+local function putBack(frame)
+	local saved = frame and moved[frame]
+	if not saved then return end
+	moved[frame] = nil
+	-- Laid out again by the list since: it's where Blizzard wants it already.
+	if select(2, frame:GetPoint(1)) ~= saved.parent then return end
+	frame:ClearAllPoints()
+	for _, point in ipairs(saved.points) do frame:SetPoint(unpack(point)) end
+	frame:SetWidth(saved.width)
+end
+
+local function actionButton(parent, row, onClick, fill)
+	local button = CreateFrame("Button", nil, parent)
+	button:SetSize(ACTION_SIZE, ACTION_SIZE)
+	button:SetFrameLevel(parent:GetFrameLevel() + 2)
+	button:SetHighlightTexture("Interface\\Buttons\\UI-Common-MouseHilight", "ADD")
+	button:SetScript("OnClick", onClick)
+	button:SetScript("OnEnter", function(self) showRowTooltip(self, row, function() fill(self) end) end)
+	button:SetScript("OnLeave", function(self) hideRowTooltip(self, row) end)
+	return button
+end
+
+local function createCells(row)
+	local own = {}
+	-- The room Blizzard's three replaced columns take, laid over them.
+	own.area = CreateFrame("Frame", nil, row)
+	own.area:SetFrameLevel(row:GetFrameLevel() + 2)
+
+	own.profit = overlay(own.area)
+	own.profit.text = own.profit:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
+	own.profit.text:SetPoint("LEFT")
+	own.profit.text:SetPoint("RIGHT")
+	own.profit.text:SetJustifyH("LEFT")
+	own.profit.text:SetWordWrap(false)
+	own.profit:SetScript("OnEnter", function(self)
+		if self.data then showRowTooltip(self, row, function() profitTooltip(self.data) end) end
+	end)
+	own.profit:SetScript("OnLeave", function(self) hideRowTooltip(self, row) end)
+
+	-- Only the icons take the mouse; the rest of the column is the row's.
+	own.rewards = CreateFrame("Frame", nil, own.area)
+	own.rewards:SetFrameLevel(own.area:GetFrameLevel() + 1)
+	own.rewards.buttons = {}
+	for i = 1, MAX_REWARDS do
+		local button = overlay(own.rewards)
+		button:SetSize(REWARD_SIZE, REWARD_SIZE)
+		button.icon = button:CreateTexture(nil, "ARTWORK")
+		button.icon:SetAllPoints()
+		button.icon:SetTexCoord(unpack(ICON_CROP))
+		button.count = own.rewards:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
+		button.count:SetPoint("LEFT", button, "RIGHT", 2, 0)
+		button:SetScript("OnEnter", function(self)
+			ns.Blizzard.SetRowHighlight(row, true)
+			rewardTooltip(self)
 		end)
-		gear:SetScript("OnEnter", function(self)
-			GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
-			GameTooltip:SetText("Craft Profit options")
-			GameTooltip:Show()
+		button:SetScript("OnLeave", function(self) hideRowTooltip(self, row) end)
+		own.rewards.buttons[i] = button
+	end
+
+	own.materials = overlay(own.area)
+	own.materials.text = own.materials:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
+	own.materials.text:SetPoint("LEFT")
+	own.materials.text:SetPoint("RIGHT")
+	own.materials.text:SetJustifyH("LEFT")
+	own.materials.text:SetWordWrap(false)
+	own.materials:SetScript("OnEnter", function(self)
+		if self.data then showRowTooltip(self, row, function() materialsTooltip(self.data, self.step) end) end
+	end)
+	own.materials:SetScript("OnLeave", function(self) hideRowTooltip(self, row) end)
+
+	-- Each button has its own place, so they line up from row to row.
+	own.actions = CreateFrame("Frame", nil, own.area)
+	own.actions:SetFrameLevel(own.area:GetFrameLevel() + 1)
+	own.shop = actionButton(own.actions, row, function(self)
+		if IsShiftKeyDown() and (not usingTSM() or inTSMSearch(self.data)) then
+			removeOrder(self.data)
+		elseif ns.Shopping.Total(self.data.model.missing) > 0 then
+			addOrder(self.data)
+		end
+		Patron.Redraw()
+	end, function(self) shopTooltip(self.data) end)
+	own.shop:SetPoint("LEFT")
+	setActionIcon(own.shop, "shop")
+	-- Each click does the order's next step (see Craft.Step).
+	own.step = actionButton(own.actions, row, function(self) ns.Craft.Do(self.data, self.step) end, function(self)
+		GameTooltip:SetText("Craft this order")
+		GameTooltip:AddLine(ns.Color("simulated", ns.Craft.StepText(self.step, self.data)))
+		GameTooltip:AddLine("Each click does the next step: start, craft, complete.", 0.53, 0.53, 0.53, true)
+	end)
+	own.step:SetPoint("LEFT", own.shop, "RIGHT", ACTION_GAP, 0)
+
+	own.area:SetScript("OnSizeChanged", function(area) layoutColumns(area, own) end)
+	layoutColumns(own.area, own)
+	cells[row] = own
+	return own
+end
+
+-- Blizzard's cells under ours: hidden while ours show. The list shows them again
+-- each time it fills in the row.
+local REPLACED = { COLUMNS.customer, COLUMNS.commission, COLUMNS.reagents }
+
+local function showRewards(own, order)
+	local rewards = rewardsOf(order)
+	local previous
+	for i, button in ipairs(own.rewards.buttons) do
+		local reward = rewards[i]
+		button:SetShown(reward ~= nil)
+		button.count:SetShown(reward ~= nil)
+		if reward then
+			button.reward = reward
+			button.icon:SetTexture(reward.icon)
+			-- Knowledge in green, like the panel; one of anything else needs no count.
+			local count = (reward.qty > 1 or reward.knowledge) and tostring(reward.qty) or ""
+			button.count:SetText(reward.knowledge and ns.Color("good", count) or count)
+			button:ClearAllPoints()
+			if previous then
+				-- After the count, or right after the icon when it has none.
+				local after = previous.count:GetText() ~= "" and previous.count or previous
+				button:SetPoint("LEFT", after, "RIGHT", REWARD_GAP, 0)
+			else
+				button:SetPoint("LEFT", own.rewards, "LEFT", 0, 0)
+			end
+			previous = button
+		end
+	end
+end
+
+-- What a known order's Materials column says.
+local function materialsText(row, step)
+	if step == "complete" then return ns.Color("good", "Crafted") end
+	if step == "crafting" then return ns.Color("good", "Crafting...") end
+	if step == "craft" then return ns.Color("good", "Started") end
+	if row.plan and row.plan.unreachable then return ns.Color("loss", "Can't craft") end
+	local missing = ns.Shopping.Total(row.model.missing)
+	if missing > 0 then return ns.Color("missing", format("%d missing", missing)) end
+	if row.noConcentration then return ns.Color("muted", "No concentration") end
+	return READY_ICON .. ns.Color("good", " Ready")
+end
+
+-- Fills in our columns on one of Blizzard's rows, or takes them away.
+local function drawRow(row)
+	local order = active and ns.Blizzard.RowOrder(row)
+	local own = cells[row]
+	local first = order and ns.Blizzard.RowCell(row, COLUMNS.customer)
+	local time = order and ns.Blizzard.RowCell(row, COLUMNS.expiration)
+	if not (first and time) then
+		if not own then return end
+		own.area:Hide()
+		-- Turned off with the list on screen: Blizzard's cells back.
+		for _, column in ipairs(REPLACED) do
+			local cell = ns.Blizzard.RowCell(row, column)
+			if cell then cell:Show() end
+		end
+		putBack(ns.Blizzard.RowCell(row, COLUMNS.expiration))
+		return
+	end
+	own = own or createCells(row)
+	for _, column in ipairs(REPLACED) do
+		local cell = ns.Blizzard.RowCell(row, column)
+		if cell then cell:Hide() end
+	end
+	own.area:ClearAllPoints()
+	own.area:SetPoint("TOPLEFT", first, "TOPLEFT")
+	own.area:SetPoint("BOTTOMLEFT", first, "BOTTOMLEFT")
+	own.area:SetWidth(areaWidth())
+	own.area:Show()
+	-- Blizzard's own time left, moved in before Actions.
+	moveInto(time, own.area, columnStarts(own.area:GetWidth()).time, widthOf("time"))
+	showRewards(own, order)
+
+	local data = state.byID[order.orderID]
+	own.profit.data, own.materials.data = data, data
+	if not data then
+		own.profit.text:SetText(ns.Color("muted", state.unknownByID[order.orderID] and "Recipe not known" or ""))
+		own.materials.text:SetText("")
+		own.shop:Hide()
+		own.step:Hide()
+		return
+	end
+
+	-- Short of concentration or out of reach: the profit in grey, since you can't take it now.
+	local total = data.model.total
+	local grey = data.noConcentration or data.plan and data.plan.unreachable
+	local profit = grey and ns.Color("muted", (total > 0 and "+" or "") .. ns.Format.Money(total)) or signedMoney(total)
+	local concentration = concentrationText(data)
+	own.profit.text:SetText(concentration ~= "" and (profit .. "   " .. concentration) or profit)
+
+	local step = ns.Craft.Step(data, isReady(data))
+	own.materials.step = step
+	own.materials.text:SetText(materialsText(data, step))
+
+	-- The shopping button, only while something's missing: an order you have
+	-- everything for has nothing to buy, even if it put things on the list before.
+	local tsm = usingTSM()
+	local canShop = ns.Shopping.ListTarget() ~= nil and step == nil and ns.Shopping.Total(data.model.missing) > 0
+	own.shop:SetShown(canShop)
+	own.shop.data = data
+	-- Lit while the order is in the TSM search.
+	if tsm and inTSMSearch(data) then own.shop:LockHighlight() else own.shop:UnlockHighlight() end
+	own.step:SetShown(step ~= nil)
+	if step then
+		own.step.data, own.step.step = data, step
+		setActionIcon(own.step, step)
+		-- While the craft is under way there's nothing to click; the tooltip still shows.
+		own.step:SetEnabled(step ~= "crafting")
+	end
+end
+
+---------------------------------------------------------------------------
+-- Headers, buttons and footer
+---------------------------------------------------------------------------
+
+-- Our headers, in place of Blizzard's three, in its header style. Profit sorts
+-- the list; the others don't.
+local HEADERS = {
+	profit = { text = "Profit", sorts = true, tip = "Commission after the cut, plus the rewards that sell, minus the "
+		.. "materials you supply, at the qualities that reach the order's minimum quality. The concentration it "
+		.. "takes is shown after it." },
+	rewards = { text = "Rewards", tip = "What the patron gives besides the commission. Green counts give "
+		.. "profession knowledge. Point at one for its value." },
+	materials = { text = "Materials", tip = "Whether you have everything for the order, or how much you're missing. "
+		.. "Point at it for the list." },
+	actions = { text = "Actions", tip = "The cart adds what's missing to the shopping list (Shift-click takes it "
+		.. "back off). When you have everything, the next button starts, crafts and completes the order, one "
+		.. "click per step." },
+}
+local headerBar, headers
+
+-- Sorting by profit. The game's list is sorted once each time it fills in
+-- (`sortedRows` is the list sorted last), not each time the profits change, so
+-- the rows don't jump around while you shop.
+local sortedRows
+
+local function profitBefore(a, b)
+	local aRow, bRow = state.byID[a.orderID], state.byID[b.orderID]
+	-- Orders you can craft first; those whose recipe you don't know have no profit.
+	if (aRow ~= nil) ~= (bRow ~= nil) then return aRow ~= nil end
+	if aRow and aRow.model.total ~= bRow.model.total then
+		if ns.db.patronSort == "asc" then return aRow.model.total < bRow.model.total end
+		return aRow.model.total > bRow.model.total
+	end
+	return a.orderID < b.orderID
+end
+
+local function sortByProfit()
+	if not ns.db.patronSort then return end
+	local rows = ns.Blizzard.OrderListRows()
+	if rows and rows ~= sortedRows then
+		sortedRows = rows
+		ns.Blizzard.SortOrderList(profitBefore)
+	end
+end
+
+-- Clicking Profit: most profit first, then least profit first, and back.
+local function toggleProfitSort()
+	ns.db.patronSort = ns.db.patronSort == "desc" and "asc" or "desc"
+	sortedRows = nil
+	Patron.Redraw()
+end
+
+-- The arrow on our Profit header, like Blizzard's on the header it sorts by.
+local function updateProfitArrow()
+	local arrow = headers and headers.profit and headers.profit.Arrow
+	if not arrow then return end
+	arrow:SetShown(ns.db.patronSort and true or false)
+	if ns.db.patronSort == "asc" then
+		arrow:SetTexCoord(0, 1, 1, 0)
+	else
+		arrow:SetTexCoord(0, 1, 0, 1)
+	end
+end
+
+local function createHeaders(parent)
+	headerBar = CreateFrame("Frame", nil, parent)
+	headers = {}
+	for _, column in ipairs(LAYOUT) do
+		local info = HEADERS[column.key]
+		-- Time left keeps Blizzard's own header, which sorts.
+		if info then
+			local header = CreateFrame("Button", nil, headerBar, "ProfessionsCrafterTableHeaderStringTemplate")
+			header:SetText(info.text)
+			if header.Arrow then header.Arrow:Hide() end
+			header:SetScript("OnClick", info.sorts and toggleProfitSort or nil)
+			header:SetScript("OnEnter", function(self)
+				GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+				GameTooltip:SetText(info.text)
+				GameTooltip:AddLine(info.tip, 1, 1, 1, true)
+				if info.sorts then
+					GameTooltip:AddLine(ns.Color("simulated", "Click: sort by profit, most first; again for least first"))
+				end
+				GameTooltip:Show()
+			end)
+			header:SetScript("OnLeave", GameTooltip_Hide)
+			headers[column.key] = header
+		end
+	end
+end
+
+-- Measured on screen, once there's something to measure: how far Blizzard's
+-- header text sits in from its edge, and where the rows' room for our columns
+-- starts from the first replaced header.
+local measured = { inset = DEFAULT_HEADER_INSET, left = DEFAULT_HEADER_INSET }
+
+local function measure(first)
+	local text = first:IsShown() and first.GetFontString and first:GetFontString()
+	if text and text:GetLeft() and first:GetLeft() then measured.inset = text:GetLeft() - first:GetLeft() end
+	for _, own in pairs(cells) do
+		if own.area:IsVisible() and own.area:GetLeft() and first:GetLeft() then
+			measured.left = own.area:GetLeft() - first:GetLeft()
+			return
+		end
+	end
+end
+
+-- Lays our headers, and Blizzard's time left header, from the first replaced
+-- header to the end of the header row, each one's text above its column.
+local function layoutHeaders(first, timeHeader)
+	headerBar:ClearAllPoints()
+	headerBar:SetPoint("TOPLEFT", first, "TOPLEFT")
+	headerBar:SetPoint("BOTTOMRIGHT", first:GetParent(), "BOTTOMRIGHT")
+	local barWidth = headerBar:GetWidth()
+	local starts = columnStarts(areaWidth())
+	-- Side by side like Blizzard's, overlapping a little, the first at Blizzard's first.
+	local lefts = {}
+	for i, column in ipairs(LAYOUT) do
+		lefts[i] = i == 1 and 0 or math.max(0, measured.left + starts[column.key] - measured.inset)
+	end
+	for i, column in ipairs(LAYOUT) do
+		local right = lefts[i + 1] and lefts[i + 1] + 2 or barWidth
+		local width = math.max(1, right - lefts[i])
+		local header = headers[column.key]
+		if header then
+			place(header, headerBar, lefts[i], width)
+		elseif column.key == "time" then
+			moveInto(timeHeader, headerBar, lefts[i], width)
+		end
+	end
+end
+
+local function drawHeaders()
+	local first = ns.Blizzard.ColumnHeader(COLUMNS.customer)
+	local timeHeader = ns.Blizzard.ColumnHeader(COLUMNS.expiration)
+	local shown = active and first ~= nil and timeHeader ~= nil
+	if shown then measure(first) end
+	for _, column in ipairs(REPLACED) do
+		local header = ns.Blizzard.ColumnHeader(column)
+		-- Turned off with the list on screen: Blizzard's headers back. (Another tab
+		-- lays out its headers itself.)
+		if header then header:SetShown(not shown) end
+	end
+	if not shown then
+		putBack(timeHeader)
+		if headerBar then
+			headerBar:Hide()
+			ns.Blizzard.ShowSortArrows(true)
+		end
+		return
+	end
+	if not headerBar then createHeaders(first:GetParent()) end
+	headerBar:SetFrameLevel(first:GetFrameLevel() + 1)
+	headerBar:Show()
+	layoutHeaders(first, timeHeader)
+	-- Above the bar, so it still takes the clicks that sort by it.
+	timeHeader:SetFrameLevel(headerBar:GetFrameLevel() + 2)
+	-- Sorted by profit: only our arrow shows.
+	ns.Blizzard.ShowSortArrows(not ns.db.patronSort)
+	updateProfitArrow()
+end
+
+local addProfitableButton, addAllButton, footer
+
+local function verb()
+	return usingTSM() and "Copy" or "Add"
+end
+
+local function profitableTooltip(self)
+	local rows = profitableRows(state.rows)
+	local total = ns.Shopping.Total(missingForAll(rows))
+	GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+	GameTooltip:SetText(verb() .. " profitable orders")
+	GameTooltip:AddLine((usingTSM() and "Adds to the TSM search every order" or
+		"Adds what you're missing for every order") .. " that makes a profit and whose minimum quality you can reach, at the cheapest qualities that "
+		.. "reach it. Orders left without enough concentration are skipped.", 1, 1, 1, true)
+	if not usingTSM() then
+		GameTooltip:AddLine(format("Goes to Auctionator's \"%s\" shopping list.", ns.Shopping.ListName()), 0.53, 0.53, 0.53, true)
+	end
+	GameTooltip:AddLine(" ")
+	GameTooltip:AddLine(format("%s: %s", ordersText(#rows),
+		total > 0 and ns.Color("missing", format("%d missing", total)) or "nothing missing"))
+	GameTooltip:Show()
+end
+
+local function allTooltip(self)
+	local reachable, unreachable, short = reachableRows(state.rows)
+	local total = ns.Shopping.Total(missingForAll(reachable))
+	GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+	GameTooltip:SetText(verb() .. " all orders")
+	GameTooltip:AddLine((usingTSM() and "Adds to the TSM search every order" or
+		"Adds what you're missing for every order") .. " whose minimum quality you can reach.", 1, 1, 1, true)
+	if not usingTSM() then
+		GameTooltip:AddLine(format("Goes to Auctionator's \"%s\" shopping list.", ns.Shopping.ListName()), 0.53, 0.53, 0.53, true)
+	end
+	GameTooltip:AddLine(" ")
+	GameTooltip:AddLine(format("%s: %s", ordersText(#reachable),
+		total > 0 and ns.Color("missing", format("%d missing", total)) or "nothing missing"))
+	if short > 0 then GameTooltip:AddLine(shortText(short), 0.53, 0.53, 0.53, true) end
+	if unreachable > 0 then GameTooltip:AddLine(unreachableText(unreachable), 0.53, 0.53, 0.53, true) end
+	if #state.unknown > 0 then GameTooltip:AddLine(skippedText(#state.unknown), 0.53, 0.53, 0.53, true) end
+	GameTooltip:Show()
+end
+
+local function makeButton(parent, onClick, onEnter)
+	local button = CreateFrame("Button", nil, parent, "UIPanelButtonTemplate")
+	button:SetScript("OnClick", function()
+		onClick()
+		Patron.Redraw()
+	end)
+	button:SetScript("OnEnter", onEnter)
+	button:SetScript("OnLeave", GameTooltip_Hide)
+	button:SetMotionScriptsWhileDisabled(true)
+	button:Hide()
+	return button
+end
+
+local function sizeButton(button, text)
+	button:SetText(text)
+	button:SetSize(button:GetFontString():GetUnboundedStringWidth() + 32, 22)
+end
+
+local function drawButtons()
+	local shown = active and ns.Shopping.ListTarget() ~= nil and #state.rows > 0
+	addProfitableButton:SetShown(shown)
+	addAllButton:SetShown(shown)
+	if not shown then return end
+	sizeButton(addProfitableButton, verb() .. " profitable")
+	sizeButton(addAllButton, verb() .. " all")
+	addProfitableButton:SetEnabled(ns.Shopping.Total(missingForAll(profitableRows(state.rows))) > 0)
+	addAllButton:SetEnabled(ns.Shopping.Total(missingForAll((reachableRows(state.rows)))) > 0)
+end
+
+-- The gear's menu: the list's choices, shopping and the options.
+local function openGearMenu(owner)
+	MenuUtil.CreateContextMenu(owner, function(_, root)
+		root:CreateTitle("Patron orders")
+		root:CreateTitle("Spend concentration on")
+		local function isChosen(key) return ns.db.concentrationFor == key end
+		local function choose(key)
+			ns.db.concentrationFor = key
+			Patron.Redraw()
+			return MenuResponse and MenuResponse.Refresh
+		end
+		for _, choice in ipairs(ns.CONCENTRATION_CHOICES) do
+			root:CreateRadio(choice[2], isChosen, choose, choice[1])
+		end
+		local least = root:CreateCheckbox(ns.LEAST_CONCENTRATION, function() return ns.db.leastConcentration end, function()
+			Patron.SetLeastConcentration(not ns.db.leastConcentration)
+			return MenuResponse and MenuResponse.Refresh
 		end)
-		gear:SetScript("OnLeave", GameTooltip_Hide)
-		-- Menus are reused by other addons, so the gear goes away as soon as ours closes.
-		gear:SetScript("OnUpdate", function(self)
-			if not (gearMenu and gearMenu:IsVisible()) then self:Hide() end
+		least:SetTooltip(function(tooltip)
+			GameTooltip_SetTitle(tooltip, ns.LEAST_CONCENTRATION)
+			tooltip:AddLine(ns.LEAST_CONCENTRATION_TIP, 1, 1, 1, true)
 		end)
+
+		ns.Shopping.AddShopWithChoice(root)
+		if ns.Shopping.CanClear() then
+			root:CreateDivider()
+			root:CreateButton("Clear shopping list", ns.Shopping.Clear)
+		elseif usingTSM() and #tsmSearchRows() > 0 then
+			root:CreateDivider()
+			root:CreateButton("Clear TSM search", function()
+				clearTSMSearch()
+				Patron.Redraw()
+			end)
+		end
+		root:CreateDivider()
+		root:CreateButton("Craft Profit options", ns.Options.Open)
+	end)
+end
+
+local function createFooter()
+	local list = ns.Blizzard.OrderList()
+	footer = CreateFrame("Frame", nil, list)
+	footer:SetPoint("BOTTOMLEFT", list, "BOTTOMLEFT", 10, 3)
+	footer:SetPoint("BOTTOMRIGHT", list, "BOTTOMRIGHT", -32, 3)
+	footer:SetHeight(FOOTER_HEIGHT - 4)
+	footer:Hide()
+
+	local line = footer:CreateTexture(nil, "ARTWORK")
+	line:SetColorTexture(1, 1, 1, 0.15)
+	line:SetHeight(1)
+	line:SetPoint("TOPLEFT", footer, "TOPLEFT", -6, 1)
+	line:SetPoint("TOPRIGHT", footer, "TOPRIGHT", 28, 1)
+
+	local gear = CreateFrame("Button", nil, footer)
+	gear:SetSize(GEAR_SIZE, GEAR_SIZE)
+	gear:SetPoint("LEFT")
+	gear:SetNormalTexture("Interface\\Buttons\\UI-OptionsButton")
+	gear:SetHighlightTexture("Interface\\Buttons\\UI-Common-MouseHilight", "ADD")
+	gear:SetScript("OnClick", openGearMenu)
+	gear:SetScript("OnEnter", function(self)
+		GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+		GameTooltip:SetText("Craft Profit")
+		GameTooltip:AddLine("Which orders get your concentration first, Optimize concentration, shopping and the options.",
+			1, 1, 1, true)
+		GameTooltip:Show()
+	end)
+	gear:SetScript("OnLeave", GameTooltip_Hide)
+
+	footer.concentration = footer:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
+	footer.concentration:SetPoint("LEFT", gear, "RIGHT", 8, 0)
+
+	-- What your crafts made this session, as on the panel, which doesn't show on
+	-- this page. Click to reset.
+	local session = CreateFrame("Button", nil, footer)
+	session:SetPoint("RIGHT")
+	session:SetHeight(FOOTER_HEIGHT - 4)
+	session.text = session:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
+	session.text:SetPoint("RIGHT")
+	session:SetScript("OnClick", ns.Results.ConfirmResetSession)
+	session:SetScript("OnEnter", function(self)
+		GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+		GameTooltip:SetText("This session")
+		GameTooltip:AddLine("What all your crafts made since you logged in on this character, including orders "
+			.. "crafted from this list.", 1, 1, 1, true)
+		GameTooltip:AddLine(ns.Color("simulated", "Click: reset to zero"))
+		GameTooltip:Show()
+	end)
+	session:SetScript("OnLeave", GameTooltip_Hide)
+	footer.session = session
+
+	-- With TSM: the running search, to copy again after its box is closed.
+	local search = CreateFrame("Button", nil, footer)
+	search:SetHeight(FOOTER_HEIGHT - 4)
+	search.text = search:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
+	search.text:SetPoint("RIGHT")
+	search:SetScript("OnClick", showTSMSearch)
+	search:SetScript("OnEnter", function(self)
+		GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+		GameTooltip:SetText("TSM search")
+		local rows = tsmSearchRows()
+		GameTooltip:AddLine(format("What you're missing for %s, in one search to paste into TSM's Shopping tab.",
+			ordersText(#rows)), 1, 1, 1, true)
+		for _, row in ipairs(rows) do GameTooltip:AddLine(iconText(row.icon, 14) .. row.name, 1, 1, 1) end
+		GameTooltip:AddLine(" ")
+		GameTooltip:AddLine(ns.Color("simulated", "Click: copy the search"))
+		GameTooltip:AddLine(ns.Color("simulated", "Clear it with the gear"))
+		GameTooltip:Show()
+	end)
+	search:SetScript("OnLeave", GameTooltip_Hide)
+	footer.search = search
+end
+
+local function drawFooter()
+	ns.Blizzard.SetOrderListFooter(active and FOOTER_HEIGHT or 0)
+	footer:SetShown(active)
+	if not active then return end
+
+	local concentration = state.concentration
+	footer.concentration:SetText(concentration and ns.Color("muted", format("Concentration: these orders use %d of your %d",
+		concentration.used, concentration.have)) or "")
+
+	local session = ns.db.session
+	local showSession = ns.db.showSession and session.crafts > 0
+	footer.session:SetShown(showSession)
+	if showSession then
+		footer.session.text:SetText(format("%s %s %s", ns.Color("heading", "This session"), signedMoney(session.total),
+			ns.Color("muted", format("(%d craft%s)", session.crafts, session.crafts == 1 and "" or "s"))))
+		footer.session:SetWidth(footer.session.text:GetUnboundedStringWidth())
 	end
-	gearMenu = menu
-	gear:SetFrameStrata(menu:GetFrameStrata())
-	gear:SetFrameLevel(menu:GetFrameLevel() + 50)
-	gear:ClearAllPoints()
-	gear:SetPoint("TOPRIGHT", menu, "TOPRIGHT", -8, -8)
-	gear:Show()
-end
 
--- A menu action that leaves the menu open afterwards (unless it shows a TSM
--- search, whose popup needs the focus).
-local function keepOpen(action)
-	return function()
-		action()
-		if usingTSM() then return end
-		return MenuResponse and MenuResponse.Open
+	local searchRows = usingTSM() and #tsmSearchRows() or 0
+	local search = footer.search
+	search:SetShown(searchRows > 0)
+	if searchRows > 0 then
+		search.text:SetText(format("%s %s", ns.Color("simulated", "TSM search:"), ordersText(searchRows)))
+		search:SetWidth(search.text:GetUnboundedStringWidth())
+		search:ClearAllPoints()
+		if showSession then
+			search:SetPoint("RIGHT", footer.session, "LEFT", -24, 0)
+		else
+			search:SetPoint("RIGHT")
+		end
 	end
 end
 
--- Opens the list under the Shopping list button. A context menu would open at
--- the mouse instead, and go back to it every time it redraws.
-local function openUnder(owner, generator)
-	if not (Menu and Menu.GetManager and Menu.PopulateDescription and MenuVariants and AnchorUtil) then
-		return MenuUtil.CreateContextMenu(owner, generator)
+---------------------------------------------------------------------------
+-- Redrawing
+---------------------------------------------------------------------------
+
+-- Works out every order again and redraws the list's rows, headers, buttons and
+-- footer. Called when the list or what you own changes, and after each step.
+function Patron.Redraw()
+	if not footer then return end
+	active = ns.db.patronList and ns.Blizzard.IsOwnProfession() and ns.Blizzard.IsPatronTable()
+	state = { rows = {}, unknown = {}, byID = {}, unknownByID = {} }
+	if active then
+		-- What you own has changed (materials used up, rewards in).
+		ns.Planner.Reset()
+		state.rows, state.unknown, state.concentration = listOrders()
+		for _, row in ipairs(state.rows) do state.byID[row.order.orderID] = row end
+		for _, row in ipairs(state.unknown) do state.unknownByID[row.order.orderID] = true end
+		sortByProfit()
 	end
-	local description = MenuUtil.CreateRootMenuDescription(MenuVariants.GetDefaultContextMenuMixin())
-	Menu.PopulateDescription(generator, owner, description)
-	local anchor = AnchorUtil.CreateAnchor("TOPLEFT", owner, "BOTTOMLEFT", 0, -2)
-	return Menu.GetManager():OpenMenu(owner, description, anchor)
+	ns.Blizzard.ForEachOrderRow(drawRow)
+	-- After the rows: the headers line up with what they measure.
+	drawHeaders()
+	drawButtons()
+	drawFooter()
 end
 
--- For a choice that changes the orders' rows: a menu refresh only re-ticks the
--- checkboxes, so the list is opened again once the click is done.
-local function redrawn()
-	C_Timer.After(0, Patron.Reopen)
-	return MenuResponse and MenuResponse.Open
-end
-
-local function leastConcentrationTooltip(tooltip)
-	GameTooltip_SetTitle(tooltip, ns.LEAST_CONCENTRATION)
-	tooltip:AddLine(ns.LEAST_CONCENTRATION_TIP, 1, 1, 1, true)
+-- Redraws on the next frame, once for a burst of changes (bags filling up).
+local queued = false
+function Patron.QueueRedraw()
+	if queued or not active then return end
+	queued = true
+	C_Timer.After(0, function()
+		queued = false
+		Patron.Redraw()
+	end)
 end
 
 -- Turns "Optimize concentration" on or off. Every order's picks change,
@@ -496,201 +1147,47 @@ function Patron.SetLeastConcentration(on)
 	ns.db.leastConcentration = on
 	ns.Planner.Reset()
 	ns.Panel.Refresh()
+	Patron.Redraw()
 end
 
--- Whether the list opens as a scrolling box. Blizzard decides by adding up the
--- rows, but counts each row at least as tall as the tallest one above it, so a
--- list that fits can still come up as a full-height box with empty space at the
--- bottom. The list checks once it's open and opens the other way if needed.
-local scrolls = true
--- How much taller than MENU_MAX_HEIGHT a list that doesn't scroll may get (its
--- top and bottom margins, plus some leeway) before it scrolls instead.
-local SCROLL_LEEWAY = 40
-
--- Whether the open list should be opened the other way: a scrolling box whose rows
--- all fit, or a list that runs too tall without scrolling.
-local function wrongScrolling(menu)
-	local box = menu.ScrollBox
-	if box and box:IsShown() then
-		local rows = box.GetDataProvider and box:GetDataProvider()
-		if not rows then return false end
-		local height = 0
-		for _, row in rows:Enumerate() do height = height + row:GetHeight() end
-		return height <= MENU_MAX_HEIGHT
+-- Where a proc of a patron order crafted from the list shows: the list, to flash,
+-- and the frame the gold floats up from (that order's Profit text, or the list).
+-- nil when the list isn't showing Craft Profit's columns.
+function Patron.ProcTarget(orderID)
+	if not (active and footer and footer:IsVisible()) then return end
+	local list, anchor = ns.Blizzard.OrderList(), nil
+	for row, own in pairs(cells) do
+		local order = row:IsVisible() and ns.Blizzard.RowOrder(row)
+		if order and order.orderID == orderID then anchor = own.profit.text end
 	end
-	return not scrolls and menu:GetHeight() > MENU_MAX_HEIGHT + SCROLL_LEEWAY
-end
-
-local function openMenu(owner, retried)
-	GameTooltip:Hide()
-	local menu = openUnder(owner, function(_, root)
-		-- Worked out here, so a refresh (after switching the concentration choice) redoes it.
-		local rows, unknown, concentration = listOrders()
-		local reachable, unreachable, short = reachableRows(rows)
-		local total = ns.Shopping.Total(missingForAll(reachable))
-		local tsm = usingTSM()
-		local verb = tsm and "Copy" or "Add"
-		-- Long lists scroll instead of running off the screen.
-		if scrolls and root.SetScrollMode then root:SetScrollMode(MENU_MAX_HEIGHT) end
-		root:CreateTitle("Patron orders")
-		if concentration then
-			root:CreateTitle(ns.Color("muted", format("Concentration: these orders use %d of your %d",
-				concentration.used, concentration.have)))
-		end
-		for _, row in ipairs(rows) do
-			local unreachableRow = row.plan and row.plan.unreachable
-			local missing = ns.Shopping.Total(row.model.missing)
-			local step = ns.Craft.Step(row, isReady(row))
-			local note = ""
-			if step == "complete" then
-				-- Crafted: the materials are used up, so nothing's "missing".
-				note = ns.Color("good", " (crafted)")
-			elseif step == "crafting" then
-				note = ns.Color("good", " (crafting...)")
-			elseif step == "craft" then
-				note = ns.Color("good", " (started)")
-			elseif unreachableRow then
-				-- Nothing to buy for an order you can't craft.
-			elseif missing > 0 then
-				note = ns.Color("missing", format(" (%d missing)", missing))
-			elseif isReady(row) then
-				note = " " .. READY_ICON
-			end
-			local item = root:CreateButton(iconText(row.icon) .. row.name .. minQualityText(row) .. note .. concentrationNote(row), function()
-				if IsShiftKeyDown() and not tsm then return removeOrder(row) end
-				if unreachableRow then return MenuResponse and MenuResponse.Open end
-				return addOrder(row)
-			end)
-			-- Short of concentration: the profit in grey, since you can't take it right now.
-			local right = unreachableRow and ns.Color("loss", "can't craft")
-				or row.noConcentration and ns.Color("muted", (row.model.total > 0 and "+" or "") .. ns.Format.Money(row.model.total))
-				or signedMoney(row.model.total)
-			local function rowTooltip(tooltip) orderTooltip(tooltip, row) end
-			rightText(item, right, row, step, rowTooltip)
-			item:SetTooltip(rowTooltip)
-		end
-		for _, row in ipairs(unknown) do
-			local item = root:CreateButton(iconText(row.icon) .. row.name .. ns.Color("muted", "  recipe not known"))
-			item:SetEnabled(false)
-		end
-
-		root:CreateDivider()
-		local function missingNote(count)
-			return ns.Color("muted", count > 0 and format("(%d missing)", count) or "(nothing missing)")
-		end
-		local profitable = profitableRows(rows)
-		local profitableTotal = ns.Shopping.Total(missingForAll(profitable))
-		local best = root:CreateButton(format("%s profitable: %s %s", verb, ordersText(#profitable), missingNote(profitableTotal)),
-			keepOpen(addProfitable))
-		best:SetEnabled(profitableTotal > 0)
-		best:SetTooltip(function(tooltip)
-			GameTooltip_SetTitle(tooltip, verb .. " profitable orders")
-			tooltip:AddLine((tsm and "A TSM search for what you're missing for every order" or "Adds what you're missing for every order")
-				.. " that makes a profit and whose minimum quality "
-				.. "you can reach, at the cheapest qualities that reach it. Orders left without enough concentration "
-				.. "are skipped.", 1, 1, 1, true)
-		end)
-		local all = root:CreateButton(format("%s all %s %s", verb, ordersText(#reachable), missingNote(total)), keepOpen(addAll))
-		all:SetEnabled(total > 0)
-		if unreachable > 0 or short > 0 then
-			all:SetTooltip(function(tooltip)
-				GameTooltip_SetTitle(tooltip, verb .. " all orders")
-				if short > 0 then tooltip:AddLine(shortText(short), 1, 1, 1, true) end
-				if unreachable > 0 then tooltip:AddLine(unreachableText(unreachable), 1, 1, 1, true) end
-			end)
-		end
-		if not tsm then root:CreateButton("Clear shopping list", keepOpen(ns.Shopping.Clear)) end
-
-		ns.Shopping.AddShopWithChoice(root)
-
-		-- Which orders get your concentration first; the list redraws with the new shares.
-		root:CreateDivider()
-		root:CreateTitle("Spend concentration on")
-		local function isChosen(key) return ns.db.concentrationFor == key end
-		local function choose(key)
-			ns.db.concentrationFor = key
-			return redrawn()
-		end
-		for _, choice in ipairs(ns.CONCENTRATION_CHOICES) do
-			root:CreateRadio(choice[2], isChosen, choose, choice[1])
-		end
-		-- The orders' picks change, so they're worked out again.
-		local least = root:CreateCheckbox(ns.LEAST_CONCENTRATION, function() return ns.db.leastConcentration end, function()
-			Patron.SetLeastConcentration(not ns.db.leastConcentration)
-			return redrawn()
-		end)
-		least:SetTooltip(leastConcentrationTooltip)
-
-		-- What your crafts made this session, as on the panel, which doesn't show on
-		-- this page.
-		local session = ns.db.session
-		if ns.db.showSession and session.crafts > 0 then
-			root:CreateDivider()
-			local item = root:CreateButton(format("%s (%d craft%s)", ns.Color("heading", "This session"), session.crafts,
-				session.crafts == 1 and "" or "s"), keepOpen(ns.Results.ConfirmResetSession))
-			local function sessionTooltip(tooltip)
-				GameTooltip_SetTitle(tooltip, "This session")
-				tooltip:AddLine("What all your crafts made since you logged in on this character, including orders "
-					.. "crafted from this list.", 1, 1, 1, true)
-				tooltip:AddLine(ns.Color("simulated", "Click: reset to zero"))
-			end
-			rightText(item, signedMoney(session.total), nil, nil, sessionTooltip)
-			item:SetTooltip(sessionTooltip)
-		end
-	end)
-	if menu and not retried and wrongScrolling(menu) then
-		scrolls = not scrolls
-		return openMenu(owner, true)
-	end
-	showGear(menu)
-end
-
-function Patron.IsMenuOpen()
-	return gearMenu ~= nil and gearMenu:IsVisible()
-end
-
--- The open Patron orders list's frame, or nil.
-function Patron.ListFrame()
-	if Patron.IsMenuOpen() then return gearMenu end
-end
-
--- Redraws the list if it's open, e.g. after an order's next step. It opens in
--- the same place, under the button.
-function Patron.Reopen()
-	if not (Patron.IsMenuOpen() and button) then return end
-	-- What you own has changed (materials used up, rewards in).
-	ns.Planner.Reset()
-	openMenu(button)
-end
-
--- Shown on the Patron tab while it lists orders, when materials go to Auctionator's
--- shopping list or a TSM search.
-function Patron.Refresh()
-	if not button then return end
-	ns.Planner.Reset()
-	local orders = ns.Blizzard.PatronOrders()
-	button:SetShown(orders ~= nil and #orders > 0 and ns.Shopping.ListTarget() ~= nil)
+	return list, anchor
 end
 
 function Patron.Init()
-	if button or not ns.Blizzard.IsLoaded() then return end
+	if footer or not ns.Blizzard.IsLoaded() then return end
 	local list = ns.Blizzard.OrderList()
-	button = CreateFrame("Button", nil, list:GetParent(), "UIPanelButtonTemplate")
-	button:SetText("Shopping list")
-	button:SetSize(button:GetFontString():GetStringWidth() + 32, 22)
+	addAllButton = makeButton(list:GetParent(), addAll, allTooltip)
 	-- On the row of order type tabs, at the list's right end.
-	button:SetPoint("BOTTOMRIGHT", list, "TOPRIGHT", -2, 2)
-	button:SetScript("OnClick", function(self)
-		if IsControlKeyDown() and ns.Shopping.CanClear() then
-			ns.Shopping.Clear()
-		else
-			-- Opened afresh: it may fit narrower now.
-			widestRow = 0
-			openMenu(self)
-		end
+	addAllButton:SetPoint("BOTTOMRIGHT", list, "TOPRIGHT", -2, 2)
+	addProfitableButton = makeButton(list:GetParent(), addProfitable, profitableTooltip)
+	addProfitableButton:SetPoint("RIGHT", addAllButton, "LEFT", -4, 0)
+	createFooter()
+
+	ns.Blizzard.WatchOrderList(Patron.Redraw)
+	-- Sorting by one of Blizzard's headers ends sorting by profit.
+	ns.Blizzard.WatchSortOrder(function()
+		ns.db.patronSort = false
+		sortedRows = nil
+		drawHeaders()
 	end)
-	button:SetScript("OnEnter", showTooltip)
-	button:SetScript("OnLeave", GameTooltip_Hide)
-	button:Hide()
-	ns.Blizzard.WatchOrderList(Patron.Refresh)
+	ns.Blizzard.WatchOrderRows(drawRow, function()
+		-- Columns laid out again: the headers are Blizzard's again.
+		drawHeaders()
+		Patron.QueueRedraw()
+	end)
+
+	local events = CreateFrame("Frame")
+	events:RegisterEvent("BAG_UPDATE_DELAYED")
+	events:RegisterEvent("CURRENCY_DISPLAY_UPDATE")
+	events:SetScript("OnEvent", Patron.QueueRedraw)
 end

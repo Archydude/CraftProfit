@@ -17,6 +17,7 @@ local function onChanged()
 	ns.Planner.Reset()
 	ns.Panel.Place()
 	ns.Panel.Refresh()
+	ns.Patron.Redraw()
 end
 
 function Options.Create()
@@ -67,7 +68,7 @@ function Options.Create()
 
 	checkbox("showSession", "Show this session's total",
 		"Adds up what every craft made since you logged in on this character. A /reload keeps it. Shown on the " ..
-		"panel and at the bottom of the Patron orders list.")
+		"panel and at the bottom of the Patron tab's order list.")
 	button("Session total", "Reset", ns.Results.ResetSession, "Start the session total from zero.")
 
 	dropdown("precision", "Show amounts down to", {
@@ -82,8 +83,8 @@ function Options.Create()
 	end, "Put the panel back next to the profession window.")
 
 	checkbox("shoppingButton", "Show the Shopping list button",
-		format("A row under Materials cost for buying what you're short of, and the Shopping list button " ..
-		"on the Patron orders tab.\n\n" ..
+		format("A row under Materials cost for buying what you're short of, and the shopping buttons on the " ..
+		"Patron tab: Add profitable, Add all and each order's cart button.\n\n" ..
 		"Auctionator: a click opens a menu that adds what's missing for 1, 5, 10 or any number of crafts " ..
 		"to an Auctionator shopping list.\n\n" ..
 		"TSM: the same menu gives you a search to copy into TSM's Shopping tab, for exactly the ranks " ..
@@ -110,15 +111,20 @@ function Options.Create()
 		"or with none open, the lists of all this character's professions.")
 
 	layout:AddInitializer(CreateSettingsListSectionHeaderInitializer("Patron orders"))
+	checkbox("patronList", "Show Craft Profit on the Patron tab",
+		"The Patron tab's order list shows each order's profit or loss, its rewards and what materials you're " ..
+		"missing, with buttons to shop for it and to start, craft and complete it. Buttons above the list shop for the profitable " ..
+		"orders or all of them; under it, the concentration they use and the session total.\n\n" ..
+		"Off: Blizzard's own columns (Patron Name, Commission, Reagents).")
 	dropdown("concentrationFor", "Spend concentration on", ns.CONCENTRATION_CHOICES,
-		"In the Patron orders list, orders that only reach their minimum quality with concentration share what " ..
-		"you have. They get it in this order until it runs out; the rest say \"not enough concentration\".\n\n" ..
+		"On the Patron tab, orders that only reach their minimum quality with concentration share what " ..
+		"you have. They get it in this order until it runs out; the rest show their profit in grey and \"No concentration\".\n\n" ..
 		"Most profit: the most gold per concentration point first.\n\n" ..
 		"Knowledge first: orders that reward profession knowledge first, then the rest by profit.\n\n" ..
-		"You can also switch it at the bottom of the Patron orders list.")
+		"You can also switch it with the gear at the bottom of the Patron tab.")
 	checkbox("leastConcentration", ns.LEAST_CONCENTRATION, ns.LEAST_CONCENTRATION_TIP ..
 		"\n\nAlso picks the materials for Use Most Profitable Reagents on the order form and the crafting page. " ..
-		"You can also switch it at the bottom of the Patron orders list.")
+		"You can also switch it with the gear at the bottom of the Patron tab.")
 
 	layout:AddInitializer(CreateSettingsListSectionHeaderInitializer("Tooltips"))
 	checkbox("rankTooltip", "Show the best rank you can craft",

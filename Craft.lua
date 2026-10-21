@@ -1,4 +1,4 @@
--- Craft Profit: the hammer on each Patron orders row. Each click does the next
+-- Craft Profit: the hammer on each Patron tab row. Each click does the next
 -- step of that order: start it, craft it with the materials the list picked,
 -- then complete it. The game needs a click for each, and only one order can be
 -- started at a time. Chat confirms each step.
@@ -97,7 +97,7 @@ function Craft.Do(row, step)
 		pendingModel = row.model
 		local concentrate = row.plan and row.plan.concentration and true or false
 		C_TradeSkillUI.CraftRecipe(row.order.spellID, 1, reagentsFor(row), nil, orderID, concentrate)
-		ns.Patron.Reopen()
+		ns.Patron.Redraw()
 	elseif step == "complete" then
 		C_CraftingOrders.FulfillOrder(orderID, "", profession())
 	end
@@ -128,7 +128,7 @@ local function craftFailed(spellID)
 		if craftSpell == spellID then
 			crafting[orderID], pendingModel = nil, nil
 			say(orderID, "Crafting %s stopped. Click its hammer to try again.", "warning")
-			ns.Patron.Reopen()
+			ns.Patron.Redraw()
 		end
 	end
 end
@@ -164,6 +164,8 @@ function handlers.CRAFTINGORDERS_FULFILL_ORDER_RESPONSE(result, orderID)
 	if result == Enum.CraftingOrderResult.Ok then
 		completed[orderID], crafted[orderID] = true, nil
 		say(orderID, "Completed %s.")
+		-- Gone from the Patron tab right away, instead of a blank row until it refreshes.
+		ns.Blizzard.RemoveListedOrder(orderID)
 	else
 		say(orderID, "Couldn't complete %s (the game said no: " .. tostring(result) .. ").", "warning")
 	end
@@ -189,6 +191,6 @@ function Craft.Init()
 	frame:SetScript("OnEvent", function(_, event, ...)
 		handlers[event](...)
 		-- The hammer's next step may have changed: redraw the list.
-		if not event:find("^UNIT_") then ns.Patron.Reopen() end
+		if not event:find("^UNIT_") then ns.Patron.Redraw() end
 	end)
 end

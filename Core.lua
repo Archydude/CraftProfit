@@ -25,6 +25,7 @@ local function loadSettings()
 		if db[key] == nil then db[key] = value end
 	end
 	db.session = db.session or { total = 0, crafts = 0 }
+	db.tsmOrders = db.tsmOrders or {} -- the Patron tab's running TSM search (see Patron.lua)
 	db.listItems = db.listItems or {} -- what Craft Profit put on each shopping list (see Shopping.lua)
 	return db
 end
@@ -37,7 +38,10 @@ events:SetScript("OnEvent", function(self, event, ...)
 		-- A fresh login (or another character) starts a new session; /reload keeps
 		-- the running total.
 		local isInitialLogin = ...
-		if isInitialLogin then ns.db.session = { total = 0, crafts = 0 } end
+		if isInitialLogin then
+			ns.db.session = { total = 0, crafts = 0 }
+			ns.db.tsmOrders = {}
+		end
 		self:UnregisterEvent("PLAYER_ENTERING_WORLD")
 		return
 	end
@@ -82,8 +86,8 @@ SlashCmdList.CRAFTPROFIT = function(msg)
 		-- Testing: shows the proc animation without crafting.
 		local where = ns.Results.TestProc()
 		ns.Shopping.Say(where and string.format("Testing: a made-up resourcefulness proc on the %s.",
-			where == "list" and "Patron orders list" or "panel")
-			or "Testing: open your profession window (or the Patron orders list) first.")
+			where == "list" and "Patron tab" or "panel")
+			or "Testing: open your profession window (or its Patron tab) first.")
 		return
 	end
 	if command == "testrank" then
