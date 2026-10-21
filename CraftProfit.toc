@@ -4,7 +4,7 @@
 ## Author: Archdude
 ## Version: 1.20.1
 ## OptionalDeps: TradeSkillMaster, Auctionator
-## SavedVariables: CraftProfitDB
+## SavedVariables: CraftProfitDB, CraftProfitWhatsNew
 ## SavedVariablesPerCharacter: CraftProfitCharDB
 ## IconTexture: Interface\Icons\INV_Misc_Coin_02
 ## Category-enUS: Professions
@@ -27,3 +27,5 @@ Patron.lua
 Ranks.lua
 Options.lua
 Core.lua
+WhatsNew.lua
+WhatsNewData.lua
