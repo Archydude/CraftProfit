@@ -13,7 +13,7 @@ Craft Profit
 
 **Summary**
 ```
-Profit or loss on every craft and crafting order, with patron orders ranked by profit and crafted from one list. Prices from TSM or Auctionator.
+Profit or loss on every craft and crafting order, with each patron order's profit, rewards and missing materials right in Blizzard's Patron tab. Prices from TSM or Auctionator.
 ```
 
 **Main category:** `Professions`
@@ -32,7 +32,7 @@ Profit or loss on every craft and crafting order, with patron orders ranked by p
 Craft Profit is a **lightweight** panel next to your profession window that answers one question in gold: **profit or loss?**
 
 - **Profit on every craft** and crafting order
-- **Patron orders ranked** by profit, and crafted right from the list
+- **Patron orders** with their profit, rewards and missing materials, crafted right from the list
 - **The most profitable materials**, put in for you
 - **What-if qualities**
 - **Shopping list** for what you're missing
@@ -43,7 +43,7 @@ Craft Profit is a **lightweight** panel next to your profession window that answ
 What the item sells for at the quality you'll get, minus the 5% auction house cut and your materials. On orders: the commission after the consortium cut, minus only the materials **you** supply, plus sellable patron rewards.
 
 ### Which patron order pays best?
-The **Shopping list** button on the Patron orders tab lists every patron order by profit, priced with the cheapest material ranks that meet its minimum quality. Concentration goes where it earns the most, or to knowledge. **Add profitable** shops for what's missing, and each ready order starts, crafts and completes with one click per step.
+Blizzard's Patron tab shows each order's **profit**, its **rewards** (knowledge, Moxie, items) and what **materials** you're missing, priced with the cheapest ranks that meet its minimum quality. One click shops for an order, or **Add profitable** for all the good ones. Concentration goes where it earns the most, or to knowledge, and each ready order starts, crafts and completes with one click per step.
 
 ### The most profitable materials, put in for you
 Tick **Use Most Profitable Reagents** on the crafting page or order form: recipes get the materials for the rank that earns the most, orders the cheapest that reach their minimum quality. **Optimize Concentration** uses the least concentration instead.
@@ -55,7 +55,7 @@ Click a material to try its next quality; profit updates right away.
 One click adds what you're missing to an **Auctionator** shopping list or a **TSM** search. Shift-click for more crafts. The Auctionator list checks itself off as materials come in.
 
 ### Procs and session total
-**Multicraft** and **resourcefulness** procs pop up as bonus gold, on the panel or the Patron orders list, and a session total on both adds up what you've made.
+**Multicraft** and **resourcefulness** procs pop up as bonus gold, on the panel or the Patron tab, and a session total on both adds up what you've made.
 
 ### Which character crafts it best?
 Hover an item to see each character's **Craft Rank**: the highest rank they can make it at, and the concentration it takes.
@@ -72,11 +72,11 @@ Hover an item to see each character's **Craft Rank**: the highest rank they can 
 
 ## B. Upload File form
 
-**File:** `dist\CraftProfit-1.20.1.zip`
+**File:** `dist\CraftProfit-1.21.0.zip`
 
 **Display name**
 ```
-Craft Profit 1.20.1
+Craft Profit 1.21.0
 ```
 
 **Release type:** `Release`
@@ -85,6 +85,17 @@ Craft Profit 1.20.1
 
 **Changelog** (paste only the newest part; paste older parts too if they never went up)
 ```markdown
+1.21.0
+- Patron orders right in Blizzard's Patron tab: instead of a separate list behind a Shopping list button, Blizzard's own order list now shows Craft Profit's columns where Patron Name, Commission and Reagents were. **Materials** says **Ready** or how many you're missing, **Rewards** shows profession knowledge, Artisan's Moxie and items as icons, and **Profit** shows the order's profit or loss in green or red, with the concentration it takes. Hover any of them for the details.
+- Each order has its own buttons at the end of its row: a cart adds what you're missing for it to the shopping list (Shift-click takes it back off), and the craft button starts, crafts and completes it, one click per step.
+- Click the **Profit** header to sort the orders by profit, most first; click it again for least first.
+- **Add profitable** and **Add all** sit above the list, next to the order tabs. Under the list: the concentration the orders use, this session's total, and a gear with the list's choices (which orders get concentration first, Optimize concentration, Shop with, Clear shopping list, options).
+- With only TSM, the Patron tab builds one TSM search as you click carts, Copy profitable or Copy all, with every order's materials added up. Click **TSM search** under the list to copy it again; it follows what you're still missing.
+- A resourcefulness proc on an order crafted from the tab pops up from that order's profit.
+- Orders you complete leave the list right away.
+- New option, **Show Craft Profit on the Patron tab**: turn it off to get Blizzard's own columns back.
+- After an update, a What's New window shows what changed since the version you had.
+
 1.20.1
 - Fixed: crafts with nothing to sell (no auction price, like treatises, or an enchant or a recraft) didn't count what their materials cost. The panel now shows them as a Loss of that cost, and they count that way in the session total, less what resourcefulness gives back.
 
