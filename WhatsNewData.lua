@@ -2,10 +2,13 @@
 ArchdudeWhatsNew:Register("CraftProfit", {
 	title = "Craft Profit",
 	icon = "Interface\\Icons\\INV_Misc_Coin_02",
-	version = "1.21.0",
+	version = "1.21.1",
 	seen = "CraftProfitWhatsNew",
 	saved = { "CraftProfitDB", "CraftProfitCharDB" },
 	changes = {
+		{ "1.21.1",
+			"Fixed: when an order crafted from the Patron tab procced resourcefulness, the bonus gold and the gold border flash didn't show.",
+		},
 		{ "1.21.0",
 			"Patron orders right in Blizzard's Patron tab: instead of a separate list behind a Shopping list button, Blizzard's own order list now shows Craft Profit's columns where Patron Name, Commission and Reagents were. |cffffd100Materials|r says |cffffd100Ready|r or how many you're missing, |cffffd100Rewards|r shows profession knowledge, Artisan's Moxie and items as icons, and |cffffd100Profit|r shows the order's profit or loss in green or red, with the concentration it takes. Hover any of them for the details.",
 			"Each order has its own buttons at the end of its row: a cart adds what you're missing for it to the shopping list (Shift-click takes it back off), and the craft button starts, crafts and completes it, one click per step.",
@@ -44,9 +47,6 @@ ArchdudeWhatsNew:Register("CraftProfit", {
 		},
 		{ "1.16.1",
 			"Fixed: the game could stutter for a few seconds after you opened your profession window, while Craft Rank updated. It now updates in the background without slowing the game down.",
-		},
-		{ "1.16.0",
-			"Craft Rank: a new \"with optional reagents\" line under a character's rank, when optional reagents make the item harder to craft, like the ones that raise its item level. It shows the best rank with the hardest one in each optional slot, at its top rank, and the concentration it takes. Open your profession window once to update it.",
 		},
 	},
 })

@@ -1,5 +1,8 @@
 # Changelog
 
+## 1.21.1
+- Fixed: when an order crafted from the Patron tab procced resourcefulness, the bonus gold and the gold border flash didn't show.
+
 ## 1.21.0
 - Patron orders right in Blizzard's Patron tab: instead of a separate list behind a Shopping list button, Blizzard's own order list now shows Craft Profit's columns where Patron Name, Commission and Reagents were. **Materials** says **Ready** or how many you're missing, **Rewards** shows profession knowledge, Artisan's Moxie and items as icons, and **Profit** shows the order's profit or loss in green or red, with the concentration it takes. Hover any of them for the details.
 - Each order has its own buttons at the end of its row: a cart adds what you're missing for it to the shopping list (Shift-click takes it back off), and the craft button starts, crafts and completes it, one click per step.
