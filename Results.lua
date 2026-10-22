@@ -128,6 +128,11 @@ local function flashBorder(panel)
 	end)
 end
 
+-- The Patron tab's gold and border flash sit in a layer above the profession
+-- window: in its own layer, the window comes to the front each time it's
+-- clicked and covers them.
+local LIST_FX_STRATA = "DIALOG"
+
 -- The Patron tab's order list has no border of its own to color, so a gold one is laid
 -- over it and fades out.
 local listGlow
@@ -146,8 +151,8 @@ local function flashList(list)
 		fade:SetScript("OnFinished", function() listGlow:Hide() end)
 		listGlow.fade = fade
 	end
-	listGlow:SetFrameStrata(list:GetFrameStrata())
-	listGlow:SetFrameLevel(list:GetFrameLevel() + 40)
+	listGlow:SetFrameStrata(LIST_FX_STRATA)
+	listGlow:SetFrameLevel(40)
 	listGlow:ClearAllPoints()
 	listGlow:SetAllPoints(list)
 	listGlow:Show()
@@ -206,8 +211,8 @@ local function celebrateOnList(proc, list, anchor)
 
 	flashList(list)
 	local floater = getFloater(UIParent, listFloaters)
-	floater:SetFrameStrata(list:GetFrameStrata())
-	floater:SetFrameLevel(list:GetFrameLevel() + 50)
+	floater:SetFrameStrata(LIST_FX_STRATA)
+	floater:SetFrameLevel(50)
 	setFloaterText(floater, proc)
 	if anchor then
 		playFloater(floater, anchor, "TOPRIGHT", 0, 4)
