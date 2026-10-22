@@ -61,7 +61,7 @@ ns.DEFAULTS = {
 	checkOff = true,           -- take materials off the Auctionator list as you get them
 	patronList = true,    -- Craft Profit's columns, buttons and footer on the Patron tab's order list
 	patronSort = false,   -- the Patron tab sorted by profit: "desc" | "asc", or false for Blizzard's sort
-	concentrationFor = "profit", -- patron orders that need concentration get it by: "profit" | "knowledge"
+	concentrationFor = "profit", -- patron orders that need concentration get it by: "profit" | "knowledge", or "none" of it
 	leastConcentration = false, -- orders that need concentration: the qualities that need the least, cheapest of those
 	bestMaterials = false, -- "Use Most Profitable Reagents" on the order form and crafting page: put them in every order or recipe you open
 	rankTooltip = true,   -- best rank you can craft, on crafted items' tooltips
@@ -85,6 +85,7 @@ ns.LEAST_CONCENTRATION_TIP = "Orders that only reach their minimum quality with 
 ns.CONCENTRATION_CHOICES = {
 	{ "profit", "Most profit (default)" },
 	{ "knowledge", "Knowledge first" },
+	{ "none", "Don't use concentration" },
 }
 
 -- Choices for where missing materials go when Auctionator and TSM are both installed.

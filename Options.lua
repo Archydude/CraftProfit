@@ -121,9 +121,13 @@ function Options.Create()
 		"you have. They get it in this order until it runs out; the rest show their profit in grey and \"No concentration\".\n\n" ..
 		"Most profit: the most gold per concentration point first.\n\n" ..
 		"Knowledge first: orders that reward profession knowledge first, then the rest by profit.\n\n" ..
+		"Don't use concentration: patron orders never spend it. Orders that need it to reach their minimum " ..
+		"quality show \"No concentration\", get no cart or craft button, and Add profitable and Add all skip them; " ..
+		"on their order form, Use Most Profitable Reagents leaves the materials alone. The crafting page isn't affected.\n\n" ..
 		"You can also switch it with the gear at the bottom of the Patron tab.")
 	checkbox("leastConcentration", ns.LEAST_CONCENTRATION, ns.LEAST_CONCENTRATION_TIP ..
 		"\n\nAlso picks the materials for Use Most Profitable Reagents on the order form and the crafting page. " ..
+		"Patron orders don't use concentration while Spend concentration on is set to Don't use concentration. " ..
 		"You can also switch it with the gear at the bottom of the Patron tab.")
 
 	layout:AddInitializer(CreateSettingsListSectionHeaderInitializer("Tooltips"))

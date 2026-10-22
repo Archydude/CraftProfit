@@ -349,6 +349,11 @@ local function bestMaterials(ctx, model)
 	local order, schematic, transaction = ctx.order, ctx.schematic, ctx.transaction
 	local plan = ns.Planner.ForOrder(order, schematic, ctx.provided)
 	if not (plan and plan.overrides and next(plan.overrides)) or plan.unreachable then return end
+	-- Patron orders kept off concentration ("Don't use concentration"): these
+	-- materials only reach the minimum with it, so nothing is offered.
+	if plan.concentration and ns.db.concentrationFor == "none" and order.orderType == Enum.CraftingOrderType.Npc then
+		return
+	end
 
 	local concentrate = plan.concentration ~= nil and not ns.Blizzard.IsConcentrating(transaction)
 	if not (concentrate or differsFromForm(schematic, transaction, plan.overrides)) then return end

@@ -134,9 +134,10 @@ end
 
 -- Shares out your concentration among the listed orders that need it to reach
 -- their minimum quality, in the order the option sets: "profit" (most gold per
--- concentration point first, orders that lose gold last) or "knowledge" (most
--- knowledge per point first, then by profit). Orders left without enough get
--- row.noConcentration. Returns { have, used }, or nil when no order needs any.
+-- concentration point first, orders that lose gold last), "knowledge" (most
+-- knowledge per point first, then by profit) or "none" (no order gets any).
+-- Orders left without enough get row.noConcentration. Returns { have, used }, or
+-- nil when no order needs any or none is spent.
 function Planner.SpendConcentration(rows, mode)
 	local needing, currencyID = {}, nil
 	for _, row in ipairs(rows) do
@@ -145,9 +146,10 @@ function Planner.SpendConcentration(rows, mode)
 		if plan and plan.concentration and not plan.unreachable then
 			needing[#needing + 1] = row
 			currencyID = currencyID or plan.currencyID
+			if mode == "none" then row.noConcentration = true end
 		end
 	end
-	if #needing == 0 then return end
+	if #needing == 0 or mode == "none" then return end
 	local info = currencyID and C_CurrencyInfo.GetCurrencyInfo(currencyID)
 	local have = Planner.testConcentration or info and info.quantity
 	if not have then return end

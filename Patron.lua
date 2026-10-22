@@ -173,6 +173,10 @@ local function unreachableText(skipped)
 end
 
 local function shortText(skipped)
+	if ns.db.concentrationFor == "none" then
+		return format("Skipped %d order%s that need%s concentration (Don't use concentration is picked).",
+			skipped, skipped == 1 and "" or "s", skipped == 1 and "s" or "")
+	end
 	return format("Skipped %d order%s: not enough concentration left for %s.",
 		skipped, skipped == 1 and "" or "s", skipped == 1 and "it" or "them")
 end
@@ -302,6 +306,15 @@ end
 -- Tooltips
 ---------------------------------------------------------------------------
 
+-- Whether an order needs concentration while "Spend concentration on" is set
+-- to "Don't use concentration": it gets no buttons and isn't shopped for.
+local function keptOffConcentration(row)
+	return ns.db.concentrationFor == "none" and row.noConcentration == true
+end
+
+local KEPT_OFF_TEXT = "Needs %d concentration to reach its minimum quality, and Spend concentration on is set "
+	.. "to Don't use concentration."
+
 -- The concentration an order takes, as "[icon]120", or "".
 local function concentrationText(row)
 	local plan = row.plan
@@ -339,6 +352,9 @@ local function profitTooltip(row)
 		tooltip:AddLine("Minimum quality " .. qualityText(row, plan.minQuality), 1, 0.82, 0)
 		if plan.unreachable then
 			tooltip:AddLine("You can't reach it, even with the best materials.", 1, 0.4, 0.4, true)
+		elseif keptOffConcentration(row) then
+			tooltip:AddLine(format(KEPT_OFF_TEXT, plan.concentration), 1, 0.4, 0.4, true)
+			tooltip:AddLine("Using:", 1, 1, 1)
 		elseif row.noConcentration then
 			tooltip:AddLine(format("Needs %d concentration, but there isn't enough left once the orders worth more get theirs.",
 				plan.concentration), 1, 0.4, 0.4, true)
@@ -361,6 +377,18 @@ end
 local function materialsTooltip(row, step)
 	local tooltip = GameTooltip
 	GameTooltip_SetTitle(tooltip, iconText(row.icon) .. row.name)
+	if keptOffConcentration(row) and step ~= "crafting" and step ~= "complete" then
+		tooltip:AddLine(format(KEPT_OFF_TEXT, row.plan.concentration), 1, 0.4, 0.4, true)
+		local missing = ns.Shopping.Total(row.model.missing)
+		if missing > 0 then
+			tooltip:AddLine(" ")
+			tooltip:AddLine(ns.Color("missing", format("%d missing", missing)))
+			for _, material in ipairs(row.model.missing) do
+				tooltip:AddLine(ns.Format.Item(material.itemID, material.qty), 1, 1, 1)
+			end
+		end
+		return
+	end
 	if step == "craft" or step == "crafting" or step == "complete" then
 		tooltip:AddLine("You've started this order.", 1, 1, 1)
 		tooltip:AddLine(ns.Color("simulated", ns.Craft.StepText(step, row)))
@@ -647,10 +675,28 @@ local function showRewards(own, order)
 	end
 end
 
+-- The step an order's craft button does now (see Craft.Step), or nil for no
+-- button. Kept off concentration, a started order that needs it isn't crafted
+-- from here.
+local function shownStep(row)
+	local step = ns.Craft.Step(row, isReady(row))
+	if step == "craft" and keptOffConcentration(row) then return nil end
+	return step
+end
+
+-- Whether an order gets the shopping button: only while something's missing (an
+-- order you have everything for has nothing to buy, even if it put things on the
+-- list before), and not while it has a craft button or is kept off concentration.
+local function hasCart(row, step)
+	return ns.Shopping.ListTarget() ~= nil and step == nil and not keptOffConcentration(row)
+		and ns.Shopping.Total(row.model.missing) > 0
+end
+
 -- What a known order's Materials column says.
 local function materialsText(row, step)
 	if step == "complete" then return ns.Color("good", "Crafted") end
 	if step == "crafting" then return ns.Color("good", "Crafting...") end
+	if keptOffConcentration(row) then return ns.Color("muted", "No concentration") end
 	if step == "craft" then return ns.Color("good", "Started") end
 	if row.plan and row.plan.unreachable then return ns.Color("loss", "Can't craft") end
 	local missing = ns.Shopping.Total(row.model.missing)
@@ -707,15 +753,12 @@ local function drawRow(row)
 	local concentration = concentrationText(data)
 	own.profit.text:SetText(concentration ~= "" and (profit .. "   " .. concentration) or profit)
 
-	local step = ns.Craft.Step(data, isReady(data))
+	local step = shownStep(data)
 	own.materials.step = step
 	own.materials.text:SetText(materialsText(data, step))
 
-	-- The shopping button, only while something's missing: an order you have
-	-- everything for has nothing to buy, even if it put things on the list before.
 	local tsm = usingTSM()
-	local canShop = ns.Shopping.ListTarget() ~= nil and step == nil and ns.Shopping.Total(data.model.missing) > 0
-	own.shop:SetShown(canShop)
+	own.shop:SetShown(hasCart(data, step))
 	own.shop.data = data
 	-- Lit while the order is in the TSM search.
 	if tsm and inTSMSearch(data) then own.shop:LockHighlight() else own.shop:UnlockHighlight() end
@@ -732,63 +775,137 @@ end
 -- Headers, buttons and footer
 ---------------------------------------------------------------------------
 
--- Our headers, in place of Blizzard's three, in its header style. Profit sorts
--- the list; the others don't.
+-- Our headers, in place of Blizzard's three, in its header style. Profit and
+-- Actions sort the list; the others don't.
 local HEADERS = {
-	profit = { text = "Profit", sorts = true, tip = "Commission after the cut, plus the rewards that sell, minus the "
+	profit = { text = "Profit", sorts = "profit", tip = "Commission after the cut, plus the rewards that sell, minus the "
 		.. "materials you supply, at the qualities that reach the order's minimum quality. The concentration it "
 		.. "takes is shown after it." },
 	rewards = { text = "Rewards", tip = "What the patron gives besides the commission. Green counts give "
 		.. "profession knowledge. Point at one for its value." },
 	materials = { text = "Materials", tip = "Whether you have everything for the order, or how much you're missing. "
 		.. "Point at it for the list." },
-	actions = { text = "Actions", tip = "The cart adds what's missing to the shopping list (Shift-click takes it "
-		.. "back off). When you have everything, the next button starts, crafts and completes the order, one "
+	actions = { text = "Actions", sorts = "actions", tip = "The cart adds what's missing to the shopping list (Shift-click "
+		.. "takes it back off). When you have everything, the next button starts, crafts and completes the order, one "
 		.. "click per step." },
 }
 local headerBar, headers
 
--- Sorting by profit. The game's list is sorted once each time it fills in
--- (`sortedRows` is the list sorted last), not each time the profits change, so
--- the rows don't jump around while you shop.
+-- Sorting by profit or by what you can do with each order (ns.db.patronSort:
+-- "desc" or "asc" profit, "craftable" or "shoppable" first). The game's list is
+-- sorted once each time it fills in (`sortedRows` is the list sorted last), not
+-- each time the orders change, so the rows don't jump around while you craft
+-- and shop.
 local sortedRows
 
-local function profitBefore(a, b)
+-- Where an order goes when sorting by Actions, lowest first: the order you've
+-- started and those you have everything for, the ones with a cart, then the
+-- rest (no concentration, can't craft). "Shoppable first" swaps the first two.
+local function actionRank(row)
+	local step = shownStep(row)
+	local craftable = step == "craft" or step == "crafting" or step == "complete" or isReady(row)
+	local shoppable = hasCart(row, step)
+	local started = step ~= nil and step ~= "claim"
+	if ns.db.patronSort == "shoppable" then
+		if shoppable then return 1 end
+		if craftable then return started and 2 or 3 end
+		return 4
+	end
+	if craftable then return started and 1 or 2 end
+	if shoppable then return 3 end
+	return 4
+end
+
+local function sortBefore(a, b)
 	local aRow, bRow = state.byID[a.orderID], state.byID[b.orderID]
-	-- Orders you can craft first; those whose recipe you don't know have no profit.
+	-- Orders whose recipe you don't know go last: they have no profit or actions.
 	if (aRow ~= nil) ~= (bRow ~= nil) then return aRow ~= nil end
-	if aRow and aRow.model.total ~= bRow.model.total then
-		if ns.db.patronSort == "asc" then return aRow.model.total < bRow.model.total end
-		return aRow.model.total > bRow.model.total
+	if aRow then
+		local mode = ns.db.patronSort
+		if mode == "craftable" or mode == "shoppable" then
+			local aRank, bRank = actionRank(aRow), actionRank(bRow)
+			if aRank ~= bRank then return aRank < bRank end
+		end
+		if aRow.model.total ~= bRow.model.total then
+			if mode == "asc" then return aRow.model.total < bRow.model.total end
+			return aRow.model.total > bRow.model.total
+		end
 	end
 	return a.orderID < b.orderID
 end
 
-local function sortByProfit()
+local function sortList()
 	if not ns.db.patronSort then return end
 	local rows = ns.Blizzard.OrderListRows()
 	if rows and rows ~= sortedRows then
 		sortedRows = rows
-		ns.Blizzard.SortOrderList(profitBefore)
+		ns.Blizzard.SortOrderList(sortBefore)
 	end
 end
 
--- Clicking Profit: most profit first, then least profit first, and back.
-local function toggleProfitSort()
-	ns.db.patronSort = ns.db.patronSort == "desc" and "asc" or "desc"
+local function setSort(mode)
+	ns.db.patronSort = mode
 	sortedRows = nil
 	Patron.Redraw()
 end
 
--- The arrow on our Profit header, like Blizzard's on the header it sorts by.
-local function updateProfitArrow()
-	local arrow = headers and headers.profit and headers.profit.Arrow
-	if not arrow then return end
-	arrow:SetShown(ns.db.patronSort and true or false)
-	if ns.db.patronSort == "asc" then
-		arrow:SetTexCoord(0, 1, 1, 0)
+-- Clicking a header: Profit is most profit first, then least first, and back;
+-- Actions is craftable first, then shoppable first, and back.
+local function toggleSort(kind)
+	local mode = ns.db.patronSort
+	if kind == "profit" then
+		setSort(mode == "desc" and "asc" or "desc")
 	else
-		arrow:SetTexCoord(0, 1, 0, 1)
+		setSort(mode == "craftable" and "shoppable" or "craftable")
+	end
+end
+
+-- What a sorting header's tooltip says it does, and what it does now.
+local SORT_HINTS = {
+	profit = { "Click: sort by profit, most first; again for least first",
+		desc = "Sorted: most profit first", asc = "Sorted: least profit first" },
+	actions = { "Click: craftable orders first; again for the ones to shop for first",
+		craftable = "Sorted: craftable first", shoppable = "Sorted: to shop for first" },
+}
+
+local SORT_ICON_SIZE = 14
+
+-- Shows the action button picture `name` (see ACTION_ICONS) on a texture.
+local function setIconTexture(texture, name)
+	local icon = ACTION_ICONS[name]
+	for _, atlas in ipairs(icon.atlases or {}) do
+		if C_Texture.GetAtlasInfo(atlas) then
+			texture:SetAtlas(atlas)
+			texture:SetTexCoord(0, 1, 0, 1)
+			return
+		end
+	end
+	texture:SetTexture(icon.file)
+	texture:SetTexCoord(unpack(ICON_CROP))
+end
+
+-- What our sorting headers show while they sort the list. Profit: Blizzard's
+-- arrow, down for most profit first, up for least. Actions: the button it sorts
+-- by, the hammer for craftable first or the cart for shoppable first.
+local function updateSortArrows()
+	if not headers then return end
+	local mode = ns.db.patronSort
+	local arrow = headers.profit and headers.profit.Arrow
+	if arrow then
+		arrow:SetShown(mode == "desc" or mode == "asc")
+		if mode == "asc" then arrow:SetTexCoord(0, 1, 1, 0) else arrow:SetTexCoord(0, 1, 0, 1) end
+	end
+	local actions = headers.actions
+	if actions then
+		if actions.Arrow then actions.Arrow:Hide() end
+		if not actions.sortIcon then
+			actions.sortIcon = actions:CreateTexture(nil, "OVERLAY")
+			actions.sortIcon:SetSize(SORT_ICON_SIZE, SORT_ICON_SIZE)
+			actions.sortIcon:SetPoint("LEFT", actions:GetFontString(), "RIGHT", 3, 0)
+		end
+		local sorting = mode == "craftable" or mode == "shoppable"
+		actions.sortIcon:SetShown(sorting)
+		if sorting then setIconTexture(actions.sortIcon, mode == "craftable" and "craft" or "shop") end
 	end
 end
 
@@ -802,13 +919,16 @@ local function createHeaders(parent)
 			local header = CreateFrame("Button", nil, headerBar, "ProfessionsCrafterTableHeaderStringTemplate")
 			header:SetText(info.text)
 			if header.Arrow then header.Arrow:Hide() end
-			header:SetScript("OnClick", info.sorts and toggleProfitSort or nil)
+			header:SetScript("OnClick", info.sorts and function() toggleSort(info.sorts) end or nil)
 			header:SetScript("OnEnter", function(self)
 				GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
 				GameTooltip:SetText(info.text)
 				GameTooltip:AddLine(info.tip, 1, 1, 1, true)
-				if info.sorts then
-					GameTooltip:AddLine(ns.Color("simulated", "Click: sort by profit, most first; again for least first"))
+				local hints = info.sorts and SORT_HINTS[info.sorts]
+				if hints then
+					GameTooltip:AddLine(" ")
+					if hints[ns.db.patronSort or ""] then GameTooltip:AddLine(hints[ns.db.patronSort], 0.53, 1, 0.53) end
+					GameTooltip:AddLine(ns.Color("simulated", hints[1]))
 				end
 				GameTooltip:Show()
 			end)
@@ -884,9 +1004,9 @@ local function drawHeaders()
 	layoutHeaders(first, timeHeader)
 	-- Above the bar, so it still takes the clicks that sort by it.
 	timeHeader:SetFrameLevel(headerBar:GetFrameLevel() + 2)
-	-- Sorted by profit: only our arrow shows.
+	-- Sorted by our headers: only their markers show.
 	ns.Blizzard.ShowSortArrows(not ns.db.patronSort)
-	updateProfitArrow()
+	updateSortArrows()
 end
 
 local addProfitableButton, addAllButton, footer
@@ -981,6 +1101,10 @@ local function openGearMenu(owner)
 		least:SetTooltip(function(tooltip)
 			GameTooltip_SetTitle(tooltip, ns.LEAST_CONCENTRATION)
 			tooltip:AddLine(ns.LEAST_CONCENTRATION_TIP, 1, 1, 1, true)
+			if ns.db.concentrationFor == "none" then
+				tooltip:AddLine("Patron orders don't use concentration now (Don't use concentration, above). "
+					.. "It still picks the materials on the crafting page.", 1, 0.82, 0, true)
+			end
 		end)
 
 		ns.Shopping.AddShopWithChoice(root)
@@ -1121,7 +1245,7 @@ function Patron.Redraw()
 		state.rows, state.unknown, state.concentration = listOrders()
 		for _, row in ipairs(state.rows) do state.byID[row.order.orderID] = row end
 		for _, row in ipairs(state.unknown) do state.unknownByID[row.order.orderID] = true end
-		sortByProfit()
+		sortList()
 	end
 	ns.Blizzard.ForEachOrderRow(drawRow)
 	-- After the rows: the headers line up with what they measure.
