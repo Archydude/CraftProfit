@@ -43,7 +43,7 @@ Craft Profit is a **lightweight** panel next to your profession window that answ
 What the item sells for at the quality you'll get, minus the 5% auction house cut and your materials. On orders: the commission after the consortium cut, minus only the materials **you** supply, plus sellable patron rewards.
 
 ### Which patron order pays best?
-Blizzard's Patron tab shows each order's **profit**, its **rewards** (knowledge, Moxie, items) and what **materials** you're missing, priced with the cheapest ranks that meet its minimum quality. One click shops for an order, or **Add profitable** for all the good ones. Concentration goes where it earns the most, or to knowledge, and each ready order starts, crafts and completes with one click per step.
+Blizzard's Patron tab shows each order's **profit**, **rewards** (knowledge, Moxie, items) and missing **materials**, priced with the cheapest ranks that meet its minimum quality. Sort by profit or by what you can craft now. One click shops for an order, or **Add profitable** for all the good ones. Concentration goes where it earns the most, to knowledge, or nowhere, and each ready order starts, crafts and completes with one click per step.
 
 ### The most profitable materials, put in for you
 Tick **Use Most Profitable Reagents** on the crafting page or order form: recipes get the materials for the rank that earns the most, orders the cheapest that reach their minimum quality. **Optimize Concentration** uses the least concentration instead.
@@ -72,11 +72,11 @@ Hover an item to see each character's **Craft Rank**: the highest rank they can 
 
 ## B. Upload File form
 
-**File:** `dist\CraftProfit-1.21.1.zip`
+**File:** `dist\CraftProfit-1.22.0.zip`
 
 **Display name**
 ```
-Craft Profit 1.21.1
+Craft Profit 1.22.0
 ```
 
 **Release type:** `Release`
@@ -85,6 +85,10 @@ Craft Profit 1.21.1
 
 **Changelog** (paste only the newest part; paste older parts too if they never went up)
 ```markdown
+1.22.0
+- New choice for **Spend concentration on**: **Don't use concentration**, in the options and the gear under the Patron tab. Patron orders then never spend concentration: an order that needs it to reach its minimum quality shows its profit in grey and **No concentration**, gets no cart or craft button, and Add profitable and Add all skip it. On its order form, Use Most Profitable Reagents leaves the materials alone. Orders that reach their minimum without concentration work as usual, and the crafting page isn't affected.
+- Click the **Actions** header to put the orders you can craft now first; click it again for the ones to shop for first. Each group goes by profit, and the header shows the hammer or the cart while it sorts.
+
 1.21.1
 - Fixed: when an order crafted from the Patron tab procced resourcefulness, the bonus gold and the gold border flash didn't show.
 

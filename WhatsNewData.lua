@@ -2,10 +2,14 @@
 ArchdudeWhatsNew:Register("CraftProfit", {
 	title = "Craft Profit",
 	icon = "Interface\\Icons\\INV_Misc_Coin_02",
-	version = "1.21.1",
+	version = "1.22.0",
 	seen = "CraftProfitWhatsNew",
 	saved = { "CraftProfitDB", "CraftProfitCharDB" },
 	changes = {
+		{ "1.22.0",
+			"New choice for |cffffd100Spend concentration on|r: |cffffd100Don't use concentration|r, in the options and the gear under the Patron tab. Patron orders then never spend concentration: an order that needs it to reach its minimum quality shows its profit in grey and |cffffd100No concentration|r, gets no cart or craft button, and Add profitable and Add all skip it. On its order form, Use Most Profitable Reagents leaves the materials alone. Orders that reach their minimum without concentration work as usual, and the crafting page isn't affected.",
+			"Click the |cffffd100Actions|r header to put the orders you can craft now first; click it again for the ones to shop for first. Each group goes by profit, and the header shows the hammer or the cart while it sorts.",
+		},
 		{ "1.21.1",
 			"Fixed: when an order crafted from the Patron tab procced resourcefulness, the bonus gold and the gold border flash didn't show.",
 		},
@@ -44,9 +48,6 @@ ArchdudeWhatsNew:Register("CraftProfit", {
 			"Fixed: on a crafting order with a minimum quality, the Shopping list could add a rank that doesn't reach it (usually the cheapest). It now adds the ranks that do, the same ones the Patron orders list picks.",
 			"Fixed: optional and finishing reagents that raise your skill no longer count toward an order's minimum quality in Craft Profit's suggestions. With one in the form, a cheaper rank could be suggested that only reached the minimum thanks to it.",
 			"Optimize Concentration on the crafting order form fades while Use Most Profitable Reagents is off, since it doesn't change the form then. It still sets the Patron orders list's picks.",
-		},
-		{ "1.16.1",
-			"Fixed: the game could stutter for a few seconds after you opened your profession window, while Craft Rank updated. It now updates in the background without slowing the game down.",
 		},
 	},
 })
