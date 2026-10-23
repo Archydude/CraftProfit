@@ -36,25 +36,25 @@ Craft Profit answers one question in gold: **profit or loss?** A panel next to y
 - **Patron orders** priced and crafted right in Blizzard's Patron tab
 - **Crafting strategy**: highest rank, most profit or cheapest materials
 - **Shopping list** for what you're missing
-- **Craft Rank** on tooltips, for all your characters
+- **Craft Rank** on tooltips
 
 ### Crafts and orders
-What the item sells for at the rank you'll get, minus the 5% auction house cut and your materials. The panel shows what a craft makes on average with multicraft and resourcefulness, sized from your own crafts, with the profit without procs under it. On orders: the commission after the cut, minus the materials **you** supply, plus sellable rewards.
+What the item sells for at the rank you'll get, minus the 5% auction house cut and your materials. The panel shows what a craft makes on average with multicraft and resourcefulness, and without them. On orders: the commission after the cut, minus the materials **you** supply, plus sellable rewards.
 
 ### What should I craft?
-**Best crafts** lists every recipe you know, most profitable first, with how many you can make, how many are listed and how many sell per day. Filter by gear, decor, materials and more, then click one to open it.
+**Best crafts** lists every recipe you know, most profitable first, with how many you can make, how many are listed and how many sell per day. Filter by gear, decor, materials and more, ignore any whose price makes no sense, and click one to open it.
 
 ### Which rank, which materials?
 Pick a **crafting strategy**: the highest rank you can make (the default), the most profit, or the cheapest materials. Craft Profit puts those materials in for you, prices what you're missing at them, and shops for exactly those.
 
 ### Patron orders
-Blizzard's Patron tab shows each order's **profit**, **rewards** and missing **materials**. Sort by profit, shop for one order or every profitable one, and start, craft and complete each with one click per step.
+Blizzard's Patron tab shows each order's **profit**, **rewards** and missing **materials**. Sort by profit, shop for the profitable ones, and craft each with one click per step.
 
 ### Shopping list
-One click adds what you're missing to an **Auctionator** shopping list or a **TSM** search. The Auctionator list checks itself off as materials come in.
+One click adds what you're missing to an **Auctionator** shopping list or a **TSM** search. The Auctionator list checks itself off as materials come in, and Craft Profit reminds you to scan when its prices get old.
 
 ### Procs and luck
-Multicraft and resourcefulness pop up as bonus gold, a session total adds up what you've made, and the **luck** meter shows whether your procs beat the odds.
+Procs pop up as bonus gold, a session total adds up what you've made, and the **luck** meter shows whether your procs beat the odds.
 
 ### Good to know
 - Needs **TradeSkillMaster** or **Auctionator** for prices.
@@ -68,11 +68,11 @@ Multicraft and resourcefulness pop up as bonus gold, a session total adds up wha
 
 ## B. Upload File form
 
-**File:** `dist\CraftProfit-2.0.0.zip`
+**File:** `dist\CraftProfit-2.1.0.zip`
 
 **Display name**
 ```
-Craft Profit 2.0.0
+Craft Profit 2.1.0
 ```
 
 **Release type:** `Release`
@@ -81,6 +81,10 @@ Craft Profit 2.0.0
 
 **Changelog** (paste only the newest part; paste older parts too if they never went up)
 ```markdown
+2.1.0
+- **Ignore recipes in Best crafts:** click the eye at the end of a row (or right-click the row) to hide a recipe whose price makes no sense. **Show ignored recipes** in the Filter menu shows them again, in grey, with an undo button on each; **Stop ignoring all** brings them all back. The ignore list is the same for all your characters.
+- **Reminders to scan the auction house**, with Auctionator prices: once its last scan is over a day old, opening the auction house reminds you in chat to run a full scan, and the footers of the panel and the Best crafts list say **last scan 2 days ago** in red. Over 3 days old, opening Best crafts shows an **Old prices** notice, once a session. Turn the reminders off with **Remind me to scan the auction house** in the options, under Prices.
+
 2.0.0
 - **Best crafts:** a list of every recipe you know in the profession shown, most profitable first. Open it with **Best crafts** at the top of the panel, the new minimap button or `/craftprofit best`. Each row shows the profit at the rank you'd make, how many you can craft with what you own (**Have**), how many are listed (from Auctionator), and with TSM how many sell per day in your region (without TSM, how many you sold in the last 14 days). Hover a row for its materials, what concentration would add, and each rank's price and listings. Click a row to open its recipe; the cart shops for it. Search, sort by any column, and filter by kind of item (gear, decor, materials...) or to profitable recipes only.
 - **Crafting strategy:** a new option for what the crafting page crafts: **Highest rank, cheapest materials** (the new default), **Most profit**, or **Cheapest materials**. It picks the materials the checkbox and the panel's blue row put in, prices the materials you're missing, decides which qualities the shopping list buys, and ranks the Best crafts list. Switch it in the options, at the bottom of the Best crafts list or from the minimap button. Patron orders keep their own rule: the cheapest materials that reach the order's minimum quality.

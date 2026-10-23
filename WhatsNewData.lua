@@ -2,10 +2,14 @@
 ArchdudeWhatsNew:Register("CraftProfit", {
 	title = "Craft Profit",
 	icon = "Interface\\Icons\\INV_Hammer_20",
-	version = "2.0.0",
+	version = "2.1.0",
 	seen = "CraftProfitWhatsNew",
 	saved = { "CraftProfitDB", "CraftProfitCharDB" },
 	changes = {
+		{ "2.1.0",
+			"|cffffd100Ignore recipes in Best crafts:|r click the eye at the end of a row (or right-click the row) to hide a recipe whose price makes no sense. |cffffd100Show ignored recipes|r in the Filter menu shows them again, in grey, with an undo button on each; |cffffd100Stop ignoring all|r brings them all back. The ignore list is the same for all your characters.",
+			"|cffffd100Reminders to scan the auction house|r, with Auctionator prices: once its last scan is over a day old, opening the auction house reminds you in chat to run a full scan, and the footers of the panel and the Best crafts list say |cffffd100last scan 2 days ago|r in red. Over 3 days old, opening Best crafts shows an |cffffd100Old prices|r notice, once a session. Turn the reminders off with |cffffd100Remind me to scan the auction house|r in the options, under Prices.",
+		},
 		{ "2.0.0",
 			"|cffffd100Best crafts:|r a list of every recipe you know in the profession shown, most profitable first. Open it with |cffffd100Best crafts|r at the top of the panel, the new minimap button or |cffffd100/craftprofit best|r. Each row shows the profit at the rank you'd make, how many you can craft with what you own (|cffffd100Have|r), how many are listed (from Auctionator), and with TSM how many sell per day in your region (without TSM, how many you sold in the last 14 days). Hover a row for its materials, what concentration would add, and each rank's price and listings. Click a row to open its recipe; the cart shops for it. Search, sort by any column, and filter by kind of item (gear, decor, materials...) or to profitable recipes only.",
 			"|cffffd100Crafting strategy:|r a new option for what the crafting page crafts: |cffffd100Highest rank, cheapest materials|r (the new default), |cffffd100Most profit|r, or |cffffd100Cheapest materials|r. It picks the materials the checkbox and the panel's blue row put in, prices the materials you're missing, decides which qualities the shopping list buys, and ranks the Best crafts list. Switch it in the options, at the bottom of the Best crafts list or from the minimap button. Patron orders keep their own rule: the cheapest materials that reach the order's minimum quality.",
@@ -53,9 +57,6 @@ ArchdudeWhatsNew:Register("CraftProfit", {
 		},
 		{ "1.18.1",
 			"Fixed: when a proc's bonus gold popped up and floated away, the gold, silver and copper coin icons stayed behind. They now move with the amount.",
-		},
-		{ "1.18.0",
-			"Resourcefulness on the Patron orders list: when an order you craft from the list procs, the bonus gold pops up over the list and its border flashes gold, like on the panel. The same options turn the animation and the coin sound off.",
 		},
 	},
 })
