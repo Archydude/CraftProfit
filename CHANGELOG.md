@@ -1,5 +1,19 @@
 # Changelog
 
+## 2.0.0
+- **Best crafts:** a list of every recipe you know in the profession shown, most profitable first. Open it with **Best crafts** at the top of the panel, the new minimap button or `/craftprofit best`. Each row shows the profit at the rank you'd make, how many you can craft with what you own (**Have**), how many are listed (from Auctionator), and with TSM how many sell per day in your region (without TSM, how many you sold in the last 14 days). Hover a row for its materials, what concentration would add, and each rank's price and listings. Click a row to open its recipe; the cart shops for it. Search, sort by any column, and filter by kind of item (gear, decor, materials...) or to profitable recipes only.
+- **Crafting strategy:** a new option for what the crafting page crafts: **Highest rank, cheapest materials** (the new default), **Most profit**, or **Cheapest materials**. It picks the materials the checkbox and the panel's blue row put in, prices the materials you're missing, decides which qualities the shopping list buys, and ranks the Best crafts list. Switch it in the options, at the bottom of the Best crafts list or from the minimap button. Patron orders keep their own rule: the cheapest materials that reach the order's minimum quality.
+- **Expected profit:** the panel's main line is now what a craft makes on average with multicraft and resourcefulness, with **Without procs** under it. Hover it for each proc's chance, size and what it adds. Your chances come from the game; Craft Profit learns how big your procs are from your own crafts. The Best crafts list ranks by expected profit too (**Count multicraft and resourcefulness**, on by default).
+- **Luck:** after 5 crafts, the session total shows how much more (or less) your procs made than expected, like **Luck +14%**, on the panel and the Patron tab.
+- After a proc, **This craft made** under the Procs section says what that craft really made, and the bonus gold pops up from it. The profit lines stay the forecast.
+- **Minimap button:** click for your last profession's Best crafts, right-click for your professions, the crafting strategy and the options, hover for this session's total. It's also in the minimap's addon menu; hide it in the options or with `/craftprofit minimap`.
+- Missing materials are priced at the quality your crafting strategy picks, and the shopping list buys that quality, so what you buy makes the rank the panel shows.
+- A rank is never priced above a better one: when a lower rank is listed for more than a better rank sells for, it's priced as the better rank sells, and the panel says so.
+- **Use Most Profitable Reagents** is now **Use Craft Profit Reagents**, and on the crafting page the blue row is **Use Craft Profit materials**. It also shows when the form makes a lower rank than you can, even if the better rank costs more.
+- The options are split into pages: Craft Profit (crafting strategy, minimap button and prices), then Panel, Shopping list, Patron orders and Tooltips under its **+**.
+- Fewer stutters in the profession window, especially on recipes with many material qualities.
+- Craft Profit's icon is now a blacksmith's hammer.
+
 ## 1.22.0
 - New choice for **Spend concentration on**: **Don't use concentration**, in the options and the gear under the Patron tab. Patron orders then never spend concentration: an order that needs it to reach its minimum quality shows its profit in grey and **No concentration**, gets no cart or craft button, and Add profitable and Add all skip it. On its order form, Use Most Profitable Reagents leaves the materials alone. Orders that reach their minimum without concentration work as usual, and the crafting page isn't affected.
 - Click the **Actions** header to put the orders you can craft now first; click it again for the ones to shop for first. Each group goes by profit, and the header shows the hammer or the cart while it sorts.
