@@ -21,6 +21,7 @@ local function onChanged()
 	ns.Panel.Place()
 	ns.Panel.Refresh()
 	ns.Patron.Redraw()
+	ns.BestCrafts.Reprice(true)
 	ns.BestCraftsList.Refresh()
 end
 

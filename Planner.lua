@@ -16,11 +16,19 @@ ns.Planner = Planner
 local MAX_MIXES = 243
 -- Cost given to a material with no price, so mixes with it are tried last.
 local UNPRICED = 1e12
+-- Milliseconds the crafting page's plan may spend asking the game in one frame. A
+-- recipe with more mixes than that is worked out over the next frames.
+local PLAN_BUDGET_MS = 5
 
 -- orderID -> plan, until the order list changes.
 local plans = {}
--- The crafting page's plan, and what it was made for (see craftKey).
+-- The crafting page's plan, and what it was made for (see Planner.ForCraft).
 local craftPlan, craftPlanKey
+-- What the game predicted for each mix of qualities. What you own doesn't change
+-- that, so it outlasts the plans: until your skill changes (see skillKey) or the
+-- form's other slots do. context -> mix (see mixKey) -> { quality, concentration,
+-- currencyID }, or false when the game couldn't say.
+local predictions = {}
 
 -- For testing (/craftprofit testquality <rank>): treat every patron order as
 -- needing at least this rank. Not saved; a /reload turns it off.
@@ -38,6 +46,30 @@ end
 function Planner.Reset()
 	wipe(plans)
 	craftPlan, craftPlanKey = nil, nil
+end
+
+-- Your skill in the recipe's profession, gear and buffs included, as text: the
+-- game's answers change with it.
+local function skillKey(recipeID)
+	local info = C_TradeSkillUI.GetProfessionInfoByRecipeID(recipeID)
+	return info and format("%d+%d", info.skillLevel or 0, info.skillModifier or 0) or "?"
+end
+
+-- The predictions kept for a context (see predictions).
+local function predictionsFor(context)
+	local list = predictions[context]
+	if not list then
+		list = {}
+		predictions[context] = list
+	end
+	return list
+end
+
+-- A mix as text: the itemID it picks in each slot.
+local function mixKey(slots, mix)
+	local parts = {}
+	for i, entry in ipairs(slots) do parts[i] = entry.options[mix[i]].itemID end
+	return table.concat(parts, ",")
 end
 
 -- The slots you fill that come in several qualities:
@@ -211,9 +243,18 @@ function Planner.ForOrder(order, schematic, provided)
 
 	local mixes = mixesOf(slots)
 	local least = ns.db.leastConcentration
+	local known = predictionsFor(format("order:%s:%s", tostring(order.orderID), skillKey(order.spellID)))
 	local plan, withConcentration, predicted, best
 	for _, mix in ipairs(mixes) do
-		local quality, cost, currencyID = predict(order, schematic, slots, mix)
+		local key = mixKey(slots, mix)
+		local found = known[key]
+		if found == nil then
+			local quality, cost, currencyID = predict(order, schematic, slots, mix)
+			found = quality and { quality, cost, currencyID } or false
+			known[key] = found
+		end
+		local quality, cost, currencyID
+		if found then quality, cost, currencyID = found[1], found[2], found[3] end
 		if quality then
 			predicted = true
 			if quality >= minQuality then
@@ -241,11 +282,11 @@ function Planner.ForOrder(order, schematic, provided)
 	return plan
 end
 
--- What a crafting page plan depends on besides what you own: the recipe, its
--- concentration, the option, and what's in the slots the plan doesn't pick
+-- What the game's answers for a crafting page plan depend on: the recipe, your
+-- skill, its concentration, and what's in the slots the plan doesn't pick
 -- (optional and finishing reagents can change the rank).
-local function craftKey(recipeID, schematic, transaction, slots, concentrating)
-	local parts = { recipeID, tostring(concentrating), tostring(ns.db.leastConcentration), ns.db.craftStrategy }
+local function craftContext(recipeID, schematic, transaction, slots, concentrating)
+	local parts = { "craft", recipeID, skillKey(recipeID), tostring(concentrating) }
 	local picked = {}
 	for _, entry in ipairs(slots) do picked[entry.slotIndex] = true end
 	for slotIndex in ipairs(schematic.reagentSlotSchematics) do
@@ -325,7 +366,9 @@ function Planner.Choose(options, prices)
 	return Planner.HighestRank(options)
 end
 
-local function planCraft(recipeInfo, schematic, transaction, slots)
+-- The plan, or nil. Also true when this frame's share of asking the game
+-- (PLAN_BUDGET_MS) ran out before every mix was asked about.
+local function planCraft(recipeInfo, schematic, transaction, slots, context)
 	local function planOf(mix, quality, concentration)
 		local plan = { quality = quality, concentration = concentration }
 		plan.overrides, plan.picks = picksOf(slots, mix)
@@ -342,10 +385,21 @@ local function planCraft(recipeInfo, schematic, transaction, slots)
 	-- the one that takes the least (mixes come cheapest first, so a later one only
 	-- wins on less concentration).
 	local least = ns.db.leastConcentration
+	local known = predictionsFor(context)
+	local deadline = debugprofilestop() + PLAN_BUDGET_MS
 	local byQuality = {}
 	for _, mix in ipairs(mixesOf(slots)) do
-		local overrides = picksOf(slots, mix)
-		local quality, concentration = ns.Blizzard.PredictQuality(recipeInfo.recipeID, schematic, transaction, overrides)
+		local key = mixKey(slots, mix)
+		local predicted = known[key]
+		if predicted == nil then
+			if debugprofilestop() > deadline then return nil, true end
+			local overrides = picksOf(slots, mix)
+			local quality, concentration = ns.Blizzard.PredictQuality(recipeInfo.recipeID, schematic, transaction, overrides)
+			predicted = quality and { quality, concentration } or false
+			known[key] = predicted
+		end
+		local quality, concentration
+		if predicted then quality, concentration = predicted[1], predicted[2] end
 		if quality then
 			local found = byQuality[quality]
 			if not found or (least and concentration and found.concentration and concentration < found.concentration) then
@@ -388,13 +442,27 @@ end
 -- concentration": the way that takes the least, the cheapest of those). For "Most
 -- profit" with no sale price at any rank (noPrice), the cheapest mix that keeps
 -- the form's rank. { overrides, picks, quality, concentration, noPrice }, or nil.
+-- Also true while a recipe with many mixes is still being worked out: ask again
+-- next frame.
 function Planner.ForCraft(ctx)
 	local recipeInfo, schematic, transaction = ctx.recipeInfo, ctx.schematic, ctx.transaction
 	local slots = qualitySlots(schematic, {})
 	if #slots == 0 then return end
-	local key = craftKey(recipeInfo.recipeID, schematic, transaction, slots, ns.Blizzard.IsConcentrating(transaction))
+	local context = craftContext(recipeInfo.recipeID, schematic, transaction, slots, ns.Blizzard.IsConcentrating(transaction))
+	local key = format("%s:%s:%s", context, tostring(ns.db.leastConcentration), ns.db.craftStrategy)
 	if key ~= craftPlanKey then
-		craftPlan, craftPlanKey = planCraft(recipeInfo, schematic, transaction, slots) or false, key
+		local plan, pending = planCraft(recipeInfo, schematic, transaction, slots, context)
+		if pending then return nil, true end
+		craftPlan, craftPlanKey = plan or false, key
 	end
 	return craftPlan or nil
 end
+
+-- Specializations and profession gear change the game's answers.
+local events = CreateFrame("Frame")
+events:RegisterEvent("TRAIT_CONFIG_UPDATED")
+events:RegisterEvent("PROFESSION_EQUIPMENT_CHANGED")
+events:SetScript("OnEvent", function()
+	wipe(predictions)
+	Planner.Reset()
+end)

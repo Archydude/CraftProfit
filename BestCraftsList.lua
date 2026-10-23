@@ -97,8 +97,7 @@ end
 
 local function matches(row, search)
 	if search == "" then return true end
-	local name = (row.itemName or row.entry.name or ""):lower()
-	return name:find(search, 1, true) ~= nil
+	return row.sortName:find(search, 1, true) ~= nil
 end
 
 -- The column the list sorts by. A sort by the demand column that's hidden
@@ -114,7 +113,7 @@ end
 local function sortRows(rows)
 	local key, ascending = sortKey(), ns.db.bestSortAscending
 	local valueOf = SORT_VALUES[key]
-	local function nameOf(row) return (row.itemName or row.entry.name or ""):lower() end
+	local function nameOf(row) return row.sortName end
 	table.sort(rows, function(a, b)
 		if key == "name" then
 			local an, bn = nameOf(a), nameOf(b)
@@ -628,7 +627,10 @@ local function createList()
 	-- Item names arrive from the server after first use; what you own changes Have.
 	list:RegisterEvent("GET_ITEM_INFO_RECEIVED")
 	list:RegisterEvent("BAG_UPDATE_DELAYED")
-	list:SetScript("OnEvent", BestCraftsList.Refresh)
+	list:SetScript("OnEvent", function(_, event)
+		if event == "BAG_UPDATE_DELAYED" then ns.BestCrafts.Reprice() end
+		BestCraftsList.Refresh()
+	end)
 end
 
 ---------------------------------------------------------------------------

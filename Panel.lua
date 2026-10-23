@@ -525,9 +525,31 @@ local function buildModel()
 		return ctx and ns.Model.Order(ctx)
 	elseif page == "craft" and db.crafting then
 		local ctx = ns.Blizzard.CraftContext()
-		return ctx and ns.Model.Craft(ctx)
+		if ctx then return ns.Model.Craft(ctx) end
 	end
 end
+
+-- Every item the model shows, by itemID: its name arriving from the server
+-- redraws the panel.
+local function itemsOf(model)
+	local items = {}
+	local function add(list)
+		for _, entry in pairs(list or {}) do
+			if entry.itemID then items[entry.itemID] = true end
+		end
+	end
+	add(model.materials)
+	add(model.missing)
+	add(model.rewards)
+	add(model.cheaper)
+	add(model.best and model.best.list)
+	if model.output and model.output.link then
+		local itemID = C_Item.GetItemInfoInstant(model.output.link)
+		if itemID then items[itemID] = true end
+	end
+	return items
+end
+local shownItems = {}
 
 -- A redraw can change the row under the mouse (tracked, simulated...), so its
 -- tooltip is drawn again, or hidden if the row isn't clickable any more.
@@ -549,12 +571,19 @@ end
 function Panel.Render()
 	refreshQueued = false
 	if not frame then return end
+	local model, waiting = buildModel()
+	-- A recipe with many material mixes takes a few frames to work out: the panel
+	-- shows what it had until then.
+	if waiting then
+		Panel.Refresh()
+		return
+	end
 	rowCount, dividerCount, contentHeight, profitRow = 0, 0, 0, nil
 	-- Before the rows, which leave room for it.
 	ns.BestCraftsList.UpdateToggle()
 
-	local model = buildModel()
 	Panel.current = model
+	shownItems = model and itemsOf(model) or {}
 	if model then
 		if model.kind == "order" then drawOrder(model) else drawCraft(model) end
 	end
@@ -656,7 +685,9 @@ local function createFrame()
 	frame:RegisterEvent("GET_ITEM_INFO_RECEIVED")
 	-- The missing materials button follows what you own.
 	frame:RegisterEvent("BAG_UPDATE_DELAYED")
-	frame:SetScript("OnEvent", function(self, event)
+	frame:SetScript("OnEvent", function(self, event, itemID)
+		-- Other items' names (the Best crafts list loads hundreds) change nothing here.
+		if event == "GET_ITEM_INFO_RECEIVED" and not shownItems[itemID] then return end
 		-- What you own changes which materials are the most profitable.
 		if event == "BAG_UPDATE_DELAYED" then ns.Planner.Reset() end
 		if self:IsShown() then Panel.Refresh() end

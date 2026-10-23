@@ -10,6 +10,8 @@ local _, ns = ...
 local Blizzard = {}
 ns.Blizzard = Blizzard
 
+local format = string.format
+
 -- The order the order screen last showed (from its SetOrder).
 local currentOrder
 
@@ -257,6 +259,35 @@ local function skillOf(info)
 	return (info.baseSkill or 0) + (info.bonusSkill or 0)
 end
 
+-- The game's answers this frame. One redraw asks some questions more than once
+-- (the form's own quality, say), and each takes a while. GetTime() stays the same
+-- all frame, so a new frame starts over.
+local answers, answersAt = {}, nil
+
+-- `fn(recipeID, reagents, guid, extra)`, guarded, asked once per frame for the
+-- same arguments. False when the game rejected the question.
+local function ask(fn, recipeID, reagents, guid, extra)
+	local now = GetTime()
+	if answersAt ~= now then
+		wipe(answers)
+		answersAt = now
+	end
+	local parts = { tostring(fn), recipeID, tostring(guid), tostring(extra) }
+	for _, entry in ipairs(reagents) do
+		local reagent = entry.reagent or {}
+		parts[#parts + 1] = format("%s=%sx%s", tostring(entry.dataSlotIndex),
+			tostring(reagent.itemID or reagent.currencyID), tostring(entry.quantity))
+	end
+	local key = table.concat(parts, ":")
+	local answer = answers[key]
+	if answer == nil then
+		local ok, result = pcall(fn, recipeID, reagents, guid, extra)
+		answer = ok and result or false
+		answers[key] = answer
+	end
+	return answer
+end
+
 -- Leaves out the optional and finishing reagents you put in that raise your skill
 -- (found by asking the game without each one). Advice on what to buy or use has
 -- to reach the minimum quality without them: they're used up by the craft, and
@@ -270,8 +301,8 @@ local function withoutBoosters(recipeID, schematic, transaction, reagents, provi
 	end
 	local guid = transaction:GetAllocationItemGUID()
 	local function skillWith(list)
-		local ok, info = pcall(C_TradeSkillUI.GetCraftingOperationInfo, recipeID, list, guid, false)
-		return ok and info and skillOf(info) or nil
+		local info = ask(C_TradeSkillUI.GetCraftingOperationInfo, recipeID, list, guid, false)
+		return info and skillOf(info) or nil
 	end
 
 	local full, kept = nil, {}
@@ -299,13 +330,13 @@ end
 local function operationInfo(recipeID, reagents, transaction)
 	local guid = transaction:GetAllocationItemGUID()
 	local concentrating = transaction.IsApplyingConcentration and transaction:IsApplyingConcentration() or false
-	local ok, info = pcall(C_TradeSkillUI.GetCraftingOperationInfo, recipeID, reagents, guid, concentrating)
-	if not (ok and info) and concentrating then
+	local info = ask(C_TradeSkillUI.GetCraftingOperationInfo, recipeID, reagents, guid, concentrating)
+	if not info and concentrating then
 		-- Changed materials can raise the concentration cost past what you have.
 		concentrating = false
-		ok, info = pcall(C_TradeSkillUI.GetCraftingOperationInfo, recipeID, reagents, guid, false)
+		info = ask(C_TradeSkillUI.GetCraftingOperationInfo, recipeID, reagents, guid, false)
 	end
-	if not (ok and info) then return nil end
+	if not info then return nil end
 	return info, concentrating
 end
 
@@ -356,9 +387,9 @@ function Blizzard.ExpectedOutput(ctx, overrides)
 		qualityID = quality and recipeInfo.qualityIDs[quality]
 	end
 
-	local ok, output = pcall(C_TradeSkillUI.GetRecipeOutputItemData, recipeID, reagents,
+	local output = ask(C_TradeSkillUI.GetRecipeOutputItemData, recipeID, reagents,
 		transaction:GetAllocationItemGUID(), qualityID)
-	if not (ok and output) then return nil, nil, predicted end
+	if not output then return nil, nil, predicted end
 	return output.hyperlink, output.itemID, predicted, qualityID and quality
 end
 
@@ -367,9 +398,9 @@ end
 function Blizzard.OutputAtQuality(recipeInfo, transaction, quality)
 	local qualityID = recipeInfo.qualityIDs and recipeInfo.qualityIDs[quality]
 	if not qualityID then return end
-	local ok, output = pcall(C_TradeSkillUI.GetRecipeOutputItemData, recipeInfo.recipeID,
+	local output = ask(C_TradeSkillUI.GetRecipeOutputItemData, recipeInfo.recipeID,
 		transaction:CreateCraftingReagentInfoTbl(), transaction:GetAllocationItemGUID(), qualityID)
-	if ok and output then return output.hyperlink, output.itemID end
+	if output then return output.hyperlink, output.itemID end
 end
 
 -- Inline icon for a quality, from the game's quality info.

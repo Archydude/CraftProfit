@@ -35,6 +35,7 @@ local isWanted = function() return false end -- whether the list wants a scan no
 ---------------------------------------------------------------------------
 
 local deadline = 0 -- when this frame's share of the scan runs out
+local forgetMarket -- see Pricing
 
 local function pauseIfDue()
 	if debugprofilestop() > deadline then coroutine.yield() end
@@ -186,6 +187,8 @@ function BestCrafts.Scan()
 	local recipeIDs = (C_TradeSkillUI.GetAllRecipeIDs or C_TradeSkillUI.GetFilteredRecipeIDs)()
 	if not recipeIDs or #recipeIDs == 0 then return end
 
+	-- Each opening of the list asks the price addons again.
+	forgetMarket()
 	local run = { professionID = professionID, name = name, total = 0, done = 0, recipes = {}, finished = false }
 	local previous = scan
 	-- Keep showing the last scan of the same profession while this one runs.
@@ -259,20 +262,69 @@ local function groupOf(itemID)
 	return classID and groupOfClass[classID] or "other"
 end
 
--- Prices looked up once per pricing pass (see BestCrafts.Rows).
-local materialPrice, effectiveCost, salePrice
-
 local function memo(fn)
 	local cache = {}
 	return function(itemID, qty)
-		local key = itemID .. ":" .. (qty or 0)
-		local value = cache[key]
+		local byQty = cache[itemID]
+		if not byQty then
+			byQty = {}
+			cache[itemID] = byQty
+		end
+		local value = byQty[qty or 0]
 		if value == nil then
 			value = fn(itemID, qty) or false
-			cache[key] = value
+			byQty[qty or 0] = value
 		end
 		return value or nil
 	end
+end
+
+-- Asking the price addons for hundreds of rows takes a while, so answers are
+-- kept: market ones (prices, Listed, Sells/day) until a new scan or an option
+-- changes, and ones that follow what you own until your bags change. See
+-- BestCrafts.Reprice.
+local materialPrice, salePrice, market -- market: link -> { listed, listedAge, soldPerDay }
+local effectiveCost, owned
+-- Rows priced so far: entry -> row (see priceEntry).
+local priced = setmetatable({}, { __mode = "k" })
+
+function forgetMarket()
+	materialPrice = memo(ns.Prices.Material)
+	local sales = {}
+	salePrice = function(link, itemID)
+		local price = sales[link]
+		if price == nil then
+			price = ns.Prices.Sale(link, itemID) or false
+			sales[link] = price
+		end
+		return price or nil
+	end
+	market = {}
+end
+
+local function forgetOwned()
+	effectiveCost = memo(ns.Model.EffectiveCost)
+	owned = memo(ns.Model.Owned)
+	wipe(priced)
+end
+
+-- Prices the list again on its next redraw: after your bags change, or with
+-- `all`, after an option changes (prices too).
+function BestCrafts.Reprice(all)
+	if all or not market then forgetMarket() end
+	forgetOwned()
+end
+
+-- What the auction house says about a crafted item (see market).
+local function marketOf(link)
+	local found = market[link]
+	if not found then
+		found = {}
+		found.listed, found.listedAge = ns.Prices.Listed(link)
+		found.soldPerDay = ns.Prices.SoldPerDay(link)
+		market[link] = found
+	end
+	return found
 end
 
 -- The cheapest priced itemID of a slot that doesn't come in qualities, and its price.
@@ -317,11 +369,11 @@ local function craftable(entry)
 	local crafts
 	for _, slot in ipairs(entry.schematic.reagentSlotSchematics) do
 		if slot.required and (slot.quantityRequired or 0) > 0 then
-			local owned = 0
+			local have = 0
 			for _, reagent in ipairs(slot.reagents) do
-				if reagent.itemID then owned = owned + ns.Model.Owned(reagent.itemID) end
+				if reagent.itemID then have = have + owned(reagent.itemID) end
 			end
-			local n = math.floor(owned / slot.quantityRequired)
+			local n = math.floor(have / slot.quantityRequired)
 			if not crafts or n < crafts then crafts = n end
 		end
 	end
@@ -371,7 +423,7 @@ local function priceEntry(entry)
 		best = { cost = effective, full = full, unpriced = unpriced, option = option }
 	end
 
-	local row = { entry = entry, have = craftable(entry), cooldown = cooldownOf(entry.recipeID),
+	local row = { entry = entry, have = craftable(entry),
 		firstCraft = C_TradeSkillUI.IsRecipeFirstCraft and C_TradeSkillUI.IsRecipeFirstCraft(entry.recipeID) or false }
 	row.quality = best.quality
 	row.picks, row.cost, row.unpriced = best.option.picks, best.full, best.unpriced
@@ -404,31 +456,40 @@ local function priceEntry(entry)
 	row.output = row.quality and entry.outputs[row.quality] or entry.outputs[entry.maxRank] or entry.outputs[1]
 	row.group = groupOf(row.output and row.output.itemID)
 	if row.output then
-		row.itemName = C_Item.GetItemNameByID(row.output.itemID)
-		if not row.itemName then C_Item.RequestLoadItemDataByID(row.output.itemID) end
-		row.listed, row.listedAge = ns.Prices.Listed(row.output.link)
-		row.soldPerDay = ns.Prices.SoldPerDay(row.output.link)
+		local found = marketOf(row.output.link)
+		row.listed, row.listedAge, row.soldPerDay = found.listed, found.listedAge, found.soldPerDay
 	end
-	row.sold = ns.Sales.Sold(row.itemName or entry.name)
 	return row
 end
 
--- Every scanned recipe as a list row (see priceEntry), priced now.
+-- What can change between redraws without a new price: the item's name once it
+-- arrives, your sales, and the cooldown.
+local function refreshRow(row)
+	local entry = row.entry
+	if row.output and not row.itemName then
+		row.itemName = C_Item.GetItemNameByID(row.output.itemID)
+		if not row.itemName then C_Item.RequestLoadItemDataByID(row.output.itemID) end
+	end
+	row.sortName = (row.itemName or entry.name or ""):lower()
+	row.sold = ns.Sales.Sold(row.itemName or entry.name)
+	row.cooldown = cooldownOf(entry.recipeID)
+end
+
+-- Every scanned recipe as a list row (see priceEntry). Rows are priced once and
+-- kept until BestCrafts.Reprice.
 function BestCrafts.Rows()
 	local rows = {}
 	if not scan then return rows end
-	materialPrice = memo(ns.Prices.Material)
-	effectiveCost = memo(ns.Model.EffectiveCost)
-	local sales = {}
-	salePrice = function(link, itemID)
-		local price = sales[link]
-		if price == nil then
-			price = ns.Prices.Sale(link, itemID) or false
-			sales[link] = price
+	if not effectiveCost then BestCrafts.Reprice() end
+	for _, entry in ipairs(scan.recipes) do
+		local row = priced[entry]
+		if not row then
+			row = priceEntry(entry)
+			priced[entry] = row
 		end
-		return price or nil
+		refreshRow(row)
+		rows[#rows + 1] = row
 	end
-	for _, entry in ipairs(scan.recipes) do rows[#rows + 1] = priceEntry(entry) end
 	return rows
 end
 

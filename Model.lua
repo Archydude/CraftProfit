@@ -333,7 +333,9 @@ local function merged(a, b)
 end
 
 -- The recipe selected on the crafting page. With ctx.overrides (slotIndex ->
--- itemID), prices those qualities instead of the form's, for comparing.
+-- itemID), prices those qualities instead of the form's, for comparing. Nil and
+-- true while the crafting strategy's plan is still being worked out (see
+-- Planner.ForCraft).
 function Model.Craft(ctx)
 	local recipeInfo, schematic, transaction = ctx.recipeInfo, ctx.schematic, ctx.transaction
 	local planning = ctx.overrides ~= nil
@@ -350,7 +352,12 @@ function Model.Craft(ctx)
 	}
 
 	-- What the crafting strategy would craft; its qualities fill the empty slots.
-	local plan = not (planning or ctx.isRecraft) and ns.Planner.ForCraft(ctx) or nil
+	local plan
+	if not (planning or ctx.isRecraft) then
+		local pending
+		plan, pending = ns.Planner.ForCraft(ctx)
+		if pending then return nil, true end
+	end
 	local fill = strategyFill(transaction, plan, picks)
 
 	local link, itemID, quality

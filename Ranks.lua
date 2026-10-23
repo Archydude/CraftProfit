@@ -268,6 +268,11 @@ local function scan()
 			scanRun, rescan = nil, false
 			return
 		end
+		-- The Best crafts list's scan goes first: both in one frame would slow the game down.
+		if ns.BestCrafts.Progress() then
+			C_Timer.After(0, step)
+			return
+		end
 		deadline = debugprofilestop() + FRAME_BUDGET_MS
 		local ok, err = coroutine.resume(run.thread, professionID, recipeIDs, parentID)
 		if not ok then

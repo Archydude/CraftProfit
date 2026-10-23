@@ -19,6 +19,11 @@ local DAY = 86400
 --   list = { { name, qty, money, t } ... }, every sale in the last DAYS days,
 -- }
 local saved
+-- How many of each item were sold (name -> qty), so the Best crafts list doesn't
+-- go through every sale for each row; and the time it's good until (when the
+-- oldest sale in it gets too old to count). Worked out again after that, or when
+-- a sale comes in.
+local totals, totalsUntil
 
 function Sales.Init()
 	CraftProfitDB.sales = CraftProfitDB.sales or { since = time(), list = {} }
@@ -32,6 +37,7 @@ local function prune()
 		if sale.t >= cutoff then kept[#kept + 1] = sale end
 	end
 	saved.list = kept
+	totals = nil
 end
 
 -- The "Auction successful" mails in the inbox: { { name, qty, money, t } ... }.
@@ -71,6 +77,7 @@ local function record()
 			if not found then
 				saved.list[#saved.list + 1] = sale
 				matched[#saved.list] = true
+				totals = nil
 			end
 		end
 	end
@@ -79,12 +86,18 @@ end
 -- How many of the item called `name` your characters sold in the last DAYS days.
 function Sales.Sold(name)
 	if not (saved and name) then return 0 end
-	local cutoff = time() - Sales.DAYS * DAY
-	local qty = 0
-	for _, sale in ipairs(saved.list) do
-		if sale.name == name and sale.t >= cutoff then qty = qty + sale.qty end
+	local now = time()
+	if not totals or now > totalsUntil then
+		totals, totalsUntil = {}, math.huge
+		local cutoff = now - Sales.DAYS * DAY
+		for _, sale in ipairs(saved.list) do
+			if sale.t >= cutoff then
+				totals[sale.name] = (totals[sale.name] or 0) + sale.qty
+				totalsUntil = math.min(totalsUntil, sale.t + Sales.DAYS * DAY)
+			end
+		end
 	end
-	return qty
+	return totals[name] or 0
 end
 
 -- How many days of sales there are so far: DAYS, or fewer when Craft Profit
