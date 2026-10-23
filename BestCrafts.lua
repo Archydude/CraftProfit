@@ -68,18 +68,20 @@ end
 --   maxRank = its number of ranks (1 for items without ranks),
 --   outputs = rank -> { link, itemID },
 --   slots = the slots that come in qualities (Planner.QualitySlots),
---   others = the other required slots: { slotIndex, qty, itemIDs } ...,
+--   others = the other required slots: { slotIndex, qty, itemIDs, basic } ...,
+--     basic for basic materials (the ones resourcefulness saves),
 --   options = { { picks = slotIndex -> itemID, quality, concentration } ... },
 --     one for each mix of qualities; concentration is what lifts it a rank, or nil,
+--   professionID, chances = your multicraft and resourcefulness chances (Procs.Chances),
 -- }, or nil for recipes that don't make an item.
-local function scanRecipe(recipeID, info)
+local function scanRecipe(recipeID, info, professionID)
 	local schematic = C_TradeSkillUI.GetRecipeSchematic(recipeID, false)
 	if not (schematic and schematic.recipeType == Enum.TradeskillRecipeType.Item) then return end
 	local qualityIDs = info.supportsQualities and info.qualityIDs or nil
 	if qualityIDs and #qualityIDs == 0 then qualityIDs = nil end
 	local entry = {
 		recipeID = recipeID, name = info.name, icon = info.icon, schematic = schematic,
-		maxRank = qualityIDs and #qualityIDs or 1,
+		maxRank = qualityIDs and #qualityIDs or 1, professionID = professionID,
 		outputs = {}, slots = ns.Planner.QualitySlots(schematic, {}), others = {}, options = {},
 	}
 
@@ -93,7 +95,8 @@ local function scanRecipe(recipeID, info)
 				if reagent.itemID then itemIDs[#itemIDs + 1] = reagent.itemID end
 			end
 			if #itemIDs > 0 then
-				entry.others[#entry.others + 1] = { slotIndex = slotIndex, qty = slot.quantityRequired, itemIDs = itemIDs }
+				entry.others[#entry.others + 1] = { slotIndex = slotIndex, qty = slot.quantityRequired, itemIDs = itemIDs,
+					basic = slot.reagentType == Enum.CraftingReagentType.Basic }
 				if slot.dataSlotType == Enum.TradeskillSlotDataType.ModifiedReagent then
 					base[#base + 1] = reagentEntry(itemIDs[1], slot)
 				end
@@ -129,12 +132,14 @@ local function scanRecipe(recipeID, info)
 	pauseIfDue()
 	if not next(entry.outputs) then return end
 
+	local answer -- one of the game's answers, for your proc chances
 	for _, mix in ipairs(mixes) do
 		local picks = picksOf(mix)
 		if not qualityIDs then
 			entry.options[#entry.options + 1] = { picks = picks, quality = 1 }
 		elseif anyPrice and schematic.hasCraftingOperationInfo then
 			local result = operation(recipeID, reagentsFor(picks))
+			answer = answer or result
 			if result then
 				local quality = result.craftingQuality
 				local lifts = quality < entry.maxRank and (result.concentrationCost or 0) > 0
@@ -145,6 +150,8 @@ local function scanRecipe(recipeID, info)
 	end
 	-- Unpriced items with ranks: the cheapest mix, at a rank no one asked about.
 	if #entry.options == 0 then entry.options[1] = { picks = picksOf(mixes[1]) } end
+	if not answer and schematic.hasCraftingOperationInfo then answer = operation(recipeID, firstReagents) end
+	entry.chances = ns.Procs.Chances(answer)
 	return entry
 end
 
@@ -170,7 +177,7 @@ local function scanAll(run, recipeIDs)
 	end
 	run.total = #wanted
 	for _, info in ipairs(wanted) do
-		local entry = scanRecipe(info.recipeID, info)
+		local entry = scanRecipe(info.recipeID, info, run.professionID)
 		if entry then run.recipes[#run.recipes + 1] = entry end
 		run.done = run.done + 1
 		pauseIfDue()
@@ -339,14 +346,16 @@ end
 
 -- What an option's materials cost: at full price, and what they really cost you
 -- (what you own counts at what it would sell for, as the planner counts it).
--- Also how many materials have no price.
+-- Also how many materials have no price, and what the basic ones cost (the
+-- ones resourcefulness saves; the slots in qualities are all basic).
 local function costOf(entry, option)
-	local full, effective, unpriced = 0, 0, 0
+	local full, effective, unpriced, basic = 0, 0, 0, 0
 	for _, slot in ipairs(entry.slots) do
 		local itemID = option.picks[slot.slotIndex]
 		local price = materialPrice(itemID)
 		if price then
 			full = full + price * slot.qty
+			basic = basic + price * slot.qty
 			effective = effective + (effectiveCost(itemID, slot.qty) or price * slot.qty)
 		else
 			unpriced = unpriced + 1
@@ -356,12 +365,13 @@ local function costOf(entry, option)
 		local itemID, price = cheapestOther(other)
 		if price then
 			full = full + price * other.qty
+			if other.basic then basic = basic + price * other.qty end
 			effective = effective + (effectiveCost(itemID, other.qty) or price * other.qty)
 		else
 			unpriced = unpriced + 1
 		end
 	end
-	return full, effective, unpriced
+	return full, effective, unpriced, basic
 end
 
 -- How many times you can craft it with what you own, any quality.
@@ -397,6 +407,8 @@ end
 --   cappedBy, listedPrice = the rank that capped the price and the price before,
 --   unpriced = materials without a price, have = crafts you have materials for,
 --   concentration = { extra, points, quality } when concentrating makes more,
+--   procs = what multicraft and resourcefulness add on average (Procs.Expected),
+--   expected = profit with that counted,
 --   listed, listedAge = Auctionator's count, sold = your sales, soldPerDay = TSM's,
 --   cooldown = seconds, or nil, firstCraft = crafting it the first time gives knowledge,
 --   group = what kind of item it is (see BestCrafts.GROUPS),
@@ -409,18 +421,26 @@ local function priceEntry(entry)
 	local options = {}
 	for _, option in ipairs(entry.options) do
 		if option.quality then
-			local full, effective, unpriced = costOf(entry, option)
-			options[#options + 1] = { cost = effective, full = full, unpriced = unpriced, quality = option.quality, option = option }
+			local full, effective, unpriced, basic = costOf(entry, option)
+			options[#options + 1] = { cost = effective, full = full, unpriced = unpriced, basic = basic,
+				quality = option.quality, option = option }
 		end
 	end
-	-- "Most profit" with no price at any rank it reaches shows the highest one.
-	local best = ns.Planner.Choose(options, prices) or ns.Planner.HighestRank(options)
+	-- "Most profit" counts procs when they're counted. With no price at any rank
+	-- it reaches, it shows the highest one.
+	local multiply, discount = ns.Procs.Factors(entry.professionID, entry.chances)
+	local choosePrices = prices
+	if multiply ~= 1 then
+		choosePrices = {}
+		for rank, price in pairs(prices) do choosePrices[rank] = price * multiply end
+	end
+	local best = ns.Planner.Choose(options, choosePrices, discount) or ns.Planner.HighestRank(options)
 	if not best then
 		-- Items with ranks but no price at any rank aren't worked out: the cheapest
 		-- mix, at a rank no one asked about.
 		local option = entry.options[1]
-		local full, effective, unpriced = costOf(entry, option)
-		best = { cost = effective, full = full, unpriced = unpriced, option = option }
+		local full, effective, unpriced, basic = costOf(entry, option)
+		best = { cost = effective, full = full, unpriced = unpriced, basic = basic, option = option }
 	end
 
 	local row = { entry = entry, have = craftable(entry),
@@ -435,6 +455,8 @@ local function priceEntry(entry)
 	else
 		row.noPrice = true
 	end
+	row.procs = ns.Procs.Expected(entry.professionID, entry.chances, sale, best.basic)
+	row.expected = row.profit and row.profit + row.procs.total
 
 	-- What concentrating adds: one rank above the row's, made the cheapest way,
 	-- minus what the row makes without it.

@@ -359,6 +359,13 @@ function Blizzard.PredictQuality(recipeID, schematic, transaction, overrides, ad
 	return info.craftingQuality, concentrating and (info.concentrationCost or 0) or nil
 end
 
+-- The game's answer about the recipe on the crafting page ("operation info"), with
+-- `overrides` (slotIndex -> itemID) swapped into the form's materials, or nil.
+function Blizzard.CraftInfo(ctx, overrides)
+	local reagents = reagentsForPrediction(ctx.schematic, ctx.transaction, overrides or {})
+	return (operationInfo(ctx.recipeInfo.recipeID, reagents, ctx.transaction))
+end
+
 -- The concentration crafting with what's in the form would take, or nil.
 -- `advice`: see predictionReagents.
 function Blizzard.FormConcentrationCost(recipeID, schematic, transaction, advice)

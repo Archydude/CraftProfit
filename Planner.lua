@@ -329,14 +329,14 @@ function Planner.HighestRank(options)
 end
 
 -- The one whose rank's price (`prices`, rank -> per craft, see Planner.RankPrices)
--- beats its cost by the most, the cheaper one on a tie; also that profit. Nil
--- when no rank they reach has a price.
-function Planner.MostProfitable(options, prices)
+-- beats its cost (times `costFactor`, default 1) by the most, the cheaper one on
+-- a tie; also that profit. Nil when no rank they reach has a price.
+function Planner.MostProfitable(options, prices, costFactor)
 	local best, bestProfit
 	for _, option in ipairs(options) do
 		local price = option.quality and prices[option.quality]
 		if price then
-			local profit = price - option.cost
+			local profit = price - option.cost * (costFactor or 1)
 			if not best or profit > bestProfit or (profit == bestProfit and option.cost < best.cost) then
 				best, bestProfit = option, profit
 			end
@@ -357,11 +357,11 @@ function Planner.Cheapest(options)
 	return best
 end
 
--- The one the crafting strategy picks (ns.db.craftStrategy). `prices` is only
--- needed for "Most profit".
-function Planner.Choose(options, prices)
+-- The one the crafting strategy picks (ns.db.craftStrategy). `prices` and
+-- `costFactor` are only needed for "Most profit" (see Planner.MostProfitable).
+function Planner.Choose(options, prices, costFactor)
 	local strategy = ns.db.craftStrategy
-	if strategy == "profit" then return (Planner.MostProfitable(options, prices)) end
+	if strategy == "profit" then return (Planner.MostProfitable(options, prices, costFactor)) end
 	if strategy == "cheapest" then return Planner.Cheapest(options) end
 	return Planner.HighestRank(options)
 end
@@ -409,10 +409,11 @@ local function planCraft(recipeInfo, schematic, transaction, slots, context)
 	end
 	if not next(byQuality) then return end
 
-	-- The rank the crafting strategy picks. "Most profit" needs each rank's price.
+	-- The rank the crafting strategy picks. "Most profit" needs each rank's price,
+	-- and with procs counted, what multicraft and resourcefulness add.
 	local options = {}
 	for _, found in pairs(byQuality) do options[#options + 1] = found end
-	local prices = {}
+	local prices, costFactor = {}, 1
 	if ns.db.craftStrategy == "profit" then
 		local sales = {}
 		for quality = 1, #recipeInfo.qualityIDs do
@@ -420,8 +421,12 @@ local function planCraft(recipeInfo, schematic, transaction, slots, context)
 			sales[quality] = link and ns.Prices.Sale(link, itemID)
 		end
 		prices = Planner.RankPrices(sales, #recipeInfo.qualityIDs, schematic)
+		local info = ns.Blizzard.CraftInfo({ recipeInfo = recipeInfo, schematic = schematic, transaction = transaction })
+		local multiply
+		multiply, costFactor = ns.Procs.Factors(ns.Procs.ProfessionOf(recipeInfo.recipeID), ns.Procs.Chances(info))
+		for quality, price in pairs(prices) do prices[quality] = price * multiply end
 	end
-	local best = Planner.Choose(options, prices)
+	local best = Planner.Choose(options, prices, costFactor)
 	local noPrice = best == nil
 	if noPrice then
 		-- "Most profit" with no price at any rank: the cheapest mix that keeps the form's rank.
@@ -449,7 +454,8 @@ function Planner.ForCraft(ctx)
 	local slots = qualitySlots(schematic, {})
 	if #slots == 0 then return end
 	local context = craftContext(recipeInfo.recipeID, schematic, transaction, slots, ns.Blizzard.IsConcentrating(transaction))
-	local key = format("%s:%s:%s", context, tostring(ns.db.leastConcentration), ns.db.craftStrategy)
+	local key = format("%s:%s:%s:%s", context, tostring(ns.db.leastConcentration), ns.db.craftStrategy,
+		tostring(ns.db.countProcs))
 	if key ~= craftPlanKey then
 		local plan, pending = planCraft(recipeInfo, schematic, transaction, slots, context)
 		if pending then return nil, true end

@@ -43,16 +43,23 @@ local HEADER_TIPS = {
 	name = "Click to sort by name.",
 	profit = "What one craft makes after the 5% auction house cut, at the highest rank you can make, with the "
 		.. "cheapest materials that reach it. What you own counts at what it would sell for when picking them. A "
-		.. "rank is never priced above a better one.",
+		.. "rank is never priced above a better one.\n\nWith Count multicraft and resourcefulness on (Filter menu), "
+		.. "it's Expected: what a craft makes on average with procs.",
 	have = "How many times you can craft it with what's in your bags, bank and warband bank.",
 	listed = "How many were up for sale the last time Auctionator saw them. Needs Auctionator.",
 	perDay = "How many sell per day across your region, on average, from TSM.",
 	sold = format("How many your characters sold on the auction house in the last %d days, from the auction "
 		.. "house's mail. Counts sales from when you first opened your mailbox with this version.", ns.Sales.DAYS),
 }
+-- What the Profit column shows: with procs counted, the expected profit.
+local function shownProfit(row)
+	if ns.db.countProcs then return row.expected end
+	return row.profit
+end
+
 -- How each sort key reads a row's value; nil values always go last.
 local SORT_VALUES = {
-	profit = function(row) return row.profit end,
+	profit = shownProfit,
 	have = function(row) return row.have end,
 	listed = function(row) return row.listed end,
 	sold = function(row) return row.itemName and row.sold or nil end,
@@ -129,8 +136,9 @@ local function sortRows(rows)
 				return av > bv
 			end
 		end
-		if (a.profit == nil) ~= (b.profit == nil) then return a.profit ~= nil end
-		if a.profit ~= b.profit and a.profit then return a.profit > b.profit end
+		local ap, bp = shownProfit(a), shownProfit(b)
+		if (ap == nil) ~= (bp == nil) then return ap ~= nil end
+		if ap ~= bp and ap then return ap > bp end
 		return nameOf(a) < nameOf(b)
 	end)
 end
@@ -143,7 +151,7 @@ local function visibleRows()
 	allRows = ns.BestCrafts.Rows()
 	for _, row in ipairs(allRows) do
 		if matches(row, search) and not ns.db.bestHidden[row.group]
-			and not (ns.db.bestProfitableOnly and not (row.profit and row.profit > 0)) then
+			and not (ns.db.bestProfitableOnly and not ((shownProfit(row) or 0) > 0)) then
 			shown[#shown + 1] = row
 		end
 	end
@@ -202,6 +210,18 @@ local function rowTooltip(tip, row)
 	addPair(tip, "Materials cost", Money(-row.cost))
 	if row.profit then
 		addPair(tip, row.profit >= 0 and "Profit" or "Loss", signedMoney(row.profit))
+	end
+	local procs = row.procs
+	if row.expected and procs.total > 0 then
+		addPair(tip, "Expected with procs", signedMoney(row.expected))
+		if procs.chances.multicraft > 0 then
+			tip:AddDoubleLine(format("  Multicraft %.0f%% x %.2f extra per item", procs.chances.multicraft * 100,
+				procs.extraPerItem), signedMoney(procs.multicraft), 0.53, 0.53, 0.53, 0.53, 0.53, 0.53)
+		end
+		if procs.chances.resourcefulness > 0 then
+			tip:AddDoubleLine(format("  Resourcefulness %.0f%% x %.0f%% saved", procs.chances.resourcefulness * 100,
+				procs.savedShare * 100), signedMoney(procs.resourcefulness), 0.53, 0.53, 0.53, 0.53, 0.53, 0.53)
+		end
 	end
 	if row.unpriced > 0 then
 		tip:AddLine(format("%d material(s) have no price, so profit is too high", row.unpriced), 1, 0.4, 0.4, true)
@@ -371,8 +391,9 @@ local function drawRow(button, row)
 	button.tags:ClearAllPoints()
 	button.tags:SetPoint("LEFT", nameCell, "RIGHT", TAG_GAP, 0)
 
-	if row.profit then
-		button.cells.profit:SetText(signedMoney(row.profit))
+	local profit = shownProfit(row)
+	if profit then
+		button.cells.profit:SetText(signedMoney(profit))
 	else
 		button.cells.profit:SetText(Color("muted", "No price"))
 	end
@@ -396,7 +417,8 @@ local function drawHeader(key, header, place)
 	header:SetPoint("BOTTOMLEFT", scrollBox, "TOPLEFT", place.x, 2)
 	header:SetSize(place.width, HEADER_HEIGHT)
 	local sorted = sortKey() == key
-	header.text:SetText(sorted and Color("heading", header.label) or header.label)
+	local label = key == "profit" and ns.db.countProcs and "Expected" or header.label
+	header.text:SetText(sorted and Color("heading", label) or label)
 	local arrow = header.arrow
 	arrow:SetShown(sorted)
 	if not sorted then return end
@@ -507,6 +529,13 @@ local function filterMenu(_, root)
 	root:CreateCheckbox("Profitable only", function() return ns.db.bestProfitableOnly end, function()
 		ns.db.bestProfitableOnly = not ns.db.bestProfitableOnly
 		BestCraftsList.Render()
+	end)
+	local procs = root:CreateCheckbox("Count multicraft and resourcefulness", function() return ns.db.countProcs end,
+		function() ns.Options.Set("countProcs", not ns.db.countProcs) end)
+	procs:SetTooltip(function(tip)
+		GameTooltip_SetTitle(tip, "Count multicraft and resourcefulness")
+		GameTooltip_AddNormalLine(tip, "Profit becomes Expected: what a craft makes on average with procs, and the "
+			.. "list ranks by it. Your chances come from the game; how big a proc is, from your own crafts.")
 	end)
 	root:CreateDivider()
 	root:CreateTitle("Show")

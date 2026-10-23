@@ -1168,6 +1168,8 @@ local function createFooter()
 		GameTooltip:SetText("This session")
 		GameTooltip:AddLine("What all your crafts made since you logged in on this character, including orders "
 			.. "crafted from this list.", 1, 1, 1, true)
+		ns.Procs.AddLuckLines(GameTooltip)
+		GameTooltip:AddLine(" ")
 		GameTooltip:AddLine(ns.Color("simulated", "Click: reset to zero"))
 		GameTooltip:Show()
 	end)
@@ -1209,8 +1211,10 @@ local function drawFooter()
 	local showSession = ns.db.showSession and session.crafts > 0
 	footer.session:SetShown(showSession)
 	if showSession then
-		footer.session.text:SetText(format("%s %s %s", ns.Color("heading", "This session"), signedMoney(session.total),
-			ns.Color("muted", format("(%d craft%s)", session.crafts, session.crafts == 1 and "" or "s"))))
+		local luck = ns.Procs.LuckText()
+		footer.session.text:SetText(format("%s %s %s%s", ns.Color("heading", "This session"), signedMoney(session.total),
+			ns.Color("muted", format("(%d craft%s)", session.crafts, session.crafts == 1 and "" or "s")),
+			luck and ("  " .. luck) or ""))
 		footer.session:SetWidth(footer.session.text:GetUnboundedStringWidth())
 	end
 

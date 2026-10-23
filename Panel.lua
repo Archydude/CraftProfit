@@ -45,6 +45,7 @@ local rows = {}
 local rowCount = 0
 local contentHeight = 0
 local profitRow -- the Profit/Loss row, for the proc animation to start from
+local procRow   -- "This craft made", after a proc: the animation starts from it instead
 
 -- An invisible button over a row, for rows you can click.
 local function createRowButton()
@@ -301,11 +302,11 @@ local function drawMaterials(model)
 	drawShoppingButton(model)
 end
 
--- What multicraft / resourcefulness added on the last craft, listed above the
--- total they changed. Returns the total to show.
+-- What multicraft / resourcefulness added on the last craft, and what that craft
+-- made in all.
 local function drawProcs(model)
 	local proc = ns.Results.ProcFor(model)
-	if not proc then return model.total end
+	if not proc then return end
 	addSpacer()
 	addRow("Procs", nil, fonts.heading)
 	if proc.multicraft > 0 then
@@ -316,7 +317,7 @@ local function drawProcs(model)
 		addRow("Resourcefulness: " .. Item(saved.itemID, saved.qty),
 			saved.value and signedMoney(saved.value) or Color("muted", "no price"))
 	end
-	return proc.actual or model.total
+	if proc.actual then procRow = addRow("This craft made", signedMoney(proc.actual)) end
 end
 
 local function resetTooltip(tip)
@@ -326,7 +327,31 @@ end
 
 local function sessionTooltip(tip)
 	tip:SetText("This session")
+	ns.Procs.AddLuckLines(tip)
+	tip:AddLine(" ")
 	tip:AddLine(Color("simulated", "Click: reset to zero"))
+end
+
+-- The breakdown of the expected profit.
+local function expectedTooltip(model)
+	return function(tip)
+		local procs, chances = model.procs, model.procs.chances
+		tip:SetText(model.expected >= 0 and "Expected profit" or "Expected loss")
+		tip:AddLine("What this craft makes on average, counting multicraft and resourcefulness. "
+			.. "Without procs, under it, is what it makes when neither procs.", 1, 1, 1, true)
+		tip:AddLine(" ")
+		tip:AddDoubleLine("Without procs", signedMoney(model.total), 1, 1, 1, 1, 1, 1)
+		if chances.multicraft > 0 then
+			tip:AddDoubleLine(format("Multicraft %.0f%% x %.2f extra per item", chances.multicraft * 100, procs.extraPerItem),
+				signedMoney(procs.multicraft), 1, 1, 1, 1, 1, 1)
+			tip:AddLine("  " .. ns.Procs.SourceText(procs.multicraftProcs), 0.53, 0.53, 0.53)
+		end
+		if chances.resourcefulness > 0 then
+			tip:AddDoubleLine(format("Resourcefulness %.0f%% x %.0f%% saved", chances.resourcefulness * 100,
+				procs.savedShare * 100), signedMoney(procs.resourcefulness), 1, 1, 1, 1, 1, 1)
+			tip:AddLine("  " .. ns.Procs.SourceText(procs.resourcefulnessProcs), 0.53, 0.53, 0.53)
+		end
+	end
 end
 
 -- How old the oldest Auctionator price on the panel is: ", seen today",
@@ -352,10 +377,19 @@ local function priceAgeText(model)
 end
 
 local function drawFooter(model)
-	local total = drawProcs(model)
+	drawProcs(model)
+	local total = model.total
 
 	addSpacer()
-	if total then
+	-- With procs to expect, the big line is the expected profit and the one under
+	-- it what a craft makes without procs.
+	local procs = model.procs
+	if procs and procs.total > 0 then
+		local expected = model.expected
+		profitRow = addRow(expected >= 0 and "Expected profit" or "Expected loss",
+			Color(ns.AmountColor(expected), Money(expected)), fonts.total, nop, expectedTooltip(model))
+		addRow("Without procs", Color(ns.AmountColor(total), Money(total)), nil, nop, expectedTooltip(model))
+	elseif total then
 		profitRow = addRow(total >= 0 and "Profit" or "Loss", Color(ns.AmountColor(total), Money(total)), fonts.total)
 	end
 
@@ -363,7 +397,9 @@ local function drawFooter(model)
 	if ns.db.showSession and session.crafts > 0 then
 		-- Gold label like Profit/Loss, but in the small font so it doesn't compete with it.
 		addGap()
-		addRow(format("%s (%d craft%s)", Color("heading", "This session"), session.crafts, session.crafts == 1 and "" or "s"),
+		local luck = ns.Procs.LuckText()
+		addRow(format("%s (%d craft%s)%s", Color("heading", "This session"), session.crafts, session.crafts == 1 and "" or "s",
+			luck and ("  " .. luck) or ""),
 			Color(ns.AmountColor(session.total), Money(session.total)), nil, ns.Results.ConfirmResetSession, sessionTooltip)
 	end
 
@@ -578,7 +614,7 @@ function Panel.Render()
 		Panel.Refresh()
 		return
 	end
-	rowCount, dividerCount, contentHeight, profitRow = 0, 0, 0, nil
+	rowCount, dividerCount, contentHeight, profitRow, procRow = 0, 0, 0, nil, nil
 	-- Before the rows, which leave room for it.
 	ns.BestCraftsList.UpdateToggle()
 
@@ -615,9 +651,10 @@ function Panel.Frame()
 	return frame
 end
 
--- The Profit/Loss amount on screen, or nil.
+-- Where the proc animation starts: "This craft made", or the Profit/Loss amount, or nil.
 function Panel.ProfitAnchor()
-	return profitRow and profitRow.right
+	local row = procRow or profitRow
+	return row and row.right
 end
 
 ---------------------------------------------------------------------------

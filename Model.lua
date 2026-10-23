@@ -4,6 +4,7 @@
 -- Model fields shared by both kinds:
 --   kind          "craft" | "order"
 --   key           recipeID or orderID (procs are matched against it)
+--   recipeID
 --   title
 --   materials     see Model.Materials
 --   missing       what's missing for one craft, see Model.Missing
@@ -17,6 +18,9 @@
 --   simulating    some materials are what-if qualities
 --   best          more profitable materials than the form's, or nil
 --   notes         { estimated = bool, missing = count, [1..n] = extra notes }
+-- Crafts also have:
+--   procs         what multicraft and resourcefulness add on average (Procs.Expected)
+--   expected      profit with that counted
 local _, ns = ...
 
 local Model = {}
@@ -248,6 +252,18 @@ local function costOf(materials, notes)
 	return cost
 end
 
+-- What the basic materials in a list (see Model.Materials) cost: the ones
+-- resourcefulness can save.
+function Model.BasicCost(materials)
+	local cost = 0
+	for _, material in ipairs(materials) do
+		if material.price and material.slot and material.slot.reagentType == Enum.CraftingReagentType.Basic then
+			cost = cost + material.price * material.qty
+		end
+	end
+	return cost
+end
+
 -- Whether the form has something other than `overrides` (slotIndex -> itemID,
 -- the full amount each) in those slots.
 local function differsFromForm(schematic, transaction, overrides)
@@ -345,6 +361,7 @@ function Model.Craft(ctx)
 	local model = {
 		kind = "craft",
 		key = recipeInfo.recipeID,
+		recipeID = recipeInfo.recipeID,
 		title = schematic.name or "Craft",
 		canSimulate = true,
 		simulating = simulating,
@@ -409,6 +426,16 @@ function Model.Craft(ctx)
 	addShopping(model, schematic, {}, shopPicks)
 	model.total = (model.total or 0) - model.cost
 
+	-- What multicraft and resourcefulness add on average (see Procs.Expected).
+	if not (planning or ctx.isRecraft) then
+		local chances = ns.Procs.Chances(ns.Blizzard.CraftInfo(ctx, merged(picks, fill)))
+		local output = model.output
+		local sale = output and output.sale and output.sale - (output.ahCut or 0)
+		model.procs = ns.Procs.Expected(ns.Procs.ProfessionOf(recipeInfo.recipeID), chances, sale,
+			Model.BasicCost(model.materials))
+		model.expected = model.total + model.procs.total
+	end
+
 	-- Real crafts use what's in the form, never the what-if picks.
 	model.realCost = simulating and costOf(Model.Materials(schematic, transaction, {}, nil, fill)) or model.cost
 	model.realProfit = not simulating and model.total or nil
@@ -464,6 +491,7 @@ function Model.Order(ctx)
 	local model = {
 		kind = "order",
 		key = order.orderID,
+		recipeID = order.spellID,
 		title = "Crafting Order",
 		commission = order.tipAmount,
 		consortiumCut = order.consortiumCut,

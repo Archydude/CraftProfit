@@ -5,7 +5,9 @@ A lightweight addon: one small panel next to your profession window that tells y
 - **Crafting page:** what the item sells for, minus the 5% auction house cut, minus your materials. With nothing to sell (no auction price, an enchant, a recraft), it's a loss of what the materials cost.
 - **Crafting orders:** the commission you receive (after the consortium cut), minus the materials **you** supply, plus any sellable patron rewards.
 
-- **Procs:** when a craft procs multicraft or resourcefulness, the bonus gold pops up over the Profit line with a coin sound, a **Procs** section lists the extra items and returned materials with their value, and Profit/Loss changes to what that craft really made. It goes back to the normal forecast on your next craft without a proc, or when you pick another recipe.
+- **Procs:** when a craft procs multicraft or resourcefulness, a **Procs** section lists the extra items and returned materials with their value, and **This craft made** under them says what that craft really made; the bonus gold pops up from it with a coin sound. It goes away on your next craft without a proc, or when you pick another recipe. The profit lines below it stay the forecast.
+
+- **Expected profit:** the panel's main line is what a craft makes on average once multicraft and resourcefulness are counted, with **Without procs** under it: what it makes when neither procs. Your chances come from the game; how big your procs are, Craft Profit learns from your own crafts (until it has 10 procs of a kind, it uses typical values). Hover it for each proc's chance, size and what it adds.
 
 - **Crafting strategy:** pick what to craft: the highest rank you can make (default), the most profit, or the cheapest materials. One click, or a checkbox on the crafting page and the order form, puts its materials in; missing materials and the shopping list follow it too. On an order, the cheapest materials that reach its minimum quality.
 
@@ -13,11 +15,11 @@ A lightweight addon: one small panel next to your profession window that tells y
 
 - **Shopping list:** adds what you're short of, for one or more crafts or for every patron order at once, to an Auctionator shopping list, or as a TSM search to copy. The Auctionator list checks materials off as you get them.
 
-- **Session total:** under Profit/Loss, what all your crafts made since you logged in on this character (a `/reload` keeps it), including orders crafted from the Patron tab, where it also shows under the order list. Crafts whose item has no sale price, like enchants and treatises, count as a loss of what their materials cost, less what resourcefulness gives back. Click it to reset it to zero.
+- **Session total:** under Profit/Loss, what all your crafts made since you logged in on this character (a `/reload` keeps it), including orders crafted from the Patron tab, where it also shows under the order list. Crafts whose item has no sale price, like enchants and treatises, count as a loss of what their materials cost, less what resourcefulness gives back. Click it to reset it to zero. After 5 crafts it also shows your **luck**: how much more (or less) your procs made than expected, like **Luck +14%**.
 
 - **Best rank on tooltips:** an item you can craft shows the highest rank you can make it at with top-quality materials, anywhere you see its tooltip.
 
-It stays light: nothing runs until you open your profession window, apart from noting your auction sales when you open your mailbox. It doesn't simulate procs in advance; it shows you the gold when they happen.
+It stays light: nothing runs until you open your profession window, apart from noting your auction sales when you open your mailbox. Procs are counted as an average, always shown next to the profit without them.
 
 Requires **TradeSkillMaster** or **Auctionator** for prices. Built for WoW Midnight 12.1.
 
@@ -123,7 +125,7 @@ Turn off **Show Craft Profit on the Patron tab** in the options to get Blizzard'
 ### Best crafts
 Click **Best crafts** at the top of the panel, next to its gear (it shows on the crafting page), or type `/craftprofit best`. A list opens over the recipe details with every recipe you know in the profession shown (Midnight Blacksmithing, say), most profitable first. It works out each recipe for a few seconds after it opens, and shows how far it's got at the bottom.
 
-- **Profit:** what one craft makes after the 5% auction house cut, at the rank your crafting strategy picks (without concentration), with the materials it picks: the same ones the crafting page would use. Its quality icon is after the name. Recipes whose item has no auction price at the rank you'd make say **No price**, in grey, at the bottom.
+- **Expected** (or **Profit**): what one craft makes after the 5% auction house cut, at the rank your crafting strategy picks (without concentration), with the materials it picks: the same ones the crafting page would use. With **Count multicraft and resourcefulness** on (the default), it's what a craft makes on average with procs, and the list ranks by it; off, the column is **Profit**, without them. Its quality icon is after the name. Recipes whose item has no auction price at the rank you'd make say **No price**, in grey, at the bottom.
 - **Have:** how many times you can craft it with what's in your bags, bank and warband bank.
 - **Listed:** how many were up for sale the last time Auctionator saw them, in grey when that was 3 days ago or more. Needs Auctionator; without it, **-**.
 - **Sells/day** (with TSM): how many sell per day across your region, on average.
@@ -139,11 +141,11 @@ Click a column header to sort by it; click again to reverse. Recipes without a v
 
 **Filter:** the button next to the search box.
 - **Profitable only** hides the recipes that lose gold or have no price.
+- **Count multicraft and resourcefulness** switches the first column between Expected and Profit (also in the options).
 - **Show:** a checkbox for each kind of item the profession makes, with how many: **Gear** (weapons, armor and profession tools), **Decor**, **Materials** (reagents, trade goods and gems), **Enchants and kits**, **Consumables**, **Bags** and **Other**. **Show all** and **Hide all** set them all at once.
 - The list remembers the filter. The small red button on it puts everything back.
 
 - Concentration isn't used for the ranking; the row's tooltip shows what it would add.
-- Multicraft and resourcefulness aren't counted in advance, as on the panel.
 - Only this character's recipes: the game only says how a craft turns out for the character whose profession window is open.
 - It works out the list again when you gain skill, spend specialization points or change profession gear while it's open.
 
@@ -168,6 +170,7 @@ Click the gear on the panel (or Craft Profit options in the gear menu under the 
 | Option | What it does |
 |---|---|
 | Crafting strategy | What the crafting page crafts: Highest rank, cheapest materials (default), Most profit, or Cheapest materials. Also at the bottom of the Best crafts list. |
+| Count multicraft and resourcefulness | On by default. The Best crafts list ranks by what crafts make on average with procs, and Most profit picks ranks that way. Also in the Best crafts list's Filter menu. |
 | Price addon | Automatic (TSM, then Auctionator for anything TSM has no price for), TSM only, or Auctionator only. |
 | TSM price for materials / crafted items | Market value (default), lowest auction right now, historical price or region market average. |
 | Use vendor price for vendor items | On by default. |

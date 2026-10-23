@@ -15,6 +15,7 @@ Constants.lua
 Blizzard.lua
 Prices.lua
 Sales.lua
+Procs.lua
 Format.lua
 Simulation.lua
 Shopping.lua

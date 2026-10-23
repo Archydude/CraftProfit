@@ -269,6 +269,23 @@ local function evaluate(data, model)
 	return proc
 end
 
+-- Teaches Procs how big this craft's procs were, and adds it to the luck meter:
+-- the gold procs were expected to add (the panel's numbers, or for an order from
+-- the Patron tab, resourcefulness alone) against what they did.
+local function learnProcs(data, model, result)
+	local professionID = ns.Procs.ProfessionOf(model.recipeID)
+	local used = {}
+	for _, material in ipairs(model.materials or {}) do used[material.itemID] = material.qty end
+	ns.Procs.Record(professionID, data, used)
+
+	local expected = model.procs
+	if not expected and model.recipeID then
+		expected = ns.Procs.Expected(professionID, ns.Procs.RecipeChances(model.recipeID), nil,
+			ns.Model.BasicCost(model.materials or {}))
+	end
+	ns.Procs.AddToSession(expected and expected.total, result.bonus)
+end
+
 local function onCraftResult(data)
 	if not data then return end
 	local panel = ns.Panel.Frame()
@@ -286,6 +303,7 @@ local function onCraftResult(data)
 		local session = ns.db.session
 		session.total = session.total + result.actual
 		session.crafts = session.crafts + 1
+		learnProcs(data, model, result)
 	end
 
 	-- The Patron tab's session total has a new amount.

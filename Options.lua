@@ -84,6 +84,11 @@ function Options.Create()
 		"It picks the materials for Use Craft Profit Reagents and the panel's blue row, prices missing materials, " ..
 		"decides what the shopping list buys, and ranks the Best crafts list. Patron orders keep their own rule: the " ..
 		"cheapest materials that reach the order's minimum quality.\n\nAlso at the bottom of the Best crafts list.")
+	checkbox("countProcs", "Count multicraft and resourcefulness",
+		"The Best crafts list ranks recipes by what they make on average with procs, and the Most profit strategy " ..
+		"picks ranks that way. Your chances come from the game; how big a proc is, from your own crafts.\n\n" ..
+		"The panel always shows both: the expected profit, and Without procs under it.\n\n" ..
+		"Also in the Best crafts list's Filter menu.")
 
 	header("Prices")
 	dropdown("provider", "Price addon", {
