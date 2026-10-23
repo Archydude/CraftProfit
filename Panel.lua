@@ -357,6 +357,9 @@ end
 -- How old the oldest Auctionator price on the panel is: ", seen today",
 -- ", oldest 4 days ago" (in red once it's stale), or "" when prices come from TSM.
 local function priceAgeText(model)
+	-- An old auction house scan says more than any one price: it comes first, in red.
+	local scan = ns.Reminder.FooterText()
+	if scan ~= "" then return "|r" .. scan end
 	local oldest
 	local function consider(age)
 		if age == false then

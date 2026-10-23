@@ -187,6 +187,7 @@ Click the gear on the panel (or Craft Profit options in the gear menu under the 
 | Show minimap button | On by default. Also `/craftprofit minimap`. |
 | Price addon | Automatic (TSM, then Auctionator for anything TSM has no price for), TSM only, or Auctionator only. |
 | TSM price for materials / crafted items | Market value (default), lowest auction right now, historical price or region market average. |
+| Remind me to scan the auction house | On by default. With Auctionator prices: a chat reminder at the auction house after a day, and a notice over the Best crafts list after 3 days. |
 | Use vendor price for vendor items | On by default. |
 | Subtract auction house cut (5%) | On by default. |
 
@@ -232,6 +233,6 @@ Click the gear on the panel (or Craft Profit options in the gear menu under the 
 | Saved characters: Forget... | Pick a character you deleted, renamed or moved to take it off Craft Rank tooltips. |
 
 ## Notes
-- With Auctionator, prices come from your own auction house scans. With TSM, the TSM desktop app keeps them up to date for you. With Auctionator, the bottom of the panel says how old its oldest price is (**seen today**, or **oldest 4 days ago** in red once it's 3 days or more), and each material's tooltip says when Auctionator last saw it. Visit the auction house to refresh them.
+- With Auctionator, prices come from your own auction house scans. Once Auctionator's last scan is over a day old, the panel's and the Best crafts list's footers say so in red ("last scan 2 days ago"), and opening the auction house reminds you in chat to run a full scan. Over 3 days old, opening the Best crafts list shows a notice in the middle of the list, once a session. Turn the reminders off with **Remind me to scan the auction house** in the options. With TSM, the TSM desktop app keeps them up to date for you. With Auctionator, the bottom of the panel says how old its oldest price is (**seen today**, or **oldest 4 days ago** in red once it's 3 days or more), and each material's tooltip says when Auctionator last saw it. Visit the auction house to refresh them.
 - A big Blizzard update to the profession window may need a Craft Profit update too.
 - After an update, a What's New window shows what changed since the version you had.

@@ -24,6 +24,7 @@ Blizzard.lua
 Prices.lua
 Sales.lua
 Procs.lua
+Reminder.lua
 Format.lua
 Simulation.lua
 Shopping.lua

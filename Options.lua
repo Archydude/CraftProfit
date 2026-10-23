@@ -107,6 +107,10 @@ function Options.Create()
 		"What you'd pay for materials. Market value smooths out spikes; lowest auction is what you'd pay right now.")
 	dropdown("saleSource", "TSM price for crafted items", ns.TSM_SOURCES,
 		"What you'd get for the item you craft.")
+	checkbox("scanReminder", "Remind me to scan the auction house",
+		"With prices from Auctionator: when its last scan is over a day old, a chat line reminds you when you open " ..
+		"the auction house, and when it's over 3 days old, a notice over the Best crafts list when you open it (once a " ..
+		"session). The panel's and the list's footers always say how old the scan is, in red once it's a day old.")
 	checkbox("useVendor", "Use vendor price for vendor items",
 		"Materials a vendor sells (vials, thread...) are priced at the vendor instead of the auction house.")
 	checkbox("ahCut", format("Subtract auction house cut (%d%%)", ns.AH_CUT * 100),

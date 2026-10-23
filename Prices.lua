@@ -134,6 +134,29 @@ local function auctionAge(fnName, arg)
 	return type(age) == "number" and age or false
 end
 
+-- How many days ago Auctionator last scanned the auction house, with its full scan
+-- or its automatic one (0 is within the last day), or false when it never has.
+-- Nil when prices don't come from Auctionator (TSM keeps its own up to date).
+-- Auctionator keeps those times in its own saved state, not its API, so a change
+-- on its side just means no answer.
+function Prices.ScanAge()
+	if tsmAvailable() or not auctionatorAPI() then return end
+	local state = Auctionator.SavedState
+	if type(state) ~= "table" then return end
+	local last = 0
+	for _, key in ipairs({ "TimeOfLastReplicateScan", "TimeOfLastBrowseScan", "TimeOfLastGetAllScan" }) do
+		if type(state[key]) == "number" and state[key] > last then last = state[key] end
+	end
+	if last == 0 then return false end
+	return math.floor((time() - last) / 86400)
+end
+
+-- "yesterday", "3 days ago" or "never" for a scan age (see Prices.ScanAge).
+function Prices.ScanAgeText(age)
+	if age == false then return "never" end
+	return Prices.AgeText(age)
+end
+
 -- A material's price age (see auctionAge). Vendor prices don't age.
 function Prices.MaterialAge(itemID)
 	if ns.db.useVendor and Prices.Vendor(itemID) then return end

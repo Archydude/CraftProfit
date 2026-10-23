@@ -101,6 +101,11 @@ SlashCmdList.CRAFTPROFIT = function(msg)
 		if not ns.Procs.Explain() then ns.Shopping.Say("Testing: pick a recipe on the crafting page first.") end
 		return
 	end
+	if command == "testnotice" then
+		-- Testing: the Best crafts list's old prices notice, now.
+		if not ns.BestCraftsList.TestNotice() then ns.Shopping.Say("Testing: open the Best crafts list first.") end
+		return
+	end
 	if command == "minimap" then
 		ns.Options.Set("minimap", not ns.db.minimap)
 		ns.Shopping.Say(ns.db.minimap and "Minimap button shown." or "Minimap button hidden. /craftprofit minimap shows it again.")

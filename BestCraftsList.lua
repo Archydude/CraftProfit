@@ -495,7 +495,7 @@ local function statusText(count, total)
 	local scan = ns.BestCrafts.Current()
 	if not scan then return "" end
 	local text = count == total and format("%d recipes", total) or format("%d of %d recipes", count, total)
-	return Color("muted", text .. " · Prices: " .. ns.Prices.SourceLabel())
+	return Color("muted", text .. " · Prices: " .. ns.Prices.SourceLabel()) .. ns.Reminder.FooterText()
 end
 
 function BestCraftsList.Render()
@@ -673,6 +673,92 @@ local function createStrategyDropdown()
 	return STRATEGY_WIDTH + 6 + label:GetUnboundedStringWidth()
 end
 
+---------------------------------------------------------------------------
+-- The notice over the list (old prices), drawn like Blizzard's Crafting Details box
+---------------------------------------------------------------------------
+
+local NOTICE_WIDTH, NOTICE_HEIGHT = 263, 200 -- the Crafting Details box's width, and room for the text
+local NOTICE_SHADE_ALPHA = 0.7 -- how dark the list gets behind the notice
+local NOTICE_SHADE_INSET = 4   -- inside the list's border
+local NOTICE_ART = { -- its background, top to bottom
+	top = "Professions-QualityPane-bg-top",
+	middle = "Professions-QualityPane-bg-middle",
+	bottom = "Professions-QualityPane-bg-bottom",
+	divider = "Professions-QualityPane-Divider",
+}
+local notice
+
+local function noticeTexture(atlas)
+	local texture = notice:CreateTexture(nil, "BACKGROUND")
+	if C_Texture.GetAtlasInfo(atlas) then
+		texture:SetAtlas(atlas)
+	else
+		texture:SetColorTexture(0.05, 0.05, 0.05, 0.95)
+	end
+	return texture
+end
+
+local function createNotice()
+	-- The list darkens behind the notice, and takes no clicks until it's closed.
+	local shade = CreateFrame("Frame", nil, list)
+	shade:SetPoint("TOPLEFT", NOTICE_SHADE_INSET, -NOTICE_SHADE_INSET)
+	shade:SetPoint("BOTTOMRIGHT", -NOTICE_SHADE_INSET, NOTICE_SHADE_INSET)
+	shade:SetFrameLevel(scrollBox:GetFrameLevel() + 20)
+	shade:EnableMouse(true)
+	shade:Hide()
+	local dark = shade:CreateTexture(nil, "BACKGROUND")
+	dark:SetAllPoints()
+	dark:SetColorTexture(0, 0, 0, NOTICE_SHADE_ALPHA)
+
+	notice = CreateFrame("Frame", nil, shade)
+	notice:SetSize(NOTICE_WIDTH, NOTICE_HEIGHT)
+	notice:SetPoint("CENTER", scrollBox, "CENTER")
+	notice:SetFrameLevel(shade:GetFrameLevel() + 5)
+	notice.shade = shade
+
+	local top = noticeTexture(NOTICE_ART.top)
+	top:SetSize(NOTICE_WIDTH, 100)
+	top:SetPoint("TOP")
+	local bottom = noticeTexture(NOTICE_ART.bottom)
+	bottom:SetSize(NOTICE_WIDTH, 100)
+	bottom:SetPoint("BOTTOM", 0, -1)
+	local middle = noticeTexture(NOTICE_ART.middle)
+	middle:SetPoint("TOPLEFT", top, "BOTTOMLEFT")
+	middle:SetPoint("BOTTOMRIGHT", bottom, "TOPRIGHT")
+
+	local title = notice:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
+	title:SetPoint("TOP", 0, -25)
+	title:SetText("Old prices")
+	local divider = notice:CreateTexture(nil, "ARTWORK")
+	divider:SetAtlas(NOTICE_ART.divider, true)
+	divider:SetPoint("TOP", title, "BOTTOM", 0, -4)
+
+	notice.text = notice:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
+	notice.text:SetPoint("TOP", divider, "BOTTOM", 0, -10)
+	notice.text:SetWidth(NOTICE_WIDTH - 40)
+	notice.text:SetJustifyH("CENTER")
+
+	local okay = CreateFrame("Button", nil, notice, "UIPanelButtonTemplate")
+	okay:SetText(OKAY)
+	okay:SetSize(100, 22)
+	okay:SetPoint("BOTTOM", 0, 22)
+	okay:SetScript("OnClick", function() shade:Hide() end)
+end
+
+local function showNotice(text)
+	notice.text:SetText(text)
+	notice.shade:Show()
+end
+
+-- Testing (/craftprofit testnotice): shows the old prices notice on the open
+-- list, whatever the scan's age. False when the list isn't open.
+function BestCraftsList.TestNotice()
+	if not (list and list:IsVisible()) then return false end
+	showNotice("Auctionator's prices are from 4 days ago.\n\nThe profits in Best crafts may be far off. Run a full "
+		.. "scan with Auctionator the next time you're at the auction house.")
+	return true
+end
+
 local function createList()
 	list = CreateFrame("Frame", "CraftProfitBestCrafts", ProfessionsFrame.CraftingPage, "BackdropTemplate")
 	list:SetAllPoints(ns.Blizzard.RecipeDetails())
@@ -721,6 +807,7 @@ local function createList()
 	ScrollUtil.InitScrollBoxListWithScrollBar(scrollBox, scrollBar, view)
 	scrollBox:HookScript("OnSizeChanged", BestCraftsList.Refresh)
 
+	createNotice()
 	createHeader("name", "Item")
 	for _, column in ipairs(COLUMNS) do
 		if column.header then createHeader(column.sort, column.header) end
@@ -770,6 +857,8 @@ function BestCraftsList.Show()
 	BestCraftsList.UpdateToggle()
 	ns.BestCrafts.Scan()
 	BestCraftsList.Render()
+	local text = ns.Reminder.BestCraftsNotice()
+	if text then showNotice(text) end
 	return true
 end
 
