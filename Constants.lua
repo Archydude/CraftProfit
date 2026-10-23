@@ -65,6 +65,7 @@ ns.DEFAULTS = {
 	leastConcentration = false, -- orders that need concentration: the qualities that need the least, cheapest of those
 	bestMaterials = false, -- "Use Craft Profit Reagents" on the order form and crafting page: put them in every order or recipe you open
 	craftStrategy = "highest", -- what the crafting page and Best crafts list craft (see ns.STRATEGIES)
+	minimap = true,       -- the minimap button (its position is in minimapIcon, kept by LibDBIcon)
 	countProcs = true,    -- multicraft and resourcefulness count in the Best crafts list and "Most profit"
 	rankTooltip = true,   -- best rank you can craft, on crafted items' tooltips
 	rankConcentration = true, -- add the concentration that rank takes

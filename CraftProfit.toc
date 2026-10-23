@@ -6,10 +6,18 @@
 ## OptionalDeps: TradeSkillMaster, Auctionator
 ## SavedVariables: CraftProfitDB, CraftProfitWhatsNew
 ## SavedVariablesPerCharacter: CraftProfitCharDB
-## IconTexture: Interface\Icons\INV_Misc_Coin_02
+## IconTexture: Interface\Icons\INV_Hammer_20
 ## Category-enUS: Professions
 ## X-License: MIT
 ## X-Curse-Project-ID: 1723749
+## AddonCompartmentFunc: CraftProfit_OnAddonCompartmentClick
+## AddonCompartmentFuncOnEnter: CraftProfit_OnAddonCompartmentEnter
+## AddonCompartmentFuncOnLeave: CraftProfit_OnAddonCompartmentLeave
+
+Libs\LibStub\LibStub.lua
+Libs\CallbackHandler-1.0\CallbackHandler-1.0.lua
+Libs\LibDataBroker-1.1\LibDataBroker-1.1.lua
+Libs\LibDBIcon-1.0\LibDBIcon-1.0.lua
 
 Constants.lua
 Blizzard.lua
@@ -30,6 +38,7 @@ Ranks.lua
 BestCrafts.lua
 BestCraftsList.lua
 Options.lua
+Minimap.lua
 Core.lua
 WhatsNew.lua
 WhatsNewData.lua

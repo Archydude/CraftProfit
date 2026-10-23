@@ -23,6 +23,7 @@ local function onChanged()
 	ns.Patron.Redraw()
 	ns.BestCrafts.Reprice(true)
 	ns.BestCraftsList.Refresh()
+	ns.Minimap.Update()
 end
 
 -- Changes a setting from elsewhere (the Best crafts list), as the options would.
@@ -89,6 +90,12 @@ function Options.Create()
 		"picks ranks that way. Your chances come from the game; how big a proc is, from your own crafts.\n\n" ..
 		"The panel always shows both: the expected profit, and Without procs under it.\n\n" ..
 		"Also in the Best crafts list's Filter menu.")
+
+	header("Minimap button")
+	checkbox("minimap", "Show minimap button",
+		"Click: your profession window, on the Best crafts list of the profession you opened last. Right-click: a " ..
+		"menu with your professions, the crafting strategy and these options. Hover: this session's total.\n\n" ..
+		"Also in the minimap's addon menu, and /craftprofit minimap shows or hides it.")
 
 	header("Prices")
 	dropdown("provider", "Price addon", {

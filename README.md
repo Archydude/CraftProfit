@@ -17,6 +17,8 @@ A lightweight addon: one small panel next to your profession window that tells y
 
 - **Session total:** under Profit/Loss, what all your crafts made since you logged in on this character (a `/reload` keeps it), including orders crafted from the Patron tab, where it also shows under the order list. Crafts whose item has no sale price, like enchants and treatises, count as a loss of what their materials cost, less what resourcefulness gives back. Click it to reset it to zero. After 5 crafts it also shows your **luck**: how much more (or less) your procs made than expected, like **Luck +14%**.
 
+- **Minimap button:** opens your profession window on the Best crafts list; hover for this session's total.
+
 - **Best rank on tooltips:** an item you can craft shows the highest rank you can make it at with top-quality materials, anywhere you see its tooltip.
 
 It stays light: nothing runs until you open your profession window, apart from noting your auction sales when you open your mailbox. Procs are counted as an average, always shown next to the profit without them.
@@ -162,6 +164,13 @@ Hover an item you can craft, in your bags, at the auction house or in a chat lin
 - Only for recipes that come in ranks.
 - It updates each time you open your profession window, so after you gain skill or spend specialization points, open the window once on that character. A character shows up after you've opened its profession window once.
 
+## Minimap button
+- **Click:** opens the profession window of the profession you opened last, on its Best crafts list. Click again to close the list.
+- **Right-click:** a menu to open any of your professions' Best crafts, switch the crafting strategy, or open the options.
+- **Hover:** this session's total and your luck.
+- Drag it around the minimap. It's also in the minimap's addon menu, and works with minimap button collectors.
+- Hide it with **Show minimap button** in the options, or type `/craftprofit minimap` (type it again to bring it back).
+
 ## Options
 Click the gear on the panel (or Craft Profit options in the gear menu under the Patron tab's list), type `/craftprofit`, or go to **Esc → Options → AddOns → Craft Profit**. The main page has what to craft and where prices come from; click the **+** next to Craft Profit for the other pages.
 
@@ -171,6 +180,7 @@ Click the gear on the panel (or Craft Profit options in the gear menu under the 
 |---|---|
 | Crafting strategy | What the crafting page crafts: Highest rank, cheapest materials (default), Most profit, or Cheapest materials. Also at the bottom of the Best crafts list. |
 | Count multicraft and resourcefulness | On by default. The Best crafts list ranks by what crafts make on average with procs, and Most profit picks ranks that way. Also in the Best crafts list's Filter menu. |
+| Show minimap button | On by default. Also `/craftprofit minimap`. |
 | Price addon | Automatic (TSM, then Auctionator for anything TSM has no price for), TSM only, or Auctionator only. |
 | TSM price for materials / crafted items | Market value (default), lowest auction right now, historical price or region market average. |
 | Use vendor price for vendor items | On by default. |

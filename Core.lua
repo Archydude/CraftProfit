@@ -53,6 +53,7 @@ events:SetScript("OnEvent", function(self, event, ...)
 		ns.Ranks.Init()
 		ns.Sales.Init()
 		ns.Procs.Init()
+		ns.Minimap.Init()
 		ns.Options.Create()
 	end
 	-- The profession window loads on demand; attach to it when it appears.
@@ -97,6 +98,11 @@ SlashCmdList.CRAFTPROFIT = function(msg)
 	if command == "testprocs" then
 		-- Testing: the open recipe's multicraft and resourcefulness, as the game sends them.
 		if not ns.Procs.Explain() then ns.Shopping.Say("Testing: pick a recipe on the crafting page first.") end
+		return
+	end
+	if command == "minimap" then
+		ns.Options.Set("minimap", not ns.db.minimap)
+		ns.Shopping.Say(ns.db.minimap and "Minimap button shown." or "Minimap button hidden. /craftprofit minimap shows it again.")
 		return
 	end
 	if command == "best" then

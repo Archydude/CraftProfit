@@ -693,6 +693,10 @@ function BestCraftsList.Show()
 	return true
 end
 
+function BestCraftsList.IsShown()
+	return list ~= nil and list:IsVisible()
+end
+
 function BestCraftsList.Hide()
 	if not list then return end
 	list:Hide()

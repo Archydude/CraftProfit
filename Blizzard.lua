@@ -447,6 +447,19 @@ function Blizzard.ShowsRecipeList()
 	return page:IsVisible() and page.RecipeList:IsShown()
 end
 
+-- The base profession (Tailoring) the profession window shows, or nil.
+function Blizzard.ShownBaseProfession()
+	local base = C_TradeSkillUI.GetBaseProfessionInfo()
+	return base and base.professionID and base.professionID > 0 and base.professionID or nil
+end
+
+-- Switches the profession window to its recipes, as clicking its Recipes tab does.
+function Blizzard.ShowRecipesTab()
+	if ProfessionsFrame.SetTab and ProfessionsFrame.recipesTabID then
+		ProfessionsFrame:SetTab(ProfessionsFrame.recipesTabID)
+	end
+end
+
 -- Shows a recipe on the crafting page, as a recipe link does.
 function Blizzard.ShowRecipe(recipeID)
 	C_TradeSkillUI.OpenRecipe(recipeID)
