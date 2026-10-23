@@ -335,16 +335,16 @@ function Blizzard.FormConcentrationCost(recipeID, schematic, transaction, advice
 	return info and info.concentrationCost
 end
 
--- The item a craft makes at its predicted quality: link, itemID, and whether the
+-- The item a craft makes at its predicted quality: link, itemID, whether the
 -- game could predict the quality for the picked qualities (if not, the form's own
--- materials are used).
+-- materials are used), and that quality tier (nil for items without ranks).
 function Blizzard.ExpectedOutput(ctx, overrides)
 	local recipeInfo, schematic, transaction = ctx.recipeInfo, ctx.schematic, ctx.transaction
 	local recipeID = recipeInfo.recipeID
 	local reagents = reagentsForPrediction(schematic, transaction, overrides)
 	local predicted = true
 
-	local qualityID
+	local quality, qualityID
 	if recipeInfo.qualityIDs and schematic.hasCraftingOperationInfo then
 		local info = operationInfo(recipeID, reagents, transaction)
 		if not info and next(overrides) then
@@ -352,13 +352,14 @@ function Blizzard.ExpectedOutput(ctx, overrides)
 			reagents = transaction:CreateCraftingReagentInfoTbl()
 			info = operationInfo(recipeID, reagents, transaction)
 		end
-		qualityID = info and recipeInfo.qualityIDs[info.craftingQuality]
+		quality = info and info.craftingQuality
+		qualityID = quality and recipeInfo.qualityIDs[quality]
 	end
 
 	local ok, output = pcall(C_TradeSkillUI.GetRecipeOutputItemData, recipeID, reagents,
 		transaction:GetAllocationItemGUID(), qualityID)
 	if not (ok and output) then return nil, nil, predicted end
-	return output.hyperlink, output.itemID, predicted
+	return output.hyperlink, output.itemID, predicted, qualityID and quality
 end
 
 -- The item a craft makes at a quality tier, with what's in the form: link and
@@ -391,6 +392,37 @@ end
 function Blizzard.ReagentQualityMarkup(itemID)
 	local info = C_TradeSkillUI.GetItemReagentQualityInfo(itemID)
 	return info and qualityIcon(info)
+end
+
+---------------------------------------------------------------------------
+-- The crafting page, for the Best crafts list
+---------------------------------------------------------------------------
+
+-- The recipe details on the crafting page: the list covers them while it's open.
+function Blizzard.RecipeDetails()
+	return ProfessionsFrame.CraftingPage.SchematicForm
+end
+
+-- Whether the crafting page shows its recipe list (it's hidden in the small view).
+function Blizzard.ShowsRecipeList()
+	local page = ProfessionsFrame.CraftingPage
+	return page:IsVisible() and page.RecipeList:IsShown()
+end
+
+-- Shows a recipe on the crafting page, as a recipe link does.
+function Blizzard.ShowRecipe(recipeID)
+	C_TradeSkillUI.OpenRecipe(recipeID)
+end
+
+-- Calls onSelect() when the crafting page shows another recipe, and onLayout()
+-- when it switches between the full and the small view, shows or hides.
+function Blizzard.WatchCraftingPage(onSelect, onLayout)
+	local page = ProfessionsFrame.CraftingPage
+	hooksecurefunc(page, "SelectRecipe", onSelect)
+	hooksecurefunc(page, "SetMaximized", onLayout)
+	hooksecurefunc(page, "SetMinimized", onLayout)
+	page:HookScript("OnShow", onLayout)
+	page:HookScript("OnHide", onLayout)
 end
 
 ---------------------------------------------------------------------------

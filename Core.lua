@@ -27,6 +27,7 @@ local function loadSettings()
 	db.session = db.session or { total = 0, crafts = 0 }
 	db.tsmOrders = db.tsmOrders or {} -- the Patron tab's running TSM search (see Patron.lua)
 	db.listItems = db.listItems or {} -- what Craft Profit put on each shopping list (see Shopping.lua)
+	db.bestHidden = db.bestHidden or {} -- kinds of item the Best crafts list hides: group key -> true
 	return db
 end
 
@@ -50,6 +51,7 @@ events:SetScript("OnEvent", function(self, event, ...)
 	if name == ADDON_NAME then
 		ns.db = loadSettings()
 		ns.Ranks.Init()
+		ns.Sales.Init()
 		ns.Options.Create()
 	end
 	-- The profession window loads on demand; attach to it when it appears.
@@ -58,6 +60,7 @@ events:SetScript("OnEvent", function(self, event, ...)
 		ns.Patron.Init()
 		ns.Best.Init()
 		ns.Craft.Init()
+		ns.BestCraftsList.Init()
 	end
 	if ns.Panel.Frame() then self:UnregisterEvent("ADDON_LOADED") end
 end)
@@ -88,6 +91,12 @@ SlashCmdList.CRAFTPROFIT = function(msg)
 		ns.Shopping.Say(where and string.format("Testing: a made-up resourcefulness proc on the %s.",
 			where == "list" and "Patron tab" or "panel")
 			or "Testing: open your profession window (or its Patron tab) first.")
+		return
+	end
+	if command == "best" then
+		if not ns.BestCraftsList.Show() then
+			ns.Shopping.Say("Open your profession window on its recipes first.")
+		end
 		return
 	end
 	if command == "testrank" then

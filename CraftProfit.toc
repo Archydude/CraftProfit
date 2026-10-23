@@ -14,6 +14,7 @@
 Constants.lua
 Blizzard.lua
 Prices.lua
+Sales.lua
 Format.lua
 Simulation.lua
 Shopping.lua
@@ -25,6 +26,8 @@ Planner.lua
 Craft.lua
 Patron.lua
 Ranks.lua
+BestCrafts.lua
+BestCraftsList.lua
 Options.lua
 Core.lua
 WhatsNew.lua

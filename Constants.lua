@@ -63,10 +63,14 @@ ns.DEFAULTS = {
 	patronSort = false,   -- the Patron tab sorted by profit: "desc" | "asc", or false for Blizzard's sort
 	concentrationFor = "profit", -- patron orders that need concentration get it by: "profit" | "knowledge", or "none" of it
 	leastConcentration = false, -- orders that need concentration: the qualities that need the least, cheapest of those
-	bestMaterials = false, -- "Use Most Profitable Reagents" on the order form and crafting page: put them in every order or recipe you open
+	bestMaterials = false, -- "Use Craft Profit Reagents" on the order form and crafting page: put them in every order or recipe you open
+	craftStrategy = "highest", -- what the crafting page and Best crafts list craft (see ns.STRATEGIES)
 	rankTooltip = true,   -- best rank you can craft, on crafted items' tooltips
 	rankConcentration = true, -- add the concentration that rank takes
 	rankCharacters = "all", -- whose ranks: "all" your characters | "current" one
+	bestSort = "profit",  -- the Best crafts list's sort: "profit" | "have" | "listed" | "sold" | "name"
+	bestSortAscending = false,
+	bestProfitableOnly = false, -- the Best crafts list hides recipes that don't make a profit
 }
 
 -- Patron order rewards that give profession knowledge: itemID -> points each.
@@ -87,6 +91,25 @@ ns.CONCENTRATION_CHOICES = {
 	{ "knowledge", "Knowledge first" },
 	{ "none", "Don't use concentration" },
 }
+
+-- Crafting strategies: which rank and materials the crafting page and the Best
+-- crafts list craft. key, name, short name, and what it does.
+ns.STRATEGIES = {
+	{ "highest", "Highest rank, cheapest materials", "Highest rank",
+		"The highest rank you can make, with the cheapest materials that reach it." },
+	{ "profit", "Most profit", "Most profit",
+		"The rank that makes the most gold after what its materials cost, with the cheapest materials that make it." },
+	{ "cheapest", "Cheapest materials", "Cheapest",
+		"The cheapest materials, whatever rank they make. For skill-ups, first crafts and knowledge." },
+}
+
+-- The current crafting strategy's entry in ns.STRATEGIES.
+function ns.Strategy()
+	for _, strategy in ipairs(ns.STRATEGIES) do
+		if strategy[1] == ns.db.craftStrategy then return strategy end
+	end
+	return ns.STRATEGIES[1]
+end
 
 -- Choices for where missing materials go when Auctionator and TSM are both installed.
 ns.LIST_ADDON_CHOICES = {

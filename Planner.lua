@@ -2,7 +2,8 @@
 -- Patron order list: the cheapest ones that still meet the order's minimum
 -- quality. "Cheapest" counts what you own at what it would sell for, so a rank
 -- you have only loses to a cheaper one when buying that really comes out ahead.
--- Also, for the recipe on the crafting page, the ones that make the most gold.
+-- Also, for the recipe on the crafting page, the ones the crafting strategy picks
+-- (see ns.STRATEGIES).
 local _, ns = ...
 
 local format = string.format
@@ -67,11 +68,12 @@ local function qualitySlots(schematic, provided)
 end
 
 -- Every mix of qualities (mix[i] = option picked for slots[i]), cheapest first,
--- or only the top qualities when there are too many mixes to try.
-local function mixesOf(slots)
+-- or only the top qualities when there are more than `maxMixes` (default
+-- MAX_MIXES) to try.
+local function mixesOf(slots, maxMixes)
 	local count = 1
 	for _, entry in ipairs(slots) do count = count * #entry.options end
-	if count > MAX_MIXES then
+	if count > (maxMixes or MAX_MIXES) then
 		local top = { cost = 0 }
 		for i, entry in ipairs(slots) do
 			local best = 1
@@ -99,6 +101,7 @@ local function mixesOf(slots)
 	table.sort(mixes, function(a, b) return a.cost < b.cost end)
 	return mixes
 end
+Planner.QualitySlots, Planner.Mixes = qualitySlots, mixesOf
 
 -- The quality the game predicts for a mix, with what the customer provides, and
 -- the concentration that would lift it one rank.
@@ -242,7 +245,7 @@ end
 -- concentration, the option, and what's in the slots the plan doesn't pick
 -- (optional and finishing reagents can change the rank).
 local function craftKey(recipeID, schematic, transaction, slots, concentrating)
-	local parts = { recipeID, tostring(concentrating), tostring(ns.db.leastConcentration) }
+	local parts = { recipeID, tostring(concentrating), tostring(ns.db.leastConcentration), ns.db.craftStrategy }
 	local picked = {}
 	for _, entry in ipairs(slots) do picked[entry.slotIndex] = true end
 	for slotIndex in ipairs(schematic.reagentSlotSchematics) do
@@ -253,6 +256,73 @@ local function craftKey(recipeID, schematic, transaction, slots, concentrating)
 		end
 	end
 	return table.concat(parts, ":")
+end
+
+-- What a craft at each rank sells for: `sales` (rank -> the item's price) capped
+-- at what better ranks sell for (see Prices.CapRanks), times the average amount
+-- a craft makes, after the AH cut. Also rank -> the rank that set a cap.
+function Planner.RankPrices(sales, maxRank, schematic)
+	local capped, cappedBy = ns.Prices.CapRanks(sales, maxRank)
+	local qtyMin, qtyMax = schematic.quantityMin or 1, schematic.quantityMax or 1
+	local keep = ns.db.ahCut and (1 - ns.AH_CUT) or 1
+	local perCraft = {}
+	for rank, price in pairs(capped) do perCraft[rank] = price * (qtyMin + qtyMax) / 2 * keep end
+	return perCraft, cappedBy
+end
+
+-- Picking one of `options` ({ cost, quality } each, cost being what its materials
+-- really cost you) to craft. Each returns nil without options.
+
+-- The highest rank they reach, the cheapest way. A lower rank is never the one to
+-- make when a better one is in reach: buyers want the best, whatever a lower rank
+-- happens to be listed at.
+function Planner.HighestRank(options)
+	local best
+	for _, option in ipairs(options) do
+		if option.quality and (not best or option.quality > best.quality
+			or (option.quality == best.quality and option.cost < best.cost)) then
+			best = option
+		end
+	end
+	return best
+end
+
+-- The one whose rank's price (`prices`, rank -> per craft, see Planner.RankPrices)
+-- beats its cost by the most, the cheaper one on a tie; also that profit. Nil
+-- when no rank they reach has a price.
+function Planner.MostProfitable(options, prices)
+	local best, bestProfit
+	for _, option in ipairs(options) do
+		local price = option.quality and prices[option.quality]
+		if price then
+			local profit = price - option.cost
+			if not best or profit > bestProfit or (profit == bestProfit and option.cost < best.cost) then
+				best, bestProfit = option, profit
+			end
+		end
+	end
+	return best, bestProfit
+end
+
+-- The cheapest, the higher rank on a tie.
+function Planner.Cheapest(options)
+	local best
+	for _, option in ipairs(options) do
+		if option.quality and (not best or option.cost < best.cost
+			or (option.cost == best.cost and option.quality > best.quality)) then
+			best = option
+		end
+	end
+	return best
+end
+
+-- The one the crafting strategy picks (ns.db.craftStrategy). `prices` is only
+-- needed for "Most profit".
+function Planner.Choose(options, prices)
+	local strategy = ns.db.craftStrategy
+	if strategy == "profit" then return (Planner.MostProfitable(options, prices)) end
+	if strategy == "cheapest" then return Planner.Cheapest(options) end
+	return Planner.HighestRank(options)
 end
 
 local function planCraft(recipeInfo, schematic, transaction, slots)
@@ -285,40 +355,39 @@ local function planCraft(recipeInfo, schematic, transaction, slots)
 	end
 	if not next(byQuality) then return end
 
-	-- The rank whose sale price beats its materials' cost by the most.
-	local qtyMin, qtyMax = schematic.quantityMin or 1, schematic.quantityMax or 1
-	local keep = ns.db.ahCut and (1 - ns.AH_CUT) or 1
-	local best, bestProfit
-	for quality, found in pairs(byQuality) do
-		local link, itemID = ns.Blizzard.OutputAtQuality(recipeInfo, transaction, quality)
-		local price = link and ns.Prices.Sale(link, itemID)
-		if price then
-			local profit = price * (qtyMin + qtyMax) / 2 * keep - found.cost
-			if not best or profit > bestProfit or (profit == bestProfit and found.cost < best.cost) then
-				best, bestProfit = found, profit
-			end
+	-- The rank the crafting strategy picks. "Most profit" needs each rank's price.
+	local options = {}
+	for _, found in pairs(byQuality) do options[#options + 1] = found end
+	local prices = {}
+	if ns.db.craftStrategy == "profit" then
+		local sales = {}
+		for quality = 1, #recipeInfo.qualityIDs do
+			local link, itemID = ns.Blizzard.OutputAtQuality(recipeInfo, transaction, quality)
+			sales[quality] = link and ns.Prices.Sale(link, itemID)
 		end
+		prices = Planner.RankPrices(sales, #recipeInfo.qualityIDs, schematic)
 	end
+	local best = Planner.Choose(options, prices)
 	local noPrice = best == nil
 	if noPrice then
-		-- No rank has a price: the cheapest mix that keeps the form's rank.
+		-- "Most profit" with no price at any rank: the cheapest mix that keeps the form's rank.
 		local formQuality = ns.Blizzard.PredictQuality(recipeInfo.recipeID, schematic, transaction, {})
 		for quality, found in pairs(byQuality) do
 			if (not formQuality or quality >= formQuality) and (not best or found.cost < best.cost) then best = found end
 		end
-		if not best then return end
 	end
+	if not best then return end
 	local plan = planOf(best.mix, best.quality, best.concentration)
 	plan.noPrice = noPrice
 	return plan
 end
 
 -- Which qualities the recipe on the crafting page should use, with what's in the
--- form's other slots and its concentration as they are: the rank that makes the
--- most gold after what its materials cost, made the cheapest way (with
--- concentration and "Optimize concentration": the way that takes the least, the
--- cheapest of those). With no sale price, the cheapest mix that keeps the form's
--- rank. { overrides, picks, quality, concentration, noPrice }, or nil.
+-- form's other slots and its concentration as they are: the rank the crafting
+-- strategy picks, made the cheapest way (with concentration and "Optimize
+-- concentration": the way that takes the least, the cheapest of those). For "Most
+-- profit" with no sale price at any rank (noPrice), the cheapest mix that keeps
+-- the form's rank. { overrides, picks, quality, concentration, noPrice }, or nil.
 function Planner.ForCraft(ctx)
 	local recipeInfo, schematic, transaction = ctx.recipeInfo, ctx.schematic, ctx.transaction
 	local slots = qualitySlots(schematic, {})

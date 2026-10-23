@@ -59,6 +59,68 @@ function Prices.Sale(link, itemID)
 	end
 end
 
+-- Caps each rank's sale price at the price of every rank above it: nobody pays
+-- more for rank 3 than for a better rank 5, so a higher listing for rank 3 is one
+-- that doesn't sell. `sales` is rank -> price (nil without a price). Returns
+-- rank -> capped price, and rank -> the higher rank that set the cap, for the
+-- ranks it lowered.
+function Prices.CapRanks(sales, maxRank)
+	local capped, cappedBy = {}, {}
+	local lowest, lowestRank
+	for rank = maxRank, 1, -1 do
+		local price = sales[rank]
+		if price then
+			if lowest and lowest < price then
+				capped[rank], cappedBy[rank] = lowest, lowestRank
+			else
+				capped[rank] = price
+				lowest, lowestRank = price, rank
+			end
+		end
+	end
+	return capped, cappedBy
+end
+
+-- How many of an item were up for sale the last day Auctionator scanned it, and
+-- how many days ago that was (0 is today); nil when it has no count. This reads
+-- Auctionator's own price history, which isn't part of its API, so every step
+-- is guarded and a change on its side just means no count.
+function Prices.Listed(link)
+	local db = Auctionator and Auctionator.Database
+	local utilities = db and Auctionator.Utilities
+	if not (db and db.GetPriceHistory and utilities and Auctionator.Constants) then return end
+	local ok, count, age = pcall(function()
+		local keys
+		utilities.DBKeyFromLink(link, function(found) keys = found end)
+		keys = keys or { utilities.BasicDBKeyFromLink(link) }
+		local today = math.floor((time() - Auctionator.Constants.SCAN_DAY_0) / 86400)
+		for _, key in ipairs(keys) do
+			-- Newest day first.
+			for _, day in ipairs(db:GetPriceHistory(key)) do
+				if day.available then return day.available, today - tonumber(day.rawDay) end
+			end
+		end
+	end)
+	if ok then return count, age end
+end
+
+-- Whether TSM is loaded, whatever the price addon option says (for its sales numbers).
+function Prices.HasTSM()
+	return TSM_API ~= nil and TSM_API.GetCustomPriceValue ~= nil
+end
+
+-- How many sell per day across the region, from TSM, or nil without TSM or a
+-- number. TSM rounds to whole numbers, so it's asked for a thousand times the
+-- number and divided back.
+function Prices.SoldPerDay(link)
+	if not Prices.HasTSM() then return end
+	local ok, itemString = pcall(TSM_API.ToItemString, link)
+	if not (ok and itemString) then return end
+	local value = tsmValue("dbregionsoldperday*1000", itemString)
+	if value then return value / 1000 end
+	return tsmValue("dbregionsoldperday", itemString)
+end
+
 -- How many days ago Auctionator last saw an item on the auction house (0 is
 -- today), or false when it's over three weeks or never. nil when prices don't
 -- come from Auctionator (TSM keeps its own data).

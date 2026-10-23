@@ -37,11 +37,12 @@ local function cheapestQuality(slot)
 end
 
 -- What the form puts in a slot. Empty required slots (you don't own the
--- material yet) get the cheapest quality, marked as missing.
-local function formPicks(slotIndex, slot, transaction)
+-- material yet) get the quality `fill` (slotIndex -> itemID) has for them, or the
+-- cheapest one, marked as missing.
+local function formPicks(slotIndex, slot, transaction, fill)
 	local picks = ns.Blizzard.Allocated(transaction, slotIndex)
 	if #picks == 0 and slot.required and slot.reagentType == Enum.CraftingReagentType.Basic then
-		local itemID = cheapestQuality(slot)
+		local itemID = fill and fill[slotIndex] or cheapestQuality(slot)
 		if itemID then picks[1] = { itemID = itemID, qty = slot.quantityRequired, missing = true } end
 	end
 	return picks
@@ -50,10 +51,11 @@ end
 -- The materials you supply:
 --   { itemID, qty, price, estimated, simulated, slotIndex, slot, formItemID }
 -- `provided` marks slots someone else fills (the customer, on an order).
--- `overrides` (slotIndex -> itemID) swaps in what-if qualities.
+-- `overrides` (slotIndex -> itemID) swaps in what-if qualities; `fill` (the same)
+-- picks the quality of empty slots (see formPicks).
 -- formItemID is what the form has in that slot, so a click can tell when it's
 -- back to the real thing.
-function Model.Materials(schematic, transaction, provided, overrides)
+function Model.Materials(schematic, transaction, provided, overrides, fill)
 	local list, byItem = {}, {}
 	local function add(itemID, qty, slotIndex, slot, flag, formItemID)
 		local entry = byItem[itemID]
@@ -71,7 +73,7 @@ function Model.Materials(schematic, transaction, provided, overrides)
 
 	for slotIndex, slot in ipairs(schematic.reagentSlotSchematics) do
 		if not provided[slotIndex] then
-			local picks = formPicks(slotIndex, slot, transaction)
+			local picks = formPicks(slotIndex, slot, transaction, fill)
 			-- A slot split over several qualities has no single "form" quality.
 			local formItemID = #picks == 1 and picks[1].itemID or nil
 			local override = overrides and overrides[slotIndex]
@@ -257,9 +259,10 @@ local function differsFromForm(schematic, transaction, overrides)
 	return false
 end
 
--- For the recipe on the crafting page: the materials that make the most gold
--- (see Planner.ForCraft), when the form has something else. Same shape as
--- bestMaterials below; concentration is left as you set it.
+-- For the recipe on the crafting page: the crafting strategy's materials (see
+-- Planner.ForCraft), when the form has something else. Same shape as
+-- bestMaterials below, plus fromQuality/toQuality when they make another rank
+-- than the form; concentration is left as you set it.
 local function bestCraftMaterials(ctx, model)
 	local schematic, transaction = ctx.schematic, ctx.transaction
 	local plan = ns.Planner.ForCraft(ctx)
@@ -269,12 +272,64 @@ local function bestCraftMaterials(ctx, model)
 		isRecraft = ctx.isRecraft, overrides = plan.overrides })
 	-- With no sale price, both are a loss of what the materials cost: the gain is what they save.
 	local gain = planned.total - model.realProfit
+	-- Worth it even when it costs more, if it makes a better rank than the form.
+	local formQuality = plan.quality and ns.Blizzard.PredictQuality(ctx.recipeInfo.recipeID, schematic, transaction, {})
+	local otherRank = formQuality and plan.quality ~= formQuality
+	local betterRank = otherRank and plan.quality > formQuality
 	-- Or, with "Optimize concentration" on, when it takes less than the form does.
 	local savesConcentration = ns.db.leastConcentration and plan.concentration
 		and (ns.Blizzard.FormConcentrationCost(ctx.recipeInfo.recipeID, schematic, transaction) or 0) > plan.concentration
-	if gain <= 0 and not savesConcentration then return end
+	if gain <= 0 and not betterRank and not savesConcentration then return end
 	return { picks = plan.overrides, list = plan.picks, concentrate = false, concentration = plan.concentration,
-		savesConcentration = savesConcentration and true or false, gain = gain, noPrice = plan.noPrice }
+		savesConcentration = savesConcentration and true or false, gain = gain, noPrice = plan.noPrice,
+		fromQuality = otherRank and formQuality or nil, toQuality = otherRank and plan.quality or nil }
+end
+
+-- What the item at `quality` sells for, capped at what any better rank sells for
+-- (see Prices.CapRanks). Also the rank that set the cap, when it did, and the
+-- price before the cap.
+local function cappedSale(ctx, link, itemID, quality)
+	local price = ns.Prices.Sale(link, itemID)
+	local qualityIDs = ctx.recipeInfo.qualityIDs
+	if not (price and quality and qualityIDs) then return price end
+	local sales = { [quality] = price }
+	for rank = quality + 1, #qualityIDs do
+		local higherLink, higherID = ns.Blizzard.OutputAtQuality(ctx.recipeInfo, ctx.transaction, rank)
+		sales[rank] = higherLink and ns.Prices.Sale(higherLink, higherID)
+	end
+	local capped, cappedBy = ns.Prices.CapRanks(sales, #qualityIDs)
+	return capped[quality], cappedBy[quality], price
+end
+
+-- The note for a sale price a better rank capped.
+function Model.CappedNote(recipeID, rank, listed)
+	local icon = ns.Blizzard.ItemQualityMarkup(recipeID, rank) or ("rank " .. rank)
+	return string.format("Priced as %s sells: this rank is listed at %s, but the better rank sells for less.",
+		icon, ns.Format.Money(listed))
+end
+
+-- The crafting strategy's quality (see Planner.ForCraft) for each of the form's
+-- empty slots that `picks` (what-if qualities) doesn't set: slotIndex -> itemID,
+-- or nil when there are none. So a craft you're still missing materials for is
+-- priced, and shopped for, as the strategy would craft it.
+local function strategyFill(transaction, plan, picks)
+	if not plan then return end
+	local fill
+	for slotIndex, itemID in pairs(plan.overrides) do
+		if not picks[slotIndex] and #ns.Blizzard.Allocated(transaction, slotIndex) == 0 then
+			fill = fill or {}
+			fill[slotIndex] = itemID
+		end
+	end
+	return fill
+end
+
+-- `a` with `b` laid over it, as a new table.
+local function merged(a, b)
+	local result = {}
+	for k, v in pairs(a or {}) do result[k] = v end
+	for k, v in pairs(b or {}) do result[k] = v end
+	return result
 end
 
 -- The recipe selected on the crafting page. With ctx.overrides (slotIndex ->
@@ -294,10 +349,14 @@ function Model.Craft(ctx)
 		notes = notes,
 	}
 
-	local link, itemID
+	-- What the crafting strategy would craft; its qualities fill the empty slots.
+	local plan = not (planning or ctx.isRecraft) and ns.Planner.ForCraft(ctx) or nil
+	local fill = strategyFill(transaction, plan, picks)
+
+	local link, itemID, quality
 	if not ctx.isRecraft and schematic.recipeType == Enum.TradeskillRecipeType.Item then
 		local predicted
-		link, itemID, predicted = ns.Blizzard.ExpectedOutput(ctx, picks)
+		link, itemID, predicted, quality = ns.Blizzard.ExpectedOutput(ctx, merged(picks, fill))
 		if not predicted then
 			notes[#notes + 1] = "The game couldn't predict the quality for these materials, so the sale price uses the form's quality."
 		end
@@ -305,7 +364,8 @@ function Model.Craft(ctx)
 
 	if link then
 		local qtyMin, qtyMax = schematic.quantityMin or 1, schematic.quantityMax or 1
-		local price = ns.Prices.Sale(link, itemID)
+		local price, cappedBy, listed = cappedSale(ctx, link, itemID, quality)
+		if cappedBy then notes[#notes + 1] = Model.CappedNote(recipeInfo.recipeID, cappedBy, listed) end
 		local output = {
 			link = link,
 			qtyText = qtyMin == qtyMax and tostring(qtyMin) or (qtyMin .. "-" .. qtyMax),
@@ -328,13 +388,22 @@ function Model.Craft(ctx)
 		notes[#notes + 1] = "Nothing to sell from this recipe: the loss is what the materials cost."
 	end
 
-	model.materials = Model.Materials(schematic, transaction, {}, picks)
+	model.materials = Model.Materials(schematic, transaction, {}, picks, fill)
 	model.cost = costOf(model.materials, notes)
-	addShopping(model, schematic, {}, picks)
+	notes.filled = fill ~= nil
+	-- The shopping list buys the strategy's qualities when the form can't make its
+	-- rank (or has empty slots); otherwise any quality you own counts. What-if
+	-- picks always win: they're the ranks you chose.
+	local shopPicks = picks
+	if plan and not simulating and (fill or plan.quality and
+		(ns.Blizzard.PredictQuality(recipeInfo.recipeID, schematic, transaction, {}) or 0) < plan.quality) then
+		shopPicks = plan.overrides
+	end
+	addShopping(model, schematic, {}, shopPicks)
 	model.total = (model.total or 0) - model.cost
 
 	-- Real crafts use what's in the form, never the what-if picks.
-	model.realCost = simulating and costOf(Model.Materials(schematic, transaction, {})) or model.cost
+	model.realCost = simulating and costOf(Model.Materials(schematic, transaction, {}, nil, fill)) or model.cost
 	model.realProfit = not simulating and model.total or nil
 	if not (planning or simulating or ctx.isRecraft) then model.best = bestCraftMaterials(ctx, model) end
 	return model

@@ -1,9 +1,9 @@
--- Craft Profit: the most profitable materials for a crafting order or a recipe.
--- The panel's "Use the most profitable materials" row puts them in once; the
--- "Use Most Profitable Reagents" checkbox, above Blizzard's "Use Best Quality
--- Reagents" on the order form and on the crafting page, puts them in every order
--- or recipe you open. Above it, "Optimize Concentration" picks the ones that need
--- the least concentration instead.
+-- Craft Profit: Craft Profit's materials for a crafting order (the most
+-- profitable ones) or a recipe (the crafting strategy's). The panel's row puts
+-- them in once; the "Use Craft Profit Reagents" checkbox, above Blizzard's "Use
+-- Best Quality Reagents" on the order form and on the crafting page, puts them in
+-- every order or recipe you open. Above it, "Optimize Concentration" picks the
+-- ones that need the least concentration instead.
 local _, ns = ...
 
 local Best = {}
@@ -11,7 +11,7 @@ ns.Best = Best
 
 local format = string.format
 
-local LABEL = "Use Most Profitable Reagents"
+local LABEL = "Use Craft Profit Reagents"
 local CONCENTRATION_LABEL = "Optimize Concentration"
 local LABEL_GAP = 2 -- checkbox to its label
 local ROW_GAP = 0   -- between the stacked checkboxes
@@ -80,9 +80,13 @@ local function showTooltip(self)
 	GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
 	GameTooltip:SetText(LABEL)
 	if onCraftPage() then
-		GameTooltip:AddLine("Puts the most profitable materials in every recipe you pick: the rank that makes the "
-			.. "most gold after what its materials cost, and the cheapest materials that make it, with what you own "
-			.. "counted at what it would sell for. With no sale price, the cheapest materials that keep the rank.", 1, 1, 1, true)
+		local strategy = ns.Strategy()
+		GameTooltip:AddLine("Puts the materials your crafting strategy picks in every recipe you pick, with what you own "
+			.. "counted at what it would sell for.", 1, 1, 1, true)
+		GameTooltip:AddLine(" ")
+		GameTooltip:AddLine(format("Crafting strategy: %s", strategy[2]), 1, 0.82, 0)
+		GameTooltip:AddLine(strategy[4], 1, 1, 1, true)
+		GameTooltip:AddLine("Change it in the options or at the bottom of the Best crafts list.", 0.53, 0.53, 0.53, true)
 		GameTooltip:AddLine(" ")
 		GameTooltip:AddLine("Concentration stays as you set it. With it on, the ranks it reaches count.", 1, 1, 1, true)
 	else
@@ -128,8 +132,8 @@ local function showConcentrationTooltip(self)
 	GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
 	GameTooltip:SetText(CONCENTRATION_LABEL)
 	if onCraftPage() then
-		GameTooltip:AddLine("With concentration on, uses the material qualities that reach the most profitable rank "
-			.. "with the least concentration, and the cheapest of those. The materials cost more, but your concentration "
+		GameTooltip:AddLine("With concentration on, uses the material qualities that reach your crafting strategy's "
+			.. "rank with the least concentration, and the cheapest of those. The materials cost more, but your concentration "
 			.. "lasts for more crafts.\n\nOff: the cheapest materials for that rank, whatever concentration they take.",
 			1, 1, 1, true)
 	else
@@ -137,10 +141,10 @@ local function showConcentrationTooltip(self)
 	end
 	if not ns.db.bestMaterials then
 		GameTooltip:AddLine(" ")
-		GameTooltip:AddLine("Use Most Profitable Reagents is off, so this doesn't change the form right now.", 1, 0.82, 0, true)
+		GameTooltip:AddLine(LABEL .. " is off, so this doesn't change the form right now.", 1, 0.82, 0, true)
 	end
 	GameTooltip:AddLine(" ")
-	GameTooltip:AddLine("Picks the materials for Use Most Profitable Reagents and the Patron tab. "
+	GameTooltip:AddLine("Picks the materials for " .. LABEL .. " and the Patron tab. "
 		.. "The same as Optimize concentration at the bottom of that list.", 0.53, 0.53, 0.53, true)
 	GameTooltip:Show()
 end
@@ -149,7 +153,7 @@ local function onConcentrationClick(self)
 	local on = self:GetChecked() and true or false
 	PlaySound(on and SOUNDKIT.IG_MAINMENU_OPTION_CHECKBOX_ON or SOUNDKIT.IG_MAINMENU_OPTION_CHECKBOX_OFF)
 	for _, box in ipairs(concentrationBoxes) do box:SetChecked(on) end
-	-- New picks go in by themselves while Use Most Profitable Reagents is on.
+	-- New picks go in by themselves while Use Craft Profit Reagents is on.
 	ns.Patron.SetLeastConcentration(on)
 	showConcentrationTooltip(self)
 end

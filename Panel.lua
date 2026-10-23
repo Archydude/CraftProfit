@@ -95,9 +95,10 @@ local function addRow(left, right, font, onClick, tooltip)
 	row.left:SetText(left or "")
 
 	-- Rows with an amount stay on one line (long names get cut); notes wrap.
-	-- The first row leaves room for the options button.
+	-- The first row leaves room for the options button and the Best crafts button.
 	local hasAmount = right ~= nil and right ~= ""
-	local reserved = hasAmount and (row.right:GetStringWidth() + 8) or (rowCount == 1 and Layout.GEAR_SPACE or 0)
+	local reserved = hasAmount and (row.right:GetStringWidth() + 8)
+		or (rowCount == 1 and (Layout.GEAR_SPACE + ns.BestCraftsList.HeaderSpace()) or 0)
 	row.left:SetWidth(Layout.WIDTH - 2 * Layout.PAD_SIDE - reserved)
 	row.left:SetWordWrap(not hasAmount)
 
@@ -367,7 +368,10 @@ local function drawFooter(model)
 	end
 
 	local notes = model.notes
-	if notes.estimated then addRow(Color("muted", "Missing materials: cheapest quality assumed.")) end
+	if notes.estimated then
+		addRow(Color("muted", notes.filled and "Missing materials: priced at the qualities your crafting strategy picks."
+			or "Missing materials: cheapest quality assumed."))
+	end
 	if notes.missing then
 		addRow(Color("warning", format("%d material(s) have no price, so profit is too high", notes.missing)))
 	end
@@ -386,7 +390,7 @@ local function cutNote(cut, gross, name)
 	return " " .. Color("muted", format("(after %d%% %s)", math.floor(cut / gross * 100 + 0.5), name))
 end
 
--- What the most profitable materials are, for the row's tooltip.
+-- What the row's materials are, for its tooltip.
 local function bestExplanation(kind, best)
 	local least = ns.db.leastConcentration and best.concentration
 	if kind == "order" then
@@ -399,38 +403,53 @@ local function bestExplanation(kind, best)
 	if best.noPrice then
 		return "No sale price for this item, so: the cheapest materials that keep the rank it comes out at now."
 	end
-	if least then
-		return format("The rank that makes the most gold after what its materials cost, reached with the least "
-			.. "concentration (%d), and the cheapest materials of those.", best.concentration)
+	local strategy = ns.Strategy()
+	local text = format("Crafting strategy: %s. %s", strategy[2], strategy[4])
+	if least and strategy[1] ~= "cheapest" then
+		text = text .. format(" With Optimize Concentration: the materials that reach that rank with the least "
+			.. "concentration (%d), the cheapest of those.", best.concentration)
 	end
-	return "The rank that makes the most gold after what its materials cost, and the cheapest materials that make it."
+	return text
 end
 
-local function bestTooltip(kind, best)
+-- A rank's quality icon, or "rank 3".
+local function rankIcon(recipeID, rank)
+	return ns.Blizzard.ItemQualityMarkup(recipeID, rank) or ("rank " .. rank)
+end
+
+local function bestTooltip(kind, best, recipeID)
 	return function(tip)
-		tip:SetText("Use the most profitable materials")
+		tip:SetText(kind == "order" and "Use the most profitable materials" or "Use Craft Profit materials")
 		tip:AddLine("Puts these in the form:", 1, 1, 1)
 		for _, pick in ipairs(best.list) do tip:AddLine(Item(pick.itemID, pick.qty), 1, 1, 1) end
 		if best.concentrate then tip:AddLine("and turns on concentration, which it needs.", 1, 1, 1, true) end
 		tip:AddLine(bestExplanation(kind, best) .. " What you own counts at what it would sell for.", 0.53, 0.53, 0.53, true)
+		if best.toQuality then
+			tip:AddLine(format("Makes %s instead of %s.", rankIcon(recipeID, best.toQuality),
+				rankIcon(recipeID, best.fromQuality)), 1, 1, 1, true)
+		end
 		if best.gain > 0 then
 			tip:AddDoubleLine("You come out ahead", signedMoney(best.gain), 1, 1, 1, 1, 1, 1)
+		elseif best.toQuality and best.toQuality > best.fromQuality then
+			tip:AddDoubleLine("Costs more, makes a better rank", signedMoney(best.gain), 1, 1, 1, 1, 1, 1)
 		elseif best.savesConcentration then
 			tip:AddDoubleLine("Costs more, saves concentration", signedMoney(best.gain), 1, 1, 1, 1, 1, 1)
 		end
 	end
 end
 
--- A row that puts the most profitable materials in the form, when it has others.
--- With "Use Most Profitable Reagents" on, it only shows when something couldn't
--- go in (you're short of it) or you changed a slot since.
+-- A row that puts Craft Profit's materials in the form, when it has others: on an
+-- order the most profitable ones, on the crafting page the crafting strategy's.
+-- With "Use Craft Profit Reagents" on, it only shows when something couldn't go
+-- in (you're short of it) or you changed a slot since.
 local function drawBest(model)
 	local best = model.best
 	if not best then return end
 	addGap()
-	local text = Color("simulated", "Use the most profitable materials")
+	local text = Color("simulated", model.kind == "order" and "Use the most profitable materials" or "Use Craft Profit materials")
+	if best.toQuality then text = text .. " " .. rankIcon(model.key, best.toQuality) end
 	if best.gain > 0 then text = text .. " " .. signedMoney(best.gain) end
-	addRow(text, nil, nil, function() ns.Best.Use(best) end, bestTooltip(model.kind, best))
+	addRow(text, nil, nil, function() ns.Best.Use(best) end, bestTooltip(model.kind, best, model.key))
 end
 
 local function drawCraft(model)
@@ -531,6 +550,8 @@ function Panel.Render()
 	refreshQueued = false
 	if not frame then return end
 	rowCount, dividerCount, contentHeight, profitRow = 0, 0, 0, nil
+	-- Before the rows, which leave room for it.
+	ns.BestCraftsList.UpdateToggle()
 
 	local model = buildModel()
 	Panel.current = model
