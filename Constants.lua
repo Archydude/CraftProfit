@@ -73,6 +73,7 @@ ns.DEFAULTS = {
 	bestSort = "profit",  -- the Best crafts list's sort: "profit" | "have" | "listed" | "sold" | "name"
 	bestSortAscending = false,
 	bestProfitableOnly = false, -- the Best crafts list hides recipes that don't make a profit
+	bestShowIgnored = false, -- the Best crafts list shows the recipes you ignored, in grey
 }
 
 -- Patron order rewards that give profession knowledge: itemID -> points each.

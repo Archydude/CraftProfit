@@ -132,6 +132,7 @@ Click **Best crafts** at the top of the panel, next to its gear (it shows on the
 - **Listed:** how many were up for sale the last time Auctionator saw them, in grey when that was 3 days ago or more. Needs Auctionator; without it, **-**.
 - **Sells/day** (with TSM): how many sell per day across your region, on average.
 - **You sold** (without TSM, in place of Sells/day): how many your characters sold on the auction house in the last 14 days, counted from the auction house's mail each time you open your mailbox. It starts counting with this version, so it fills in over the first two weeks. With TSM, it's in each row's tooltip instead.
+- **Eye:** ignores the recipe (see below).
 - **Cart:** the shopping list button, as on the panel: click for what's missing for one craft, Shift-click to pick how many crafts. It buys the qualities the row is priced with.
 - **Icons** after the name: the rank it's priced at, the first-craft icon when crafting it the first time gives profession knowledge, and a watch when it's on cooldown. A long name is cut short so they always show.
 
@@ -145,7 +146,10 @@ Click a column header to sort by it; click again to reverse. Recipes without a v
 - **Profitable only** hides the recipes that lose gold or have no price.
 - **Count multicraft and resourcefulness** switches the first column between Expected and Profit (also in the options).
 - **Show:** a checkbox for each kind of item the profession makes, with how many: **Gear** (weapons, armor and profession tools), **Decor**, **Materials** (reagents, trade goods and gems), **Enchants and kits**, **Consumables**, **Bags** and **Other**. **Show all** and **Hide all** set them all at once.
-- The list remembers the filter. The small red button on it puts everything back.
+- **Show ignored recipes** shows the recipes you ignored (below), in grey and marked **ignored**. **Stop ignoring all** brings back every ignored recipe of the profession shown.
+- The list remembers the filter. The small red button on it puts everything back (ignored recipes stay ignored).
+
+**Ignore a recipe:** click the eye at the end of its row (or right-click the row) to hide it from the list, for when an item is priced far too high for no reason. With Show ignored recipes on, an ignored row has an undo arrow there instead: click it to stop ignoring it. The ignore list is the same for all your characters.
 
 - Concentration isn't used for the ranking; the row's tooltip shows what it would add.
 - Only this character's recipes: the game only says how a craft turns out for the character whose profession window is open.

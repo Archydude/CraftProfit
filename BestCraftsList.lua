@@ -32,6 +32,7 @@ local STALE_DAYS = 3       -- Auctionator counts this old or older show in grey
 -- and needsTSM: true shows it only with TSM, false only without. The demand
 -- column is TSM's Sells/day, or without TSM, You sold.
 local COLUMNS = {
+	{ key = "ignore", width = CART_SIZE },
 	{ key = "cart", width = CART_SIZE },
 	{ key = "sold", width = 64, header = "You sold", sort = "sold", needsTSM = false },
 	{ key = "perDay", width = 64, header = "Sells/day", sort = "perDay", needsTSM = true },
@@ -66,6 +67,9 @@ local SORT_VALUES = {
 	perDay = function(row) return row.soldPerDay end,
 }
 local CART_ICON = { atlases = { "Perks-ShoppingCart", "Banker" }, file = "Interface\\Icons\\INV_Misc_Bag_10" }
+-- The ignore button's picture: an eye to hide the recipe, or undo on an ignored one.
+local IGNORE_ICON = { atlases = { "transmog-icon-hidden" }, file = "Interface\\Buttons\\UI-GroupLoot-Pass-Up" }
+local UNIGNORE_ICON = { atlases = { "common-icon-undo" }, file = "Interface\\Buttons\\UI-RefreshButton" }
 local FIRST_CRAFT_ATLAS = "professions_icon_firsttimecraft"
 local COOLDOWN_ICON = "|TInterface\\Icons\\INV_Misc_PocketWatch_01:14|t"
 -- The sorted column's arrow: the auction house's, or the older one.
@@ -151,6 +155,7 @@ local function visibleRows()
 	allRows = ns.BestCrafts.Rows()
 	for _, row in ipairs(allRows) do
 		if matches(row, search) and not ns.db.bestHidden[row.group]
+			and not (ns.db.bestIgnored[row.entry.recipeID] and not ns.db.bestShowIgnored)
 			and not (ns.db.bestProfitableOnly and not ((shownProfit(row) or 0) > 0)) then
 			shown[#shown + 1] = row
 		end
@@ -258,6 +263,8 @@ local function rowTooltip(tip, row)
 
 	tip:AddLine(" ")
 	tip:AddLine(Color("simulated", "Click: show the recipe"))
+	tip:AddLine(Color("simulated", ns.db.bestIgnored[entry.recipeID] and "Right-click: stop ignoring it"
+		or "Right-click: ignore it (hide it from the list)"))
 end
 
 ---------------------------------------------------------------------------
@@ -279,14 +286,15 @@ local function columnLayout(width)
 	return layout
 end
 
-local function setCartIcon(button)
-	for _, atlas in ipairs(CART_ICON.atlases) do
+-- Shows `icon` (CART_ICON...) on a button: the first atlas the game has, or else the file.
+local function setIcon(button, icon)
+	for _, atlas in ipairs(icon.atlases) do
 		if C_Texture.GetAtlasInfo(atlas) then
 			button:SetNormalAtlas(atlas)
 			return
 		end
 	end
-	button:SetNormalTexture(CART_ICON.file)
+	button:SetNormalTexture(icon.file)
 end
 
 local function cartTooltip(self)
@@ -314,9 +322,17 @@ local function cellText(button, key, justify)
 	return text
 end
 
+-- Ignoring a recipe hides it from the list, for when its price makes no sense.
+-- Kept for every character, by recipe.
+local function setIgnored(row, ignored)
+	ns.db.bestIgnored[row.entry.recipeID] = ignored or nil
+	GameTooltip:Hide()
+	BestCraftsList.Render()
+end
+
 local function createRow(button)
 	button.cells = {}
-	button:RegisterForClicks("LeftButtonUp")
+	button:RegisterForClicks("LeftButtonUp", "RightButtonUp")
 	local highlight = button:CreateTexture(nil, "HIGHLIGHT")
 	highlight:SetAllPoints()
 	highlight:SetColorTexture(1, 1, 1, 0.08)
@@ -330,12 +346,12 @@ local function createRow(button)
 	button.tags = button:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
 	button.tags:SetWordWrap(false)
 	for _, column in ipairs(COLUMNS) do
-		if column.key ~= "cart" then cellText(button, column.key) end
+		if column.header then cellText(button, column.key) end
 	end
 
 	local cart = CreateFrame("Button", nil, button)
 	cart:SetSize(CART_SIZE, CART_SIZE)
-	setCartIcon(cart)
+	setIcon(cart, CART_ICON)
 	cart:SetHighlightTexture("Interface\\Buttons\\UI-Common-MouseHilight", "ADD")
 	cart:RegisterForClicks("LeftButtonUp")
 	cart:SetScript("OnClick", function(self)
@@ -345,7 +361,33 @@ local function createRow(button)
 	cart:SetScript("OnLeave", GameTooltip_Hide)
 	button.cart = cart
 
-	button:SetScript("OnClick", function(self)
+	local ignore = CreateFrame("Button", nil, button)
+	ignore:SetSize(CART_SIZE, CART_SIZE)
+	ignore:SetHighlightTexture("Interface\\Buttons\\UI-Common-MouseHilight", "ADD")
+	ignore:RegisterForClicks("LeftButtonUp")
+	ignore:SetScript("OnClick", function(self)
+		setIgnored(self.row, not ns.db.bestIgnored[self.row.entry.recipeID])
+	end)
+	ignore:SetScript("OnEnter", function(self)
+		GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+		if ns.db.bestIgnored[self.row.entry.recipeID] then
+			GameTooltip:SetText("Stop ignoring")
+			GameTooltip:AddLine("Puts this recipe back on the list.", 1, 1, 1, true)
+		else
+			GameTooltip:SetText("Ignore")
+			GameTooltip:AddLine("Hides this recipe from the list, for when its price makes no sense. "
+				.. "Show ignored recipes in the Filter menu brings it back.", 1, 1, 1, true)
+		end
+		GameTooltip:Show()
+	end)
+	ignore:SetScript("OnLeave", GameTooltip_Hide)
+	button.ignore = ignore
+
+	button:SetScript("OnClick", function(self, mouseButton)
+		if mouseButton == "RightButton" then
+			setIgnored(self.row, not ns.db.bestIgnored[self.row.entry.recipeID])
+			return
+		end
 		BestCraftsList.Hide()
 		ns.Blizzard.ShowRecipe(self.row.entry.recipeID)
 	end)
@@ -361,6 +403,7 @@ local function drawRow(button, row)
 	if not button.cells then createRow(button) end
 	button.row = row
 	button.cart.row = row
+	button.ignore.row = row
 	local layout = columnLayout(scrollBox:GetWidth())
 	for key, text in pairs(button.cells) do
 		local place = layout[key]
@@ -373,6 +416,9 @@ local function drawRow(button, row)
 	end
 	button.cart:ClearAllPoints()
 	button.cart:SetPoint("LEFT", button, "LEFT", layout.cart.x, 0)
+	button.ignore:ClearAllPoints()
+	button.ignore:SetPoint("LEFT", button, "LEFT", layout.ignore.x, 0)
+	setIcon(button.ignore, ns.db.bestIgnored[row.entry.recipeID] and UNIGNORE_ICON or IGNORE_ICON)
 
 	local entry = row.entry
 	button.icon:SetTexture(row.output and C_Item.GetItemIconByID(row.output.itemID) or entry.icon)
@@ -381,10 +427,12 @@ local function drawRow(button, row)
 	if row.quality and entry.maxRank > 1 then tags[#tags + 1] = rankIcon(row, row.quality) end
 	if row.firstCraft then tags[#tags + 1] = firstCraftMarkup() end
 	if row.cooldown then tags[#tags + 1] = COOLDOWN_ICON end
+	local ignored = ns.db.bestIgnored[entry.recipeID]
+	if ignored then tags[#tags + 1] = Color("muted", "ignored") end
 	local tagText = table.concat(tags, " ")
 	button.tags:SetText(tagText)
 	local nameCell = button.cells.name
-	nameCell:SetText(row.profit and name or Color("muted", name))
+	nameCell:SetText((row.profit and not ignored) and name or Color("muted", name))
 	-- The name takes what the icons leave, and is cut short with "..." past that.
 	local tagWidth = tagText ~= "" and (button.tags:GetUnboundedStringWidth() + TAG_GAP) or 0
 	nameCell:SetWidth(math.max(1, math.min(nameCell:GetUnboundedStringWidth() + 2, layout.name.width - tagWidth)))
@@ -509,13 +557,23 @@ end
 ---------------------------------------------------------------------------
 
 local function filtersAreDefault()
-	return not ns.db.bestProfitableOnly and next(ns.db.bestHidden) == nil
+	return not ns.db.bestProfitableOnly and not ns.db.bestShowIgnored and next(ns.db.bestHidden) == nil
 end
 
+-- Back to the default filters. Ignored recipes stay ignored.
 local function resetFilters()
-	ns.db.bestProfitableOnly = false
+	ns.db.bestProfitableOnly, ns.db.bestShowIgnored = false, false
 	wipe(ns.db.bestHidden)
 	BestCraftsList.Render()
+end
+
+-- How many of the profession's recipes are ignored.
+local function ignoredCount()
+	local count = 0
+	for _, row in ipairs(allRows) do
+		if ns.db.bestIgnored[row.entry.recipeID] then count = count + 1 end
+	end
+	return count
 end
 
 local function setAllGroups(hidden)
@@ -556,6 +614,28 @@ local function filterMenu(_, root)
 	root:CreateDivider()
 	root:CreateButton("Show all", function() return setAllGroups(false) end)
 	root:CreateButton("Hide all", function() return setAllGroups(true) end)
+
+	-- Recipes you ignored with a right-click.
+	local ignored = ignoredCount()
+	root:CreateDivider()
+	local show = root:CreateCheckbox(format("Show ignored recipes %s", Color("muted", "(" .. ignored .. ")")),
+		function() return ns.db.bestShowIgnored end,
+		function()
+			ns.db.bestShowIgnored = not ns.db.bestShowIgnored
+			BestCraftsList.Render()
+		end)
+	show:SetTooltip(function(tip)
+		GameTooltip_SetTitle(tip, "Show ignored recipes")
+		GameTooltip_AddNormalLine(tip, "Right-click a recipe in the list to ignore it, for when its price makes no sense. "
+			.. "Ignored recipes show here in grey, marked ignored; right-click one again to stop ignoring it.")
+	end)
+	if ignored > 0 then
+		root:CreateButton("Stop ignoring all", function()
+			for _, row in ipairs(allRows) do ns.db.bestIgnored[row.entry.recipeID] = nil end
+			BestCraftsList.Render()
+			return MenuResponse.Refresh
+		end)
+	end
 end
 
 ---------------------------------------------------------------------------
