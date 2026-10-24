@@ -195,9 +195,10 @@ function Planner.SpendConcentration(rows, mode)
 			local aKnow, bKnow = perPoint(a, a.model.knowledge or 0), perPoint(b, b.model.knowledge or 0)
 			if aKnow ~= bKnow then return aKnow > bKnow end
 		end
-		local aGain, bGain = a.model.total > 0, b.model.total > 0
+		local aProfit, bProfit = ns.Model.Shown(a.model), ns.Model.Shown(b.model)
+		local aGain, bGain = aProfit > 0, bProfit > 0
 		if aGain ~= bGain then return aGain end
-		return perPoint(a, a.model.total) > perPoint(b, b.model.total)
+		return perPoint(a, aProfit) > perPoint(b, bProfit)
 	end)
 
 	local left = have

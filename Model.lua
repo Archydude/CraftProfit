@@ -18,13 +18,19 @@
 --   simulating    some materials are what-if qualities
 --   best          more profitable materials than the form's, or nil
 --   notes         { estimated = bool, missing = count, [1..n] = extra notes }
--- Crafts also have:
---   procs         what multicraft and resourcefulness add on average (Procs.Expected)
+--   procs         what multicraft and resourcefulness add on average (Procs.Expected);
+--                 on orders resourcefulness only. Nil on recrafts
 --   expected      profit with that counted
 local _, ns = ...
 
 local Model = {}
 ns.Model = Model
+
+-- The profit to show and rank by: with Count multicraft and resourcefulness on,
+-- the expected profit.
+function Model.Shown(model)
+	return ns.db.countProcs and model.expected or model.total
+end
 
 -- The cheapest quality of a material, for slots the form leaves empty.
 local function cheapestQuality(slot)
@@ -560,6 +566,18 @@ function Model.Order(ctx)
 	end
 
 	model.total = model.receive - model.cost + rewardsValue
+
+	-- What resourcefulness gives back on average of what you supply (see
+	-- Procs.Expected). The customer gets the item, so multicraft adds nothing.
+	if not order.isRecraft then
+		local chances = ctx.transaction and recipeInfo and ns.Procs.Chances(ns.Blizzard.CraftInfo(ctx, picks))
+			or ns.Procs.RecipeChances(order.spellID)
+		chances.multicraft = 0
+		model.procs = ns.Procs.Expected(ns.Procs.ProfessionOf(order.spellID), chances, nil,
+			Model.BasicCost(model.materials))
+		model.expected = model.total + model.procs.total
+	end
+
 	-- Real crafts use what's in the form, never the what-if picks.
 	model.realCost = simulating and costOf(Model.Materials(schematic, transaction, ctx.provided)) or model.cost
 	model.realProfit = model.receive - model.realCost + rewardsValue

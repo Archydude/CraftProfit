@@ -130,7 +130,7 @@ local function listOrders()
 	table.sort(rows, function(a, b)
 		local aOut, bOut = a.plan and a.plan.unreachable or false, b.plan and b.plan.unreachable or false
 		if aOut ~= bOut then return bOut end
-		return a.model.total > b.model.total
+		return ns.Model.Shown(a.model) > ns.Model.Shown(b.model)
 	end)
 	local concentration = ns.Planner.SpendConcentration(rows, ns.db.concentrationFor)
 	return rows, unknown, concentration
@@ -201,7 +201,7 @@ end
 local function profitableRows(rows)
 	local list = {}
 	for _, row in ipairs(reachableRows(rows)) do
-		if row.model.total > 0 then list[#list + 1] = row end
+		if ns.Model.Shown(row.model) > 0 then list[#list + 1] = row end
 	end
 	return list
 end
@@ -341,7 +341,19 @@ local function profitTooltip(row)
 	local rewards = model.total - model.receive + model.cost
 	if rewards > 0 then line("Sellable rewards", rewards) end
 	tooltip:AddLine(" ")
-	tooltip:AddDoubleLine(model.total >= 0 and "Profit" or "Loss", signedMoney(model.total), 1, 0.82, 0, 1, 1, 1)
+	-- With procs counted: what resourcefulness adds on average, up to the expected
+	-- profit the list shows.
+	local procs = ns.db.countProcs and model.procs
+	if procs and procs.total > 0 then
+		line("Without procs", model.total, true)
+		line(format("Resourcefulness %.0f%% x %.0f%% saved", procs.chances.resourcefulness * 100, procs.savedShare * 100),
+			procs.resourcefulness, true)
+		tooltip:AddLine("  " .. ns.Procs.SourceText(procs.resourcefulnessProcs), 0.53, 0.53, 0.53)
+		tooltip:AddDoubleLine(model.expected >= 0 and "Expected profit" or "Expected loss", signedMoney(model.expected),
+			1, 0.82, 0, 1, 1, 1)
+	else
+		tooltip:AddDoubleLine(model.total >= 0 and "Profit" or "Loss", signedMoney(model.total), 1, 0.82, 0, 1, 1, 1)
+	end
 	if model.notes.missing then
 		tooltip:AddLine("Some materials have no price, so the profit is too high.", 1, 0.4, 0.4, true)
 	end
@@ -747,7 +759,7 @@ local function drawRow(row)
 	end
 
 	-- Short of concentration or out of reach: the profit in grey, since you can't take it now.
-	local total = data.model.total
+	local total = ns.Model.Shown(data.model)
 	local grey = data.noConcentration or data.plan and data.plan.unreachable
 	local profit = grey and ns.Color("muted", (total > 0 and "+" or "") .. ns.Format.Money(total)) or signedMoney(total)
 	local concentration = concentrationText(data)
@@ -780,7 +792,9 @@ end
 local HEADERS = {
 	profit = { text = "Profit", sorts = "profit", tip = "Commission after the cut, plus the rewards that sell, minus the "
 		.. "materials you supply, at the qualities that reach the order's minimum quality. The concentration it "
-		.. "takes is shown after it." },
+		.. "takes is shown after it.\n\nWith Count multicraft and resourcefulness on (Craft Profit options), it's "
+		.. "Expected: what the order makes on average with resourcefulness on the materials you supply. Multicraft "
+		.. "doesn't count, since the customer gets the item." },
 	rewards = { text = "Rewards", tip = "What the patron gives besides the commission. Green counts give "
 		.. "profession knowledge. Point at one for its value." },
 	materials = { text = "Materials", tip = "Whether you have everything for the order, or how much you're missing. "
@@ -791,12 +805,18 @@ local HEADERS = {
 }
 local headerBar, headers
 
+-- The Profit header reads Expected while procs are counted.
+local function profitHeader()
+	return ns.db.countProcs and "Expected" or HEADERS.profit.text
+end
+
 -- Sorting by profit or by what you can do with each order (ns.db.patronSort:
 -- "desc" or "asc" profit, "craftable" or "shoppable" first). The game's list is
 -- sorted once each time it fills in (`sortedRows` is the list sorted last), not
 -- each time the orders change, so the rows don't jump around while you craft
--- and shop.
-local sortedRows
+-- and shop. Counting procs or not (`sortedProcs`) changes what Profit sorts by,
+-- so a change to it sorts again.
+local sortedRows, sortedProcs
 
 -- Where an order goes when sorting by Actions, lowest first: the order you've
 -- started and those you have everything for, the ones with a cart, then the
@@ -826,9 +846,10 @@ local function sortBefore(a, b)
 			local aRank, bRank = actionRank(aRow), actionRank(bRow)
 			if aRank ~= bRank then return aRank < bRank end
 		end
-		if aRow.model.total ~= bRow.model.total then
-			if mode == "asc" then return aRow.model.total < bRow.model.total end
-			return aRow.model.total > bRow.model.total
+		local aProfit, bProfit = ns.Model.Shown(aRow.model), ns.Model.Shown(bRow.model)
+		if aProfit ~= bProfit then
+			if mode == "asc" then return aProfit < bProfit end
+			return aProfit > bProfit
 		end
 	end
 	return a.orderID < b.orderID
@@ -837,8 +858,8 @@ end
 local function sortList()
 	if not ns.db.patronSort then return end
 	local rows = ns.Blizzard.OrderListRows()
-	if rows and rows ~= sortedRows then
-		sortedRows = rows
+	if rows and (rows ~= sortedRows or sortedProcs ~= ns.db.countProcs) then
+		sortedRows, sortedProcs = rows, ns.db.countProcs
 		ns.Blizzard.SortOrderList(sortBefore)
 	end
 end
@@ -889,6 +910,7 @@ end
 -- by, the hammer for craftable first or the cart for shoppable first.
 local function updateSortArrows()
 	if not headers then return end
+	if headers.profit then headers.profit:SetText(profitHeader()) end
 	local mode = ns.db.patronSort
 	local arrow = headers.profit and headers.profit.Arrow
 	if arrow then
@@ -922,7 +944,7 @@ local function createHeaders(parent)
 			header:SetScript("OnClick", info.sorts and function() toggleSort(info.sorts) end or nil)
 			header:SetScript("OnEnter", function(self)
 				GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
-				GameTooltip:SetText(info.text)
+				GameTooltip:SetText(self:GetText())
 				GameTooltip:AddLine(info.tip, 1, 1, 1, true)
 				local hints = info.sorts and SORT_HINTS[info.sorts]
 				if hints then
