@@ -121,8 +121,11 @@ end
 -- For an order you have open: in each slot you fill from your bags, the rank that's
 -- cheaper to buy than to use yours, and still meets the order's minimum quality.
 -- slotIndex -> { itemID, saves, buyCost, ownValue }. Slots you've picked a quality
--- for, or that are missing, are left alone.
-local function cheaperRanks(ctx, materials, picks)
+-- for, or that are missing, are left alone. With the Patron orders list's `plan`
+-- for the order, only the rank it picks is suggested, so this never goes against
+-- it (Optimize concentration can pick a dearer rank on purpose).
+local function cheaperRanks(ctx, materials, picks, plan)
+	local planned = plan and not plan.unreachable and plan.overrides or {}
 	local order, schematic, transaction, recipeInfo = ctx.order, ctx.schematic, ctx.transaction, ctx.recipeInfo
 	local minQuality = order.minQuality or 0
 	local needsQuality = minQuality > 1
@@ -150,7 +153,8 @@ local function cheaperRanks(ctx, materials, picks)
 			local slot = list[1].slot
 			for _, reagent in ipairs(slot.reagents) do
 				local itemID = reagent.itemID
-				local buyCost = itemID and not usedIDs[itemID] and Model.EffectiveCost(itemID, slot.quantityRequired)
+				local allowed = not planned[slotIndex] or planned[slotIndex] == itemID
+				local buyCost = itemID and allowed and not usedIDs[itemID] and Model.EffectiveCost(itemID, slot.quantityRequired)
 				local saves = buyCost and ownValue - buyCost
 				if saves and saves > 0 and (not found[slotIndex] or saves > found[slotIndex].saves) then
 					local meets = true
@@ -524,23 +528,27 @@ function Model.Order(ctx)
 		notes = notes,
 	}
 
-	model.materials = Model.Materials(schematic, transaction, ctx.provided, picks)
-	model.cost = costOf(model.materials, notes)
 	local recipeInfo = ctx.recipeInfo
+	-- The Patron orders list's picks for this order (see Planner.ForOrder). Like the
+	-- crafting strategy's on the crafting page, they fill the slots the form leaves
+	-- empty (materials you don't have enough of), so those are priced and bought at
+	-- the quality the list picked, not the cheapest.
+	local plan = canSimulate and not simulating and recipeInfo and ns.Planner.ForOrder(order, schematic, ctx.provided)
+	local fill = plan and plan.overrides and not plan.unreachable and strategyFill(transaction, plan, picks or {}) or nil
+	model.materials = Model.Materials(schematic, transaction, ctx.provided, picks, fill)
+	model.cost = costOf(model.materials, notes)
+	notes.filled = fill ~= nil
 	-- When the form doesn't reach the order's minimum quality (without your skill
-	-- boosters), the shopping list buys the ranks that do: the Patron orders list's
-	-- picks. Otherwise any rank you own counts, and the cheapest one is bought.
-	-- What-if picks always win: they're the ranks you chose.
-	local shopPicks = picks
-	if canSimulate and not simulating and recipeInfo then
-		local plan = ns.Planner.ForOrder(order, schematic, ctx.provided)
-		if plan and plan.minQuality and plan.overrides and next(plan.overrides) and not plan.unreachable
-			and (ns.Blizzard.PredictQuality(recipeInfo.recipeID, schematic, transaction, {}, ctx.provided) or 0) < plan.minQuality then
-			shopPicks = plan.overrides
-		end
+	-- boosters), the shopping list buys the ranks that do: the list's picks.
+	-- Otherwise any rank you own counts, and the cheapest one is bought, except in
+	-- the slots the picks fill. What-if picks always win: they're the ranks you chose.
+	local shopPicks = fill and merged(picks, fill) or picks
+	if plan and plan.minQuality and plan.overrides and next(plan.overrides) and not plan.unreachable
+		and (ns.Blizzard.PredictQuality(recipeInfo.recipeID, schematic, transaction, {}, ctx.provided) or 0) < plan.minQuality then
+		shopPicks = plan.overrides
 	end
 	addShopping(model, schematic, ctx.provided, shopPicks)
-	model.cheaper = canSimulate and cheaperRanks(ctx, model.materials, picks) or {}
+	model.cheaper = canSimulate and cheaperRanks(ctx, model.materials, picks, plan) or {}
 
 	-- While simulating: the quality the picked materials give, and whether it meets
 	-- the order. Only for items that come in qualities; others are always "quality 1".
@@ -589,7 +597,7 @@ function Model.Order(ctx)
 	-- customer gets the item, so multicraft adds nothing.
 	model.provided = providedBasics(order, schematic)
 	if not order.isRecraft then
-		local chances = ctx.transaction and recipeInfo and ns.Procs.Chances(ns.Blizzard.CraftInfo(ctx, picks))
+		local chances = ctx.transaction and recipeInfo and ns.Procs.Chances(ns.Blizzard.CraftInfo(ctx, merged(picks, fill)))
 			or ns.Procs.RecipeChances(order.spellID)
 		chances.multicraft = 0
 		model.procs = ns.Procs.Expected(ns.Procs.ProfessionOf(order.spellID), chances, nil,
