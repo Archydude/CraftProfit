@@ -275,13 +275,18 @@ end
 local function learnProcs(data, model, result)
 	local professionID = ns.Procs.ProfessionOf(model.recipeID)
 	local used = {}
-	for _, material in ipairs(model.materials or {}) do used[material.itemID] = material.qty end
+	-- On an order, what the customer sent comes back to you too.
+	for _, list in ipairs({ model.materials or {}, model.provided or {} }) do
+		for _, material in ipairs(list) do used[material.itemID] = (used[material.itemID] or 0) + material.qty end
+	end
 	ns.Procs.Record(professionID, data, used)
 
 	local expected = model.procs
 	if not expected and model.recipeID then
+		local providedCost = 0
+		for _, material in ipairs(model.provided or {}) do providedCost = providedCost + (material.price or 0) * material.qty end
 		expected = ns.Procs.Expected(professionID, ns.Procs.RecipeChances(model.recipeID), nil,
-			ns.Model.BasicCost(model.materials or {}))
+			ns.Model.BasicCost(model.materials or {}) + providedCost)
 	end
 	ns.Procs.AddToSession(expected and expected.total, result.bonus)
 end

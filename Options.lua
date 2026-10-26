@@ -88,7 +88,8 @@ function Options.Create()
 	checkbox("countProcs", "Count multicraft and resourcefulness",
 		"The Best crafts list ranks recipes by what they make on average with procs, and the Most profit strategy " ..
 		"picks ranks that way. The Patron tab shows and sorts orders by what they make on average with " ..
-		"resourcefulness (the customer gets the item, so multicraft doesn't count). Your chances come from the " ..
+		"resourcefulness, the customer's materials included (the customer gets the item, so multicraft doesn't " ..
+		"count). Your chances come from the " ..
 		"game; how big a proc is, from your own crafts.\n\n" ..
 		"The panel always shows both: the expected profit, and Without procs under it.\n\n" ..
 		"Also in the Best crafts list's Filter menu.")

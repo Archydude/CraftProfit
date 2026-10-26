@@ -21,6 +21,8 @@
 --   procs         what multicraft and resourcefulness add on average (Procs.Expected);
 --                 on orders resourcefulness only. Nil on recrafts
 --   expected      profit with that counted
+-- Orders also have:
+--   provided      the basic materials the customer sent, { { itemID, qty, price } }
 local _, ns = ...
 
 local Model = {}
@@ -268,6 +270,21 @@ function Model.BasicCost(materials)
 		end
 	end
 	return cost
+end
+
+-- The basic materials the customer sent for an order: { { itemID, qty, price } }.
+-- Resourcefulness saves these too, and what it saves comes back to you.
+local function providedBasics(order, schematic)
+	local list = {}
+	for _, sent in ipairs(order.reagents or {}) do
+		local slot = schematic.reagentSlotSchematics[sent.slotIndex]
+		local info = sent.reagentInfo
+		local itemID = info and (info.reagent and info.reagent.itemID or info.itemID)
+		if itemID and slot and slot.reagentType == Enum.CraftingReagentType.Basic then
+			list[#list + 1] = { itemID = itemID, qty = info.quantity or slot.quantityRequired, price = ns.Prices.Material(itemID) }
+		end
+	end
+	return list
 end
 
 -- Whether the form has something other than `overrides` (slotIndex -> itemID,
@@ -567,14 +584,16 @@ function Model.Order(ctx)
 
 	model.total = model.receive - model.cost + rewardsValue
 
-	-- What resourcefulness gives back on average of what you supply (see
-	-- Procs.Expected). The customer gets the item, so multicraft adds nothing.
+	-- What resourcefulness gives back on average (see Procs.Expected): of what you
+	-- supply, and of what the customer sent, which comes back to you too. The
+	-- customer gets the item, so multicraft adds nothing.
+	model.provided = providedBasics(order, schematic)
 	if not order.isRecraft then
 		local chances = ctx.transaction and recipeInfo and ns.Procs.Chances(ns.Blizzard.CraftInfo(ctx, picks))
 			or ns.Procs.RecipeChances(order.spellID)
 		chances.multicraft = 0
 		model.procs = ns.Procs.Expected(ns.Procs.ProfessionOf(order.spellID), chances, nil,
-			Model.BasicCost(model.materials))
+			Model.BasicCost(model.materials) + costOf(model.provided))
 		model.expected = model.total + model.procs.total
 	end
 

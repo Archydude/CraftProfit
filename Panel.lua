@@ -338,9 +338,10 @@ local function expectedTooltip(model)
 		local procs, chances = model.procs, model.procs.chances
 		tip:SetText(model.expected >= 0 and "Expected profit" or "Expected loss")
 		if model.kind == "order" then
-			tip:AddLine("What this order makes on average, counting resourcefulness on the materials you supply. "
-				.. "Multicraft doesn't count, since the customer gets the item. Without procs, under it, is what it "
-				.. "makes when resourcefulness doesn't proc.", 1, 1, 1, true)
+			tip:AddLine("What this order makes on average, counting resourcefulness on the materials you supply and "
+				.. "the ones the customer sent (what it saves comes back to you). Multicraft doesn't count, since the "
+				.. "customer gets the item. Without procs, under it, is what it makes when resourcefulness doesn't "
+				.. "proc.", 1, 1, 1, true)
 		else
 			tip:AddLine("What this craft makes on average, counting multicraft and resourcefulness. "
 				.. "Without procs, under it, is what it makes when neither procs.", 1, 1, 1, true)

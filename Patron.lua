@@ -793,8 +793,9 @@ local HEADERS = {
 	profit = { text = "Profit", sorts = "profit", tip = "Commission after the cut, plus the rewards that sell, minus the "
 		.. "materials you supply, at the qualities that reach the order's minimum quality. The concentration it "
 		.. "takes is shown after it.\n\nWith Count multicraft and resourcefulness on (Craft Profit options), it's "
-		.. "Expected: what the order makes on average with resourcefulness on the materials you supply. Multicraft "
-		.. "doesn't count, since the customer gets the item." },
+		.. "Expected: what the order makes on average with resourcefulness, on the materials you supply and the "
+		.. "ones the customer sent (what it saves comes back to you). Multicraft doesn't count, since the customer "
+		.. "gets the item." },
 	rewards = { text = "Rewards", tip = "What the patron gives besides the commission. Green counts give "
 		.. "profession knowledge. Point at one for its value." },
 	materials = { text = "Materials", tip = "Whether you have everything for the order, or how much you're missing. "

@@ -16,8 +16,6 @@ local BASE_EXTRA = 1.25 -- multicraft: extra items for each item a craft makes
 local BASE_SAVED = 0.30 -- resourcefulness: the share of a material that comes back
 -- Your own procs of a kind needed before they replace the base value.
 local MIN_PROCS = 10
--- Crafts in a session before the luck meter shows: fewer is just noise.
-local MIN_LUCK_CRAFTS = 5
 
 -- The names the game shows for the two stats: localized, with the English ones
 -- as a last resort. (/craftprofit testprocs shows what the game sends.)
@@ -195,18 +193,17 @@ end
 -- Adds one craft: the gold its procs were expected to add, and what they did.
 function Procs.AddToSession(expected, actual)
 	local session = ns.db.session
-	session.luckCrafts = (session.luckCrafts or 0) + 1
 	session.expectedBonus = (session.expectedBonus or 0) + (expected or 0)
 	session.actualBonus = (session.actualBonus or 0) + (actual or 0)
 end
 
 -- This session's luck: how far procs made more (or less) than expected, as a
 -- share (0.14 is 14% more), then what they made and what was expected. Nil until
--- there are enough crafts to say.
+-- a craft this session could proc.
 function Procs.Luck()
 	local session = ns.db.session
 	local expected = session.expectedBonus or 0
-	if (session.luckCrafts or 0) < MIN_LUCK_CRAFTS or expected <= 0 then return end
+	if expected <= 0 then return end
 	local actual = session.actualBonus or 0
 	return actual / expected - 1, actual, expected
 end
@@ -225,7 +222,7 @@ function Procs.AddLuckLines(tip)
 	if not luck then return end
 	tip:AddLine(" ")
 	tip:AddDoubleLine("Procs made", ns.Format.Money(actual), 1, 1, 1, 1, 1, 1)
-	tip:AddDoubleLine("Expected", ns.Format.Money(expected), 1, 1, 1, 1, 1, 1)
-	tip:AddLine("Multicraft and resourcefulness, against what your chances and proc sizes say they make on average.",
-		0.53, 0.53, 0.53, true)
+	tip:AddDoubleLine("Procs make on average", ns.Format.Money(expected), 1, 1, 1, 1, 1, 1)
+	tip:AddLine("What multicraft and resourcefulness made on these crafts, against what your chances and proc "
+		.. "sizes say they make on average.", 0.53, 0.53, 0.53, true)
 end
