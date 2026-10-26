@@ -163,7 +163,7 @@ function Options.Create()
 
 	startPage("Shopping list")
 	checkbox("shoppingButton", "Show the Shopping list button",
-		format("A row under Materials cost for buying what you're short of, and the shopping buttons on the " ..
+		format("A button under your materials for buying what you're short of, and the shopping buttons on the " ..
 		"Patron tab: Add profitable, Add all and each order's cart button.\n\n" ..
 		"Auctionator: a click opens a menu that adds what's missing for 1, 5, 10 or any number of crafts " ..
 		"to an Auctionator shopping list.\n\n" ..

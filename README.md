@@ -7,7 +7,7 @@ A lightweight addon: one small panel next to your profession window that tells y
 
 - **Procs:** when a craft procs multicraft or resourcefulness, a **Procs** section lists the extra items and returned materials with their value, and **This craft made** under them says what that craft really made; the bonus gold pops up from it with a coin sound. It goes away on your next craft without a proc, or when you pick another recipe. The profit lines below it stay the forecast.
 
-- **Expected profit:** the panel's main line is what a craft makes on average once multicraft and resourcefulness are counted, with **Without procs** under it: what it makes when neither procs. Your chances come from the game; how big your procs are, Craft Profit learns from your own crafts (until it has 10 procs of a kind, it uses typical values). Hover it for each proc's chance, size and what it adds.
+- **Expected profit:** the panel's main line, at the top, is what a craft makes on average once multicraft and resourcefulness are counted, with **Without procs** under it: what it makes when neither procs. Your chances come from the game; how big your procs are, Craft Profit learns from your own crafts (until it has 10 procs of a kind, it uses typical values). Hover it for each proc's chance, size and what it adds.
 
 - **Crafting strategy:** pick what to craft: the highest rank you can make (default), the most profit, or the cheapest materials. One click, or a checkbox on the crafting page and the order form, puts its materials in; missing materials and the shopping list follow it too. On an order, the cheapest materials that reach its minimum quality.
 
@@ -31,9 +31,11 @@ Copy the `CraftProfit` folder to `World of Warcraft\_retail_\Interface\AddOns\` 
 ## Use
 Open your profession and pick a recipe, or open a crafting order. The panel appears to the right of the window.
 
-- Materials are priced at the quality you actually put in the form. If a slot is empty (you don't own the material), it's marked **missing** and priced at the quality your crafting strategy picks (see below), so the profit is for what you'd craft once you've bought it. On an order, the cheapest quality is assumed.
+The panel reads top to bottom: the expected profit or loss, what comes in (the sale price, or an order's commission and rewards), your materials with what they cost in all, then one line with this session's total and luck. Hover the **i** at the end of that line for the notes on how the numbers were worked out. Notes you need to see, like materials without a price or old prices, stay in sight.
+
+- Materials are priced at the quality you actually put in the form. If a slot is empty (you don't own the material), it's marked with a cart and priced at the quality your crafting strategy picks (see below), so the profit is for what you'd craft once you've bought it. On an order, it's priced at the quality the Patron tab picks for the order.
 - The sale price follows the quality you'll get, including concentration if you turn it on.
-- A lower rank is never worth more than a better one: when rank 3 is listed higher than rank 5 sells for, nobody buys it at that price, so it's priced as rank 5 sells and a note under the panel says so. The Best crafts list counts it the same way.
+- A lower rank is never worth more than a better one: when rank 3 is listed higher than rank 5 sells for, nobody buys it at that price, so it's priced as rank 5 sells and the panel's notes say so. The Best crafts list counts it the same way.
 - Vendor-sold materials (vials, thread...) use the vendor price.
 - For recipes that make a varying amount, the average is used.
 - Materials without any price are shown in red. Profit is then too high, so take it with a grain of salt.
@@ -50,7 +52,7 @@ Open your profession and pick a recipe, or open a crafting order. The panel appe
 - Picked qualities reset when you choose another recipe.
 - If the game can't predict the quality for a mix (for example with materials you don't own), the panel says so and keeps the form's quality for the sale price.
 
-**Cheaper rank to buy:** on a crafting order, when the form uses a rank you own and buying another rank comes out cheaper, a blue line under that material says how much it saves, e.g. **[rank 1] saves 2g 40s**. What you own counts at what it would sell for after the 5% auction house cut, so the line only shows when buying really comes out ahead, and only for a rank that still meets the order's minimum quality on its own, without an optional or finishing reagent that raises your skill. Click it to use that rank: the panel and the shopping list switch to it. Hover it for the numbers.
+**Cheaper rank to buy:** on a crafting order, when the form uses a rank you own and buying another rank comes out cheaper, a blue line under that material says how much it saves, e.g. **[rank 1] saves 2g 40s**. What you own counts at what it would sell for after the 5% auction house cut, so the line only shows when buying really comes out ahead, and only for a rank that still meets the order's minimum quality on its own, without an optional or finishing reagent that raises your skill. It only suggests the rank the Patron tab picks for the order, so it never goes against **Optimize Concentration**. Click it to use that rank: the panel and the shopping list switch to it. Hover it for the numbers.
 
 ### Crafting strategy
 What the crafting page crafts. Set it in the options or at the bottom of the Best crafts list:
@@ -70,7 +72,7 @@ It picks the materials for the blue row and **Use Craft Profit Reagents** (below
 **Use Craft Profit Reagents:** a checkbox on the crafting order form and the crafting page, above Blizzard's **Use Best Quality Reagents**. While it's on, every order or recipe you open gets Craft Profit's materials put in by itself: the crafting strategy's on the crafting page, the most profitable ones on an order. A slot you change afterwards stays as you set it. Unticking it puts back the materials Blizzard picks by itself, and turns concentration back off if the checkbox turned it on. Only one of the two checkboxes can be on: checking one unchecks the other. It's the same setting on both pages. It shows wherever Blizzard's checkbox does, on orders and recipes whose materials come in qualities. Above it, **Optimize Concentration** (see Patron orders below) works the same way: on the crafting page, with concentration on, it picks the qualities that reach the crafting strategy's rank with the least concentration.
 
 ### Shopping list
-Under **Materials cost** there's a **Shopping list** row. It turns orange and shows a count when you're short of materials for one craft; hover it to see what's missing.
+Under your materials there's a **Shopping list** button. It shows a count when you're short of materials for one craft; hover it to see what's missing.
 
 **Click** it to add what you're missing for one craft. **Shift-click** it to open a menu:
 
@@ -88,11 +90,11 @@ Shortcut: **Ctrl-click** clears the list, without the menu.
 
 **Separate lists:** each character and profession gets its own list, like **Thrall - Blacksmithing**. Turn off **one shopping list per character** or **per profession** in the options to share lists instead; with both off, the list is called **Crafting**. Lists from before 1.19.0, named **Craft Profit - ...**, are moved to the new names the next time you log in, along with what's on them.
 
-**TSM without Auctionator:** the row says **Copy TSM search** instead, with the same menu. Pick an amount and a box shows a search, already selected: press Ctrl+C and paste it into the search box on TSM's Shopping tab. It searches for exactly the ranks you're missing and stops at the amounts you need. With neither Auctionator nor TSM, the row is hidden.
+**TSM without Auctionator:** the button says **Copy TSM search** instead, with the same menu. Pick an amount and a box shows a search, already selected: press Ctrl+C and paste it into the search box on TSM's Shopping tab. It searches for exactly the ranks you're missing and stops at the amounts you need. With neither Auctionator nor TSM, the button is hidden.
 
 **Both installed?** Pick **Shop with: Auctionator shopping list** (default) or **TSM search to copy** at the bottom of the menu, in the gear menu at the bottom of the Patron tab, or in the options.
 
-You can hide the Shopping list row and the Patron tab's shopping buttons in the options. The options also have a **Clear** button for the list.
+You can hide the Shopping list button and the Patron tab's shopping buttons in the options. The options also have a **Clear** button for the list.
 
 ### Patron orders
 On the **Patron** orders tab, Blizzard's order list shows Craft Profit's columns where Patron Name, Commission and Reagents were: Materials, Rewards and Profit, then Blizzard's time left, then Actions at the end. Clicking anywhere else on a row still opens the order.
@@ -125,7 +127,7 @@ Under the list: how much concentration the orders use, this session's total (cli
 Turn off **Show Craft Profit on the Patron tab** in the options to get Blizzard's own columns back.
 
 ### Best crafts
-Click **Best crafts** at the top of the panel, next to its gear (it shows on the crafting page), or type `/craftprofit best`. A list opens over the recipe details with every recipe you know in the profession shown (Midnight Blacksmithing, say), most profitable first. It works out each recipe for a few seconds after it opens, and shows how far it's got at the bottom.
+Click **Best crafts** at the top of the panel, next to its gear (on the crafting page, or on a crafting order, where it goes back to your recipes first), or type `/craftprofit best`. A list opens over the recipe details with every recipe you know in the profession shown (Midnight Blacksmithing, say), most profitable first. It works out each recipe for a few seconds after it opens, and shows how far it's got at the bottom.
 
 - **Expected** (or **Profit**): what one craft makes after the 5% auction house cut, at the rank your crafting strategy picks (without concentration), with the materials it picks: the same ones the crafting page would use. With **Count multicraft and resourcefulness** on (the default), it's what a craft makes on average with procs, and the list ranks by it; off, the column is **Profit**, without them. Its quality icon is after the name. Recipes whose item has no auction price at the rank you'd make say **No price**, in grey, at the bottom.
 - **Have:** how many times you can craft it with what's in your bags, bank and warband bank.
@@ -209,7 +211,7 @@ Click the gear on the panel (or Craft Profit options in the gear menu under the 
 
 | Option | What it does |
 |---|---|
-| Show the Shopping list button | The Shopping list row, and on the Patron tab Add profitable, Add all and the cart buttons. On by default; hidden anyway without Auctionator or TSM. |
+| Show the Shopping list button | The Shopping list button under your materials, and on the Patron tab Add profitable, Add all and the cart buttons. On by default; hidden anyway without Auctionator or TSM. |
 | Shop with | With Auctionator and TSM both installed: Auctionator shopping list (default) or TSM search to copy. Also at the bottom of the Shopping list menu and in the gear menu under the Patron tab's list. |
 | One shopping list per character / per profession | On by default. Either or both split the shopping list, e.g. Thrall - Blacksmithing. With both off, it's called Crafting. |
 | Check off what you get | On by default. Materials come off the Auctionator shopping list as you get them: bought, looted, from the mailbox or crafted. |
@@ -233,6 +235,6 @@ Click the gear on the panel (or Craft Profit options in the gear menu under the 
 | Saved characters: Forget... | Pick a character you deleted, renamed or moved to take it off Craft Rank tooltips. |
 
 ## Notes
-- With Auctionator, prices come from your own auction house scans. Once Auctionator's last scan is over a day old, the panel's and the Best crafts list's footers say so in red ("last scan 2 days ago"), and opening the auction house reminds you in chat to run a full scan. Over 3 days old, opening the Best crafts list shows a notice in the middle of the list, once a session. Turn the reminders off with **Remind me to scan the auction house** in the options. With TSM, the TSM desktop app keeps them up to date for you. With Auctionator, the bottom of the panel says how old its oldest price is (**seen today**, or **oldest 4 days ago** in red once it's 3 days or more), and each material's tooltip says when Auctionator last saw it. Visit the auction house to refresh them.
+- With Auctionator, prices come from your own auction house scans. Once Auctionator's last scan is over a day old, the panel's and the Best crafts list's footers say so in red ("last scan 2 days ago"), and opening the auction house reminds you in chat to run a full scan. Over 3 days old, opening the Best crafts list shows a notice in the middle of the list, once a session. Turn the reminders off with **Remind me to scan the auction house** in the options. With TSM, the TSM desktop app keeps them up to date for you. With Auctionator, the panel's notes say how old its oldest price is (**seen today**, or **oldest 4 days ago**, in red and in sight at the bottom of the panel once it's 3 days or more), and each material's tooltip says when Auctionator last saw it. Visit the auction house to refresh them.
 - A big Blizzard update to the profession window may need a Craft Profit update too.
 - After an update, a What's New window shows what changed since the version you had.

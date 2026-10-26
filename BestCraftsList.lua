@@ -22,6 +22,7 @@ local TOGGLE_HEIGHT = 20   -- the Best crafts button on the panel
 local TOGGLE_RIGHT = 28    -- panel's right edge to the button (room for its gear)
 local TOGGLE_TOP = 5       -- panel's top edge to the button
 local TOGGLE_GAP = 6       -- the button to the panel's title
+local OPEN_TRIES, OPEN_RETRY = 20, 0.1 -- from an order: waiting for the recipes to show
 local FILTER_WIDTH = 90
 local STRATEGY_WIDTH = 130 -- the crafting strategy dropdown at the bottom
 local STRATEGY_LABEL = "Strategy:"
@@ -841,10 +842,12 @@ local function canShow()
 	return ns.Blizzard.IsOwnProfession() and ns.Blizzard.ShowsRecipeList()
 end
 
--- Shows the panel's button only on the crafting page, lit while the list is open.
+-- Shows the panel's button on the crafting page and on your crafting orders, lit
+-- while the list is open.
 function BestCraftsList.UpdateToggle()
 	if not toggle then return end
-	toggle:SetShown(canShow() and ns.Blizzard.ActivePage() == "craft")
+	local page = ns.Blizzard.ActivePage()
+	toggle:SetShown((page == "craft" and canShow()) or (page == "order" and ns.Blizzard.IsOwnProfession()))
 	if list:IsShown() then toggle:LockHighlight() else toggle:UnlockHighlight() end
 end
 
@@ -876,7 +879,20 @@ function BestCraftsList.Hide()
 end
 
 function BestCraftsList.Toggle()
-	if list and list:IsShown() then BestCraftsList.Hide() else BestCraftsList.Show() end
+	if list and list:IsShown() then
+		BestCraftsList.Hide()
+		return
+	end
+	if BestCraftsList.Show() or not ns.Blizzard.IsOwnProfession() then return end
+	-- From a crafting order: back to the recipes, and the list once they show.
+	ns.Blizzard.ShowRecipesTab()
+	local tries = 0
+	local function try()
+		tries = tries + 1
+		if BestCraftsList.Show() or tries >= OPEN_TRIES then return end
+		C_Timer.After(OPEN_RETRY, try)
+	end
+	C_Timer.After(0, try)
 end
 
 -- The crafting page switched view, showed or hid: the list only fits the full view.

@@ -124,8 +124,31 @@ local function addRow(left, right, font, onClick, tooltip)
 	return row
 end
 
-local function addSpacer()
-	addRow(" ")
+-- One Blizzard-style button across a row (the shopping list's), left-aligned.
+-- `onClick(mouseButton, button)` and `tooltip(GameTooltip)` as for addRow.
+local BUTTON_HEIGHT = 22
+local rowButton, rowButtonUsed
+local function addButton(text, onClick, tooltip)
+	if not rowButton then
+		rowButton = CreateFrame("Button", nil, frame, "UIPanelButtonTemplate")
+		rowButton:SetFrameLevel(frame:GetFrameLevel() + 2)
+		rowButton:RegisterForClicks("LeftButtonUp", "RightButtonUp")
+		rowButton:SetScript("OnClick", function(self, mouseButton) self.onClick(mouseButton, self) end)
+		rowButton:SetScript("OnEnter", function(self)
+			GameTooltip:SetOwner(self, "ANCHOR_LEFT")
+			self.tooltip(GameTooltip)
+			GameTooltip:Show()
+		end)
+		rowButton:SetScript("OnLeave", GameTooltip_Hide)
+	end
+	rowButton:SetText(text)
+	rowButton:SetSize(rowButton:GetFontString():GetUnboundedStringWidth() + 32, BUTTON_HEIGHT)
+	rowButton:ClearAllPoints()
+	rowButton:SetPoint("TOPLEFT", frame, "TOPLEFT", Layout.PAD_SIDE - 2, -Layout.PAD_TOP - contentHeight)
+	rowButton.onClick, rowButton.tooltip = onClick, tooltip
+	rowButton:Show()
+	rowButtonUsed = true
+	contentHeight = contentHeight + BUTTON_HEIGHT + 2
 end
 
 -- A little extra space that sets the next row apart.
@@ -194,12 +217,16 @@ local function materialTooltip(model, material, canCycle)
 			tip:AddLine(" ")
 			tip:AddLine(Color(stale and "warning" or "muted", "Auctionator price seen " .. ns.Prices.AgeText(age)))
 		end
+		local missing = missingOf(model, material)
+		if material.estimated then
+			tip:AddLine(" ")
+			tip:AddLine(Color("missing", format("You're short of %d for 1 craft.", missing > 0 and missing or material.qty)))
+		end
 		tip:AddLine(" ")
 		if canCycle then
 			tip:AddLine(Color("simulated", "Click: try the next quality"))
 			tip:AddLine(Color("simulated", "Right-click: back to what's in the form"))
 		end
-		local missing = missingOf(model, material)
 		if missing > 0 and ns.Shopping.ListTarget() then
 			tip:AddLine(Color("simulated", format(ns.Shopping.ListTarget() == "tsm"
 				and "Shift-click: copy a TSM search for the %d missing"
@@ -244,7 +271,7 @@ local function drawShoppingButton(model)
 	local onClick = function(_, button)
 		ns.Shopping.Click(model, button, IsShiftKeyDown(), IsControlKeyDown())
 	end
-	addRow(Color(missing > 0 and "missing" or "muted", text), nil, nil, onClick, shoppingTooltip(model, target))
+	addButton(text, onClick, shoppingTooltip(model, target))
 end
 
 -- The tooltip of a "saves" line: why the cheaper rank comes out ahead.
@@ -262,14 +289,22 @@ local function cheaperTooltip(material, cheaper)
 	end
 end
 
+-- The tag on a material you're short of: a little cart (the word "missing" if the
+-- game has no cart picture).
+local function missingTag()
+	if C_Texture.GetAtlasInfo("Perks-ShoppingCart") then return CreateAtlasMarkup("Perks-ShoppingCart", 16, 16) end
+	return Color("missing", "missing")
+end
+
 local function drawMaterials(model)
 	if #model.materials == 0 then return end
-	addSpacer()
-	addRow("Your materials", nil, fonts.heading)
+	addGap()
+	-- What they cost in all, on the heading.
+	addRow("Your materials", Color(ns.AmountColor(-model.cost), Money(-model.cost)), fonts.heading)
 	local shownCheaper = {}
 	for _, material in ipairs(model.materials) do
 		local tag = (material.simulated and ("  " .. Color("simulated", "simulated")))
-			or (material.estimated and ("  " .. Color("missing", "missing")))
+			or (material.estimated and ("  " .. missingTag()))
 			or ""
 		-- Click cycles qualities; Shift-click shops for just this material.
 		local onClick, tooltip
@@ -297,8 +332,6 @@ local function drawMaterials(model)
 				function() ns.Simulation.Pick(material.slotIndex, cheaper.itemID) end, cheaperTooltip(material, cheaper))
 		end
 	end
-	addDivider()
-	addRow("Materials cost", Money(-model.cost))
 	drawShoppingButton(model)
 end
 
@@ -307,7 +340,7 @@ end
 local function drawProcs(model)
 	local proc = ns.Results.ProcFor(model)
 	if not proc then return end
-	addSpacer()
+	addGap()
 	addRow("Procs", nil, fonts.heading)
 	if proc.multicraft > 0 then
 		addRow(format("Multicraft: +%d extra", proc.multicraft),
@@ -325,12 +358,6 @@ local function resetTooltip(tip)
 	tip:AddLine("The panel shows what this craft would make with the qualities you picked. Your real craft still uses what's in the form.", 1, 1, 1, true)
 end
 
-local function sessionTooltip(tip)
-	tip:SetText("This session")
-	ns.Procs.AddLuckLines(tip)
-	tip:AddLine(" ")
-	tip:AddLine(Color("simulated", "Click: reset to zero"))
-end
 
 -- The breakdown of the expected profit.
 local function expectedTooltip(model)
@@ -363,10 +390,11 @@ end
 
 -- How old the oldest Auctionator price on the panel is: ", seen today",
 -- ", oldest 4 days ago" (in red once it's stale), or "" when prices come from TSM.
+-- Also true when it's old enough to show in red.
 local function priceAgeText(model)
 	-- An old auction house scan says more than any one price: it comes first, in red.
 	local scan = ns.Reminder.FooterText()
-	if scan ~= "" then return "|r" .. scan end
+	if scan ~= "" then return "|r" .. scan, true end
 	local oldest
 	local function consider(age)
 		if age == false then
@@ -382,51 +410,89 @@ local function priceAgeText(model)
 	if oldest == nil then return "" end
 	if oldest == 0 then return ", seen today" end
 	local text = ", oldest " .. ns.Prices.AgeText(oldest)
-	if oldest == false or oldest >= STALE_DAYS then return "|r" .. Color("warning", text) end
+	if oldest == false or oldest >= STALE_DAYS then return "|r" .. Color("warning", text), true end
 	return text
 end
 
-local function drawFooter(model)
-	drawProcs(model)
+-- The answer, under the title: the expected profit in the big font, with what a
+-- craft makes without procs under it in grey. Without procs to expect: Profit/Loss.
+local function drawHeadline(model)
+	addGap()
 	local total = model.total
-
-	addSpacer()
-	-- With procs to expect, the big line is the expected profit and the one under
-	-- it what a craft makes without procs.
 	local procs = model.procs
 	if procs and procs.total > 0 then
 		local expected = model.expected
 		profitRow = addRow(expected >= 0 and "Expected profit" or "Expected loss",
 			Color(ns.AmountColor(expected), Money(expected)), fonts.total, nop, expectedTooltip(model))
-		addRow("Without procs", Color(ns.AmountColor(total), Money(total)), nil, nop, expectedTooltip(model))
+		addRow(Color("muted", "Without procs"), Color("muted", Money(total)), nil, nop, expectedTooltip(model))
 	elseif total then
 		profitRow = addRow(total >= 0 and "Profit" or "Loss", Color(ns.AmountColor(total), Money(total)), fonts.total)
 	end
+end
 
-	local session = ns.db.session
-	if ns.db.showSession and session.crafts > 0 then
-		-- Gold label like Profit/Loss, but in the small font so it doesn't compete with it.
-		addGap()
-		local luck = ns.Procs.LuckText()
-		addRow(format("%s (%d craft%s)%s", Color("heading", "This session"), session.crafts, session.crafts == 1 and "" or "s",
-			luck and ("  " .. luck) or ""),
-			Color(ns.AmountColor(session.total), Money(session.total)), nil, ns.Results.ConfirmResetSession, sessionTooltip)
+local INFO_ICON = "|TInterface\\Common\\help-i:20:20|t"
+
+-- The footer's tooltip: this session and its luck (when `session`), then the
+-- notes about how the panel got its numbers.
+local function footerTooltip(session, notes)
+	return function(tip)
+		tip:SetText(session and "This session" or "Notes")
+		if session then
+			tip:AddLine("What your crafts made since you logged in on this character.", 1, 1, 1, true)
+			ns.Procs.AddLuckLines(tip)
+		end
+		if #notes > 0 then
+			tip:AddLine(" ")
+			for _, text in ipairs(notes) do tip:AddLine(text, 0.53, 0.53, 0.53, true) end
+		end
+		if session then
+			tip:AddLine(" ")
+			tip:AddLine(Color("simulated", "Click: reset to zero"))
+		end
 	end
+end
 
-	local notes = model.notes
+-- The bottom: problems you should see stay in sight (materials without a price,
+-- old prices, what-if qualities); then one line with this session's total and
+-- luck, whose tooltip holds the other notes.
+local function drawFooter(model)
+	local notes, quiet = model.notes, {}
 	if notes.estimated then
-		addRow(Color("muted", notes.filled and "Missing materials: priced at the qualities your crafting strategy picks."
-			or "Missing materials: cheapest quality assumed."))
+		quiet[#quiet + 1] = notes.filled and (model.kind == "order"
+				and "Missing materials: priced at the qualities the Patron tab picks."
+				or "Missing materials: priced at the qualities your crafting strategy picks.")
+			or "Missing materials: cheapest quality assumed."
 	end
+	for _, text in ipairs(notes) do quiet[#quiet + 1] = text end
+	local ageText, stale = priceAgeText(model)
+	local pricesText = "Prices: " .. ns.Prices.SourceLabel() .. ageText
+	local session = ns.db.session
+	local showSession = ns.db.showSession and session.crafts > 0
+
+	addDivider()
 	if notes.missing then
 		addRow(Color("warning", format("%d material(s) have no price, so profit is too high", notes.missing)))
 	end
-	for _, text in ipairs(notes) do addRow(Color("muted", text)) end
 	if model.simulating then
 		addRow(Color("simulated", "Simulating other qualities. Click here to go back to what's in the form."),
 			nil, nil, ns.Simulation.Reset, resetTooltip)
 	end
-	addRow(Color("muted", "Prices: " .. ns.Prices.SourceLabel() .. priceAgeText(model)))
+	-- The prices line stays in sight when they're old, and is the last line without
+	-- a session total; the other notes are in its tooltip.
+	if stale or not showSession then
+		local hasNotes = #quiet > 0
+		addRow(Color("muted", pricesText), hasNotes and INFO_ICON or nil, nil, hasNotes and nop or nil,
+			hasNotes and footerTooltip(false, quiet) or nil)
+	end
+	if showSession then
+		local sessionNotes = { unpack(quiet) }
+		if not stale then sessionNotes[#sessionNotes + 1] = pricesText end
+		local dot = " " .. Color("muted", "·") .. " "
+		local luck = ns.Procs.LuckText()
+		addRow(format("%s %s%s%d craft%s%s", Color("heading", "Session"), signedMoney(session.total), dot,
+			session.crafts, session.crafts == 1 and "" or "s", luck and (dot .. luck) or ""),
+			INFO_ICON, nil, ns.Results.ConfirmResetSession, footerTooltip(true, sessionNotes))
+	end
 end
 
 -- " (after 10% cut)", in grey, for an amount shown after a cut. Empty when
@@ -500,8 +566,10 @@ end
 
 local function drawCraft(model)
 	addRow(model.title, nil, fonts.title)
+	drawHeadline(model)
 	local output = model.output
 	if output then
+		addGap()
 		addRow(format("Makes %sx %s", output.qtyText, output.link))
 		if output.sale then
 			-- One line, after the AH cut.
@@ -516,18 +584,54 @@ local function drawCraft(model)
 	end
 	drawMaterials(model)
 	drawBest(model)
+	drawProcs(model)
 	drawFooter(model)
+end
+
+-- An order's income: the commission after the cut and the rewards that sell, with
+-- their sum on the heading. Rewards that don't sell share one grey line of icons,
+-- named in its tooltip.
+local function drawIncome(model)
+	local income, sellable, other = model.receive, {}, {}
+	for _, reward in ipairs(model.rewards) do
+		if reward.value then
+			income = income + reward.value
+			sellable[#sellable + 1] = reward
+		else
+			other[#other + 1] = reward
+		end
+	end
+	addGap()
+	addRow("Income", Color(ns.AmountColor(income), Money(income)), fonts.heading)
+	-- One line, after the consortium's cut.
+	addRow("Commission" .. cutNote(model.consortiumCut, model.commission, "cut"), Money(model.receive))
+	for _, reward in ipairs(sellable) do addRow(Item(reward.itemID, reward.qty), Money(reward.value)) end
+	if #other > 0 then
+		local icons = {}
+		for _, reward in ipairs(other) do
+			local icon = reward.currency and reward.currency.iconFileID or C_Item.GetItemIconByID(reward.itemID)
+			icons[#icons + 1] = format("%dx |T%s:%d|t", reward.qty, icon or 134400, Layout.ICON_SIZE)
+		end
+		addRow(Color("muted", "Rewards") .. "  " .. table.concat(icons, "  "), Color("muted", "not sellable"), nil, nop,
+			function(tip)
+				tip:SetText("Rewards that don't sell")
+				for _, reward in ipairs(other) do
+					tip:AddLine(reward.currency and ns.Format.Currency(reward.currency, reward.qty)
+						or Item(reward.itemID, reward.qty), 1, 1, 1)
+				end
+			end)
+	end
 end
 
 local function drawOrder(model)
 	addRow(model.title, nil, fonts.title)
-	-- One line, after the consortium's cut.
-	addRow("Commission" .. cutNote(model.consortiumCut, model.commission, "cut"), Money(model.receive))
+	drawHeadline(model)
+	drawIncome(model)
 
 	drawMaterials(model)
 	drawBest(model)
 	if #model.materials == 0 then
-		addSpacer()
+		addGap()
 		addRow(Color("good", "Customer provides all materials"))
 	end
 
@@ -544,18 +648,7 @@ local function drawOrder(model)
 		end
 	end
 
-	if #model.rewards > 0 then
-		addSpacer()
-		addRow("Rewards", nil, fonts.heading)
-		for _, reward in ipairs(model.rewards) do
-			if reward.currency then
-				addRow(ns.Format.Currency(reward.currency, reward.qty), Color("muted", "not sellable"))
-			else
-				addRow(Item(reward.itemID, reward.qty), reward.value and Money(reward.value) or Color("muted", "not sellable"))
-			end
-		end
-	end
-
+	drawProcs(model)
 	drawFooter(model)
 end
 
@@ -625,6 +718,7 @@ function Panel.Render()
 		return
 	end
 	rowCount, dividerCount, contentHeight, profitRow, procRow = 0, 0, 0, nil, nil
+	rowButtonUsed = false
 	-- Before the rows, which leave room for it.
 	ns.BestCraftsList.UpdateToggle()
 
@@ -640,6 +734,7 @@ function Panel.Render()
 		if rows[i].button then rows[i].button:Hide() end
 	end
 	for i = dividerCount + 1, #dividers do dividers[i]:Hide() end
+	if rowButton and not rowButtonUsed then rowButton:Hide() end
 	if model then
 		frame:SetHeight(Layout.PAD_TOP + contentHeight + Layout.PAD_BOTTOM)
 		frame:Show()
