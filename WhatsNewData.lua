@@ -2,10 +2,16 @@
 ArchdudeWhatsNew:Register("CraftProfit", {
 	title = "Craft Profit",
 	icon = "Interface\\Icons\\INV_Hammer_20",
-	version = "2.3.0",
+	version = "2.4.0",
 	seen = "CraftProfitWhatsNew",
 	saved = { "CraftProfitDB", "CraftProfitCharDB" },
 	changes = {
+		{ "2.4.0",
+			"|cffffd100Crafting strategy on the panel:|r with a recipe open, a |cffffd100Crafting strategy|r dropdown under your materials switches between Highest rank, Most profit and Cheapest. It's the same setting as under the Best crafts list and in the options.",
+			"|cffffd100Cart buttons:|r a material you're short of has a cart next to its price. Click it to add just what's missing of it to the shopping list (or copy a TSM search for it). Clicking the material itself still tries its other qualities.",
+			"Fixed: when you own some of a material but not enough of the quality your crafting strategy (or, on an order, the Patron tab) picks, the form fills the slot with another quality you have, and the panel priced that one, so it could show a different profit than the Patron tab and the shopping list bought nothing. The panel now prices, and the shopping list buys, the picked quality. What you actually craft still counts at what's in the form.",
+			"Fixed: dragged over the profession window, the panel went behind parts of it. It now stays on top.",
+		},
 		{ "2.3.0",
 			"|cffffd100A tidier panel, with the answer first:|r |cffffd100Expected profit|r (or Profit/Loss) sits right under the title, with |cffffd100Without procs|r under it. On orders, |cffffd100Income|r sums up the commission and the rewards that sell; rewards that don't sell share one line of icons. |cffffd100Your materials|r shows what they cost in all on its heading, and a material you're short of shows a cart. One line at the bottom has this session's total, crafts and luck; hover its |cffffd100i|r for the notes on how the numbers were worked out. Missing prices, old prices and what-if qualities stay in sight.",
 			"The |cffffd100Shopping list|r under your materials is now a real button.",
@@ -60,10 +66,6 @@ ArchdudeWhatsNew:Register("CraftProfit", {
 		},
 		{ "1.20.0",
 			"The session total now also shows at the bottom of the Patron orders list, so you can follow it while you craft from the list. Click it to reset it, as on the panel.",
-		},
-		{ "1.19.0",
-			"The most profitable materials on the crafting page: |cffffd100Use Most Profitable Reagents|r and |cffffd100Optimize Concentration|r now also sit above Blizzard's Use Best Quality Reagents on the crafting page, and the panel's \"Use the most profitable materials\" row shows there too. They pick the rank that makes the most gold after what its materials cost, and the cheapest materials that make it. Concentration stays as you set it: with it on, Optimize Concentration picks the qualities that reach the rank with the least of it. Items with no sale price get the cheapest materials that keep the rank they come out at now.",
-			"Shopping lists no longer have \"Craft Profit\" in their names: they're named after the character and profession, like \"Thrall - Blacksmithing\" (or \"Crafting\" with both of those options off). Your old lists move to the new names at your next login, along with what's on them.",
 		},
 	},
 })

@@ -45,7 +45,7 @@ The panel leads with the answer: what the item sells for at the rank you'll get,
 **Best crafts** lists every recipe you know, most profitable first, with how many you can make, how many are listed and how many sell per day. Filter by gear, decor, materials and more, ignore any whose price makes no sense, and click one to open it.
 
 ### Which rank, which materials?
-Pick a **crafting strategy**: the highest rank you can make (the default), the most profit, or the cheapest materials. Craft Profit puts those materials in for you, prices what you're missing at them, and shops for exactly those.
+Pick a **crafting strategy** right on the panel: the highest rank you can make (the default), the most profit, or the cheapest materials. Craft Profit puts those materials in, prices what you're missing at them, and shops for exactly those.
 
 ### Patron orders
 Blizzard's Patron tab shows each order's **expected profit**, **rewards** and missing **materials**. Sort by profit, shop for the profitable ones, and craft each with one click per step.
@@ -69,11 +69,11 @@ Procs pop up as bonus gold, a session total adds up what you've made, and the **
 
 ## B. Upload File form
 
-**File:** `dist\CraftProfit-2.3.0.zip`
+**File:** `dist\CraftProfit-2.4.0.zip`
 
 **Display name**
 ```
-Craft Profit 2.3.0
+Craft Profit 2.4.0
 ```
 
 **Release type:** `Release`
@@ -82,6 +82,12 @@ Craft Profit 2.3.0
 
 **Changelog** (paste only the newest part; paste older parts too if they never went up)
 ```markdown
+2.4.0
+- **Crafting strategy on the panel:** with a recipe open, a **Crafting strategy** dropdown under your materials switches between Highest rank, Most profit and Cheapest. It's the same setting as under the Best crafts list and in the options.
+- **Cart buttons:** a material you're short of has a cart next to its price. Click it to add just what's missing of it to the shopping list (or copy a TSM search for it). Clicking the material itself still tries its other qualities.
+- Fixed: when you own some of a material but not enough of the quality your crafting strategy (or, on an order, the Patron tab) picks, the form fills the slot with another quality you have, and the panel priced that one, so it could show a different profit than the Patron tab and the shopping list bought nothing. The panel now prices, and the shopping list buys, the picked quality. What you actually craft still counts at what's in the form.
+- Fixed: dragged over the profession window, the panel went behind parts of it. It now stays on top.
+
 2.3.0
 - **A tidier panel, with the answer first:** **Expected profit** (or Profit/Loss) sits right under the title, with **Without procs** under it. On orders, **Income** sums up the commission and the rewards that sell; rewards that don't sell share one line of icons. **Your materials** shows what they cost in all on its heading, and a material you're short of shows a cart. One line at the bottom has this session's total, crafts and luck; hover its **i** for the notes on how the numbers were worked out. Missing prices, old prices and what-if qualities stay in sight.
 - The **Shopping list** under your materials is now a real button.
