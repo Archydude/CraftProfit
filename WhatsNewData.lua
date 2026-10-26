@@ -2,10 +2,17 @@
 ArchdudeWhatsNew:Register("CraftProfit", {
 	title = "Craft Profit",
 	icon = "Interface\\Icons\\INV_Hammer_20",
-	version = "2.2.0",
+	version = "2.3.0",
 	seen = "CraftProfitWhatsNew",
 	saved = { "CraftProfitDB", "CraftProfitCharDB" },
 	changes = {
+		{ "2.3.0",
+			"|cffffd100A tidier panel, with the answer first:|r |cffffd100Expected profit|r (or Profit/Loss) sits right under the title, with |cffffd100Without procs|r under it. On orders, |cffffd100Income|r sums up the commission and the rewards that sell; rewards that don't sell share one line of icons. |cffffd100Your materials|r shows what they cost in all on its heading, and a material you're short of shows a cart. One line at the bottom has this session's total, crafts and luck; hover its |cffffd100i|r for the notes on how the numbers were worked out. Missing prices, old prices and what-if qualities stay in sight.",
+			"The |cffffd100Shopping list|r under your materials is now a real button.",
+			"The |cffffd100Best crafts|r button also shows on crafting orders: it goes back to your recipes and opens the list.",
+			"Fixed: on a crafting order, a material you're short of was priced at its cheapest quality, so the panel could show a much smaller loss than the Patron tab. It's now priced, and bought, at the quality the Patron tab picks.",
+			"Fixed: on a crafting order, the |cffffd100saves|r hint under a material could suggest a cheaper rank than the one |cffffd100Optimize Concentration|r picked. It now only suggests the rank the Patron tab picks.",
+		},
 		{ "2.2.0",
 			"|cffffd100Expected profit on patron orders:|r the Patron tab's profit column is now |cffffd100Expected|r: what each order makes on average with resourcefulness, on the materials you supply and the ones the customer sent (what it saves comes back to you). Multicraft doesn't count, since the customer gets the item. Sorting, |cffffd100Add profitable|r and sharing out concentration go by it, and hovering an order shows the breakdown. With an order open, the panel shows |cffffd100Expected profit|r with |cffffd100Without procs|r under it, like on the crafting page. Turn off |cffffd100Count multicraft and resourcefulness|r to go back to plain profit.",
 			"|cffffd100Item names in their rarity's color|r (green, blue, purple...) in the Best crafts list, the panel's materials and every tooltip.",
@@ -57,9 +64,6 @@ ArchdudeWhatsNew:Register("CraftProfit", {
 		{ "1.19.0",
 			"The most profitable materials on the crafting page: |cffffd100Use Most Profitable Reagents|r and |cffffd100Optimize Concentration|r now also sit above Blizzard's Use Best Quality Reagents on the crafting page, and the panel's \"Use the most profitable materials\" row shows there too. They pick the rank that makes the most gold after what its materials cost, and the cheapest materials that make it. Concentration stays as you set it: with it on, Optimize Concentration picks the qualities that reach the rank with the least of it. Items with no sale price get the cheapest materials that keep the rank they come out at now.",
 			"Shopping lists no longer have \"Craft Profit\" in their names: they're named after the character and profession, like \"Thrall - Blacksmithing\" (or \"Crafting\" with both of those options off). Your old lists move to the new names at your next login, along with what's on them.",
-		},
-		{ "1.18.2",
-			"Fixed: the Patron orders list stayed tall, with empty space at the bottom, after an order left it. It now fits its orders, and scrolls only when they don't fit.",
 		},
 	},
 })

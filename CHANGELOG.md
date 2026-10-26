@@ -1,5 +1,12 @@
 # Changelog
 
+## 2.3.0
+- **A tidier panel, with the answer first:** **Expected profit** (or Profit/Loss) sits right under the title, with **Without procs** under it. On orders, **Income** sums up the commission and the rewards that sell; rewards that don't sell share one line of icons. **Your materials** shows what they cost in all on its heading, and a material you're short of shows a cart. One line at the bottom has this session's total, crafts and luck; hover its **i** for the notes on how the numbers were worked out. Missing prices, old prices and what-if qualities stay in sight.
+- The **Shopping list** under your materials is now a real button.
+- The **Best crafts** button also shows on crafting orders: it goes back to your recipes and opens the list.
+- Fixed: on a crafting order, a material you're short of was priced at its cheapest quality, so the panel could show a much smaller loss than the Patron tab. It's now priced, and bought, at the quality the Patron tab picks.
+- Fixed: on a crafting order, the **saves** hint under a material could suggest a cheaper rank than the one **Optimize Concentration** picked. It now only suggests the rank the Patron tab picks.
+
 ## 2.2.0
 - **Expected profit on patron orders:** the Patron tab's profit column is now **Expected**: what each order makes on average with resourcefulness, on the materials you supply and the ones the customer sent (what it saves comes back to you). Multicraft doesn't count, since the customer gets the item. Sorting, **Add profitable** and sharing out concentration go by it, and hovering an order shows the breakdown. With an order open, the panel shows **Expected profit** with **Without procs** under it, like on the crafting page. Turn off **Count multicraft and resourcefulness** to go back to plain profit.
 - **Item names in their rarity's color** (green, blue, purple...) in the Best crafts list, the panel's materials and every tooltip.
