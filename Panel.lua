@@ -868,8 +868,10 @@ end
 local function createFrame()
 	frame = CreateFrame("Frame", "CraftProfitPanel", ProfessionsFrame, "BackdropTemplate")
 	frame:SetWidth(Layout.WIDTH)
-	-- Sit above other addons' buttons on the profession window's edge (e.g. AllTheThings).
-	frame:SetFrameLevel(ProfessionsFrame:GetFrameLevel() + 50)
+	-- On top of the profession window, should it be dragged over it: a frame level
+	-- alone isn't enough (Blizzard raises the window's own layers when it's clicked),
+	-- so a higher strata. Also above other addons' buttons on its edge (AllTheThings).
+	frame:SetFrameStrata("HIGH")
 	frame:SetBackdrop({
 		bgFile = "Interface\\Tooltips\\UI-Tooltip-Background",
 		edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
