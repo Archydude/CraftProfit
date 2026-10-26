@@ -115,6 +115,27 @@ function ns.Strategy()
 	return ns.STRATEGIES[1]
 end
 
+-- The crafting strategy dropdowns' menu (under the Best crafts list and on the
+-- panel): one choice per strategy, with what it does in its tooltip.
+function ns.StrategyMenu(_, root)
+	for _, strategy in ipairs(ns.STRATEGIES) do
+		local key = strategy[1]
+		local radio = root:CreateRadio(strategy[2], function() return ns.db.craftStrategy == key end,
+			function() ns.Options.Set("craftStrategy", key) end, key)
+		radio:SetTooltip(function(tip)
+			GameTooltip_SetTitle(tip, strategy[2])
+			GameTooltip_AddNormalLine(tip, strategy[4])
+		end)
+	end
+end
+
+-- What a strategy dropdown shows for the picked strategy: its short name.
+function ns.StrategyText(selection)
+	for _, strategy in ipairs(ns.STRATEGIES) do
+		if strategy[1] == selection.data then return strategy[3] end
+	end
+end
+
 -- Choices for where missing materials go when Auctionator and TSM are both installed.
 ns.LIST_ADDON_CHOICES = {
 	{ "auctionator", "Auctionator shopping list" },

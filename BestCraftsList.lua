@@ -645,31 +645,12 @@ end
 -- The crafting strategy dropdown
 ---------------------------------------------------------------------------
 
-local function strategyMenu(_, root)
-	for _, strategy in ipairs(ns.STRATEGIES) do
-		local key = strategy[1]
-		local radio = root:CreateRadio(strategy[2], function() return ns.db.craftStrategy == key end,
-			function() ns.Options.Set("craftStrategy", key) end, key)
-		radio:SetTooltip(function(tip)
-			GameTooltip_SetTitle(tip, strategy[2])
-			GameTooltip_AddNormalLine(tip, strategy[4])
-		end)
-	end
-end
-
--- The short name of the chosen strategy, for the dropdown's own text.
-local function strategyText(selection)
-	for _, strategy in ipairs(ns.STRATEGIES) do
-		if strategy[1] == selection.data then return strategy[3] end
-	end
-end
-
 local function createStrategyDropdown()
 	strategyDropdown = CreateFrame("DropdownButton", nil, list, "WowStyle1DropdownTemplate")
 	strategyDropdown:SetWidth(STRATEGY_WIDTH)
 	strategyDropdown:SetPoint("BOTTOMRIGHT", -PAD, PAD - 4)
-	if strategyDropdown.SetSelectionTranslator then strategyDropdown:SetSelectionTranslator(strategyText) end
-	strategyDropdown:SetupMenu(strategyMenu)
+	if strategyDropdown.SetSelectionTranslator then strategyDropdown:SetSelectionTranslator(ns.StrategyText) end
+	strategyDropdown:SetupMenu(ns.StrategyMenu)
 	local label = list:CreateFontString(nil, "OVERLAY", "GameFontNormal")
 	label:SetPoint("RIGHT", strategyDropdown, "LEFT", -6, 0)
 	label:SetText(STRATEGY_LABEL)

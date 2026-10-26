@@ -84,7 +84,7 @@ function Options.Create()
 	dropdown("craftStrategy", "Crafting strategy", strategyChoices, strategyTip ..
 		"It picks the materials for Use Craft Profit Reagents and the panel's blue row, prices missing materials, " ..
 		"decides what the shopping list buys, and ranks the Best crafts list. Patron orders keep their own rule: the " ..
-		"cheapest materials that reach the order's minimum quality.\n\nAlso at the bottom of the Best crafts list.")
+		"cheapest materials that reach the order's minimum quality.\n\nAlso on the panel when a recipe is open, and at the bottom of the Best crafts list.")
 	checkbox("countProcs", "Count multicraft and resourcefulness",
 		"The Best crafts list ranks recipes by what they make on average with procs, and the Most profit strategy " ..
 		"picks ranks that way. The Patron tab shows and sorts orders by what they make on average with " ..

@@ -70,9 +70,33 @@ local function createRowButton()
 	return button
 end
 
+-- A row's cart button, left of its amount: shops for what the row is short of.
+local CART_SIZE = 16
+local CART_GAP = 6
+local function createCartButton()
+	local button = CreateFrame("Button", nil, frame)
+	button:SetSize(CART_SIZE, CART_SIZE)
+	button:SetFrameLevel(frame:GetFrameLevel() + 4)
+	if C_Texture.GetAtlasInfo("Perks-ShoppingCart") then
+		button:SetNormalAtlas("Perks-ShoppingCart")
+	else
+		button:SetNormalTexture("Interface\\Icons\\INV_Misc_Bag_10")
+	end
+	button:SetHighlightTexture("Interface\\Buttons\\ButtonHilight-Square", "ADD")
+	button:SetScript("OnClick", function(self) self.onClick() end)
+	button:SetScript("OnEnter", function(self)
+		GameTooltip:SetOwner(self, "ANCHOR_LEFT")
+		self.tooltip(GameTooltip)
+		GameTooltip:Show()
+	end)
+	button:SetScript("OnLeave", GameTooltip_Hide)
+	return button
+end
+
 -- Adds a row: text on the left, an amount on the right. `onClick(mouseButton, button)`
--- and `tooltip(GameTooltip)` make the row clickable. Returns the row.
-local function addRow(left, right, font, onClick, tooltip)
+-- and `tooltip(GameTooltip)` make the row clickable. `cart` ({ onClick, tooltip })
+-- adds a cart button left of the amount. Returns the row.
+local function addRow(left, right, font, onClick, tooltip, cart)
 	rowCount = rowCount + 1
 	local row = rows[rowCount]
 	if not row then
@@ -100,6 +124,7 @@ local function addRow(left, right, font, onClick, tooltip)
 	local hasAmount = right ~= nil and right ~= ""
 	local reserved = hasAmount and (row.right:GetStringWidth() + 8)
 		or (rowCount == 1 and (Layout.GEAR_SPACE + ns.BestCraftsList.HeaderSpace()) or 0)
+	if cart then reserved = reserved + CART_SIZE + CART_GAP end
 	row.left:SetWidth(Layout.WIDTH - 2 * Layout.PAD_SIDE - reserved)
 	row.left:SetWordWrap(not hasAmount)
 
@@ -120,6 +145,17 @@ local function addRow(left, right, font, onClick, tooltip)
 		row.button:Show()
 	elseif row.button then
 		row.button:Hide()
+	end
+
+	if cart then
+		row.cart = row.cart or createCartButton()
+		row.cart:ClearAllPoints()
+		row.cart:SetPoint("RIGHT", frame, "TOPRIGHT", -Layout.PAD_SIDE - row.right:GetStringWidth() - CART_GAP,
+			y - height / 2 + 1)
+		row.cart.onClick, row.cart.tooltip = cart.onClick, cart.tooltip
+		row.cart:Show()
+	elseif row.cart then
+		row.cart:Hide()
 	end
 	return row
 end
@@ -152,6 +188,42 @@ local function addButton(text, onClick, tooltip)
 end
 
 -- A little extra space that sets the next row apart.
+-- The crafting strategy dropdown, on a row of its own with a label.
+local STRATEGY_WIDTH = 140
+local DROPDOWN_HEIGHT = 24
+local strategyDropdown, strategyUsed
+local function addStrategyDropdown()
+	if not strategyDropdown then
+		strategyDropdown = CreateFrame("DropdownButton", nil, frame, "WowStyle1DropdownTemplate")
+		strategyDropdown:SetWidth(STRATEGY_WIDTH)
+		strategyDropdown:SetFrameLevel(frame:GetFrameLevel() + 2)
+		if strategyDropdown.SetSelectionTranslator then strategyDropdown:SetSelectionTranslator(ns.StrategyText) end
+		strategyDropdown:SetupMenu(ns.StrategyMenu)
+		strategyDropdown:HookScript("OnEnter", function(self)
+			local strategy = ns.Strategy()
+			GameTooltip:SetOwner(self, "ANCHOR_LEFT")
+			GameTooltip:SetText("Crafting strategy")
+			GameTooltip:AddLine(strategy[2] .. ": " .. strategy[4], 1, 1, 1, true)
+			GameTooltip:AddLine("It picks the materials for Use Craft Profit materials, prices what you're missing and "
+				.. "decides what the shopping list buys. Also under the Best crafts list and in the options.",
+				0.53, 0.53, 0.53, true)
+			GameTooltip:Show()
+		end)
+		strategyDropdown:HookScript("OnLeave", GameTooltip_Hide)
+	end
+	local top = -Layout.PAD_TOP - contentHeight
+	local row = addRow("Crafting strategy")
+	row.left:ClearAllPoints()
+	row.left:SetPoint("LEFT", frame, "TOPLEFT", Layout.PAD_SIDE, top - DROPDOWN_HEIGHT / 2)
+	contentHeight = contentHeight - math.max(Layout.LINE_HEIGHT, math.ceil(row.left:GetStringHeight()) + 3)
+		+ DROPDOWN_HEIGHT + 2
+	strategyDropdown:ClearAllPoints()
+	strategyDropdown:SetPoint("RIGHT", frame, "TOPRIGHT", -Layout.PAD_SIDE + 2, top - DROPDOWN_HEIGHT / 2)
+	strategyDropdown:GenerateMenu()
+	strategyDropdown:Show()
+	strategyUsed = true
+end
+
 local function addGap()
 	contentHeight = contentHeight + Layout.GAP
 end
@@ -289,11 +361,22 @@ local function cheaperTooltip(material, cheaper)
 	end
 end
 
--- The tag on a material you're short of: a little cart (the word "missing" if the
--- game has no cart picture).
-local function missingTag()
-	if C_Texture.GetAtlasInfo("Perks-ShoppingCart") then return CreateAtlasMarkup("Perks-ShoppingCart", 16, 16) end
-	return Color("missing", "missing")
+-- The cart button on a material you're short of: adds what's missing of it for
+-- one craft to the shopping list (or a TSM search).
+local function materialCart(model, material)
+	local missing = missingOf(model, material)
+	local target = ns.Shopping.ListTarget()
+	if missing == 0 or not target then return end
+	return {
+		onClick = function() shopMaterial(model, material) end,
+		tooltip = function(tip)
+			tip:SetText(format("Missing %d for 1 craft", missing))
+			tip:AddLine(Item(material.itemID, missing), 1, 1, 1)
+			tip:AddLine(" ")
+			tip:AddLine(Color("simulated", target == "tsm" and "Click: copy a TSM search for them"
+				or "Click: add them to the shopping list"))
+		end,
+	}
 end
 
 local function drawMaterials(model)
@@ -303,8 +386,10 @@ local function drawMaterials(model)
 	addRow("Your materials", Color(ns.AmountColor(-model.cost), Money(-model.cost)), fonts.heading)
 	local shownCheaper = {}
 	for _, material in ipairs(model.materials) do
+		local cart = materialCart(model, material)
+		-- Short of it, with nowhere to send it (no Auctionator or TSM): the word instead.
 		local tag = (material.simulated and ("  " .. Color("simulated", "simulated")))
-			or (material.estimated and ("  " .. missingTag()))
+			or (not cart and missingOf(model, material) > 0 and ("  " .. Color("missing", "missing")))
 			or ""
 		-- Click cycles qualities; Shift-click shops for just this material.
 		local onClick, tooltip
@@ -321,7 +406,7 @@ local function drawMaterials(model)
 			tooltip = materialTooltip(model, material, canCycle)
 		end
 		local amount = material.price and Money(material.price * material.qty) or Color("warning", "no price")
-		addRow(Item(material.itemID, material.qty) .. tag, amount, nil, onClick, tooltip)
+		addRow(Item(material.itemID, material.qty) .. tag, amount, nil, onClick, tooltip, cart)
 
 		-- A cheaper rank to buy instead of using yours, once per slot.
 		local cheaper = model.cheaper and model.cheaper[material.slotIndex]
@@ -583,6 +668,9 @@ local function drawCraft(model)
 		end
 	end
 	drawMaterials(model)
+	-- Right above the blue row, which follows it. (Orders have their own rule.)
+	addGap()
+	addStrategyDropdown()
 	drawBest(model)
 	drawProcs(model)
 	drawFooter(model)
@@ -718,7 +806,7 @@ function Panel.Render()
 		return
 	end
 	rowCount, dividerCount, contentHeight, profitRow, procRow = 0, 0, 0, nil, nil
-	rowButtonUsed = false
+	rowButtonUsed, strategyUsed = false, false
 	-- Before the rows, which leave room for it.
 	ns.BestCraftsList.UpdateToggle()
 
@@ -732,9 +820,11 @@ function Panel.Render()
 		rows[i].left:Hide()
 		rows[i].right:Hide()
 		if rows[i].button then rows[i].button:Hide() end
+		if rows[i].cart then rows[i].cart:Hide() end
 	end
 	for i = dividerCount + 1, #dividers do dividers[i]:Hide() end
 	if rowButton and not rowButtonUsed then rowButton:Hide() end
+	if strategyDropdown and not strategyUsed then strategyDropdown:Hide() end
 	if model then
 		frame:SetHeight(Layout.PAD_TOP + contentHeight + Layout.PAD_BOTTOM)
 		frame:Show()

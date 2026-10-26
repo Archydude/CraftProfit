@@ -33,7 +33,7 @@ Open your profession and pick a recipe, or open a crafting order. The panel appe
 
 The panel reads top to bottom: the expected profit or loss, what comes in (the sale price, or an order's commission and rewards), your materials with what they cost in all, then one line with this session's total and luck. Hover the **i** at the end of that line for the notes on how the numbers were worked out. Notes you need to see, like materials without a price or old prices, stay in sight.
 
-- Materials are priced at the quality you actually put in the form. If a slot is empty (you don't own the material), it's marked with a cart and priced at the quality your crafting strategy picks (see below), so the profit is for what you'd craft once you've bought it. On an order, it's priced at the quality the Patron tab picks for the order.
+- Materials are priced at the quality you actually put in the form. If a slot is empty (you don't own the material), or the form holds another quality because you're short of the one your crafting strategy picks (see below), it's priced at the strategy's quality, so the profit is for what you'd craft once you've bought it. On an order, it's priced at the quality the Patron tab picks for the order. A material you're short of has a cart button: click it to shop for just that material.
 - The sale price follows the quality you'll get, including concentration if you turn it on.
 - A lower rank is never worth more than a better one: when rank 3 is listed higher than rank 5 sells for, nobody buys it at that price, so it's priced as rank 5 sells and the panel's notes say so. The Best crafts list counts it the same way.
 - Vendor-sold materials (vials, thread...) use the vendor price.
@@ -55,7 +55,7 @@ The panel reads top to bottom: the expected profit or loss, what comes in (the s
 **Cheaper rank to buy:** on a crafting order, when the form uses a rank you own and buying another rank comes out cheaper, a blue line under that material says how much it saves, e.g. **[rank 1] saves 2g 40s**. What you own counts at what it would sell for after the 5% auction house cut, so the line only shows when buying really comes out ahead, and only for a rank that still meets the order's minimum quality on its own, without an optional or finishing reagent that raises your skill. It only suggests the rank the Patron tab picks for the order, so it never goes against **Optimize Concentration**. Click it to use that rank: the panel and the shopping list switch to it. Hover it for the numbers.
 
 ### Crafting strategy
-What the crafting page crafts. Set it in the options or at the bottom of the Best crafts list:
+What the crafting page crafts. Set it with the **Crafting strategy** dropdown on the panel (under your materials, when a recipe is open), at the bottom of the Best crafts list, or in the options:
 
 - **Highest rank, cheapest materials** (default): the highest rank you can make, with the cheapest materials that reach it. A lower rank is never picked when a better one is in reach, even if it's listed for more or the better rank's materials cost more: buyers want the best rank.
 - **Most profit:** the rank that makes the most gold after what its materials cost, with the cheapest materials that make it. With no sale price for the item at any rank, the cheapest materials that keep the rank it comes out at now.
@@ -86,7 +86,7 @@ Shortcut: **Ctrl-click** clears the list, without the menu.
 
 **Checked off as you get them:** materials come off the list as they arrive: bought at the auction house, looted, taken from the mailbox or crafted. (Auction house items that aren't commodities come by mail, so they're checked off once you take them out.) Chat says what came off, and when the list is done. Only what Craft Profit added is checked off: lines you add yourself in Auctionator stay. Moving things between your bags, bank and warband bank doesn't count. Turn off **Check off what you get** in the options to keep the list until you clear it.
 
-**Just one material:** **Shift-click** a material in the panel to add only what you're missing of it, for one craft. Pick a quality first by clicking it, and that quality is what gets added. With TSM, you get a search for just that material.
+**Just one material:** click the cart next to a material you're short of, or **Shift-click** the material, to add only what you're missing of it, for one craft. Pick a quality first by clicking it, and that quality is what gets added. With TSM, you get a search for just that material.
 
 **Separate lists:** each character and profession gets its own list, like **Thrall - Blacksmithing**. Turn off **one shopping list per character** or **per profession** in the options to share lists instead; with both off, the list is called **Crafting**. Lists from before 1.19.0, named **Craft Profit - ...**, are moved to the new names the next time you log in, along with what's on them.
 
