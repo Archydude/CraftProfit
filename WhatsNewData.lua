@@ -2,10 +2,16 @@
 ArchdudeWhatsNew:Register("CraftProfit", {
 	title = "Craft Profit",
 	icon = "Interface\\Icons\\INV_Hammer_20",
-	version = "2.1.0",
+	version = "2.2.0",
 	seen = "CraftProfitWhatsNew",
 	saved = { "CraftProfitDB", "CraftProfitCharDB" },
 	changes = {
+		{ "2.2.0",
+			"|cffffd100Expected profit on patron orders:|r the Patron tab's profit column is now |cffffd100Expected|r: what each order makes on average with resourcefulness, on the materials you supply and the ones the customer sent (what it saves comes back to you). Multicraft doesn't count, since the customer gets the item. Sorting, |cffffd100Add profitable|r and sharing out concentration go by it, and hovering an order shows the breakdown. With an order open, the panel shows |cffffd100Expected profit|r with |cffffd100Without procs|r under it, like on the crafting page. Turn off |cffffd100Count multicraft and resourcefulness|r to go back to plain profit.",
+			"|cffffd100Item names in their rarity's color|r (green, blue, purple...) in the Best crafts list, the panel's materials and every tooltip.",
+			"|cffffd100Luck|r now shows from your first craft that can proc, instead of after 5.",
+			"Fixed: on patron orders, Luck read far too high, because what resourcefulness gave back of the customer's materials counted but wasn't expected. The luck tooltip now says |cffffd100Procs make on average|r instead of Expected.",
+		},
 		{ "2.1.0",
 			"|cffffd100Ignore recipes in Best crafts:|r click the eye at the end of a row (or right-click the row) to hide a recipe whose price makes no sense. |cffffd100Show ignored recipes|r in the Filter menu shows them again, in grey, with an undo button on each; |cffffd100Stop ignoring all|r brings them all back. The ignore list is the same for all your characters.",
 			"|cffffd100Reminders to scan the auction house|r, with Auctionator prices: once its last scan is over a day old, opening the auction house reminds you in chat to run a full scan, and the footers of the panel and the Best crafts list say |cffffd100last scan 2 days ago|r in red. Over 3 days old, opening Best crafts shows an |cffffd100Old prices|r notice, once a session. Turn the reminders off with |cffffd100Remind me to scan the auction house|r in the options, under Prices.",
@@ -54,9 +60,6 @@ ArchdudeWhatsNew:Register("CraftProfit", {
 		},
 		{ "1.18.2",
 			"Fixed: the Patron orders list stayed tall, with empty space at the bottom, after an order left it. It now fits its orders, and scrolls only when they don't fit.",
-		},
-		{ "1.18.1",
-			"Fixed: when a proc's bonus gold popped up and floated away, the gold, silver and copper coin icons stayed behind. They now move with the amount.",
 		},
 	},
 })

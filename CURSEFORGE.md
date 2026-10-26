@@ -39,7 +39,7 @@ Craft Profit answers one question in gold: **profit or loss?** A panel next to y
 - **Craft Rank** on tooltips
 
 ### Crafts and orders
-What the item sells for at the rank you'll get, minus the 5% auction house cut and your materials. The panel shows what a craft makes on average with multicraft and resourcefulness, and without them. On orders: the commission after the cut, minus the materials **you** supply, plus sellable rewards.
+What the item sells for at the rank you'll get, minus the 5% auction house cut and your materials. The panel shows it with and without multicraft and resourcefulness. On orders: the commission after the cut, minus the materials **you** supply, plus sellable rewards and what resourcefulness saves on average.
 
 ### What should I craft?
 **Best crafts** lists every recipe you know, most profitable first, with how many you can make, how many are listed and how many sell per day. Filter by gear, decor, materials and more, ignore any whose price makes no sense, and click one to open it.
@@ -48,7 +48,7 @@ What the item sells for at the rank you'll get, minus the 5% auction house cut a
 Pick a **crafting strategy**: the highest rank you can make (the default), the most profit, or the cheapest materials. Craft Profit puts those materials in for you, prices what you're missing at them, and shops for exactly those.
 
 ### Patron orders
-Blizzard's Patron tab shows each order's **profit**, **rewards** and missing **materials**. Sort by profit, shop for the profitable ones, and craft each with one click per step.
+Blizzard's Patron tab shows each order's **expected profit**, **rewards** and missing **materials**. Sort by profit, shop for the profitable ones, and craft each with one click per step.
 
 ### Shopping list
 One click adds what you're missing to an **Auctionator** shopping list or a **TSM** search. The Auctionator list checks itself off as materials come in, and Craft Profit reminds you to scan when its prices get old.
@@ -64,15 +64,16 @@ Procs pop up as bonus gold, a session total adds up what you've made, and the **
 ```
 ---
 
-**Source / Issues links:** leave empty unless you put the code on GitHub.
+**Source link:** `https://github.com/Archydude/CraftProfit`
+**Issues link:** `https://github.com/Archydude/CraftProfit/issues`
 
 ## B. Upload File form
 
-**File:** `dist\CraftProfit-2.1.0.zip`
+**File:** `dist\CraftProfit-2.2.0.zip`
 
 **Display name**
 ```
-Craft Profit 2.1.0
+Craft Profit 2.2.0
 ```
 
 **Release type:** `Release`
@@ -81,6 +82,12 @@ Craft Profit 2.1.0
 
 **Changelog** (paste only the newest part; paste older parts too if they never went up)
 ```markdown
+2.2.0
+- **Expected profit on patron orders:** the Patron tab's profit column is now **Expected**: what each order makes on average with resourcefulness, on the materials you supply and the ones the customer sent (what it saves comes back to you). Multicraft doesn't count, since the customer gets the item. Sorting, **Add profitable** and sharing out concentration go by it, and hovering an order shows the breakdown. With an order open, the panel shows **Expected profit** with **Without procs** under it, like on the crafting page. Turn off **Count multicraft and resourcefulness** to go back to plain profit.
+- **Item names in their rarity's color** (green, blue, purple...) in the Best crafts list, the panel's materials and every tooltip.
+- **Luck** now shows from your first craft that can proc, instead of after 5.
+- Fixed: on patron orders, Luck read far too high, because what resourcefulness gave back of the customer's materials counted but wasn't expected. The luck tooltip now says **Procs make on average** instead of Expected.
+
 2.1.0
 - **Ignore recipes in Best crafts:** click the eye at the end of a row (or right-click the row) to hide a recipe whose price makes no sense. **Show ignored recipes** in the Filter menu shows them again, in grey, with an undo button on each; **Stop ignoring all** brings them all back. The ignore list is the same for all your characters.
 - **Reminders to scan the auction house**, with Auctionator prices: once its last scan is over a day old, opening the auction house reminds you in chat to run a full scan, and the footers of the panel and the Best crafts list say **last scan 2 days ago** in red. Over 3 days old, opening Best crafts shows an **Old prices** notice, once a session. Turn the reminders off with **Remind me to scan the auction house** in the options, under Prices.
