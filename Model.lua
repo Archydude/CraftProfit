@@ -50,7 +50,8 @@ end
 
 -- What the form puts in a slot. Empty required slots (you don't own the
 -- material yet) get the quality `fill` (slotIndex -> itemID) has for them, or the
--- cheapest one, marked as missing.
+-- cheapest one, marked as missing. (Model.Materials also lets `fill` swap out
+-- what a slot holds.)
 local function formPicks(slotIndex, slot, transaction, fill)
 	local picks = ns.Blizzard.Allocated(transaction, slotIndex)
 	if #picks == 0 and slot.required and slot.reagentType == Enum.CraftingReagentType.Basic then
@@ -89,8 +90,12 @@ function Model.Materials(schematic, transaction, provided, overrides, fill)
 			-- A slot split over several qualities has no single "form" quality.
 			local formItemID = #picks == 1 and picks[1].itemID or nil
 			local override = overrides and overrides[slotIndex]
+			-- `fill` can also swap out what the form holds (see shortFill).
+			local swap = not override and fill and fill[slotIndex]
 			if override then
 				add(override, slot.quantityRequired, slotIndex, slot, "simulated", formItemID)
+			elseif swap and not (#picks == 1 and picks[1].itemID == swap) then
+				add(swap, slot.quantityRequired, slotIndex, slot, "missing", formItemID)
 			else
 				for _, pick in ipairs(picks) do
 					add(pick.itemID, pick.qty, slotIndex, slot, pick.missing and "missing" or nil, formItemID)
@@ -291,6 +296,25 @@ local function providedBasics(order, schematic)
 	return list
 end
 
+-- The slots where the form holds another quality than the Patron orders list's
+-- `plan` picks because you're short of the picked one (Blizzard tops it up with
+-- what you have): slotIndex -> the picked itemID, or nil. They're priced and
+-- bought at the picked quality, since that's what you'd craft once you've bought
+-- it. Slots with a what-if pick are left alone.
+local function shortFill(transaction, schematic, plan, picks)
+	local fill
+	for slotIndex, itemID in pairs(plan.overrides) do
+		local inForm = ns.Blizzard.Allocated(transaction, slotIndex)
+		local holds = #inForm == 1 and inForm[1].itemID == itemID
+		if not picks[slotIndex] and #inForm > 0 and not holds
+			and owned(itemID) < schematic.reagentSlotSchematics[slotIndex].quantityRequired then
+			fill = fill or {}
+			fill[slotIndex] = itemID
+		end
+	end
+	return fill
+end
+
 -- Whether the form has something other than `overrides` (slotIndex -> itemID,
 -- the full amount each) in those slots.
 local function differsFromForm(schematic, transaction, overrides)
@@ -403,11 +427,15 @@ function Model.Craft(ctx)
 		if pending then return nil, true end
 	end
 	local fill = strategyFill(transaction, plan, picks)
+	-- And the slots the form tops up with another quality because you're short of
+	-- the strategy's: what you can craft right now (realCost) still uses those.
+	local short = plan and plan.overrides and shortFill(transaction, schematic, plan, picks or {}) or nil
+	local filled = short and merged(fill, short) or fill
 
 	local link, itemID, quality
 	if not ctx.isRecraft and schematic.recipeType == Enum.TradeskillRecipeType.Item then
 		local predicted
-		link, itemID, predicted, quality = ns.Blizzard.ExpectedOutput(ctx, merged(picks, fill))
+		link, itemID, predicted, quality = ns.Blizzard.ExpectedOutput(ctx, merged(picks, filled))
 		if not predicted then
 			notes[#notes + 1] = "The game couldn't predict the quality for these materials, so the sale price uses the form's quality."
 		end
@@ -439,14 +467,14 @@ function Model.Craft(ctx)
 		notes[#notes + 1] = "Nothing to sell from this recipe: the loss is what the materials cost."
 	end
 
-	model.materials = Model.Materials(schematic, transaction, {}, picks, fill)
+	model.materials = Model.Materials(schematic, transaction, {}, picks, filled)
 	model.cost = costOf(model.materials, notes)
-	notes.filled = fill ~= nil
+	notes.filled = filled ~= nil
 	-- The shopping list buys the strategy's qualities when the form can't make its
 	-- rank (or has empty slots); otherwise any quality you own counts. What-if
 	-- picks always win: they're the ranks you chose.
 	local shopPicks = picks
-	if plan and not simulating and (fill or plan.quality and
+	if plan and not simulating and (filled or plan.quality and
 		(ns.Blizzard.PredictQuality(recipeInfo.recipeID, schematic, transaction, {}) or 0) < plan.quality) then
 		shopPicks = plan.overrides
 	end
@@ -455,7 +483,7 @@ function Model.Craft(ctx)
 
 	-- What multicraft and resourcefulness add on average (see Procs.Expected).
 	if not (planning or ctx.isRecraft) then
-		local chances = ns.Procs.Chances(ns.Blizzard.CraftInfo(ctx, merged(picks, fill)))
+		local chances = ns.Procs.Chances(ns.Blizzard.CraftInfo(ctx, merged(picks, filled)))
 		local output = model.output
 		local sale = output and output.sale and output.sale - (output.ahCut or 0)
 		model.procs = ns.Procs.Expected(ns.Procs.ProfessionOf(recipeInfo.recipeID), chances, sale,
@@ -463,9 +491,10 @@ function Model.Craft(ctx)
 		model.expected = model.total + model.procs.total
 	end
 
-	-- Real crafts use what's in the form, never the what-if picks.
-	model.realCost = simulating and costOf(Model.Materials(schematic, transaction, {}, nil, fill)) or model.cost
-	model.realProfit = not simulating and model.total or nil
+	-- Real crafts use what's in the form, never the what-if picks, nor the
+	-- strategy's qualities you're short of.
+	model.realCost = (simulating or short) and costOf(Model.Materials(schematic, transaction, {}, nil, fill)) or model.cost
+	model.realProfit = not simulating and (model.total + model.cost - model.realCost) or nil
 	if not (planning or simulating or ctx.isRecraft) then model.best = bestCraftMaterials(ctx, model) end
 	return model
 end
@@ -534,15 +563,20 @@ function Model.Order(ctx)
 	-- empty (materials you don't have enough of), so those are priced and bought at
 	-- the quality the list picked, not the cheapest.
 	local plan = canSimulate and not simulating and recipeInfo and ns.Planner.ForOrder(order, schematic, ctx.provided)
-	local fill = plan and plan.overrides and not plan.unreachable and strategyFill(transaction, plan, picks or {}) or nil
-	model.materials = Model.Materials(schematic, transaction, ctx.provided, picks, fill)
+	local usable = plan and plan.overrides and not plan.unreachable
+	local fill = usable and strategyFill(transaction, plan, picks or {}) or nil
+	-- And the slots the form tops up with another quality because you're short of
+	-- the picked one: what you can craft right now (realCost) still uses those.
+	local short = usable and shortFill(transaction, schematic, plan, picks or {}) or nil
+	local filled = short and merged(fill, short) or fill
+	model.materials = Model.Materials(schematic, transaction, ctx.provided, picks, filled)
 	model.cost = costOf(model.materials, notes)
-	notes.filled = fill ~= nil
+	notes.filled = filled ~= nil
 	-- When the form doesn't reach the order's minimum quality (without your skill
 	-- boosters), the shopping list buys the ranks that do: the list's picks.
 	-- Otherwise any rank you own counts, and the cheapest one is bought, except in
 	-- the slots the picks fill. What-if picks always win: they're the ranks you chose.
-	local shopPicks = fill and merged(picks, fill) or picks
+	local shopPicks = filled and merged(picks, filled) or picks
 	if plan and plan.minQuality and plan.overrides and next(plan.overrides) and not plan.unreachable
 		and (ns.Blizzard.PredictQuality(recipeInfo.recipeID, schematic, transaction, {}, ctx.provided) or 0) < plan.minQuality then
 		shopPicks = plan.overrides
@@ -597,7 +631,7 @@ function Model.Order(ctx)
 	-- customer gets the item, so multicraft adds nothing.
 	model.provided = providedBasics(order, schematic)
 	if not order.isRecraft then
-		local chances = ctx.transaction and recipeInfo and ns.Procs.Chances(ns.Blizzard.CraftInfo(ctx, merged(picks, fill)))
+		local chances = ctx.transaction and recipeInfo and ns.Procs.Chances(ns.Blizzard.CraftInfo(ctx, merged(picks, filled)))
 			or ns.Procs.RecipeChances(order.spellID)
 		chances.multicraft = 0
 		model.procs = ns.Procs.Expected(ns.Procs.ProfessionOf(order.spellID), chances, nil,
@@ -605,8 +639,11 @@ function Model.Order(ctx)
 		model.expected = model.total + model.procs.total
 	end
 
-	-- Real crafts use what's in the form, never the what-if picks.
-	model.realCost = simulating and costOf(Model.Materials(schematic, transaction, ctx.provided)) or model.cost
+	-- Real crafts use what's in the form, never the what-if picks, nor the picked
+	-- qualities you're short of.
+	model.realCost = (simulating and costOf(Model.Materials(schematic, transaction, ctx.provided)))
+		or (short and costOf(Model.Materials(schematic, transaction, ctx.provided, nil, fill)))
+		or model.cost
 	model.realProfit = model.receive - model.realCost + rewardsValue
 	model.best = canSimulate and bestMaterials(ctx, model) or nil
 	return model

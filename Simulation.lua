@@ -39,8 +39,10 @@ function Simulation.Cycle(material, mouseButton)
 				break
 			end
 		end
-		-- Back on what the form really has: that's not a simulation any more.
-		picks[material.slotIndex] = nextID ~= material.formItemID and nextID or nil
+		-- Back on what the form really has: that's not a simulation any more. Unless
+		-- the panel shows another quality there than the form (one you're short of,
+		-- see Model.Materials): then the form's quality is a pick like any other.
+		picks[material.slotIndex] = (nextID ~= material.formItemID or material.estimated) and nextID or nil
 	end
 	ns.Panel.Refresh()
 end
