@@ -432,7 +432,9 @@ local function drawRow(button, row)
 	local tagText = table.concat(tags, " ")
 	button.tags:SetText(tagText)
 	local nameCell = button.cells.name
-	nameCell:SetText((row.profit and not ignored) and name or Color("muted", name))
+	-- In its rarity's color; grey when ignored or without a price.
+	nameCell:SetText((row.profit and not ignored) and ns.Format.RarityColored(row.output and row.output.itemID, name)
+		or Color("muted", name))
 	-- The name takes what the icons leave, and is cut short with "..." past that.
 	local tagWidth = tagText ~= "" and (button.tags:GetUnboundedStringWidth() + TAG_GAP) or 0
 	nameCell:SetWidth(math.max(1, math.min(nameCell:GetUnboundedStringWidth() + 2, layout.name.width - tagWidth)))

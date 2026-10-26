@@ -23,11 +23,21 @@ function Format.Money(copper)
 	return copper < 0 and ("-" .. text) or text
 end
 
--- "3x [icon] Name [quality]". Asks the game to load names it hasn't seen yet;
--- the panel redraws when they arrive.
+-- `text` in the color of the item's rarity (green, blue, purple...), or as it is
+-- while the game hasn't loaded the item.
+function Format.RarityColored(itemID, text)
+	local rarity = itemID and C_Item.GetItemQualityByID(itemID)
+	local hex = rarity and select(4, C_Item.GetItemQualityColor(rarity))
+	return hex and ("|c" .. hex .. text .. "|r") or text
+end
+
+-- "3x [icon] Name [quality]", the name in its rarity's color. Asks the game to
+-- load names it hasn't seen yet; the panel redraws when they arrive.
 function Format.Item(itemID, qty)
 	local name = C_Item.GetItemNameByID(itemID)
-	if not name then
+	if name then
+		name = Format.RarityColored(itemID, name)
+	else
 		C_Item.RequestLoadItemDataByID(itemID)
 		name = "Loading..."
 	end
