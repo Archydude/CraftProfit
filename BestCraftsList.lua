@@ -29,7 +29,6 @@ local STRATEGY_LABEL = "Strategy:"
 local REFRESH_DELAY = 0.2  -- redraws are batched this long
 local LIST_LEVEL = 700     -- at least this frame level (Auctionator's crafting info sits at 520)
 local STALE_DAYS = 3       -- Auctionator counts this old or older show in grey
-local MAX_DAILY_SALES = 20 -- Gold/day counts at most this many sales a day: what one seller could move
 local STALE_SCAN_DAYS = 7  -- other characters' saved scans this old or older show in the warning color
 -- Columns right of the item name, right to left: key, width, header, sort key,
 -- needsTSM: true shows it only with TSM, false only without, and allCharacters:
@@ -52,10 +51,9 @@ local HEADER_TIPS = {
 		.. "cheapest materials that reach it. What you own counts at what it would sell for when picking them. A "
 		.. "rank is never priced above a better one.\n\nWith Count multicraft and resourcefulness on (Filter menu), "
 		.. "it's Expected: what a craft makes on average with procs.",
-	gold = format("Roughly what this recipe could make in a day: the profit on each item times how many sell per day, "
-		.. "counting %d a day at most. For comparing recipes, not a promise: with TSM it counts sales across your "
-		.. "whole region, and you'd only get a share of them. Without TSM, it counts your own recent sales. Recipes "
-		.. "that lose gold or haven't sold show -.", MAX_DAILY_SALES),
+	gold = "Roughly what this recipe could make in a day: the profit on each item times how many sell per day. For "
+		.. "comparing recipes, not a promise: with TSM it counts sales across your whole region, and you'd only get a "
+		.. "share of them. Without TSM, it counts your own recent sales. Recipes that lose gold or haven't sold show -.",
 	listed ="How many were up for sale the last time Auctionator saw them. Needs Auctionator.",
 	perDay = "How many sell per day across your region, on average, from TSM.",
 	sold = format("How many your characters sold on the auction house in the last %d days, from the auction "
@@ -84,7 +82,7 @@ local function goldPerDay(row)
 	local schematic = row.entry.schematic
 	local perItem = profit / (((schematic.quantityMin or 1) + (schematic.quantityMax or 1)) / 2)
 	if perItem <= 0 or demand <= 0 then return end
-	return perItem * math.min(demand, MAX_DAILY_SALES)
+	return perItem * demand
 end
 
 -- The row's character, by key ("Name-Realm"): a saved one, or this one.

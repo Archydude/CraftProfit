@@ -259,7 +259,8 @@ local function evaluate(data, model)
 		proc.actual = data.quantity * unit - model.realCost + proc.savedValue
 	elseif model.realProfit then
 		-- Nothing to sell (no price, an enchant, a recraft) is a loss of what the
-		-- materials cost, less what resourcefulness gave back.
+		-- materials cost, less what resourcefulness gave back. An enchant on a
+		-- vellum counts as the forecast for its scroll.
 		proc.actual = model.realProfit + proc.bonus
 	elseif model.kind == "craft" then
 		-- The same while what-if qualities are on screen: the real craft used the

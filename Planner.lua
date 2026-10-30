@@ -421,7 +421,8 @@ local function planCraft(recipeInfo, schematic, transaction, slots, context)
 			local link, itemID = ns.Blizzard.OutputAtQuality(recipeInfo, transaction, quality)
 			sales[quality] = link and ns.Prices.Sale(link, itemID)
 		end
-		prices = Planner.RankPrices(sales, #recipeInfo.qualityIDs, schematic)
+		local scroll = ns.Blizzard.MakesScroll(recipeInfo.recipeID, transaction)
+		prices = Planner.RankPrices(sales, #recipeInfo.qualityIDs, scroll and ns.Blizzard.ScrollSchematic(schematic) or schematic)
 		local info = ns.Blizzard.CraftInfo({ recipeInfo = recipeInfo, schematic = schematic, transaction = transaction })
 		local multiply
 		multiply, costFactor = ns.Procs.Factors(ns.Procs.ProfessionOf(recipeInfo.recipeID), ns.Procs.Chances(info))

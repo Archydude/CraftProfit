@@ -63,6 +63,12 @@ local function outputAt(recipeID, reagents, qualityID)
 	if ok and output and output.hyperlink then return { link = output.hyperlink, itemID = output.itemID } end
 end
 
+-- The scroll an enchant makes at a rank: { link, itemID }, or nil.
+local function scrollAt(recipeID, name, rank)
+	local link, itemID = ns.Blizzard.ScrollAt(recipeID, name, rank)
+	if link then return { link = link, itemID = itemID } end
+end
+
 -- What one recipe can make: {
 --   recipeID, name, icon, schematic,
 --   maxRank = its number of ranks (1 for items without ranks),
@@ -74,10 +80,17 @@ end
 --     one for each mix of qualities; concentration is what lifts it a rank, or nil,
 --   professionID, chances = your multicraft and resourcefulness chances (Procs.Chances),
 --   character, scanned = whose saved scan it's from, and when (Scans.lua), nil from the game,
--- }, or nil for recipes that don't make an item.
+-- }, or nil for recipes that don't make an item. Enchants count as the scroll
+-- they make, with their vellum as one more slot (see Blizzard.ScrollSchematic).
 local function scanRecipe(recipeID, info, professionID)
 	local schematic = C_TradeSkillUI.GetRecipeSchematic(recipeID, false)
-	if not (schematic and schematic.recipeType == Enum.TradeskillRecipeType.Item) then return end
+	if not schematic then return end
+	local scroll = ns.Blizzard.MakesScroll(recipeID)
+	if scroll then
+		schematic = ns.Blizzard.ScrollSchematic(schematic)
+	elseif schematic.recipeType ~= Enum.TradeskillRecipeType.Item then
+		return
+	end
 	local qualityIDs = info.supportsQualities and info.qualityIDs or nil
 	if qualityIDs and #qualityIDs == 0 then qualityIDs = nil end
 	local entry = {
@@ -126,7 +139,12 @@ local function scanRecipe(recipeID, info, professionID)
 	local firstReagents = reagentsFor(picksOf(mixes[1]))
 	local anyPrice = false
 	for rank = 1, entry.maxRank do
-		local output = outputAt(recipeID, firstReagents, qualityIDs and qualityIDs[rank])
+		local output
+		if scroll then
+			output = scrollAt(recipeID, info.name, rank)
+		else
+			output = outputAt(recipeID, firstReagents, qualityIDs and qualityIDs[rank])
+		end
 		entry.outputs[rank] = output
 		if output and ns.Prices.Sale(output.link, output.itemID) then anyPrice = true end
 	end

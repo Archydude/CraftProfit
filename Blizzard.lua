@@ -373,6 +373,39 @@ function Blizzard.FormConcentrationCost(recipeID, schematic, transaction, advice
 	return info and info.concentrationCost
 end
 
+-- Enchants have no item for the game to name, but on a vellum they make a scroll
+-- to sell (see EnchantScrolls.lua).
+
+-- Whether a recipe makes a scroll. With `transaction` (the form's), not when the
+-- form has something other than a vellum to enchant.
+function Blizzard.MakesScroll(recipeID, transaction)
+	if not ns.ENCHANT_SCROLLS[recipeID] then return false end
+	local target = transaction and transaction:GetEnchantAllocation()
+	return not target or target:GetItemID() == ns.VELLUM_ITEM
+end
+
+-- The scroll a recipe makes at a rank (nil for no ranks): link and itemID, or nil.
+-- Until the game has the item, the link takes the recipe's name, which is the
+-- scroll's too. It has all a real link's colons: TSM can't read it without them.
+function Blizzard.ScrollAt(recipeID, name, rank)
+	local itemID = ns.ENCHANT_SCROLLS[recipeID][rank or 1]
+	if not itemID then return end
+	local link = select(2, C_Item.GetItemInfo(itemID))
+	return link or format("|cffffffff|Hitem:%d::::::::::::::|h[%s]|h|r", itemID, name), itemID
+end
+
+-- A schematic as a scroll recipe sells and buys: one made per craft, and a vellum
+-- as one more required slot. A copy for pricing and shopping: the game has no
+-- such slot, so it can't go in a form.
+function Blizzard.ScrollSchematic(schematic)
+	local copy = {}
+	for key, value in pairs(schematic) do copy[key] = value end
+	copy.quantityMin, copy.quantityMax = 1, 1
+	copy.reagentSlotSchematics = { unpack(schematic.reagentSlotSchematics) }
+	table.insert(copy.reagentSlotSchematics, { required = true, quantityRequired = 1, reagents = { { itemID = ns.VELLUM_ITEM } } })
+	return copy
+end
+
 -- The item a craft makes at its predicted quality: link, itemID, whether the
 -- game could predict the quality for the picked qualities (if not, the form's own
 -- materials are used), and that quality tier (nil for items without ranks).
@@ -394,6 +427,11 @@ function Blizzard.ExpectedOutput(ctx, overrides)
 		qualityID = quality and recipeInfo.qualityIDs[quality]
 	end
 
+	if Blizzard.MakesScroll(recipeID, transaction) then
+		local link, itemID = Blizzard.ScrollAt(recipeID, recipeInfo.name, qualityID and quality)
+		return link, itemID, predicted, qualityID and quality
+	end
+
 	local output = ask(C_TradeSkillUI.GetRecipeOutputItemData, recipeID, reagents,
 		transaction:GetAllocationItemGUID(), qualityID)
 	if not output then return nil, nil, predicted end
@@ -405,6 +443,9 @@ end
 function Blizzard.OutputAtQuality(recipeInfo, transaction, quality)
 	local qualityID = recipeInfo.qualityIDs and recipeInfo.qualityIDs[quality]
 	if not qualityID then return end
+	if Blizzard.MakesScroll(recipeInfo.recipeID, transaction) then
+		return Blizzard.ScrollAt(recipeInfo.recipeID, recipeInfo.name, quality)
+	end
 	local output = ask(C_TradeSkillUI.GetRecipeOutputItemData, recipeInfo.recipeID,
 		transaction:CreateCraftingReagentInfoTbl(), transaction:GetAllocationItemGUID(), qualityID)
 	if output then return output.hyperlink, output.itemID end

@@ -399,6 +399,14 @@ local function merged(a, b)
 	return result
 end
 
+-- Model.Materials for a craft: with `scroll`, also the vellum it goes on, which
+-- isn't one of the recipe's slots.
+local function craftMaterials(scroll, ...)
+	local list = Model.Materials(...)
+	if scroll then list[#list + 1] = { itemID = ns.VELLUM_ITEM, qty = 1, price = ns.Prices.Material(ns.VELLUM_ITEM) } end
+	return list
+end
+
 -- The recipe selected on the crafting page. With ctx.overrides (slotIndex ->
 -- itemID), prices those qualities instead of the form's, for comparing. Nil and
 -- true while the crafting strategy's plan is still being worked out (see
@@ -432,8 +440,12 @@ function Model.Craft(ctx)
 	local short = plan and plan.overrides and shortFill(transaction, schematic, plan, picks or {}) or nil
 	local filled = short and merged(fill, short) or fill
 
+	-- An enchant on a vellum makes a scroll: what you sell, and what you shop for.
+	local scroll = not ctx.isRecraft and ns.Blizzard.MakesScroll(recipeInfo.recipeID, transaction)
+	local sold = scroll and ns.Blizzard.ScrollSchematic(schematic) or schematic
+
 	local link, itemID, quality
-	if not ctx.isRecraft and schematic.recipeType == Enum.TradeskillRecipeType.Item then
+	if scroll or (not ctx.isRecraft and schematic.recipeType == Enum.TradeskillRecipeType.Item) then
 		local predicted
 		link, itemID, predicted, quality = ns.Blizzard.ExpectedOutput(ctx, merged(picks, filled))
 		if not predicted then
@@ -442,7 +454,7 @@ function Model.Craft(ctx)
 	end
 
 	if link then
-		local qtyMin, qtyMax = schematic.quantityMin or 1, schematic.quantityMax or 1
+		local qtyMin, qtyMax = sold.quantityMin or 1, sold.quantityMax or 1
 		local price, cappedBy, listed = cappedSale(ctx, link, itemID, quality)
 		if cappedBy then notes[#notes + 1] = Model.CappedNote(recipeInfo.recipeID, cappedBy, listed) end
 		local output = {
@@ -467,7 +479,7 @@ function Model.Craft(ctx)
 		notes[#notes + 1] = "Nothing to sell from this recipe: the loss is what the materials cost."
 	end
 
-	model.materials = Model.Materials(schematic, transaction, {}, picks, filled)
+	model.materials = craftMaterials(scroll, schematic, transaction, {}, picks, filled)
 	model.cost = costOf(model.materials, notes)
 	notes.filled = filled ~= nil
 	-- The shopping list buys the strategy's qualities when the form can't make its
@@ -478,7 +490,7 @@ function Model.Craft(ctx)
 		(ns.Blizzard.PredictQuality(recipeInfo.recipeID, schematic, transaction, {}) or 0) < plan.quality) then
 		shopPicks = plan.overrides
 	end
-	addShopping(model, schematic, {}, shopPicks)
+	addShopping(model, sold, {}, shopPicks)
 	model.total = (model.total or 0) - model.cost
 
 	-- What multicraft and resourcefulness add on average (see Procs.Expected).
@@ -493,7 +505,7 @@ function Model.Craft(ctx)
 
 	-- Real crafts use what's in the form, never the what-if picks, nor the
 	-- strategy's qualities you're short of.
-	model.realCost = (simulating or short) and costOf(Model.Materials(schematic, transaction, {}, nil, fill)) or model.cost
+	model.realCost = (simulating or short) and costOf(craftMaterials(scroll, schematic, transaction, {}, nil, fill)) or model.cost
 	model.realProfit = not simulating and (model.total + model.cost - model.realCost) or nil
 	if not (planning or simulating or ctx.isRecraft) then model.best = bestCraftMaterials(ctx, model) end
 	return model

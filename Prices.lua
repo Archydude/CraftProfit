@@ -42,6 +42,8 @@ function Prices.Material(itemID)
 	local api = auctionatorAPI()
 	return (tsmAvailable() and tsmValue(ns.db.matSource, "i:" .. itemID))
 		or (api and auctionatorValue(api.GetAuctionPriceByItemID, itemID))
+		-- Price addons may not know vellums, and a vendor always has them.
+		or (itemID == ns.VELLUM_ITEM and ns.VELLUM_PRICE or nil)
 end
 
 -- What a crafted item sells for, in copper. Uses the full link so quality and
