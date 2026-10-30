@@ -6,8 +6,11 @@
 -- copies it in) plus its own WhatsNewData.lua, which tools\whatsnew.ps1 writes from the addon's
 -- CHANGELOG.md and which calls Register below. The highest REVISION to load takes over the shared
 -- table, like LibStub, so raise it whenever this file changes.
+--
+-- A checkbox in the window stops it opening after updates, for all these addons; /whatsnew opens
+-- it anyway, which is also how the player gets the checkbox back.
 
-local REVISION = 1
+local REVISION = 2
 
 local lib = _G.ArchdudeWhatsNew
 if lib and lib.revision >= REVISION then return end
@@ -26,6 +29,10 @@ local NAV_ROW_HEIGHT = 20 -- the row of addon names, shown when the window has m
 local NAV_GAP = 16
 local GROUP_ICON = "Interface\\Icons\\INV_Scroll_03" -- the Retail portrait when several addons share the window
 local SHOW_DELAY = 5     -- seconds after login, so the window doesn't open while the game is still loading
+-- Added to an addon's saved version when the player turned the window off. The addons share no
+-- saved variable, so each keeps it, and one saying so counts for all. Versions are compared by
+-- their numbers alone, so older copies of this file still read it.
+local MUTED = " muted"
 
 -- "1.20.1" is newer than "1.9.4": compares each number in turn.
 local function isNewer(a, b)
@@ -80,6 +87,29 @@ function lib:Unseen(info)
 	return list
 end
 
+-- Whether the player turned the window off. Only sure once every addon has loaded its saved data.
+function lib:IsMuted()
+	for _, info in pairs(self.addons) do
+		local seen = _G[info.seen]
+		if type(seen) == "string" and seen:find(MUTED, 1, true) then return true end
+	end
+	return false
+end
+
+function lib:SetMuted(muted)
+	for _, info in pairs(self.addons) do
+		local seen = _G[info.seen]
+		if type(seen) == "string" then
+			_G[info.seen] = seen:gsub(MUTED, "", 1) .. (muted and MUTED or "")
+		end
+	end
+end
+
+-- Notes the addon's version as seen, keeping whether the window is off.
+function lib:MarkSeen(info, muted)
+	_G[info.seen] = info.version .. (muted and MUTED or "")
+end
+
 function lib:OnEvent(event, arg)
 	if event == "ADDON_LOADED" then
 		local info = self.addons[arg]
@@ -104,6 +134,12 @@ function lib:Schedule()
 			return
 		end
 		lib.events:UnregisterEvent("PLAYER_REGEN_ENABLED")
+		if lib:IsMuted() then
+			-- Skipped, not saved up: turning the window back on doesn't bring them all back.
+			for _, entry in ipairs(lib.pending) do lib:MarkSeen(entry.info, true) end
+			wipe(lib.pending)
+			return
+		end
 		lib:Show()
 	end)
 end
@@ -141,6 +177,29 @@ local function makeCloseButton(f, ...)
 	close:SetScript("OnClick", function() f:Hide() end)
 end
 
+-- The checkbox that turns the window off, at the bottom left.
+local function makeMuteCheck(f, x, y)
+	local check = CreateFrame("CheckButton", nil, f, "UICheckButtonTemplate")
+	check:SetSize(24, 24)
+	check:SetPoint("BOTTOMLEFT", x, y)
+	local label = check:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
+	label:SetPoint("LEFT", check, "RIGHT", 2, 0)
+	label:SetText("Don't show this after updates")
+	check:SetScript("OnClick", function(self)
+		lib:SetMuted(self:GetChecked())
+		if self:GetChecked() then print("What's New is off. Type /whatsnew to see it, or to turn it back on.") end
+	end)
+	check:SetScript("OnEnter", function(self)
+		GameTooltip:SetOwner(self, "ANCHOR_TOP")
+		GameTooltip:SetText("Don't show this after updates")
+		GameTooltip:AddLine("Stops this window opening after an update, for all the addons that use it. Type "
+			.. "/whatsnew to see the latest changes, or to turn it back on.", 1, 1, 1, true)
+		GameTooltip:Show()
+	end)
+	check:SetScript("OnLeave", GameTooltip_Hide)
+	f.muteCheck = check
+end
+
 -- Each window style sets textWidth (the changes' width), linkX, linkY and linkWidth (where the row
 -- of addon names goes), SetHeader(title, icon, single) and PlaceContent(linksHeight, textHeight),
 -- which also fits the window's height to the text, up to HEIGHT.
@@ -159,6 +218,7 @@ local function createModern()
 	local f = CreateFrame("Frame", "ArchdudeWhatsNewFrame", UIParent, template)
 	makeMovable(f)
 	makeCloseButton(f, "BOTTOMRIGHT", -8, 6)
+	makeMuteCheck(f, 8, 5)
 	if f.Inset then f.Inset:Hide() end
 
 	-- The changes sit on a slightly darker panel, with a thin line along its top.
@@ -209,8 +269,9 @@ local function createClassic()
 	local f = CreateFrame("Frame", "ArchdudeWhatsNewFrame", UIParent, "BasicFrameTemplateWithInset")
 	makeMovable(f)
 	makeCloseButton(f, "BOTTOM", 0, 12)
+	makeMuteCheck(f, 12, 11)
 
-	f.title = f:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
+	f.title =f:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
 	f.title:SetPoint("TOP", 0, -5)
 
 	f.scroll = CreateFrame("ScrollFrame", nil, f, "UIPanelScrollFrameTemplate")
@@ -271,6 +332,8 @@ function lib:Show()
 	self.window = f
 	local pending = self.pending
 	local width = f.textWidth
+	local muted = self:IsMuted()
+	f.muteCheck:SetChecked(muted)
 
 	local used = 0
 	local function text(font, x, y, w, value)
@@ -335,7 +398,7 @@ function lib:Show()
 				y = y - text("GameFontHighlight", indent + INDENT, y, width - indent - INDENT, changes[c]:sub(depth + 1)) - LINE_GAP
 			end
 		end
-		_G[info.seen] = info.version
+		self:MarkSeen(info, muted)
 	end
 	for i = used + 1, #f.strings do f.strings[i]:Hide() end
 	for i = (single and 0 or #pending) + 1, #f.icons do f.icons[i]:Hide() end
@@ -356,3 +419,18 @@ function lib:Show()
 	f.scroll:SetVerticalScroll(0)
 	f:Show()
 end
+
+-- /whatsnew: every addon's newest changes, on top of anything still waiting to show.
+function lib:ShowLatest()
+	local waiting = {}
+	for _, entry in ipairs(self.pending) do waiting[entry.info] = true end
+	for _, info in pairs(self.addons) do
+		if not waiting[info] and info.changes[1] then
+			self.pending[#self.pending + 1] = { info = info, list = { info.changes[1] } }
+		end
+	end
+	if #self.pending > 0 then self:Show() end
+end
+
+SLASH_ARCHDUDEWHATSNEW1 = "/whatsnew"
+SlashCmdList.ARCHDUDEWHATSNEW = function() lib:ShowLatest() end
