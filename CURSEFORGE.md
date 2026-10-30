@@ -35,14 +35,13 @@ Craft Profit answers in gold: **profit or loss?** A panel next to your professio
 - **Best crafts**: every recipe ranked by profit, across all your characters
 - **Patron orders** priced and crafted right in Blizzard's Patron tab
 - **Crafting strategy**: highest rank, most profit or cheapest materials
-- **Shopping list** for what you're missing
 - **Craft Rank** on tooltips
 
 ### Crafts and orders
 The panel leads with the answer: the sale price at the rank you'll get, minus the 5% cut and your materials, with and without procs. On orders: the commission, minus the materials **you** supply, plus sellable rewards.
 
 ### What should I craft?
-**Best crafts** lists every recipe you know, most profitable first, with what each could make in a day, how many are listed and how many sell. Filter by kind of item, ignore any whose price makes no sense, and click one to open it.
+**Best crafts** lists every recipe you know, most profitable first, with what each could make in a day, how many are listed and how many sell. Filter by kind of item, and click one to open it.
 
 ### Which character?
 Click **All characters** for every profession of all your characters in one list, at today's prices, so you know who to log in to for the most gold. Shop for any row from the character you're on.
@@ -60,7 +59,7 @@ One click adds what you're missing to an **Auctionator** shopping list or a **TS
 Procs pop up as bonus gold, and a session total and **luck** meter show how your crafts went.
 
 ### Good to know
-- Needs **TradeSkillMaster** or **Auctionator** for prices.
+- Needs **TradeSkillMaster** or **Auctionator** for prices. **Both together give the best experience**: TSM adds sales rates, Auctionator adds listings and the shopping list.
 - Click the minimap button, or type **/craftprofit** for options.
 
 **Feedback and bug reports are welcome** in the comments.

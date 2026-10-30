@@ -23,7 +23,7 @@ Craft Profit tells you, in gold, whether a craft or a crafting order makes or lo
 
 Nothing runs until you open your profession window, apart from noting your auction sales when you open your mailbox. Procs are counted as an average, always shown next to the profit without them.
 
-Requires **TradeSkillMaster** or **Auctionator** for prices. Built for WoW Midnight 12.1.
+Requires **TradeSkillMaster** or **Auctionator** for prices. Both together give the best experience: TSM adds how fast items sell, Auctionator adds how many are listed and the shopping list that checks itself off. Built for WoW Midnight 12.1.
 
 ## Install
 Copy the `CraftProfit` folder to `World of Warcraft\_retail_\Interface\AddOns\` and restart the game.
