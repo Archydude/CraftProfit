@@ -36,6 +36,7 @@ Planner.lua
 Craft.lua
 Patron.lua
 Ranks.lua
+Scans.lua
 BestCrafts.lua
 BestCraftsList.lua
 Options.lua

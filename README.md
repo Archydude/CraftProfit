@@ -11,7 +11,7 @@ A lightweight addon: one small panel next to your profession window that tells y
 
 - **Crafting strategy:** pick what to craft: the highest rank you can make (default), the most profit, or the cheapest materials. One click, or a checkbox on the crafting page and the order form, puts its materials in; missing materials and the shopping list follow it too. On an order, the cheapest materials that reach its minimum quality.
 
-- **Best crafts:** every recipe you know in a profession, ranked by profit, with what each could make in a day, how many are listed and how many you've sold.
+- **Best crafts:** every recipe you know in a profession, or across all your characters, ranked by profit, with what each could make in a day, how many are listed and how many you've sold.
 
 - **Shopping list:** adds what you're short of, for one or more crafts or for every patron order at once, to an Auctionator shopping list, or as a TSM search to copy. The Auctionator list checks materials off as you get them.
 
@@ -154,8 +154,19 @@ Click a column header to sort by it; click again to reverse. Recipes without a v
 **Ignore a recipe:** click the eye at the end of its row (or right-click the row) to hide it from the list, for when an item is priced far too high for no reason. With Show ignored recipes on, an ignored row has an undo arrow there instead: click it to stop ignoring it. The ignore list is the same for all your characters.
 
 - Concentration isn't used for the ranking; the row's tooltip shows what it would add.
-- Only this character's recipes: the game only says how a craft turns out for the character whose profession window is open.
+- It starts on the profession shown, for this character. **All characters** (below) shows the rest.
 - It works out the list again when you gain skill, spend specialization points or change profession gear while it's open.
+
+**All characters:** the button at the bottom of the list puts every profession of all your characters in one list, so you can see which character to log in to for the most gold. Click it again to go back to the profession shown.
+
+- A **Crafter** column shows who makes each recipe, in class color. Click its header to sort by it, or type a character's name in the search box.
+- A recipe two characters know shows once for each, at the rank that character can reach.
+- A character shows up after opening Best crafts once, for each profession. Its ranks and proc chances are from that moment, because the game only says how a craft turns out for the character whose profession window is open. Open the list on that character again after it gains skill or spends specialization points. Prices are always today's.
+- Hover a row to see when its skill data is from. It turns red after 7 days.
+- **Click** a recipe of another profession on this character to open it. Another character's recipe can't be opened from here, so chat says who to log in to.
+- The **cart** works on every row, so you can buy materials for another character. They go on this character's shopping list, and what this character owns counts as yours.
+- First-craft and cooldown icons only show on this character's recipes.
+- Forgetting a character in the options (**Saved characters: Forget...**) takes it off this list too.
 
 ### Best rank on tooltips
 Hover an item you can craft, in your bags, at the auction house or in a chat link, and its tooltip gets a **Craft Rank** line: the highest rank each of your characters can make it at with the top quality of every material.
@@ -232,7 +243,7 @@ Click the gear on the panel (or Craft Profit options in the gear menu under the 
 | Show the best rank you can craft | The **Craft Rank** line on item tooltips. On by default. |
 | Show it for | All your characters (default) or this character only. |
 | Show the concentration it takes | Adds the concentration when the best rank needs it. On by default. |
-| Saved characters: Forget... | Pick a character you deleted, renamed or moved to take it off Craft Rank tooltips. |
+| Saved characters: Forget... | Pick a character you deleted, renamed or moved to take it off Craft Rank tooltips and the Best crafts list. |
 
 ## Notes
 - With Auctionator, prices come from your own auction house scans. Once Auctionator's last scan is over a day old, the panel's and the Best crafts list's footers say so in red ("last scan 2 days ago"), and opening the auction house reminds you in chat to run a full scan. Over 3 days old, opening the Best crafts list shows a notice in the middle of the list, once a session. Turn the reminders off with **Remind me to scan the auction house** in the options. With TSM, the TSM desktop app keeps them up to date for you. With Auctionator, the panel's notes say how old its oldest price is (**seen today**, or **oldest 4 days ago**, in red and in sight at the bottom of the panel once it's 3 days or more), and each material's tooltip says when Auctionator last saw it. Visit the auction house to refresh them.

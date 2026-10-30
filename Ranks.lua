@@ -28,6 +28,7 @@ local SCAN_DELAY = 1
 --                                with optional reagents: best rank, concentration cost } },
 --     items = { [itemID] = recipeID },  -- every item the recipe makes, any quality
 --   } },
+--   scans = what its Best crafts scans found (see Scans.lua),
 -- }
 local characters
 local myKey, saved -- this character's key and professions, from login on
@@ -35,6 +36,11 @@ local myKey, saved -- this character's key and professions, from login on
 function Ranks.Init()
 	CraftProfitDB.characters = CraftProfitDB.characters or {}
 	characters = CraftProfitDB.characters
+end
+
+-- This character's saved entry and its key, or nil before login.
+function Ranks.Me()
+	if myKey then return characters[myKey], myKey end
 end
 
 -- This character's entry, made on login. Ranks saved per character by 1.7 and
@@ -312,7 +318,10 @@ local function dropUnlearned()
 	end
 	if not next(known) then return end
 	for professionID, profession in pairs(saved) do
-		if profession.parent and not known[profession.parent] then saved[professionID] = nil end
+		if profession.parent and not known[profession.parent] then
+			saved[professionID] = nil
+			if characters[myKey].scans then characters[myKey].scans[professionID] = nil end
+		end
 	end
 end
 
@@ -367,6 +376,12 @@ local function characterName(character, withRealm)
 	end
 	local color = character.class and C_ClassColor.GetClassColor(character.class)
 	return color and color:WrapTextInColorCode(name) or name
+end
+
+-- A saved character's name in its class color, by key.
+function Ranks.CharacterName(key)
+	local character = characters[key]
+	return character and characterName(character) or key
 end
 
 -- Every character that can craft the item, best rank first, then this character.
@@ -428,11 +443,12 @@ function Ranks.Forget(key)
 	if not (characters and characters[key]) then return end
 	local name = characterName(characters[key], true)
 	characters[key] = nil
-	ns.Shopping.Say(format("Forgot %s's Craft Ranks.", name))
+	ns.BestCraftsList.Refresh()
+	ns.Shopping.Say(format("Forgot %s's Craft Ranks and Best crafts.", name))
 end
 
 StaticPopupDialogs.CRAFTPROFIT_FORGET_CHARACTER = {
-	text = "Forget %s's Craft Ranks?",
+	text = "Forget %s's Craft Ranks and Best crafts?",
 	button1 = "Forget",
 	button2 = CANCEL,
 	OnAccept = function(_, key) Ranks.Forget(key) end,

@@ -71,8 +71,9 @@ ns.DEFAULTS = {
 	rankTooltip = true,   -- best rank you can craft, on crafted items' tooltips
 	rankConcentration = true, -- add the concentration that rank takes
 	rankCharacters = "all", -- whose ranks: "all" your characters | "current" one
-	bestSort = "profit",  -- the Best crafts list's sort: "profit" | "gold" | "listed" | "sold" | "name"
+	bestSort = "profit",  -- the Best crafts list's sort: "profit" | "gold" | "listed" | "sold" | "crafter" | "name"
 	bestSortAscending = false,
+	bestAllCharacters = false, -- the Best crafts list shows your other characters' and professions' recipes
 	bestProfitableOnly = false, -- the Best crafts list hides recipes that don't make a profit
 	bestShowIgnored = false, -- the Best crafts list shows the recipes you ignored, in grey
 }

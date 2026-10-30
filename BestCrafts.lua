@@ -73,6 +73,7 @@ end
 --   options = { { picks = slotIndex -> itemID, quality, concentration } ... },
 --     one for each mix of qualities; concentration is what lifts it a rank, or nil,
 --   professionID, chances = your multicraft and resourcefulness chances (Procs.Chances),
+--   character, scanned = whose saved scan it's from, and when (Scans.lua), nil from the game,
 -- }, or nil for recipes that don't make an item.
 local function scanRecipe(recipeID, info, professionID)
 	local schematic = C_TradeSkillUI.GetRecipeSchematic(recipeID, false)
@@ -221,6 +222,7 @@ function BestCrafts.Scan()
 		if coroutine.status(thread) == "dead" then
 			active = nil
 			scan = run
+			ns.Scans.Save(run)
 		end
 		onChange()
 		if active == run then C_Timer.After(0, step) end
@@ -231,6 +233,12 @@ end
 -- The scan to show: { name, total, done, finished, recipes }, or nil.
 function BestCrafts.Current()
 	return scan
+end
+
+-- Whether the entry is this character's, not another's saved one.
+function BestCrafts.IsMine(entry)
+	local _, myKey = ns.Ranks.Me()
+	return entry.character == nil or entry.character == myKey
 end
 
 -- How far the scan in progress is: done, total. Nil when none is running.
@@ -411,7 +419,7 @@ local function priceEntry(entry)
 	end
 	-- "Most profit" counts procs when they're counted. With no price at any rank
 	-- it reaches, it shows the highest one.
-	local multiply, discount = ns.Procs.Factors(entry.professionID, entry.chances)
+	local multiply, discount = ns.Procs.Factors(entry.professionID, entry.chances, entry.character)
 	local choosePrices = prices
 	if multiply ~= 1 then
 		choosePrices = {}
@@ -426,8 +434,11 @@ local function priceEntry(entry)
 		best = { cost = effective, full = full, unpriced = unpriced, basic = basic, option = option }
 	end
 
-	local row = { entry = entry,
-		firstCraft =C_TradeSkillUI.IsRecipeFirstCraft and C_TradeSkillUI.IsRecipeFirstCraft(entry.recipeID) or false }
+	local row = { entry = entry, firstCraft = false }
+	-- What the game says is about this character, so only for its own recipes.
+	if BestCrafts.IsMine(entry) and C_TradeSkillUI.IsRecipeFirstCraft then
+		row.firstCraft = C_TradeSkillUI.IsRecipeFirstCraft(entry.recipeID) or false
+	end
 	row.quality = best.quality
 	row.picks, row.cost, row.unpriced = best.option.picks, best.full, best.unpriced
 	local sale = row.quality and prices[row.quality]
@@ -438,7 +449,7 @@ local function priceEntry(entry)
 	else
 		row.noPrice = true
 	end
-	row.procs = ns.Procs.Expected(entry.professionID, entry.chances, sale, best.basic)
+	row.procs = ns.Procs.Expected(entry.professionID, entry.chances, sale, best.basic, entry.character)
 	row.expected = row.profit and row.profit + row.procs.total
 
 	-- What concentrating adds: one rank above the row's, made the cheapest way,
@@ -477,16 +488,17 @@ local function refreshRow(row)
 	end
 	row.sortName = (row.itemName or entry.name or ""):lower()
 	row.sold = ns.Sales.Sold(row.itemName or entry.name)
-	row.cooldown = cooldownOf(entry.recipeID)
+	row.cooldown = BestCrafts.IsMine(entry) and cooldownOf(entry.recipeID) or nil
 end
 
--- Every scanned recipe as a list row (see priceEntry). Rows are priced once and
--- kept until BestCrafts.Reprice.
+-- Every scanned recipe as a list row (see priceEntry), with All characters on,
+-- your characters' saved ones too. Rows are priced once and kept until
+-- BestCrafts.Reprice.
 function BestCrafts.Rows()
 	local rows = {}
 	if not scan then return rows end
 	if not effectiveCost then BestCrafts.Reprice() end
-	for _, entry in ipairs(scan.recipes) do
+	local function add(entry)
 		local row = priced[entry]
 		if not row then
 			row = priceEntry(entry)
@@ -494,6 +506,10 @@ function BestCrafts.Rows()
 		end
 		refreshRow(row)
 		rows[#rows + 1] = row
+	end
+	for _, entry in ipairs(scan.recipes) do add(entry) end
+	if ns.db.bestAllCharacters then
+		for _, entry in ipairs(ns.Scans.Entries(scan.professionID)) do add(entry) end
 	end
 	return rows
 end

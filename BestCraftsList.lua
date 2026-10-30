@@ -30,9 +30,11 @@ local REFRESH_DELAY = 0.2  -- redraws are batched this long
 local LIST_LEVEL = 700     -- at least this frame level (Auctionator's crafting info sits at 520)
 local STALE_DAYS = 3       -- Auctionator counts this old or older show in grey
 local MAX_DAILY_SALES = 20 -- Gold/day counts at most this many sales a day: what one seller could move
+local STALE_SCAN_DAYS = 7  -- other characters' saved scans this old or older show in the warning color
 -- Columns right of the item name, right to left: key, width, header, sort key,
--- and needsTSM: true shows it only with TSM, false only without. The demand
--- column is TSM's Sells/day, or without TSM, You sold.
+-- needsTSM: true shows it only with TSM, false only without, and allCharacters:
+-- the same for the All characters view, and goldWidth: its width when amounts
+-- show in whole gold. The demand column is TSM's Sells/day, or without TSM, You sold.
 local COLUMNS = {
 	{ key = "ignore", width = CART_SIZE },
 	{ key = "cart", width = CART_SIZE },
@@ -40,10 +42,12 @@ local COLUMNS = {
 	{ key = "perDay", width = 64, header = "Sells/day", sort = "perDay", needsTSM = true },
 	{ key = "listed", width = 46, header = "Listed", sort = "listed" },
 	{ key = "gold", width = 64, header = "Gold/day", sort = "gold" },
-	{ key = "profit", width = 112, header = "Profit", sort = "profit" },
+	{ key = "profit", width = 112, goldWidth = 70, header = "Profit", sort = "profit" },
+	{ key = "crafter", width = 64, header = "Crafter", sort = "crafter", allCharacters = true },
 }
 local HEADER_TIPS = {
 	name = "Click to sort by name.",
+	crafter = "Which of your characters makes it. A character shows up here after opening Best crafts once.",
 	profit = "What one craft makes after the 5% auction house cut, at the highest rank you can make, with the "
 		.. "cheapest materials that reach it. What you own counts at what it would sell for when picking them. A "
 		.. "rank is never priced above a better one.\n\nWith Count multicraft and resourcefulness on (Filter menu), "
@@ -83,10 +87,17 @@ local function goldPerDay(row)
 	return perItem * math.min(demand, MAX_DAILY_SALES)
 end
 
+-- The row's character, by key ("Name-Realm"): a saved one, or this one.
+local function crafterKey(row)
+	local _, myKey = ns.Ranks.Me()
+	return row.entry.character or myKey or ""
+end
+
 -- How each sort key reads a row's value; nil values always go last.
 local SORT_VALUES = {
 	profit = shownProfit,
 	gold = goldPerDay,
+	crafter = crafterKey,
 	listed = function(row) return row.listed end,
 	sold = function(row) return row.itemName and row.sold or nil end,
 	perDay = function(row) return row.soldPerDay end,
@@ -102,7 +113,7 @@ local SORT_ARROW_ATLAS = "auctionhouse-ui-sortarrow"
 local SORT_ARROW_FILE = "Interface\\Buttons\\UI-SortArrow"
 local SORT_ARROW_SIZE = 10
 
-local list, toggle, scrollBox, status, title, strategyDropdown
+local list, toggle, scrollBox, status, title, strategyDropdown, charactersButton
 local headers = {}
 local refreshQueued = false
 
@@ -138,18 +149,28 @@ end
 -- Which rows, in which order
 ---------------------------------------------------------------------------
 
+-- The search finds item names, and in All characters, characters too.
 local function matches(row, search)
-	if search == "" then return true end
-	return row.sortName:find(search, 1, true) ~= nil
+	if search == "" or row.sortName:find(search, 1, true) then return true end
+	return ns.db.bestAllCharacters and crafterKey(row):lower():find(search, 1, true) ~= nil
+end
+
+-- Whether a column shows, with these addons and in this view.
+local function columnShown(column)
+	if column.needsTSM ~= nil and column.needsTSM ~= ns.Prices.HasTSM() then return false end
+	return column.allCharacters == nil or column.allCharacters == ns.db.bestAllCharacters
 end
 
 -- The column the list sorts by. A sort by the demand column that's hidden
--- (You sold with TSM, Sells/day without) goes by the one that shows, and a saved
--- sort by a column that's gone goes by profit.
+-- (You sold with TSM, Sells/day without) goes by the one that shows. A saved sort
+-- by a column that's gone, or hidden in this view, goes by profit.
 local function sortKey()
 	local key = ns.db.bestSort
 	if key == "sold" or key == "perDay" then return ns.Prices.HasTSM() and "perDay" or "sold" end
 	if key ~= "name" and not SORT_VALUES[key] then return "profit" end
+	for _, column in ipairs(COLUMNS) do
+		if column.sort == key and not columnShown(column) then return "profit" end
+	end
 	return key
 end
 
@@ -219,9 +240,19 @@ local function listedText(count, age)
 	return text
 end
 
+-- "Skill data from 3 days ago", for the tooltip of a recipe from a saved scan.
+local function scanAgeText(entry)
+	local days = math.floor((time() - entry.scanned) / 86400)
+	return Color(days >= STALE_SCAN_DAYS and "warning" or "muted", "Skill data from " .. ns.Prices.AgeText(days))
+end
+
 local function rowTooltip(tip, row)
 	local entry = row.entry
 	tip:SetText(entry.name or "?")
+	if ns.db.bestAllCharacters then
+		addPair(tip, "Crafter", ns.Ranks.CharacterName(crafterKey(row)))
+		if entry.scanned then addLine(tip, scanAgeText(entry)) end
+	end
 	local schematic = entry.schematic
 	local qtyMin, qtyMax = schematic.quantityMin or 1, schematic.quantityMax or 1
 	if row.output then
@@ -298,7 +329,8 @@ local function rowTooltip(tip, row)
 	if row.cooldown then addLine(tip, COOLDOWN_ICON .. " On cooldown: ready in " .. timeText(row.cooldown)) end
 
 	tip:AddLine(" ")
-	tip:AddLine(Color("simulated", "Click: show the recipe"))
+	tip:AddLine(Color("simulated", ns.BestCrafts.IsMine(entry) and "Click: show the recipe"
+		or "Log in to this character to craft it"))
 	tip:AddLine(Color("simulated", ns.db.bestIgnored[entry.recipeID] and "Right-click: stop ignoring it"
 		or "Right-click: ignore it (hide it from the list)"))
 end
@@ -311,11 +343,11 @@ end
 -- name takes what the others leave.
 local function columnLayout(width)
 	local layout, right = {}, width - 4
-	local tsm = ns.Prices.HasTSM()
 	for _, column in ipairs(COLUMNS) do
-		if column.needsTSM == nil or column.needsTSM == tsm then
-			layout[column.key] = { x = right - column.width, width = column.width }
-			right = right - column.width - CELL_GAP
+		if columnShown(column) then
+			local columnWidth = ns.db.precision == "gold" and column.goldWidth or column.width
+			layout[column.key] = { x = right - columnWidth, width = columnWidth }
+			right = right - columnWidth - CELL_GAP
 		end
 	end
 	layout.name = { x = 4 + ICON_SIZE + 6, width = right - (4 + ICON_SIZE + 6) }
@@ -424,6 +456,10 @@ local function createRow(button)
 			setIgnored(self.row, not ns.db.bestIgnored[self.row.entry.recipeID])
 			return
 		end
+		if not ns.BestCrafts.IsMine(self.row.entry) then
+			ns.Shopping.Say(format("Log in to %s to craft this.", ns.Ranks.CharacterName(crafterKey(self.row))))
+			return
+		end
 		BestCraftsList.Hide()
 		ns.Blizzard.ShowRecipe(self.row.entry.recipeID)
 	end)
@@ -485,6 +521,7 @@ local function drawRow(button, row)
 	end
 	local daily = goldPerDay(row)
 	button.cells.gold:SetText(daily and dailyText(daily) or Color("muted", "-"))
+	button.cells.crafter:SetText(ns.Ranks.CharacterName(crafterKey(row)))
 	local listed = row.listed and BreakUpLargeNumbers(row.listed) or "-"
 	button.cells.listed:SetText((row.listed and (row.listedAge or 0) < STALE_DAYS) and listed or Color("muted", listed))
 	button.cells.perDay:SetText(row.soldPerDay and perDayText(row.soldPerDay) or Color("muted", "-"))
@@ -541,10 +578,12 @@ function BestCraftsList.Render()
 	refreshQueued = false
 	if not (list and list:IsShown()) then return end
 	local scan = ns.BestCrafts.Current()
-	title:SetText("Best crafts" .. (scan and scan.name and ("  " .. Color("muted", scan.name)) or ""))
+	local shown = ns.db.bestAllCharacters and "All characters" or (scan and scan.name)
+	title:SetText("Best crafts" .. (shown and ("  " .. Color("muted", shown)) or ""))
+	if ns.db.bestAllCharacters then charactersButton:LockHighlight() else charactersButton:UnlockHighlight() end
 	local rows = visibleRows()
 	scrollBox:SetDataProvider(CreateDataProvider(rows), ScrollBoxConstants.RetainScrollPosition)
-	status:SetText(statusText(#rows, scan and #scan.recipes or 0))
+	status:SetText(statusText(#rows, #allRows))
 	-- The strategy can change in the options too.
 	strategyDropdown:GenerateMenu()
 	updateHeaders()
@@ -561,7 +600,7 @@ local function setSort(key)
 	if sortKey() == key then
 		ns.db.bestSortAscending = not ns.db.bestSortAscending
 	else
-		ns.db.bestSort, ns.db.bestSortAscending = key, key == "name"
+		ns.db.bestSort, ns.db.bestSortAscending = key, key == "name" or key == "crafter"
 	end
 	BestCraftsList.Render()
 end
@@ -691,6 +730,32 @@ local function createStrategyDropdown()
 	label:SetPoint("RIGHT", strategyDropdown, "LEFT", -6, 0)
 	label:SetText(STRATEGY_LABEL)
 	return STRATEGY_WIDTH + 6 + label:GetUnboundedStringWidth()
+end
+
+---------------------------------------------------------------------------
+-- The All characters button
+---------------------------------------------------------------------------
+
+-- Between the status line and the strategy dropdown; lit while it's on.
+local function createCharactersButton(strategyWidth)
+	charactersButton = CreateFrame("Button", nil, list, "UIPanelButtonTemplate")
+	charactersButton:SetText("All characters")
+	charactersButton:SetSize(charactersButton:GetFontString():GetUnboundedStringWidth() + 24, 22)
+	charactersButton:SetPoint("BOTTOMRIGHT", -(PAD + strategyWidth + 12), PAD - 3)
+	charactersButton:SetScript("OnClick", function()
+		ns.db.bestAllCharacters = not ns.db.bestAllCharacters
+		BestCraftsList.Render()
+	end)
+	charactersButton:SetScript("OnEnter", function(self)
+		GameTooltip:SetOwner(self, "ANCHOR_TOP")
+		GameTooltip:SetText("All characters")
+		GameTooltip:AddLine("Every profession of every character you've opened Best crafts on, in one list, at "
+			.. "today's prices. Ranks and proc chances are from when that character last opened it.", 1, 1, 1, true)
+		GameTooltip:AddLine(Color("simulated", ns.db.bestAllCharacters and "Click: back to this profession"
+			or "Click: show them all"))
+		GameTooltip:Show()
+	end)
+	charactersButton:SetScript("OnLeave", GameTooltip_Hide)
 end
 
 ---------------------------------------------------------------------------
@@ -834,9 +899,10 @@ local function createList()
 	end
 
 	local strategyWidth = createStrategyDropdown()
+	createCharactersButton(strategyWidth)
 	status = list:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
 	status:SetPoint("BOTTOMLEFT", PAD, PAD)
-	status:SetPoint("BOTTOMRIGHT", -(PAD + strategyWidth + 12), PAD)
+	status:SetPoint("BOTTOMRIGHT", charactersButton, "BOTTOMLEFT", -8, 3)
 	status:SetJustifyH("LEFT")
 	status:SetWordWrap(false)
 

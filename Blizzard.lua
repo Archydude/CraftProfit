@@ -422,8 +422,9 @@ end
 
 -- Quality icon of a crafted item's tier, or nil if it has none.
 function Blizzard.ItemQualityMarkup(recipeID, quality)
-	local info = C_TradeSkillUI.GetRecipeItemQualityInfo(recipeID, quality)
-	return info and qualityIcon(info)
+	-- Guarded: it can be a recipe another of your characters knows.
+	local ok, info = pcall(C_TradeSkillUI.GetRecipeItemQualityInfo, recipeID, quality)
+	return ok and info and qualityIcon(info) or nil
 end
 
 -- Quality icon of a material, or nil if it has none.

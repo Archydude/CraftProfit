@@ -109,22 +109,28 @@ function Procs.Explain()
 end
 
 -- How big a proc is on average, and how many of your own procs that's from (0:
--- the base value).
-local function average(professionID, kind, base)
-	local sizes = professionID and sizesFor(professionID)
+-- the base value). `character` is another character's key ("Name-Realm"), for
+-- its proc sizes; nil for this character. The same goes for the functions below.
+local function average(professionID, kind, base, character)
+	local sizes
+	if character then
+		sizes = (CraftProfitDB.procSizes[character] or {})[professionID]
+	else
+		sizes = professionID and sizesFor(professionID)
+	end
 	local count = sizes and sizes[kind]
 	if count and count.n >= MIN_PROCS then return count.sum / count.n, count.n end
 	return base, 0
 end
 
 -- Multicraft: extra items for each item a craft makes.
-function Procs.ExtraPerItem(professionID)
-	return average(professionID, "multicraft", BASE_EXTRA)
+function Procs.ExtraPerItem(professionID, character)
+	return average(professionID, "multicraft", BASE_EXTRA, character)
 end
 
 -- Resourcefulness: the share of a material that comes back.
-function Procs.SavedShare(professionID)
-	return average(professionID, "resourcefulness", BASE_SAVED)
+function Procs.SavedShare(professionID, character)
+	return average(professionID, "resourcefulness", BASE_SAVED, character)
 end
 
 -- What procs add to one craft on average: {
@@ -133,10 +139,10 @@ end
 --   procs the sizes come from; 0 for base values),
 -- }. `sale` is what one craft's items sell for after the AH cut (nil without a
 -- price), `basicCost` what its basic materials cost (the ones resourcefulness saves).
-function Procs.Expected(professionID, chances, sale, basicCost)
+function Procs.Expected(professionID, chances, sale, basicCost, character)
 	local expected = { chances = chances }
-	expected.extraPerItem, expected.multicraftProcs = Procs.ExtraPerItem(professionID)
-	expected.savedShare, expected.resourcefulnessProcs = Procs.SavedShare(professionID)
+	expected.extraPerItem, expected.multicraftProcs = Procs.ExtraPerItem(professionID, character)
+	expected.savedShare, expected.resourcefulnessProcs = Procs.SavedShare(professionID, character)
 	expected.multicraft = sale and chances.multicraft * expected.extraPerItem * sale or 0
 	expected.resourcefulness = chances.resourcefulness * expected.savedShare * (basicCost or 0)
 	expected.total = expected.multicraft + expected.resourcefulness
@@ -146,10 +152,10 @@ end
 -- For picking ranks by profit with procs counted: what one craft's sale price is
 -- multiplied by (multicraft adds items), and what its material cost is
 -- multiplied by (resourcefulness saves some). 1, 1 when procs aren't counted.
-function Procs.Factors(professionID, chances)
+function Procs.Factors(professionID, chances, character)
 	if not (ns.db.countProcs and chances) then return 1, 1 end
-	local extra = Procs.ExtraPerItem(professionID)
-	local saved = Procs.SavedShare(professionID)
+	local extra = Procs.ExtraPerItem(professionID, character)
+	local saved = Procs.SavedShare(professionID, character)
 	return 1 + chances.multicraft * extra, 1 - chances.resourcefulness * saved
 end
 
