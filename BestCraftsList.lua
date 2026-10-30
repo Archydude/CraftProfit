@@ -50,9 +50,8 @@ local COLUMNS = {
 local HEADER_TIPS = {
 	name = "Click to sort by name.",
 	crafter = "Which of your characters makes it. A character shows up here after opening Best crafts once.",
-	profit = "What one craft makes after the 5% auction house cut, at the highest rank you can make, with the "
-		.. "cheapest materials that reach it. What you own counts at what it would sell for when picking them. A "
-		.. "rank is never priced above a better one.\n\nWith Count multicraft and resourcefulness on (Filter menu), "
+	profit = "What one craft makes after the 5% auction house cut, at the rank and with the materials your crafting "
+		.. "strategy picks. A rank is never priced above a better one.\n\nWith Count multicraft and resourcefulness on (Filter menu), "
 		.. "it's Expected: what a craft makes on average with procs.",
 	gold = "Roughly what this recipe could make in a day: the profit on each item times how many sell per day. For "
 		.. "comparing recipes, not a promise: with TSM it counts sales across your whole region, and you'd only get a "
