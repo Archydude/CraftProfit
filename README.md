@@ -11,7 +11,7 @@ A lightweight addon: one small panel next to your profession window that tells y
 
 - **Crafting strategy:** pick what to craft: the highest rank you can make (default), the most profit, or the cheapest materials. One click, or a checkbox on the crafting page and the order form, puts its materials in; missing materials and the shopping list follow it too. On an order, the cheapest materials that reach its minimum quality.
 
-- **Best crafts:** every recipe you know in a profession, ranked by profit, with how many you can craft, how many are listed and how many you've sold.
+- **Best crafts:** every recipe you know in a profession, ranked by profit, with what each could make in a day, how many are listed and how many you've sold.
 
 - **Shopping list:** adds what you're short of, for one or more crafts or for every patron order at once, to an Auctionator shopping list, or as a TSM search to copy. The Auctionator list checks materials off as you get them.
 
@@ -130,7 +130,7 @@ Turn off **Show Craft Profit on the Patron tab** in the options to get Blizzard'
 Click **Best crafts** at the top of the panel, next to its gear (on the crafting page, or on a crafting order, where it goes back to your recipes first), or type `/craftprofit best`. A list opens over the recipe details with every recipe you know in the profession shown (Midnight Blacksmithing, say), most profitable first. It works out each recipe for a few seconds after it opens, and shows how far it's got at the bottom.
 
 - **Expected** (or **Profit**): what one craft makes after the 5% auction house cut, at the rank your crafting strategy picks (without concentration), with the materials it picks: the same ones the crafting page would use. With **Count multicraft and resourcefulness** on (the default), it's what a craft makes on average with procs, and the list ranks by it; off, the column is **Profit**, without them. Its quality icon is after the name. Recipes whose item has no auction price at the rank you'd make say **No price**, in grey, at the bottom.
-- **Have:** how many times you can craft it with what's in your bags, bank and warband bank.
+- **Gold/day:** roughly what the recipe could make in a day: the profit on each item times how many sell per day, counting 20 a day at most. So a recipe with a big profit that hardly sells stops looking better than one that sells all day. It's for comparing recipes, not a promise: with TSM it counts sales across your whole region, and you'd only get a share of them; without TSM, your own sales from the last 14 days. Recipes that lose gold or haven't sold show **-**. The list still opens sorted by profit; click the header to sort by it.
 - **Listed:** how many were up for sale the last time Auctionator saw them, in grey when that was 3 days ago or more. Needs Auctionator; without it, **-**.
 - **Sells/day** (with TSM): how many sell per day across your region, on average.
 - **You sold** (without TSM, in place of Sells/day): how many your characters sold on the auction house in the last 14 days, counted from the auction house's mail each time you open your mailbox. It starts counting with this version, so it fills in over the first two weeks. With TSM, it's in each row's tooltip instead.

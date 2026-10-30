@@ -291,7 +291,7 @@ end
 -- changes, and ones that follow what you own until your bags change. See
 -- BestCrafts.Reprice.
 local materialPrice, salePrice, market -- market: link -> { listed, listedAge, soldPerDay }
-local effectiveCost, owned
+local effectiveCost
 -- Rows priced so far: entry -> row (see priceEntry).
 local priced = setmetatable({}, { __mode = "k" })
 
@@ -311,7 +311,6 @@ end
 
 local function forgetOwned()
 	effectiveCost = memo(ns.Model.EffectiveCost)
-	owned = memo(ns.Model.Owned)
 	wipe(priced)
 end
 
@@ -374,22 +373,6 @@ local function costOf(entry, option)
 	return full, effective, unpriced, basic
 end
 
--- How many times you can craft it with what you own, any quality.
-local function craftable(entry)
-	local crafts
-	for _, slot in ipairs(entry.schematic.reagentSlotSchematics) do
-		if slot.required and (slot.quantityRequired or 0) > 0 then
-			local have = 0
-			for _, reagent in ipairs(slot.reagents) do
-				if reagent.itemID then have = have + owned(reagent.itemID) end
-			end
-			local n = math.floor(have / slot.quantityRequired)
-			if not crafts or n < crafts then crafts = n end
-		end
-	end
-	return crafts or 0
-end
-
 -- Seconds until the recipe can be crafted again, or nil when it can now.
 local function cooldownOf(recipeID)
 	local cooldown, _, charges, maxCharges = C_TradeSkillUI.GetRecipeCooldown(recipeID)
@@ -405,7 +388,7 @@ end
 --   sale = what a craft sells for after the AH cut (capped), cost = materials at full price,
 --   profit, or nil with noPrice (no auction price at that rank),
 --   cappedBy, listedPrice = the rank that capped the price and the price before,
---   unpriced = materials without a price, have = crafts you have materials for,
+--   unpriced = materials without a price,
 --   concentration = { extra, points, quality } when concentrating makes more,
 --   procs = what multicraft and resourcefulness add on average (Procs.Expected),
 --   expected = profit with that counted,
@@ -443,8 +426,8 @@ local function priceEntry(entry)
 		best = { cost = effective, full = full, unpriced = unpriced, basic = basic, option = option }
 	end
 
-	local row = { entry = entry, have = craftable(entry),
-		firstCraft = C_TradeSkillUI.IsRecipeFirstCraft and C_TradeSkillUI.IsRecipeFirstCraft(entry.recipeID) or false }
+	local row = { entry = entry,
+		firstCraft =C_TradeSkillUI.IsRecipeFirstCraft and C_TradeSkillUI.IsRecipeFirstCraft(entry.recipeID) or false }
 	row.quality = best.quality
 	row.picks, row.cost, row.unpriced = best.option.picks, best.full, best.unpriced
 	local sale = row.quality and prices[row.quality]

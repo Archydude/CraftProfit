@@ -29,6 +29,7 @@ local STRATEGY_LABEL = "Strategy:"
 local REFRESH_DELAY = 0.2  -- redraws are batched this long
 local LIST_LEVEL = 700     -- at least this frame level (Auctionator's crafting info sits at 520)
 local STALE_DAYS = 3       -- Auctionator counts this old or older show in grey
+local MAX_DAILY_SALES = 20 -- Gold/day counts at most this many sales a day: what one seller could move
 -- Columns right of the item name, right to left: key, width, header, sort key,
 -- and needsTSM: true shows it only with TSM, false only without. The demand
 -- column is TSM's Sells/day, or without TSM, You sold.
@@ -38,7 +39,7 @@ local COLUMNS = {
 	{ key = "sold", width = 64, header = "You sold", sort = "sold", needsTSM = false },
 	{ key = "perDay", width = 64, header = "Sells/day", sort = "perDay", needsTSM = true },
 	{ key = "listed", width = 46, header = "Listed", sort = "listed" },
-	{ key = "have", width = 34, header = "Have", sort = "have" },
+	{ key = "gold", width = 64, header = "Gold/day", sort = "gold" },
 	{ key = "profit", width = 112, header = "Profit", sort = "profit" },
 }
 local HEADER_TIPS = {
@@ -47,8 +48,11 @@ local HEADER_TIPS = {
 		.. "cheapest materials that reach it. What you own counts at what it would sell for when picking them. A "
 		.. "rank is never priced above a better one.\n\nWith Count multicraft and resourcefulness on (Filter menu), "
 		.. "it's Expected: what a craft makes on average with procs.",
-	have = "How many times you can craft it with what's in your bags, bank and warband bank.",
-	listed = "How many were up for sale the last time Auctionator saw them. Needs Auctionator.",
+	gold = format("Roughly what this recipe could make in a day: the profit on each item times how many sell per day, "
+		.. "counting %d a day at most. For comparing recipes, not a promise: with TSM it counts sales across your "
+		.. "whole region, and you'd only get a share of them. Without TSM, it counts your own recent sales. Recipes "
+		.. "that lose gold or haven't sold show -.", MAX_DAILY_SALES),
+	listed ="How many were up for sale the last time Auctionator saw them. Needs Auctionator.",
 	perDay = "How many sell per day across your region, on average, from TSM.",
 	sold = format("How many your characters sold on the auction house in the last %d days, from the auction "
 		.. "house's mail. Counts sales from when you first opened your mailbox with this version.", ns.Sales.DAYS),
@@ -59,10 +63,30 @@ local function shownProfit(row)
 	return row.profit
 end
 
+-- How many of the item sell per day: across your region with TSM, or your own
+-- average without it. Nil when neither says.
+local function demandOf(row)
+	if row.soldPerDay then return row.soldPerDay end
+	if row.itemName and not ns.Prices.HasTSM() then
+		return row.sold / math.max(ns.Sales.DaysCounted(), 1)
+	end
+end
+
+-- What the recipe could make in a day, for the Gold/day column. Nil (which sorts
+-- last) when there's no profit or no sales number to go on.
+local function goldPerDay(row)
+	local profit, demand = shownProfit(row), demandOf(row)
+	if not (profit and demand) then return end
+	local schematic = row.entry.schematic
+	local perItem = profit / (((schematic.quantityMin or 1) + (schematic.quantityMax or 1)) / 2)
+	if perItem <= 0 or demand <= 0 then return end
+	return perItem * math.min(demand, MAX_DAILY_SALES)
+end
+
 -- How each sort key reads a row's value; nil values always go last.
 local SORT_VALUES = {
 	profit = shownProfit,
-	have = function(row) return row.have end,
+	gold = goldPerDay,
 	listed = function(row) return row.listed end,
 	sold = function(row) return row.itemName and row.sold or nil end,
 	perDay = function(row) return row.soldPerDay end,
@@ -84,6 +108,13 @@ local refreshQueued = false
 
 local function signedMoney(amount)
 	return Color(ns.AmountColor(amount), (amount > 0 and "+" or "") .. Money(amount))
+end
+
+-- "+1,250g" in whole gold, to fit the Gold/day column; under 1g, the usual amount.
+local function dailyText(amount)
+	local gold = math.floor(math.abs(amount) / 10000 + 0.5)
+	if gold < 1 then return signedMoney(amount) end
+	return Color(ns.AmountColor(amount), (amount > 0 and "+" or "-") .. BreakUpLargeNumbers(gold) .. GOLD_AMOUNT_SYMBOL)
 end
 
 local function firstCraftMarkup()
@@ -113,10 +144,12 @@ local function matches(row, search)
 end
 
 -- The column the list sorts by. A sort by the demand column that's hidden
--- (You sold with TSM, Sells/day without) goes by the one that shows.
+-- (You sold with TSM, Sells/day without) goes by the one that shows, and a saved
+-- sort by a column that's gone goes by profit.
 local function sortKey()
 	local key = ns.db.bestSort
 	if key == "sold" or key == "perDay" then return ns.Prices.HasTSM() and "perDay" or "sold" end
+	if key ~= "name" and not SORT_VALUES[key] then return "profit" end
 	return key
 end
 
@@ -259,6 +292,8 @@ local function rowTooltip(tip, row)
 	if ns.Prices.HasTSM() then
 		addPair(tip, "Sells per day in your region (TSM)", row.soldPerDay and perDayText(row.soldPerDay) or Color("muted", "-"))
 	end
+	local daily = goldPerDay(row)
+	if daily then addPair(tip, "Gold per day", signedMoney(daily)) end
 	if row.firstCraft then addLine(tip, firstCraftMarkup() .. " First craft: gives profession knowledge") end
 	if row.cooldown then addLine(tip, COOLDOWN_ICON .. " On cooldown: ready in " .. timeText(row.cooldown)) end
 
@@ -448,7 +483,8 @@ local function drawRow(button, row)
 	else
 		button.cells.profit:SetText(Color("muted", "No price"))
 	end
-	button.cells.have:SetText(row.have > 0 and tostring(row.have) or Color("muted", "0"))
+	local daily = goldPerDay(row)
+	button.cells.gold:SetText(daily and dailyText(daily) or Color("muted", "-"))
 	local listed = row.listed and BreakUpLargeNumbers(row.listed) or "-"
 	button.cells.listed:SetText((row.listed and (row.listedAge or 0) < STALE_DAYS) and listed or Color("muted", listed))
 	button.cells.perDay:SetText(row.soldPerDay and perDayText(row.soldPerDay) or Color("muted", "-"))
@@ -804,7 +840,7 @@ local function createList()
 	status:SetJustifyH("LEFT")
 	status:SetWordWrap(false)
 
-	-- Item names arrive from the server after first use; what you own changes Have.
+	-- Item names arrive from the server after first use; what you own changes what a craft costs you.
 	list:RegisterEvent("GET_ITEM_INFO_RECEIVED")
 	list:RegisterEvent("BAG_UPDATE_DELAYED")
 	list:SetScript("OnEvent", function(_, event)
