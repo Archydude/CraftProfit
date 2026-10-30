@@ -1,5 +1,14 @@
 # Changelog
 
+## 2.7.0
+- **Most profit is gone:** it picked ranks by their listed price, but a listed price doesn't mean an item sells, so it could steer you to a lower rank nobody buys. If you had it on, you're now on **Highest rank**.
+- **Use what I own:** a new crafting strategy. It picks the highest rank you have every material for, even if buying could reach a better one, and Best crafts then only shows what you can craft now. If you're short for every rank, it picks the highest rank and spends as little as it can on what's missing.
+- **One menu on Best crafts rows:** three dots at the end of each row replace the cart and the eye, for shopping, pinning and ignoring. A right-click on a row opens the same menu, so it no longer ignores the recipe straight away.
+- **Pin recipes:** **Pin to top** in that menu keeps a recipe above the rest, whatever the sort, with a pin at the start of its row. Pins are the same for all your characters.
+- **Concentration on the panel:** when concentration can raise a craft's rank, a line under the sale price shows what it takes, the rank it makes and the gold that adds. With concentration on, it shows what the craft uses. Either way it says **not enough** when you're short.
+- Gold/day in Best crafts shows the gold icon instead of a "g".
+- Fixed: clicks on Best crafts rows could get lost, and menus could close by themselves, while the list updated.
+
 ## 2.6.0
 - **Enchants in Best crafts:** enchanting recipes now show as the scrolls they make, ranked with everything else. The panel prices them too, and an **Enchanting Vellum** counts as a material and goes on the shopping list.
 - **Gold/day has no limit anymore:** it now counts every sale instead of stopping at 20 a day, so items that sell in bulk rank higher. With TSM that's sales across your whole region, so it's for comparing recipes, not a promise.

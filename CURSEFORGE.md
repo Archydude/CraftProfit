@@ -34,20 +34,20 @@ Craft Profit answers in gold: **profit or loss?** A panel next to your professio
 - **Expected profit** on every craft, procs included
 - **Best crafts**: every recipe ranked by profit, across all your characters
 - **Patron orders** priced and crafted right in Blizzard's Patron tab
-- **Crafting strategy**: highest rank, use what you own or cheapest materials
+- **Crafting strategy**: highest rank, what you own or cheapest materials
 - **Craft Rank** on tooltips
 
 ### Crafts and orders
-The panel leads with the answer: the sale price at the rank you'll get, minus the 5% cut and your materials, with and without procs. On orders: the commission, minus the materials **you** supply, plus sellable rewards.
+The panel leads with the answer: the sale price at the rank you'll get, minus the 5% cut and your materials, with and without procs, plus what **concentration** would add. On orders: the commission, minus the materials **you** supply, plus sellable rewards.
 
 ### What should I craft?
-**Best crafts** lists every recipe you know, enchants as scrolls included, most profitable first, with what each could make in a day, how many are listed and how many sell. Click one to open it.
+**Best crafts** lists every recipe you know, enchants as scrolls included, most profitable first, with what each could make in a day, how many are listed and how many sell. Pin your favorites to the top.
 
 ### Which character?
-Click **All characters** for every profession of all your characters in one list, at today's prices, so you know who to log in to for the most gold. Shop for any row from the character you're on.
+Click **All characters** for every profession of all your characters in one list, so you know who to log in to for the most gold.
 
 ### Which rank, which materials?
-Pick a **crafting strategy** on the panel: highest rank (the default), use what you own or cheapest materials. Craft Profit puts those materials in and shops for exactly those.
+Pick a **crafting strategy**: highest rank (the default), use what you own or cheapest materials. Craft Profit puts those materials in and shops for exactly those.
 
 ### Patron orders
 Blizzard's Patron tab shows each order's **expected profit**, **rewards** and missing **materials**. Sort by profit, shop for the profitable ones, and craft each with one click per step.
@@ -71,11 +71,11 @@ Procs pop up as bonus gold, and a session total and **luck** meter show how your
 
 ## B. Upload File form
 
-**File:** `dist\CraftProfit-2.6.0.zip`
+**File:** `dist\CraftProfit-2.7.0.zip`
 
 **Display name**
 ```
-Craft Profit 2.6.0
+Craft Profit 2.7.0
 ```
 
 **Release type:** `Release`
@@ -84,6 +84,15 @@ Craft Profit 2.6.0
 
 **Changelog** (paste only the newest part; paste older parts too if they never went up)
 ```markdown
+2.7.0
+- **Most profit is gone:** it picked ranks by their listed price, but a listed price doesn't mean an item sells, so it could steer you to a lower rank nobody buys. If you had it on, you're now on **Highest rank**.
+- **Use what I own:** a new crafting strategy. It picks the highest rank you have every material for, even if buying could reach a better one, and Best crafts then only shows what you can craft now. If you're short for every rank, it picks the highest rank and spends as little as it can on what's missing.
+- **One menu on Best crafts rows:** three dots at the end of each row replace the cart and the eye, for shopping, pinning and ignoring. A right-click on a row opens the same menu, so it no longer ignores the recipe straight away.
+- **Pin recipes:** **Pin to top** in that menu keeps a recipe above the rest, whatever the sort, with a pin at the start of its row. Pins are the same for all your characters.
+- **Concentration on the panel:** when concentration can raise a craft's rank, a line under the sale price shows what it takes, the rank it makes and the gold that adds. With concentration on, it shows what the craft uses. Either way it says **not enough** when you're short.
+- Gold/day in Best crafts shows the gold icon instead of a "g".
+- Fixed: clicks on Best crafts rows could get lost, and menus could close by themselves, while the list updated.
+
 2.6.0
 - **Enchants in Best crafts:** enchanting recipes now show as the scrolls they make, ranked with everything else. The panel prices them too, and an **Enchanting Vellum** counts as a material and goes on the shopping list.
 - **Gold/day has no limit anymore:** it now counts every sale instead of stopping at 20 a day, so items that sell in bulk rank higher. With TSM that's sales across your whole region, so it's for comparing recipes, not a promise.
