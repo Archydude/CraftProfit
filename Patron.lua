@@ -1133,7 +1133,7 @@ local function openGearMenu(owner)
 		ns.Shopping.AddShopWithChoice(root)
 		if ns.Shopping.CanClear() then
 			root:CreateDivider()
-			root:CreateButton("Clear shopping list", ns.Shopping.Clear)
+			root:CreateButton("Clear shopping list", function() ns.Shopping.Clear() end)
 		elseif usingTSM() and #tsmSearchRows() > 0 then
 			root:CreateDivider()
 			root:CreateButton("Clear TSM search", function()

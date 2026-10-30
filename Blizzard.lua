@@ -182,6 +182,25 @@ function Blizzard.BestQualityBoxes()
 	return boxes
 end
 
+-- Where the form's reagent columns end, in screen units.
+function Blizzard.ReagentsBottom(form)
+	local bottom = math.huge
+	for _, container in ipairs({ form.Reagents, form.OptionalReagents }) do
+		if container:IsShown() then bottom = math.min(bottom, container:GetBottom() or bottom) end
+	end
+	return bottom
+end
+
+-- Calls onLaidOut(form) the frame after a form lays out a recipe, and next frame
+-- for what the forms show now.
+function Blizzard.WatchLayout(onLaidOut)
+	for _, form in pairs({ orderForm(), ProfessionsFrame.CraftingPage.SchematicForm }) do
+		local function laidOut() C_Timer.After(0, function() onLaidOut(form) end) end
+		hooksecurefunc(form, "Init", laidOut)
+		laidOut()
+	end
+end
+
 -- Turns Blizzard's "Use Best Quality Reagents" off: its setting and its checkboxes.
 function Blizzard.StopBestQuality()
 	if Professions.ShouldAllocateBestQualityReagents() then

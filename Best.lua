@@ -3,7 +3,8 @@
 -- them in once; the "Use Craft Profit Reagents" checkbox, above Blizzard's "Use
 -- Best Quality Reagents" on the order form and on the crafting page, puts them in
 -- every order or recipe you open. Above it, "Optimize Concentration" picks the
--- ones that need the least concentration instead.
+-- ones that need the least concentration instead. When a recipe's reagents reach
+-- down to them, both move into a row beside Blizzard's.
 local _, ns = ...
 
 local Best = {}
@@ -15,6 +16,7 @@ local LABEL = "Use Craft Profit Reagents"
 local CONCENTRATION_LABEL = "Optimize Concentration"
 local LABEL_GAP = 2 -- checkbox to its label
 local ROW_GAP = 0   -- between the stacked checkboxes
+local ROW_SPACE = 16 -- between the checkboxes when they sit in a row
 
 -- One of each on every form that has Blizzard's checkbox.
 local boxes, concentrationBoxes = {}, {}
@@ -166,6 +168,7 @@ local function addCheckbox(parent, below, text, setting, onClickHandler, tooltip
 	local label = box:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
 	label:SetPoint("LEFT", box, "RIGHT", LABEL_GAP, 0)
 	label:SetText(LIGHTGRAY_FONT_COLOR:WrapTextInColorCode(text))
+	box.label = label
 	-- The label is clickable too, like Blizzard's.
 	box:SetHitRectInsets(0, -(label:GetStringWidth() + LABEL_GAP), 0, 0)
 	box:SetChecked(ns.db[setting])
@@ -178,6 +181,30 @@ local function addCheckbox(parent, below, text, setting, onClickHandler, tooltip
 		updateDim()
 	end)
 	return box
+end
+
+-- Stacks a form's checkboxes above Blizzard's, or when that would run into the
+-- reagents, puts them in a row beside it.
+local function placeBoxes(form)
+	local blizzardBox = form.AllocateBestQualityCheckbox
+	local top = blizzardBox:GetTop()
+	if not top then return end -- not on screen yet
+	for i, box in ipairs(boxes) do
+		if box:GetParent() == blizzardBox then
+			local concentration = concentrationBoxes[i]
+			local height = blizzardBox:GetHeight() + ROW_GAP
+			local fits = top + 2 * height <= ns.Blizzard.ReagentsBottom(form)
+			box:ClearAllPoints()
+			concentration:ClearAllPoints()
+			if fits then
+				box:SetPoint("BOTTOMLEFT", blizzardBox, "TOPLEFT", 0, ROW_GAP)
+				concentration:SetPoint("BOTTOMLEFT", box, "TOPLEFT", 0, ROW_GAP)
+			else
+				box:SetPoint("LEFT", blizzardBox.text, "RIGHT", ROW_SPACE, 0)
+				concentration:SetPoint("LEFT", box.label, "RIGHT", ROW_SPACE, 0)
+			end
+		end
+	end
 end
 
 -- Adds the checkboxes above Blizzard's on each form, stacked upward. Safe to call
@@ -196,4 +223,5 @@ function Best.Init()
 	updateDim()
 
 	ns.Blizzard.WatchForms(onBlizzardBestQuality, forget, boxes[1])
+	ns.Blizzard.WatchLayout(placeBoxes)
 end

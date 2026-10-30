@@ -2,10 +2,16 @@
 ArchdudeWhatsNew:Register("CraftProfit", {
 	title = "Craft Profit",
 	icon = "Interface\\Icons\\INV_Hammer_20",
-	version = "2.5.0",
+	version = "2.6.0",
 	seen = "CraftProfitWhatsNew",
 	saved = { "CraftProfitDB", "CraftProfitCharDB" },
 	changes = {
+		{ "2.6.0",
+			"|cffffd100Enchants in Best crafts:|r enchanting recipes now show as the scrolls they make, ranked with everything else. The panel prices them too, and an |cffffd100Enchanting Vellum|r counts as a material and goes on the shopping list.",
+			"|cffffd100Gold/day has no limit anymore:|r it now counts every sale instead of stopping at 20 a day, so items that sell in bulk rank higher. With TSM that's sales across your whole region, so it's for comparing recipes, not a promise.",
+			"Fixed: with |cffffd100All characters|r on, the cart added materials to the list of the character and profession you had open. They now go on the recipe's own list, and the cart's tooltip says which.",
+			"Fixed: on recipes with many reagents, |cffffd100Use Craft Profit Reagents|r and |cffffd100Optimize Concentration|r overlapped them. They now move next to |cffffd100Use Best Quality Reagents|r.",
+		},
 		{ "2.5.0",
 			"|cffffd100All characters in Best crafts:|r the |cffffd100All characters|r button at the bottom of the list puts every profession of all your characters in one list, at today's prices, so you can see which character to log in to for the most gold. A |cffffd100Crafter|r column shows who makes each recipe; sort by it, or type a character's name in the search box. The cart works on every row, so you can buy materials for another character. A character shows up after opening Best crafts once for each profession, and its ranks and proc chances are from that moment, so open it again after gaining skill.",
 			"|cffffd100Gold/day in Best crafts:|r a new column shows roughly what a recipe could make in a day: the profit on each item times how many sell per day, counting 20 a day at most. A big profit that hardly sells stops looking better than one that sells all day. With TSM it counts sales across your whole region, so it's for comparing recipes, not a promise. Without TSM, it counts your own recent sales.",
@@ -67,9 +73,6 @@ ArchdudeWhatsNew:Register("CraftProfit", {
 			"Orders you complete leave the list right away.",
 			"New option, |cffffd100Show Craft Profit on the Patron tab|r: turn it off to get Blizzard's own columns back.",
 			"After an update, a What's New window shows what changed since the version you had.",
-		},
-		{ "1.20.1",
-			"Fixed: crafts with nothing to sell (no auction price, like treatises, or an enchant or a recraft) didn't count what their materials cost. The panel now shows them as a Loss of that cost, and they count that way in the session total, less what resourcefulness gives back.",
 		},
 	},
 })

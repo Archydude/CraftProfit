@@ -384,6 +384,14 @@ function Ranks.CharacterName(key)
 	return character and characterName(character) or key
 end
 
+-- Who a saved scan's shopping list belongs to, by key: the character's name and
+-- the base profession ("Enchanting") of its `professionID`.
+function Ranks.ListOwner(key, professionID)
+	local character = characters[key]
+	local profession = character.professions and character.professions[professionID]
+	return character.name, C_TradeSkillUI.GetTradeSkillDisplayName(profession and profession.parent or professionID)
+end
+
 -- Every character that can craft the item, best rank first, then this character.
 local function knownBy(itemID)
 	local list = {}

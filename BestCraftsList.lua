@@ -375,7 +375,7 @@ local function cartTooltip(self)
 	end
 	GameTooltip:AddLine(" ")
 	GameTooltip:AddLine(Color("simulated", ns.Shopping.ListTarget() == "tsm" and "Click: copy a TSM search for 1 craft"
-		or "Click: add what's missing for 1 craft to the shopping list"))
+		or format("Click: add what's missing for 1 craft to the \"%s\" list", model.listName)))
 	GameTooltip:AddLine(Color("simulated", "Shift-click: pick how many crafts"))
 	GameTooltip:Show()
 end

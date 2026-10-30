@@ -1,5 +1,11 @@
 # Changelog
 
+## 2.6.0
+- **Enchants in Best crafts:** enchanting recipes now show as the scrolls they make, ranked with everything else. The panel prices them too, and an **Enchanting Vellum** counts as a material and goes on the shopping list.
+- **Gold/day has no limit anymore:** it now counts every sale instead of stopping at 20 a day, so items that sell in bulk rank higher. With TSM that's sales across your whole region, so it's for comparing recipes, not a promise.
+- Fixed: with **All characters** on, the cart added materials to the list of the character and profession you had open. They now go on the recipe's own list, and the cart's tooltip says which.
+- Fixed: on recipes with many reagents, **Use Craft Profit Reagents** and **Optimize Concentration** overlapped them. They now move next to **Use Best Quality Reagents**.
+
 ## 2.5.0
 - **All characters in Best crafts:** the **All characters** button at the bottom of the list puts every profession of all your characters in one list, at today's prices, so you can see which character to log in to for the most gold. A **Crafter** column shows who makes each recipe; sort by it, or type a character's name in the search box. The cart works on every row, so you can buy materials for another character. A character shows up after opening Best crafts once for each profession, and its ranks and proc chances are from that moment, so open it again after gaining skill.
 - **Gold/day in Best crafts:** a new column shows roughly what a recipe could make in a day: the profit on each item times how many sell per day, counting 20 a day at most. A big profit that hardly sells stops looking better than one that sells all day. With TSM it counts sales across your whole region, so it's for comparing recipes, not a promise. Without TSM, it counts your own recent sales.

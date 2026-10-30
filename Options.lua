@@ -185,7 +185,7 @@ function Options.Create()
 		"Materials come off the Auctionator shopping list as you get them: bought, looted, from the mailbox " ..
 		"or crafted. Chat says what came off, and when the list is done.\n\n" ..
 		"Only what Craft Profit put on the list. Moving things between your bags and banks doesn't count.")
-	button("Auctionator shopping list", "Clear", ns.Shopping.Clear,
+	button("Auctionator shopping list", "Clear", function() ns.Shopping.Clear() end,
 		"Empties the shopping list. Ctrl-click the Shopping list button does the same.\n\n" ..
 		"With one list per profession, this clears the list of the profession window that's open, " ..
 		"or with none open, the lists of all this character's professions.")

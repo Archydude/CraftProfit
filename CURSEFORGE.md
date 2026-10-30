@@ -29,7 +29,7 @@ Profit or loss on every craft and crafting order, a Best crafts list across all 
 ```markdown
 ## Is this craft worth it?
 
-Craft Profit answers in gold: **profit or loss?** A panel next to your profession window prices every craft and crafting order, and a **Best crafts** list shows what's worth crafting and which of your characters should make it.
+Craft Profit answers in gold: **profit or loss?** A panel next to your profession window prices every craft and crafting order, and a **Best crafts** list shows what's worth crafting.
 
 - **Expected profit** on every craft, procs included
 - **Best crafts**: every recipe ranked by profit, across all your characters
@@ -41,7 +41,7 @@ Craft Profit answers in gold: **profit or loss?** A panel next to your professio
 The panel leads with the answer: the sale price at the rank you'll get, minus the 5% cut and your materials, with and without procs. On orders: the commission, minus the materials **you** supply, plus sellable rewards.
 
 ### What should I craft?
-**Best crafts** lists every recipe you know, most profitable first, with what each could make in a day, how many are listed and how many sell. Filter by kind of item, and click one to open it.
+**Best crafts** lists every recipe you know, enchants as scrolls included, most profitable first, with what each could make in a day, how many are listed and how many sell. Click one to open it.
 
 ### Which character?
 Click **All characters** for every profession of all your characters in one list, at today's prices, so you know who to log in to for the most gold. Shop for any row from the character you're on.
@@ -71,11 +71,11 @@ Procs pop up as bonus gold, and a session total and **luck** meter show how your
 
 ## B. Upload File form
 
-**File:** `dist\CraftProfit-2.5.0.zip`
+**File:** `dist\CraftProfit-2.6.0.zip`
 
 **Display name**
 ```
-Craft Profit 2.5.0
+Craft Profit 2.6.0
 ```
 
 **Release type:** `Release`
@@ -84,6 +84,12 @@ Craft Profit 2.5.0
 
 **Changelog** (paste only the newest part; paste older parts too if they never went up)
 ```markdown
+2.6.0
+- **Enchants in Best crafts:** enchanting recipes now show as the scrolls they make, ranked with everything else. The panel prices them too, and an **Enchanting Vellum** counts as a material and goes on the shopping list.
+- **Gold/day has no limit anymore:** it now counts every sale instead of stopping at 20 a day, so items that sell in bulk rank higher. With TSM that's sales across your whole region, so it's for comparing recipes, not a promise.
+- Fixed: with **All characters** on, the cart added materials to the list of the character and profession you had open. They now go on the recipe's own list, and the cart's tooltip says which.
+- Fixed: on recipes with many reagents, **Use Craft Profit Reagents** and **Optimize Concentration** overlapped them. They now move next to **Use Best Quality Reagents**.
+
 2.5.0
 - **All characters in Best crafts:** the **All characters** button at the bottom of the list puts every profession of all your characters in one list, at today's prices, so you can see which character to log in to for the most gold. A **Crafter** column shows who makes each recipe; sort by it, or type a character's name in the search box. The cart works on every row, so you can buy materials for another character. A character shows up after opening Best crafts once for each profession, and its ranks and proc chances are from that moment, so open it again after gaining skill.
 - **Gold/day in Best crafts:** a new column shows roughly what a recipe could make in a day: the profit on each item times how many sell per day, counting 20 a day at most. A big profit that hardly sells stops looking better than one that sells all day. With TSM it counts sales across your whole region, so it's for comparing recipes, not a promise. Without TSM, it counts your own recent sales.

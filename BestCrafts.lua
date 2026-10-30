@@ -565,14 +565,23 @@ function BestCrafts.Materials(row)
 	return list
 end
 
+-- The shopping list of an entry: a saved one's goes on its own character and
+-- profession's, whichever window is open.
+local function listNameOf(entry)
+	if not entry.character then return ns.Shopping.ListName() end
+	local name, profession = ns.Ranks.ListOwner(entry.character, entry.professionID)
+	return ns.Shopping.ListName(profession, name)
+end
+
 -- What the shopping list needs for a row: the panel's model fields for what's
--- missing, buying the qualities the row is priced with.
+-- missing, buying the qualities the row is priced with, and the list it goes on.
 function BestCrafts.ShoppingModel(row)
 	local schematic, picks = row.entry.schematic, row.picks
 	return {
 		missing = ns.Model.Missing(schematic, {}, picks),
 		missingFor = function(crafts) return ns.Model.Missing(schematic, {}, picks, crafts) end,
 		shoppable = true,
+		listName = listNameOf(row.entry),
 	}
 end
 

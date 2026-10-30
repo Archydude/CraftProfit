@@ -83,17 +83,20 @@ end
 -- The list materials go to: one per character and/or per profession, as the
 -- options say ("Snir - Blacksmithing"), or "Crafting" with neither.
 -- `profession` defaults to the open one; with none, the profession is left out.
-function Shopping.ListName(profession)
+-- `character` defaults to this one.
+function Shopping.ListName(profession, character)
 	local parts = {}
-	if ns.db.listPerCharacter then parts[#parts + 1] = UnitName("player") end
+	if ns.db.listPerCharacter then parts[#parts + 1] = character or UnitName("player") end
 	if ns.db.listPerProfession then parts[#parts + 1] = profession or openProfession() end
 	if #parts == 0 then return ns.SHOPPING_LIST end
 	return table.concat(parts, " - ")
 end
 
--- The lists Clear empties: the current one, or with one list per profession and
--- no profession window open, the lists of all this character's professions.
-local function listsToClear()
+-- The lists Clear empties: `listName` when given; else the current one, or with
+-- one list per profession and no profession window open, the lists of all this
+-- character's professions.
+local function listsToClear(listName)
+	if listName then return { listName } end
 	local names = {}
 	if ns.db.listPerProfession and not openProfession() then
 		for _, index in pairs({ GetProfessions() }) do
@@ -457,9 +460,9 @@ end
 
 -- Adds the auction house materials to the list.
 -- `forText` says what they're for in chat: "5 crafts", "3 patron orders".
-local function sendToAuctionator(api, missing, forText)
+local function sendToAuctionator(api, missing, forText, listName)
 	-- Picked now: the window may close before the items load.
-	local listName = Shopping.ListName()
+	listName = listName or Shopping.ListName()
 	sortMissing(missing, function(auction, vendor, bound)
 		if #auction > 0 then
 			if addToList(api, auction, listName) then
@@ -519,13 +522,13 @@ end
 
 -- Empties the shopping list (see listsToClear). Auctionator's API can't delete a
 -- list, so an empty one is left behind; the next add fills it again.
-function Shopping.Clear()
+function Shopping.Clear(listName)
 	local api = auctionatorAPI()
 	if not api then
 		say(ns.Color("warning", "Auctionator is not loaded."))
 		return
 	end
-	local names, cleared, failed = listsToClear(), {}, false
+	local names, cleared, failed = listsToClear(listName), {}, false
 	for _, name in ipairs(names) do
 		local items = call(api.GetShoppingListItems, name)
 		if items and #items > 0 then
@@ -582,7 +585,8 @@ Shopping.Say = say
 
 -- Adds missing materials ({ { itemID, qty } ... }) to the shopping list.
 -- `forText` says what they're for in chat: "5 crafts", "3 patron orders".
-function Shopping.AddMissing(missing, forText)
+-- `listName` defaults to the current list.
+function Shopping.AddMissing(missing, forText, listName)
 	if #missing == 0 then
 		say(format("Nothing missing for %s.", forText))
 		return
@@ -591,7 +595,7 @@ function Shopping.AddMissing(missing, forText)
 	if target == "tsm" then
 		copyTSMSearch(missing, forText)
 	elseif target == "auctionator" then
-		sendToAuctionator(auctionatorAPI(), missing, forText)
+		sendToAuctionator(auctionatorAPI(), missing, forText, listName)
 	else
 		say(ns.Color("warning", "Install Auctionator or TSM to shop for materials."))
 	end
@@ -632,7 +636,7 @@ function Shopping.RemoveMissing(missing, forText)
 end
 
 local function addForCrafts(model, crafts)
-	Shopping.AddMissing(model.missingFor(crafts), Shopping.CraftsText(crafts))
+	Shopping.AddMissing(model.missingFor(crafts), Shopping.CraftsText(crafts), model.listName)
 end
 
 -- The typed count from "Other amount...", remembered for the menu.
@@ -682,7 +686,7 @@ local function openMenu(owner, model)
 	GameTooltip:Hide()
 	MenuUtil.CreateContextMenu(owner, function(_, root)
 		local tsm = Shopping.ListTarget() == "tsm"
-		root:CreateTitle(tsm and "Copy a TSM search" or format("Add to \"%s\" list", Shopping.ListName()))
+		root:CreateTitle(tsm and "Copy a TSM search" or format("Add to \"%s\" list", model.listName or Shopping.ListName()))
 
 		local counts = { unpack(PRESET_CRAFTS) }
 		if customCrafts and not tContains(counts, customCrafts) then
@@ -700,7 +704,7 @@ local function openMenu(owner, model)
 
 		if not tsm then
 			root:CreateDivider()
-			root:CreateButton("Clear shopping list", Shopping.Clear)
+			root:CreateButton("Clear shopping list", function() Shopping.Clear(model.listName) end)
 		end
 		Shopping.AddShopWithChoice(root)
 	end)
@@ -708,10 +712,11 @@ end
 
 -- What a click on the panel's button does: adds what's missing for one craft.
 -- Shift-click opens the menu of craft counts, Ctrl-click clears the shopping
--- list. `owner` is the button, for the menu to open from.
+-- list. `owner` is the button, for the menu to open from. `model.listName` is the
+-- list, when it isn't the current one.
 function Shopping.Click(model, owner, shift, ctrl)
 	if ctrl and Shopping.CanClear() then
-		Shopping.Clear()
+		Shopping.Clear(model.listName)
 	elseif not Shopping.ListTarget() then
 		return
 	elseif shift then

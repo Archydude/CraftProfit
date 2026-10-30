@@ -11,7 +11,7 @@ Craft Profit tells you, in gold, whether a craft or a crafting order makes or lo
 
 - **Crafting strategy:** pick what to craft: the highest rank you can make (default), the most profit, or the cheapest materials. One click, or a checkbox on the crafting page and the order form, puts its materials in; missing materials and the shopping list follow it too. On an order, the cheapest materials that reach its minimum quality.
 
-- **Best crafts:** every recipe you know in a profession, or across all your characters, ranked by profit, with what each could make in a day, how many are listed and how many you've sold.
+- **Best crafts:** every recipe you know in a profession, or across all your characters, enchants as scrolls included, ranked by profit, with what each could make in a day, how many are listed and how many you've sold.
 
 - **Shopping list:** adds what you're short of, for one or more crafts or for every patron order at once, to an Auctionator shopping list, or as a TSM search to copy. The Auctionator list checks materials off as you get them.
 
@@ -157,7 +157,7 @@ Click a column header to sort by it; click again to reverse. Recipes without a v
 - It starts on the profession shown, for this character. **All characters** (below) shows the rest.
 - It works out the list again when you gain skill, spend specialization points or change profession gear while it's open.
 
-**All characters:** the button at the bottom of the list puts every profession of all your characters in one list, so you can see which character to log in to for the most gold. Click it again to go back to the profession shown.
+**All characters:** the button at the bottom of the list puts every profession of all your characters in one list, so you can see which character to log in to for the most gold. The cart puts a recipe's materials on that character and profession's shopping list. Click the button again to go back to the profession shown.
 
 - A **Crafter** column shows who makes each recipe, in class color. Click its header to sort by it, or type a character's name in the search box.
 - A recipe two characters know shows once for each, at the rank that character can reach.
