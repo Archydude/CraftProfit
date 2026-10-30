@@ -652,7 +652,8 @@ end
 local function drawConcentration(model)
 	local concentration = model.concentration
 	if not concentration then return end
-	local points = format("%d concentration", concentration.points)
+	local points = concentration.icon and format("%d |T%s:%d|t", concentration.points, concentration.icon, Layout.ICON_SIZE)
+		or format("%d concentration", concentration.points)
 	if concentration.short then points = Color("warning", points .. " (not enough)") end
 	if concentration.on then
 		addRow("Uses " .. points)

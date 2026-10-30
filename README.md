@@ -35,7 +35,7 @@ The panel reads top to bottom: the expected profit or loss, what comes in (the s
 
 - Materials are priced at the quality you actually put in the form. If a slot is empty (you don't own the material), or the form holds another quality because you're short of the one your crafting strategy picks (see below), it's priced at the strategy's quality, so the profit is for what you'd craft once you've bought it. On an order, it's priced at the quality the Patron tab picks for the order. A material you're short of has a cart button: click it to shop for just that material.
 - The sale price follows the quality you'll get, including concentration if you turn it on.
-- Concentration on the crafting page: with it off and able to raise the rank, a line under the sale price shows what it takes, the rank it makes and the gold that rank adds, e.g. **38 concentration makes [rank 3] +95g**. With it on, the line shows what the craft uses. Either way it says **not enough** when you're short.
+- Concentration on the crafting page: with it off and able to raise the rank, a line under the sale price shows what it takes, the rank it makes and the gold that rank adds, with the concentration icon, e.g. **38 [icon] makes [rank 3] +95g**. With it on, the line shows what the craft uses. Either way it says **not enough** when you're short.
 - A lower rank is never worth more than a better one: when rank 3 is listed higher than rank 5 sells for, nobody buys it at that price, so it's priced as rank 5 sells and the panel's notes say so. The Best crafts list counts it the same way.
 - Vendor-sold materials (vials, thread...) use the vendor price.
 - For recipes that make a varying amount, the average is used.

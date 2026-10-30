@@ -43,7 +43,7 @@ local COLUMNS = {
 	{ key = "sold", width = 64, header = "You sold", sort = "sold", needsTSM = false },
 	{ key = "perDay", width = 64, header = "Sells/day", sort = "perDay", needsTSM = true },
 	{ key = "listed", width = 46, header = "Listed", sort = "listed" },
-	{ key = "gold", width = 64, header = "Gold/day", sort = "gold" },
+	{ key = "gold", width = 74, header = "Gold/day", sort = "gold" },
 	{ key = "profit", width = 112, goldWidth = 70, header = "Profit", sort = "profit" },
 	{ key = "crafter", width = 64, header = "Crafter", sort = "crafter", allCharacters = true },
 }
@@ -120,11 +120,12 @@ local function signedMoney(amount)
 	return Color(ns.AmountColor(amount), (amount > 0 and "+" or "") .. Money(amount))
 end
 
--- "+1,250g" in whole gold, to fit the Gold/day column; under 1g, the usual amount.
+-- "+1,250" and the gold icon, in whole gold, to fit the Gold/day column; under 1
+-- gold, the usual amount.
 local function dailyText(amount)
 	local gold = math.floor(math.abs(amount) / 10000 + 0.5)
 	if gold < 1 then return signedMoney(amount) end
-	return Color(ns.AmountColor(amount), (amount > 0 and "+" or "-") .. BreakUpLargeNumbers(gold) .. GOLD_AMOUNT_SYMBOL)
+	return Color(ns.AmountColor(amount), (amount > 0 and "+" or "-") .. GetMoneyString(gold * 10000, true))
 end
 
 local function pinMarkup()
