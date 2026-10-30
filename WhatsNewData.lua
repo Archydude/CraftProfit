@@ -2,10 +2,17 @@
 ArchdudeWhatsNew:Register("CraftProfit", {
 	title = "Craft Profit",
 	icon = "Interface\\Icons\\INV_Hammer_20",
-	version = "2.4.0",
+	version = "2.5.0",
 	seen = "CraftProfitWhatsNew",
 	saved = { "CraftProfitDB", "CraftProfitCharDB" },
 	changes = {
+		{ "2.5.0",
+			"|cffffd100All characters in Best crafts:|r the |cffffd100All characters|r button at the bottom of the list puts every profession of all your characters in one list, at today's prices, so you can see which character to log in to for the most gold. A |cffffd100Crafter|r column shows who makes each recipe; sort by it, or type a character's name in the search box. The cart works on every row, so you can buy materials for another character. A character shows up after opening Best crafts once for each profession, and its ranks and proc chances are from that moment, so open it again after gaining skill.",
+			"|cffffd100Gold/day in Best crafts:|r a new column shows roughly what a recipe could make in a day: the profit on each item times how many sell per day, counting 20 a day at most. A big profit that hardly sells stops looking better than one that sells all day. With TSM it counts sales across your whole region, so it's for comparing recipes, not a promise. Without TSM, it counts your own recent sales.",
+			"Removed the |cffffd100Have|r column from Best crafts, to leave more room for item names.",
+			"With amounts shown in whole gold, the Best crafts list's profit column is narrower, so item names get more room.",
+			"|cffffd100Turn off What's New:|r a |cffffd100Don't show this after updates|r checkbox in this window stops it opening after updates, for all the addons that use it. Type |cffffd100/whatsnew|r to see the latest changes, or to turn it back on.",
+		},
 		{ "2.4.0",
 			"|cffffd100Crafting strategy on the panel:|r with a recipe open, a |cffffd100Crafting strategy|r dropdown under your materials switches between Highest rank, Most profit and Cheapest. It's the same setting as under the Best crafts list and in the options.",
 			"|cffffd100Cart buttons:|r a material you're short of has a cart next to its price. Click it to add just what's missing of it to the shopping list (or copy a TSM search for it). Clicking the material itself still tries its other qualities.",
@@ -63,9 +70,6 @@ ArchdudeWhatsNew:Register("CraftProfit", {
 		},
 		{ "1.20.1",
 			"Fixed: crafts with nothing to sell (no auction price, like treatises, or an enchant or a recraft) didn't count what their materials cost. The panel now shows them as a Loss of that cost, and they count that way in the session total, less what resourcefulness gives back.",
-		},
-		{ "1.20.0",
-			"The session total now also shows at the bottom of the Patron orders list, so you can follow it while you craft from the list. Click it to reset it, as on the panel.",
 		},
 	},
 })

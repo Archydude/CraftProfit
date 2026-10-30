@@ -13,7 +13,7 @@ Craft Profit
 
 **Summary**
 ```
-Profit or loss on every craft and crafting order, a Best crafts list of what's worth crafting, and patron orders priced in Blizzard's Patron tab. Prices from TSM or Auctionator.
+Profit or loss on every craft and crafting order, a Best crafts list across all your characters, and patron orders priced in Blizzard's Patron tab. Prices from TSM or Auctionator.
 ```
 
 **Main category:** `Professions`
@@ -29,32 +29,35 @@ Profit or loss on every craft and crafting order, a Best crafts list of what's w
 ```markdown
 ## Is this craft worth it?
 
-Craft Profit answers one question in gold: **profit or loss?** A panel next to your profession window prices every craft and crafting order, and a **Best crafts** list shows what's worth crafting.
+Craft Profit answers in gold: **profit or loss?** A panel next to your profession window prices every craft and crafting order, and a **Best crafts** list shows what's worth crafting and which of your characters should make it.
 
 - **Expected profit** on every craft, procs included
-- **Best crafts**: every recipe you know, ranked by profit
+- **Best crafts**: every recipe ranked by profit, across all your characters
 - **Patron orders** priced and crafted right in Blizzard's Patron tab
 - **Crafting strategy**: highest rank, most profit or cheapest materials
 - **Shopping list** for what you're missing
 - **Craft Rank** on tooltips
 
 ### Crafts and orders
-The panel leads with the answer: what the item sells for at the rank you'll get, minus the 5% auction house cut and your materials, with and without multicraft and resourcefulness. On orders: the commission after the cut, minus the materials **you** supply, plus sellable rewards and what resourcefulness saves on average.
+The panel leads with the answer: the sale price at the rank you'll get, minus the 5% cut and your materials, with and without procs. On orders: the commission, minus the materials **you** supply, plus sellable rewards.
 
 ### What should I craft?
-**Best crafts** lists every recipe you know, most profitable first, with how many you can make, how many are listed and how many sell per day. Filter by gear, decor, materials and more, ignore any whose price makes no sense, and click one to open it.
+**Best crafts** lists every recipe you know, most profitable first, with what each could make in a day, how many are listed and how many sell. Filter by kind of item, ignore any whose price makes no sense, and click one to open it.
+
+### Which character?
+Click **All characters** for every profession of all your characters in one list, at today's prices, so you know who to log in to for the most gold. Shop for any row from the character you're on.
 
 ### Which rank, which materials?
-Pick a **crafting strategy** right on the panel: the highest rank you can make (the default), the most profit, or the cheapest materials. Craft Profit puts those materials in, prices what you're missing at them, and shops for exactly those.
+Pick a **crafting strategy** on the panel: highest rank (the default), most profit or cheapest materials. Craft Profit puts those materials in and shops for exactly those.
 
 ### Patron orders
 Blizzard's Patron tab shows each order's **expected profit**, **rewards** and missing **materials**. Sort by profit, shop for the profitable ones, and craft each with one click per step.
 
 ### Shopping list
-One click adds what you're missing to an **Auctionator** shopping list or a **TSM** search. The Auctionator list checks itself off as materials come in, and Craft Profit reminds you to scan when its prices get old.
+One click adds what you're missing to an **Auctionator** shopping list or a **TSM** search. The Auctionator list checks itself off as materials come in.
 
 ### Procs and luck
-Procs pop up as bonus gold, a session total adds up what you've made, and the **luck** meter shows whether your procs beat the odds.
+Procs pop up as bonus gold, and a session total and **luck** meter show how your crafts went.
 
 ### Good to know
 - Needs **TradeSkillMaster** or **Auctionator** for prices.
@@ -69,11 +72,11 @@ Procs pop up as bonus gold, a session total adds up what you've made, and the **
 
 ## B. Upload File form
 
-**File:** `dist\CraftProfit-2.4.0.zip`
+**File:** `dist\CraftProfit-2.5.0.zip`
 
 **Display name**
 ```
-Craft Profit 2.4.0
+Craft Profit 2.5.0
 ```
 
 **Release type:** `Release`
@@ -82,6 +85,13 @@ Craft Profit 2.4.0
 
 **Changelog** (paste only the newest part; paste older parts too if they never went up)
 ```markdown
+2.5.0
+- **All characters in Best crafts:** the **All characters** button at the bottom of the list puts every profession of all your characters in one list, at today's prices, so you can see which character to log in to for the most gold. A **Crafter** column shows who makes each recipe; sort by it, or type a character's name in the search box. The cart works on every row, so you can buy materials for another character. A character shows up after opening Best crafts once for each profession, and its ranks and proc chances are from that moment, so open it again after gaining skill.
+- **Gold/day in Best crafts:** a new column shows roughly what a recipe could make in a day: the profit on each item times how many sell per day, counting 20 a day at most. A big profit that hardly sells stops looking better than one that sells all day. With TSM it counts sales across your whole region, so it's for comparing recipes, not a promise. Without TSM, it counts your own recent sales.
+- Removed the **Have** column from Best crafts, to leave more room for item names.
+- With amounts shown in whole gold, the Best crafts list's profit column is narrower, so item names get more room.
+- **Turn off What's New:** a **Don't show this after updates** checkbox in this window stops it opening after updates, for all the addons that use it. Type **/whatsnew** to see the latest changes, or to turn it back on.
+
 2.4.0
 - **Crafting strategy on the panel:** with a recipe open, a **Crafting strategy** dropdown under your materials switches between Highest rank, Most profit and Cheapest. It's the same setting as under the Best crafts list and in the options.
 - **Cart buttons:** a material you're short of has a cart next to its price. Click it to add just what's missing of it to the shopping list (or copy a TSM search for it). Clicking the material itself still tries its other qualities.

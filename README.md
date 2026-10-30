@@ -1,6 +1,6 @@
 # Craft Profit
 
-A lightweight addon: one small panel next to your profession window that tells you, in gold, whether a craft or a crafting order makes or loses money.
+Craft Profit tells you, in gold, whether a craft or a crafting order makes or loses money, which recipes are worth making, and which of your characters should make them.
 
 - **Crafting page:** what the item sells for, minus the 5% auction house cut, minus your materials. With nothing to sell (no auction price, an enchant, a recraft), it's a loss of what the materials cost.
 - **Crafting orders:** the commission you receive (after the consortium cut), minus the materials **you** supply, plus any sellable patron rewards.
@@ -21,7 +21,7 @@ A lightweight addon: one small panel next to your profession window that tells y
 
 - **Best rank on tooltips:** an item you can craft shows the highest rank you can make it at with top-quality materials, anywhere you see its tooltip.
 
-It stays light: nothing runs until you open your profession window, apart from noting your auction sales when you open your mailbox. Procs are counted as an average, always shown next to the profit without them.
+Nothing runs until you open your profession window, apart from noting your auction sales when you open your mailbox. Procs are counted as an average, always shown next to the profit without them.
 
 Requires **TradeSkillMaster** or **Auctionator** for prices. Built for WoW Midnight 12.1.
 
@@ -248,4 +248,4 @@ Click the gear on the panel (or Craft Profit options in the gear menu under the 
 ## Notes
 - With Auctionator, prices come from your own auction house scans. Once Auctionator's last scan is over a day old, the panel's and the Best crafts list's footers say so in red ("last scan 2 days ago"), and opening the auction house reminds you in chat to run a full scan. Over 3 days old, opening the Best crafts list shows a notice in the middle of the list, once a session. Turn the reminders off with **Remind me to scan the auction house** in the options. With TSM, the TSM desktop app keeps them up to date for you. With Auctionator, the panel's notes say how old its oldest price is (**seen today**, or **oldest 4 days ago**, in red and in sight at the bottom of the panel once it's 3 days or more), and each material's tooltip says when Auctionator last saw it. Visit the auction house to refresh them.
 - A big Blizzard update to the profession window may need a Craft Profit update too.
-- After an update, a What's New window shows what changed since the version you had.
+- After an update, a What's New window shows what changed since the version you had. Tick **Don't show this after updates** to stop it opening, for all the addons that use it. Type `/whatsnew` to see the latest changes, or to turn it back on.

@@ -1,5 +1,12 @@
 # Changelog
 
+## 2.5.0
+- **All characters in Best crafts:** the **All characters** button at the bottom of the list puts every profession of all your characters in one list, at today's prices, so you can see which character to log in to for the most gold. A **Crafter** column shows who makes each recipe; sort by it, or type a character's name in the search box. The cart works on every row, so you can buy materials for another character. A character shows up after opening Best crafts once for each profession, and its ranks and proc chances are from that moment, so open it again after gaining skill.
+- **Gold/day in Best crafts:** a new column shows roughly what a recipe could make in a day: the profit on each item times how many sell per day, counting 20 a day at most. A big profit that hardly sells stops looking better than one that sells all day. With TSM it counts sales across your whole region, so it's for comparing recipes, not a promise. Without TSM, it counts your own recent sales.
+- Removed the **Have** column from Best crafts, to leave more room for item names.
+- With amounts shown in whole gold, the Best crafts list's profit column is narrower, so item names get more room.
+- **Turn off What's New:** a **Don't show this after updates** checkbox in this window stops it opening after updates, for all the addons that use it. Type **/whatsnew** to see the latest changes, or to turn it back on.
+
 ## 2.4.0
 - **Crafting strategy on the panel:** with a recipe open, a **Crafting strategy** dropdown under your materials switches between Highest rank, Most profit and Cheapest. It's the same setting as under the Best crafts list and in the options.
 - **Cart buttons:** a material you're short of has a cart next to its price. Click it to add just what's missing of it to the shopping list (or copy a TSM search for it). Clicking the material itself still tries its other qualities.
