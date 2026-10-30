@@ -597,9 +597,6 @@ local function bestExplanation(kind, best)
 		end
 		return "The cheapest materials that still reach the order's minimum quality."
 	end
-	if best.noPrice then
-		return "No sale price for this item, so: the cheapest materials that keep the rank it comes out at now."
-	end
 	local strategy = ns.Strategy()
 	local text = format("Crafting strategy: %s. %s", strategy[2], strategy[4])
 	if least and strategy[1] ~= "cheapest" then
@@ -631,6 +628,8 @@ local function bestTooltip(kind, best, recipeID)
 			tip:AddDoubleLine("Costs more, makes a better rank", signedMoney(best.gain), 1, 1, 1, 1, 1, 1)
 		elseif best.savesConcentration then
 			tip:AddDoubleLine("Costs more, saves concentration", signedMoney(best.gain), 1, 1, 1, 1, 1, 1)
+		elseif best.usesOwned then
+			tip:AddDoubleLine("Costs more, uses what you own", signedMoney(best.gain), 1, 1, 1, 1, 1, 1)
 		end
 	end
 end
@@ -647,6 +646,20 @@ local function drawBest(model)
 	if best.toQuality then text = text .. " " .. rankIcon(model.key, best.toQuality) end
 	if best.gain > 0 then text = text .. " " .. signedMoney(best.gain) end
 	addRow(text, nil, nil, function() ns.Best.Use(best) end, bestTooltip(model.kind, best, model.key))
+end
+
+-- What concentration spends on this craft, or the rank it would reach.
+local function drawConcentration(model)
+	local concentration = model.concentration
+	if not concentration then return end
+	local points = format("%d concentration", concentration.points)
+	if concentration.short then points = Color("warning", points .. " (not enough)") end
+	if concentration.on then
+		addRow("Uses " .. points)
+	else
+		addRow(format("%s makes %s", points, rankIcon(model.key, concentration.quality)),
+			concentration.gain and signedMoney(concentration.gain) or nil)
+	end
 end
 
 local function drawCraft(model)
@@ -666,6 +679,7 @@ local function drawCraft(model)
 		else
 			addRow("Sells for", Color("warning", "no price"))
 		end
+		drawConcentration(model)
 	end
 	drawMaterials(model)
 	-- Right above the blue row, which follows it. (Orders have their own rule.)

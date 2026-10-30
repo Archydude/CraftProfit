@@ -73,8 +73,9 @@ local function mixKey(slots, mix)
 end
 
 -- The slots you fill that come in several qualities:
--- { slotIndex, qty, options = { { itemID, cost, quality } ... } cheapest first },
--- where cost is what using that quality in this slot really costs you.
+-- { slotIndex, qty, options = { { itemID, cost, buy, quality } ... } cheapest first },
+-- where cost is what using that quality in this slot really costs you, and buy
+-- the gold you'd spend on it.
 local function qualitySlots(schematic, provided)
 	local list = {}
 	for slotIndex, slot in ipairs(schematic.reagentSlotSchematics) do
@@ -86,6 +87,7 @@ local function qualitySlots(schematic, provided)
 					options[#options + 1] = {
 						itemID = reagent.itemID,
 						cost = ns.Model.EffectiveCost(reagent.itemID, slot.quantityRequired) or UNPRICED,
+						buy = ns.Model.BuyCost(reagent.itemID, slot.quantityRequired) or UNPRICED,
 						quality = C_TradeSkillUI.GetItemReagentQualityByItemInfo(reagent.itemID) or 0,
 					}
 				end
@@ -106,7 +108,7 @@ local function mixesOf(slots, maxMixes)
 	local count = 1
 	for _, entry in ipairs(slots) do count = count * #entry.options end
 	if count > (maxMixes or MAX_MIXES) then
-		local top = { cost = 0 }
+		local top = { cost = 0, buy = 0 }
 		for i, entry in ipairs(slots) do
 			local best = 1
 			for o, option in ipairs(entry.options) do
@@ -117,12 +119,12 @@ local function mixesOf(slots, maxMixes)
 		return { top }
 	end
 
-	local mixes = { { cost = 0 } }
+	local mixes = { { cost = 0, buy = 0 } }
 	for i, entry in ipairs(slots) do
 		local grown = {}
 		for _, mix in ipairs(mixes) do
 			for o, option in ipairs(entry.options) do
-				local nextMix = { cost = mix.cost + option.cost }
+				local nextMix = { cost = mix.cost + option.cost, buy = mix.buy + option.buy }
 				for j = 1, i - 1 do nextMix[j] = mix[j] end
 				nextMix[i] = o
 				grown[#grown + 1] = nextMix
@@ -329,21 +331,24 @@ function Planner.HighestRank(options)
 	return best
 end
 
--- The one whose rank's price (`prices`, rank -> per craft, see Planner.RankPrices)
--- beats its cost (times `costFactor`, default 1) by the most, the cheaper one on
--- a tie; also that profit. Nil when no rank they reach has a price.
-function Planner.MostProfitable(options, prices, costFactor)
-	local best, bestProfit
+-- Whether `a` beats `b` for Planner.FromOwned.
+local function ownedBeats(a, b)
+	if not a.short ~= not b.short then return not a.short end
+	if a.quality ~= b.quality then return a.quality > b.quality end
+	if a.buy ~= b.buy then return a.buy < b.buy end
+	return a.cost < b.cost
+end
+
+-- The highest rank you own everything for (`short` says you don't), even below
+-- what you could reach by buying. Short for all of them: the highest rank they
+-- reach. Either way spending the least on what you don't own (`buy`), then the
+-- cheapest way.
+function Planner.FromOwned(options)
+	local best
 	for _, option in ipairs(options) do
-		local price = option.quality and prices[option.quality]
-		if price then
-			local profit = price - option.cost * (costFactor or 1)
-			if not best or profit > bestProfit or (profit == bestProfit and option.cost < best.cost) then
-				best, bestProfit = option, profit
-			end
-		end
+		if option.quality and (not best or ownedBeats(option, best)) then best = option end
 	end
-	return best, bestProfit
+	return best
 end
 
 -- The cheapest, the higher rank on a tie.
@@ -358,12 +363,10 @@ function Planner.Cheapest(options)
 	return best
 end
 
--- The one the crafting strategy picks (ns.db.craftStrategy). `prices` and
--- `costFactor` are only needed for "Most profit" (see Planner.MostProfitable).
-function Planner.Choose(options, prices, costFactor)
-	local strategy = ns.db.craftStrategy
-	if strategy == "profit" then return (Planner.MostProfitable(options, prices, costFactor)) end
-	if strategy == "cheapest" then return Planner.Cheapest(options) end
+-- The one the crafting strategy picks (ns.db.craftStrategy).
+function Planner.Choose(options)
+	if ns.db.craftStrategy == "cheapest" then return Planner.Cheapest(options) end
+	if ns.db.craftStrategy == "owned" then return Planner.FromOwned(options) end
 	return Planner.HighestRank(options)
 end
 
@@ -383,9 +386,16 @@ local function planCraft(recipeInfo, schematic, transaction, slots, context)
 	end
 
 	-- Each rank the mixes reach: its cheapest mix, or with "Optimize concentration",
-	-- the one that takes the least (mixes come cheapest first, so a later one only
-	-- wins on less concentration).
+	-- the one that takes the least, or with "Use what I own", the one that spends
+	-- the least (mixes come cheapest first, so a later one only wins on those).
 	local least = ns.db.leastConcentration
+	local ownedFirst = ns.db.craftStrategy == "owned"
+	local function beats(mix, concentration, found)
+		if least and concentration and found.concentration and concentration ~= found.concentration then
+			return concentration < found.concentration
+		end
+		return ownedFirst and mix.buy < found.mix.buy
+	end
 	local known = predictionsFor(context)
 	local deadline = debugprofilestop() + PLAN_BUDGET_MS
 	local byQuality = {}
@@ -403,61 +413,33 @@ local function planCraft(recipeInfo, schematic, transaction, slots, context)
 		if predicted then quality, concentration = predicted[1], predicted[2] end
 		if quality then
 			local found = byQuality[quality]
-			if not found or (least and concentration and found.concentration and concentration < found.concentration) then
-				byQuality[quality] = { mix = mix, cost = mix.cost, quality = quality, concentration = concentration }
+			if not found or beats(mix, concentration, found) then
+				byQuality[quality] = { mix = mix, cost = mix.cost, buy = mix.buy, short = mix.buy > 0, quality = quality,
+					concentration = concentration }
 			end
 		end
 	end
 	if not next(byQuality) then return end
 
-	-- The rank the crafting strategy picks. "Most profit" needs each rank's price,
-	-- and with procs counted, what multicraft and resourcefulness add.
+	-- The rank the crafting strategy picks.
 	local options = {}
 	for _, found in pairs(byQuality) do options[#options + 1] = found end
-	local prices, costFactor = {}, 1
-	if ns.db.craftStrategy == "profit" then
-		local sales = {}
-		for quality = 1, #recipeInfo.qualityIDs do
-			local link, itemID = ns.Blizzard.OutputAtQuality(recipeInfo, transaction, quality)
-			sales[quality] = link and ns.Prices.Sale(link, itemID)
-		end
-		local scroll = ns.Blizzard.MakesScroll(recipeInfo.recipeID, transaction)
-		prices = Planner.RankPrices(sales, #recipeInfo.qualityIDs, scroll and ns.Blizzard.ScrollSchematic(schematic) or schematic)
-		local info = ns.Blizzard.CraftInfo({ recipeInfo = recipeInfo, schematic = schematic, transaction = transaction })
-		local multiply
-		multiply, costFactor = ns.Procs.Factors(ns.Procs.ProfessionOf(recipeInfo.recipeID), ns.Procs.Chances(info))
-		for quality, price in pairs(prices) do prices[quality] = price * multiply end
-	end
-	local best = Planner.Choose(options, prices, costFactor)
-	local noPrice = best == nil
-	if noPrice then
-		-- "Most profit" with no price at any rank: the cheapest mix that keeps the form's rank.
-		local formQuality = ns.Blizzard.PredictQuality(recipeInfo.recipeID, schematic, transaction, {})
-		for quality, found in pairs(byQuality) do
-			if (not formQuality or quality >= formQuality) and (not best or found.cost < best.cost) then best = found end
-		end
-	end
-	if not best then return end
-	local plan = planOf(best.mix, best.quality, best.concentration)
-	plan.noPrice = noPrice
-	return plan
+	local best = Planner.Choose(options)
+	return planOf(best.mix, best.quality, best.concentration)
 end
 
 -- Which qualities the recipe on the crafting page should use, with what's in the
 -- form's other slots and its concentration as they are: the rank the crafting
 -- strategy picks, made the cheapest way (with concentration and "Optimize
--- concentration": the way that takes the least, the cheapest of those). For "Most
--- profit" with no sale price at any rank (noPrice), the cheapest mix that keeps
--- the form's rank. { overrides, picks, quality, concentration, noPrice }, or nil.
--- Also true while a recipe with many mixes is still being worked out: ask again
+-- concentration": the way that takes the least, the cheapest of those).
+-- { overrides, picks, quality, concentration }, or nil. Also true while a recipe with many mixes is still being worked out: ask again
 -- next frame.
 function Planner.ForCraft(ctx)
 	local recipeInfo, schematic, transaction = ctx.recipeInfo, ctx.schematic, ctx.transaction
 	local slots = qualitySlots(schematic, {})
 	if #slots == 0 then return end
 	local context = craftContext(recipeInfo.recipeID, schematic, transaction, slots, ns.Blizzard.IsConcentrating(transaction))
-	local key = format("%s:%s:%s:%s", context, tostring(ns.db.leastConcentration), ns.db.craftStrategy,
-		tostring(ns.db.countProcs))
+	local key = format("%s:%s:%s", context, tostring(ns.db.leastConcentration), ns.db.craftStrategy)
 	if key ~= craftPlanKey then
 		local plan, pending = planCraft(recipeInfo, schematic, transaction, slots, context)
 		if pending then return nil, true end

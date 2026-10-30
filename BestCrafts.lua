@@ -317,7 +317,7 @@ end
 -- changes, and ones that follow what you own until your bags change. See
 -- BestCrafts.Reprice.
 local materialPrice, salePrice, market -- market: link -> { listed, listedAge, soldPerDay }
-local effectiveCost
+local effectiveCost, buyCost
 -- Rows priced so far: entry -> row (see priceEntry).
 local priced = setmetatable({}, { __mode = "k" })
 
@@ -337,6 +337,7 @@ end
 
 local function forgetOwned()
 	effectiveCost = memo(ns.Model.EffectiveCost)
+	buyCost = memo(ns.Model.BuyCost)
 	wipe(priced)
 end
 
@@ -369,34 +370,48 @@ local function cheapestOther(other)
 	return bestID, bestPrice
 end
 
+-- Whether you own enough of any item a slot that doesn't come in qualities takes.
+local function ownsOther(other)
+	for _, itemID in ipairs(other.itemIDs) do
+		if buyCost(itemID, other.qty) == 0 then return true end
+	end
+	return false
+end
+
 -- What an option's materials cost: at full price, and what they really cost you
 -- (what you own counts at what it would sell for, as the planner counts it).
--- Also how many materials have no price, and what the basic ones cost (the
--- ones resourcefulness saves; the slots in qualities are all basic).
+-- Also how many materials have no price, what the basic ones cost (the ones
+-- resourcefulness saves; the slots in qualities are all basic), the gold you'd
+-- spend on what you don't own, and whether you're short of anything.
 local function costOf(entry, option)
-	local full, effective, unpriced, basic = 0, 0, 0, 0
+	local full, effective, unpriced, basic, buy = 0, 0, 0, 0, 0
+	local short = false
 	for _, slot in ipairs(entry.slots) do
 		local itemID = option.picks[slot.slotIndex]
 		local price = materialPrice(itemID)
+		short = short or buyCost(itemID, slot.qty) ~= 0
 		if price then
 			full = full + price * slot.qty
 			basic = basic + price * slot.qty
 			effective = effective + (effectiveCost(itemID, slot.qty) or price * slot.qty)
+			buy = buy + (buyCost(itemID, slot.qty) or price * slot.qty)
 		else
 			unpriced = unpriced + 1
 		end
 	end
 	for _, other in ipairs(entry.others) do
 		local itemID, price = cheapestOther(other)
+		short = short or not ownsOther(other)
 		if price then
 			full = full + price * other.qty
 			if other.basic then basic = basic + price * other.qty end
 			effective = effective + (effectiveCost(itemID, other.qty) or price * other.qty)
+			buy = buy + (buyCost(itemID, other.qty) or price * other.qty)
 		else
 			unpriced = unpriced + 1
 		end
 	end
-	return full, effective, unpriced, basic
+	return full, effective, unpriced, basic, buy, short
 end
 
 -- Seconds until the recipe can be crafted again, or nil when it can now.
@@ -414,7 +429,7 @@ end
 --   sale = what a craft sells for after the AH cut (capped), cost = materials at full price,
 --   profit, or nil with noPrice (no auction price at that rank),
 --   cappedBy, listedPrice = the rank that capped the price and the price before,
---   unpriced = materials without a price,
+--   unpriced = materials without a price, short = you don't own them all,
 --   concentration = { extra, points, quality } when concentrating makes more,
 --   procs = what multicraft and resourcefulness add on average (Procs.Expected),
 --   expected = profit with that counted,
@@ -430,26 +445,18 @@ local function priceEntry(entry)
 	local options = {}
 	for _, option in ipairs(entry.options) do
 		if option.quality then
-			local full, effective, unpriced, basic = costOf(entry, option)
-			options[#options + 1] = { cost = effective, full = full, unpriced = unpriced, basic = basic,
-				quality = option.quality, option = option }
+			local full, effective, unpriced, basic, buy, short = costOf(entry, option)
+			options[#options + 1] = { cost = effective, full = full, unpriced = unpriced, basic = basic, buy = buy,
+				short = short, quality = option.quality, option = option }
 		end
 	end
-	-- "Most profit" counts procs when they're counted. With no price at any rank
-	-- it reaches, it shows the highest one.
-	local multiply, discount = ns.Procs.Factors(entry.professionID, entry.chances, entry.character)
-	local choosePrices = prices
-	if multiply ~= 1 then
-		choosePrices = {}
-		for rank, price in pairs(prices) do choosePrices[rank] = price * multiply end
-	end
-	local best = ns.Planner.Choose(options, choosePrices, discount) or ns.Planner.HighestRank(options)
+	local best = ns.Planner.Choose(options)
 	if not best then
 		-- Items with ranks but no price at any rank aren't worked out: the cheapest
 		-- mix, at a rank no one asked about.
 		local option = entry.options[1]
-		local full, effective, unpriced, basic = costOf(entry, option)
-		best = { cost = effective, full = full, unpriced = unpriced, basic = basic, option = option }
+		local full, effective, unpriced, basic, _, short = costOf(entry, option)
+		best = { cost = effective, full = full, unpriced = unpriced, basic = basic, short = short, option = option }
 	end
 
 	local row = { entry = entry, firstCraft = false }
@@ -458,7 +465,12 @@ local function priceEntry(entry)
 		row.firstCraft = C_TradeSkillUI.IsRecipeFirstCraft(entry.recipeID) or false
 	end
 	row.quality = best.quality
-	row.picks, row.cost, row.unpriced = best.option.picks, best.full, best.unpriced
+	row.picks, row.cost, row.unpriced, row.short = best.option.picks, best.full, best.unpriced, best.short
+	-- The game also counts what you can make with a slot split across qualities.
+	if row.short and BestCrafts.IsMine(entry) then
+		local info = C_TradeSkillUI.GetRecipeInfo(entry.recipeID)
+		row.short = not (info and (info.numAvailable or 0) > 0)
+	end
 	local sale = row.quality and prices[row.quality]
 	if sale then
 		row.sale, row.profit = sale, sale - best.full

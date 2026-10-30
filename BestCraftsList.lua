@@ -209,7 +209,8 @@ local function visibleRows()
 	for _, row in ipairs(allRows) do
 		if matches(row, search) and not ns.db.bestHidden[row.group]
 			and not (ns.db.bestIgnored[row.entry.recipeID] and not ns.db.bestShowIgnored)
-			and not (ns.db.bestProfitableOnly and not ((shownProfit(row) or 0) > 0)) then
+			and not (ns.db.bestProfitableOnly and not ((shownProfit(row) or 0) > 0))
+			and not (ns.db.craftStrategy == "owned" and row.short) then
 			shown[#shown + 1] = row
 		end
 	end

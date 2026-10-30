@@ -67,7 +67,7 @@ ns.DEFAULTS = {
 	craftStrategy = "highest", -- what the crafting page and Best crafts list craft (see ns.STRATEGIES)
 	scanReminder = true,  -- remind you to scan the auction house when Auctionator's prices are old
 	minimap = true,       -- the minimap button (its position is in minimapIcon, kept by LibDBIcon)
-	countProcs = true,    -- multicraft and resourcefulness count in the Best crafts list and "Most profit"
+	countProcs = true,    -- multicraft and resourcefulness count in the Best crafts list
 	rankTooltip = true,   -- best rank you can craft, on crafted items' tooltips
 	rankConcentration = true, -- add the concentration that rank takes
 	rankCharacters = "all", -- whose ranks: "all" your characters | "current" one
@@ -102,8 +102,8 @@ ns.CONCENTRATION_CHOICES = {
 ns.STRATEGIES = {
 	{ "highest", "Highest rank, cheapest materials", "Highest rank",
 		"The highest rank you can make, with the cheapest materials that reach it." },
-	{ "profit", "Most profit", "Most profit",
-		"The rank that makes the most gold after what its materials cost, with the cheapest materials that make it." },
+	{ "owned", "Use what I own", "What I own",
+		"The highest rank you have every material for. Short for all of them: the highest rank you can make, spending the least gold on what you're missing. The Best crafts list only shows what you can craft now." },
 	{ "cheapest", "Cheapest materials", "Cheapest",
 		"The cheapest materials, whatever rank they make. For skill-ups, first crafts and knowledge." },
 }

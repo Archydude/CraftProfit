@@ -34,7 +34,7 @@ Craft Profit answers in gold: **profit or loss?** A panel next to your professio
 - **Expected profit** on every craft, procs included
 - **Best crafts**: every recipe ranked by profit, across all your characters
 - **Patron orders** priced and crafted right in Blizzard's Patron tab
-- **Crafting strategy**: highest rank, most profit or cheapest materials
+- **Crafting strategy**: highest rank, use what you own or cheapest materials
 - **Craft Rank** on tooltips
 
 ### Crafts and orders
@@ -47,7 +47,7 @@ The panel leads with the answer: the sale price at the rank you'll get, minus th
 Click **All characters** for every profession of all your characters in one list, at today's prices, so you know who to log in to for the most gold. Shop for any row from the character you're on.
 
 ### Which rank, which materials?
-Pick a **crafting strategy** on the panel: highest rank (the default), most profit or cheapest materials. Craft Profit puts those materials in and shops for exactly those.
+Pick a **crafting strategy** on the panel: highest rank (the default), use what you own or cheapest materials. Craft Profit puts those materials in and shops for exactly those.
 
 ### Patron orders
 Blizzard's Patron tab shows each order's **expected profit**, **rewards** and missing **materials**. Sort by profit, shop for the profitable ones, and craft each with one click per step.

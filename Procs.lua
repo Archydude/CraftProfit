@@ -149,16 +149,6 @@ function Procs.Expected(professionID, chances, sale, basicCost, character)
 	return expected
 end
 
--- For picking ranks by profit with procs counted: what one craft's sale price is
--- multiplied by (multicraft adds items), and what its material cost is
--- multiplied by (resourcefulness saves some). 1, 1 when procs aren't counted.
-function Procs.Factors(professionID, chances, character)
-	if not (ns.db.countProcs and chances) then return 1, 1 end
-	local extra = Procs.ExtraPerItem(professionID, character)
-	local saved = Procs.SavedShare(professionID, character)
-	return 1 + chances.multicraft * extra, 1 - chances.resourcefulness * saved
-end
-
 -- "Based on 47 of your procs" or "Base value until you've had 10 procs".
 function Procs.SourceText(procs)
 	if procs > 0 then return format("from %d of your procs", procs) end

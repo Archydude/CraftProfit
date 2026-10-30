@@ -123,6 +123,15 @@ function Model.EffectiveCost(itemID, qty)
 	return own * price * keep + (qty - own) * price
 end
 
+-- The gold you'd spend on `qty` of a material, past what you own, or nil when
+-- you'd have to buy some and it has no price.
+function Model.BuyCost(itemID, qty)
+	local missing = math.max(qty - owned(itemID), 0)
+	if missing == 0 then return 0 end
+	local price = ns.Prices.Material(itemID)
+	return price and missing * price
+end
+
 -- For an order you have open: in each slot you fill from your bags, the rank that's
 -- cheaper to buy than to use yours, and still meets the order's minimum quality.
 -- slotIndex -> { itemID, saves, buyCost, ownValue }. Slots you've picked a quality
@@ -346,9 +355,11 @@ local function bestCraftMaterials(ctx, model)
 	-- Or, with "Optimize concentration" on, when it takes less than the form does.
 	local savesConcentration = ns.db.leastConcentration and plan.concentration
 		and (ns.Blizzard.FormConcentrationCost(ctx.recipeInfo.recipeID, schematic, transaction) or 0) > plan.concentration
-	if gain <= 0 and not betterRank and not savesConcentration then return end
+	-- Or, with "Use what I own", whatever it's worth: spending less is the point.
+	local usesOwned = ns.db.craftStrategy == "owned"
+	if gain <= 0 and not betterRank and not savesConcentration and not usesOwned then return end
 	return { picks = plan.overrides, list = plan.picks, concentrate = false, concentration = plan.concentration,
-		savesConcentration = savesConcentration and true or false, gain = gain, noPrice = plan.noPrice,
+		savesConcentration = savesConcentration and true or false, usesOwned = usesOwned, gain = gain,
 		fromQuality = otherRank and formQuality or nil, toQuality = otherRank and plan.quality or nil }
 end
 
@@ -405,6 +416,32 @@ local function craftMaterials(scroll, ...)
 	local list = Model.Materials(...)
 	if scroll then list[#list + 1] = { itemID = ns.VELLUM_ITEM, qty = 1, price = ns.Prices.Material(ns.VELLUM_ITEM) } end
 	return list
+end
+
+-- What concentration does for the craft the game described in `info`, or nil when
+-- it does nothing: { points, on, short = you have too little, quality = the rank
+-- it would lift this to, gain = what that rank adds per craft }. Only `points`,
+-- `on` and `short` while it's on, since `quality` already counts it.
+local function concentrationOf(ctx, info, quality, model, sold)
+	local points = info and info.concentrationCost or 0
+	if points <= 0 then return end
+	local on = ns.Blizzard.IsConcentrating(ctx.transaction)
+	local qualityIDs = ctx.recipeInfo.qualityIDs
+	if not on and not (quality and qualityIDs and quality < #qualityIDs) then return end
+	local currency = info.concentrationCurrencyID and C_CurrencyInfo.GetCurrencyInfo(info.concentrationCurrencyID)
+	local found = { points = points, on = on, short = currency ~= nil and currency.quantity < points }
+	if on then return found end
+
+	found.quality = quality + 1
+	local output = model.output
+	local link, itemID = ns.Blizzard.OutputAtQuality(ctx.recipeInfo, ctx.transaction, found.quality)
+	local price = link and output and output.sale and cappedSale(ctx, link, itemID, found.quality)
+	if price then
+		local keep = ns.db.ahCut and (1 - ns.AH_CUT) or 1
+		local gain = (price * ((sold.quantityMin or 1) + (sold.quantityMax or 1)) / 2 - output.sale) * keep
+		if gain > 0 then found.gain = gain end
+	end
+	return found
 end
 
 -- The recipe selected on the crafting page. With ctx.overrides (slotIndex ->
@@ -495,7 +532,9 @@ function Model.Craft(ctx)
 
 	-- What multicraft and resourcefulness add on average (see Procs.Expected).
 	if not (planning or ctx.isRecraft) then
-		local chances = ns.Procs.Chances(ns.Blizzard.CraftInfo(ctx, merged(picks, filled)))
+		local info = ns.Blizzard.CraftInfo(ctx, merged(picks, filled))
+		local chances = ns.Procs.Chances(info)
+		model.concentration = concentrationOf(ctx, info, quality, model, sold)
 		local output = model.output
 		local sale = output and output.sale and output.sale - (output.ahCut or 0)
 		model.procs = ns.Procs.Expected(ns.Procs.ProfessionOf(recipeInfo.recipeID), chances, sale,

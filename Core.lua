@@ -21,6 +21,8 @@ local function loadSettings()
 		if db.missingTarget == "auctionator" or db.missingTarget == "tsm" then db.listAddon = db.missingTarget end
 		db.missingTarget = nil
 	end
+	-- Up to 2.6 there was a "Most profit" crafting strategy.
+	if db.craftStrategy == "profit" then db.craftStrategy = "highest" end
 	for key, value in pairs(ns.DEFAULTS) do
 		if db[key] == nil then db[key] = value end
 	end
