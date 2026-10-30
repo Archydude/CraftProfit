@@ -135,9 +135,8 @@ Click **Best crafts** at the top of the panel, next to its gear (on the crafting
 - **Listed:** how many were up for sale the last time Auctionator saw them, in grey when that was 3 days ago or more. Needs Auctionator; without it, **-**.
 - **Sells/day** (with TSM): how many sell per day across your region, on average.
 - **You sold** (without TSM, in place of Sells/day): how many your characters sold on the auction house in the last 14 days, counted from the auction house's mail each time you open your mailbox. It starts counting with this version, so it fills in over the first two weeks. With TSM, it's in each row's tooltip instead.
-- **Eye:** ignores the recipe (see below).
-- **Cart:** the shopping list button, as on the panel: click for what's missing for one craft, Shift-click to pick how many crafts. It buys the qualities the row is priced with.
-- **Icons** after the name: the rank it's priced at, the first-craft icon when crafting it the first time gives profession knowledge, and a watch when it's on cooldown. A long name is cut short so they always show.
+- **Three dots:** the row's menu, also on a right-click anywhere on the row. **Shop for 1 craft** adds what's missing for one craft, **Shop for more crafts** picks how many, **Pin to top** keeps the recipe above the rest, and **Ignore** hides it (see below). Shopping buys the qualities the row is priced with.
+- **Icons:** a pin at the start of a pinned recipe's row. After the name, the rank it's priced at, the first-craft icon when crafting it the first time gives profession knowledge, and a watch when it's on cooldown. A long name is cut short so they always show.
 
 **Hover a row** for the sale price, each material and its price, the profit, and what concentration would add (e.g. **+95g for 38 concentration, 2g 50s per point**). For items with ranks, each rank's price and how many of it are listed, so a rank nobody buys stands out.
 
@@ -152,20 +151,22 @@ Click a column header to sort by it; click again to reverse. Recipes without a v
 - **Show ignored recipes** shows the recipes you ignored (below), in grey and marked **ignored**. **Stop ignoring all** brings back every ignored recipe of the profession shown.
 - The list remembers the filter. The small red button on it puts everything back (ignored recipes stay ignored).
 
-**Ignore a recipe:** click the eye at the end of its row (or right-click the row) to hide it from the list, for when an item is priced far too high for no reason. With Show ignored recipes on, an ignored row has an undo arrow there instead: click it to stop ignoring it. The ignore list is the same for all your characters.
+**Pin a recipe:** pick **Pin to top** in its menu to keep it above the rest, whatever the sort. Pinned recipes sort among themselves the same way, and still follow the filters and the search. Pick **Unpin** to put it back. Pins are the same for all your characters.
+
+**Ignore a recipe:** pick **Ignore** in its menu to hide it from the list, for when an item is priced far too high for no reason. With Show ignored recipes on, the menu says **Stop ignoring** instead. Ignoring a pinned recipe unpins it. The ignore list is the same for all your characters.
 
 - Concentration isn't used for the ranking; the row's tooltip shows what it would add.
 - It starts on the profession shown, for this character. **All characters** (below) shows the rest.
 - It works out the list again when you gain skill, spend specialization points or change profession gear while it's open.
 
-**All characters:** the button at the bottom of the list puts every profession of all your characters in one list, so you can see which character to log in to for the most gold. The cart puts a recipe's materials on that character and profession's shopping list. Click the button again to go back to the profession shown.
+**All characters:** the button at the bottom of the list puts every profession of all your characters in one list, so you can see which character to log in to for the most gold. Shopping from a row puts its materials on that character and profession's shopping list. Click the button again to go back to the profession shown.
 
 - A **Crafter** column shows who makes each recipe, in class color. Click its header to sort by it, or type a character's name in the search box.
 - A recipe two characters know shows once for each, at the rank that character can reach.
 - A character shows up after opening Best crafts once, for each profession. Its ranks and proc chances are from that moment, because the game only says how a craft turns out for the character whose profession window is open. Open the list on that character again after it gains skill or spends specialization points. Prices are always today's.
 - Hover a row to see when its skill data is from. It turns red after 7 days.
 - **Click** a recipe of another profession on this character to open it. Another character's recipe can't be opened from here, so chat says who to log in to.
-- The **cart** works on every row, so you can buy materials for another character. They go on this character's shopping list, and what this character owns counts as yours.
+- Shopping works on every row, so you can buy materials for another character. They go on this character's shopping list, and what this character owns counts as yours.
 - First-craft and cooldown icons only show on this character's recipes.
 - Forgetting a character in the options (**Saved characters: Forget...**) takes it off this list too.
 

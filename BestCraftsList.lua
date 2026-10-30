@@ -11,7 +11,11 @@ local format = string.format
 
 local ROW_HEIGHT = 24
 local ICON_SIZE = 20
-local CART_SIZE = 18
+local ICON_X = 20          -- row's left edge to the item icon; the pin goes in that room
+local ACTIONS_SIZE = 18
+local ACTIONS_REACH_LEFT, ACTIONS_REACH_RIGHT = 8, 4 -- how far past the row button a click still lands on it
+local ACTIONS_DOT = 3      -- the row button's three dots: each dot's size,
+local ACTIONS_DOT_GAP = 5  -- and how far apart they are
 local PAD = 12             -- list edge to its content
 local CELL_GAP = 10        -- between columns
 local HEADER_HEIGHT = 20
@@ -35,8 +39,7 @@ local STALE_SCAN_DAYS = 7  -- other characters' saved scans this old or older sh
 -- the same for the All characters view, and goldWidth: its width when amounts
 -- show in whole gold. The demand column is TSM's Sells/day, or without TSM, You sold.
 local COLUMNS = {
-	{ key = "ignore", width = CART_SIZE },
-	{ key = "cart", width = CART_SIZE },
+	{ key = "actions", width = ACTIONS_SIZE },
 	{ key = "sold", width = 64, header = "You sold", sort = "sold", needsTSM = false },
 	{ key = "perDay", width = 64, header = "Sells/day", sort = "perDay", needsTSM = true },
 	{ key = "listed", width = 46, header = "Listed", sort = "listed" },
@@ -100,10 +103,8 @@ local SORT_VALUES = {
 	sold = function(row) return row.itemName and row.sold or nil end,
 	perDay = function(row) return row.soldPerDay end,
 }
-local CART_ICON = { atlases = { "Perks-ShoppingCart", "Banker" }, file = "Interface\\Icons\\INV_Misc_Bag_10" }
--- The ignore button's picture: an eye to hide the recipe, or undo on an ignored one.
-local IGNORE_ICON = { atlases = { "transmog-icon-hidden" }, file = "Interface\\Buttons\\UI-GroupLoot-Pass-Up" }
-local UNIGNORE_ICON = { atlases = { "common-icon-undo" }, file = "Interface\\Buttons\\UI-RefreshButton" }
+-- A pinned row's mark: the first atlas the game has, or else the word.
+local PIN_ATLASES = { "Waypoint-MapPin-Tracked", "Waypoint-MapPin-Untracked" }
 local FIRST_CRAFT_ATLAS = "professions_icon_firsttimecraft"
 local COOLDOWN_ICON = "|TInterface\\Icons\\INV_Misc_PocketWatch_01:14|t"
 -- The sorted column's arrow: the auction house's, or the older one.
@@ -124,6 +125,13 @@ local function dailyText(amount)
 	local gold = math.floor(math.abs(amount) / 10000 + 0.5)
 	if gold < 1 then return signedMoney(amount) end
 	return Color(ns.AmountColor(amount), (amount > 0 and "+" or "-") .. BreakUpLargeNumbers(gold) .. GOLD_AMOUNT_SYMBOL)
+end
+
+local function pinMarkup()
+	for _, atlas in ipairs(PIN_ATLASES) do
+		if C_Texture.GetAtlasInfo(atlas) then return CreateAtlasMarkup(atlas, 16, 16) end
+	end
+	return Color("heading", "pinned")
 end
 
 local function firstCraftMarkup()
@@ -172,13 +180,17 @@ local function sortKey()
 	return key
 end
 
--- Sorted by the chosen column; rows without a value for it go last either way.
--- Ties go by profit, then name.
+local function isPinned(row) return ns.db.bestPinned[row.entry.recipeID] == true end
+
+-- Pinned rows first. Then sorted by the chosen column; rows without a value for
+-- it go last either way. Ties go by profit, then name.
 local function sortRows(rows)
 	local key, ascending = sortKey(), ns.db.bestSortAscending
 	local valueOf = SORT_VALUES[key]
 	local function nameOf(row) return row.sortName end
 	table.sort(rows, function(a, b)
+		local aPinned, bPinned = isPinned(a), isPinned(b)
+		if aPinned ~= bPinned then return aPinned end
 		if key == "name" then
 			local an, bn = nameOf(a), nameOf(b)
 			if an ~= bn then
@@ -330,8 +342,7 @@ local function rowTooltip(tip, row)
 	tip:AddLine(" ")
 	tip:AddLine(Color("simulated", ns.BestCrafts.IsMine(entry) and "Click: show the recipe"
 		or "Log in to this character to craft it"))
-	tip:AddLine(Color("simulated", ns.db.bestIgnored[entry.recipeID] and "Right-click: stop ignoring it"
-		or "Right-click: ignore it (hide it from the list)"))
+	tip:AddLine(Color("simulated", "Right-click: shop, pin or ignore"))
 end
 
 ---------------------------------------------------------------------------
@@ -349,24 +360,12 @@ local function columnLayout(width)
 			right = right - columnWidth - CELL_GAP
 		end
 	end
-	layout.name = { x = 4 + ICON_SIZE + 6, width = right - (4 + ICON_SIZE + 6) }
+	layout.name = { x = ICON_X + ICON_SIZE + 6, width = right - (ICON_X + ICON_SIZE + 6) }
 	return layout
 end
 
--- Shows `icon` (CART_ICON...) on a button: the first atlas the game has, or else the file.
-local function setIcon(button, icon)
-	for _, atlas in ipairs(icon.atlases) do
-		if C_Texture.GetAtlasInfo(atlas) then
-			button:SetNormalAtlas(atlas)
-			return
-		end
-	end
-	button:SetNormalTexture(icon.file)
-end
-
-local function cartTooltip(self)
-	local row = self.row
-	local model = ns.BestCrafts.ShoppingModel(row)
+local function actionsTooltip(self)
+	local model = ns.BestCrafts.ShoppingModel(self.row)
 	GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
 	if #model.missing > 0 then
 		GameTooltip:SetText("Missing for 1 craft")
@@ -375,9 +374,7 @@ local function cartTooltip(self)
 		GameTooltip:SetText("Nothing missing for 1 craft")
 	end
 	GameTooltip:AddLine(" ")
-	GameTooltip:AddLine(Color("simulated", ns.Shopping.ListTarget() == "tsm" and "Click: copy a TSM search for 1 craft"
-		or format("Click: add what's missing for 1 craft to the \"%s\" list", model.listName)))
-	GameTooltip:AddLine(Color("simulated", "Shift-click: pick how many crafts"))
+	GameTooltip:AddLine(Color("simulated", "Click: shop, pin or ignore"))
 	GameTooltip:Show()
 end
 
@@ -390,11 +387,35 @@ local function cellText(button, key, justify)
 end
 
 -- Ignoring a recipe hides it from the list, for when its price makes no sense.
--- Kept for every character, by recipe.
+-- Pinning keeps it at the top. Both are kept for every character, by recipe.
 local function setIgnored(row, ignored)
-	ns.db.bestIgnored[row.entry.recipeID] = ignored or nil
-	GameTooltip:Hide()
+	local recipeID = row.entry.recipeID
+	ns.db.bestIgnored[recipeID] = ignored or nil
+	if ignored then ns.db.bestPinned[recipeID] = nil end
 	BestCraftsList.Render()
+end
+
+local function setPinned(row, pinned)
+	ns.db.bestPinned[row.entry.recipeID] = pinned or nil
+	BestCraftsList.Render()
+end
+
+-- The row's menu, from its button or a right-click on the row.
+local function openActions(owner, row)
+	GameTooltip:Hide()
+	MenuUtil.CreateContextMenu(owner, function(_, root)
+		root:CreateTitle(row.itemName or row.entry.name or "?")
+		if ns.Shopping.ListTarget() then
+			local model = ns.BestCrafts.ShoppingModel(row)
+			root:CreateButton("Shop for 1 craft", function() ns.Shopping.Click(model, owner) end)
+				:SetEnabled(#model.missing > 0)
+			ns.Shopping.AddCraftCounts(root:CreateButton("Shop for more crafts"), model)
+			root:CreateDivider()
+		end
+		local pinned, ignored = isPinned(row), ns.db.bestIgnored[row.entry.recipeID]
+		root:CreateButton(pinned and "Unpin" or "Pin to top", function() setPinned(row, not pinned) end)
+		root:CreateButton(ignored and "Stop ignoring" or "Ignore", function() setIgnored(row, not ignored) end)
+	end)
 end
 
 local function createRow(button)
@@ -405,7 +426,9 @@ local function createRow(button)
 	highlight:SetColorTexture(1, 1, 1, 0.08)
 	button.icon = button:CreateTexture(nil, "ARTWORK")
 	button.icon:SetSize(ICON_SIZE, ICON_SIZE)
-	button.icon:SetPoint("LEFT", 4, 0)
+	button.icon:SetPoint("LEFT", ICON_X, 0)
+	button.pin = button:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
+	button.pin:SetPoint("LEFT", 2, 0)
 	button.icon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
 	cellText(button, "name", "LEFT")
 	-- The rank and other icons, right after the name, so a long name that's cut
@@ -416,43 +439,26 @@ local function createRow(button)
 		if column.header then cellText(button, column.key) end
 	end
 
-	local cart = CreateFrame("Button", nil, button)
-	cart:SetSize(CART_SIZE, CART_SIZE)
-	setIcon(cart, CART_ICON)
-	cart:SetHighlightTexture("Interface\\Buttons\\UI-Common-MouseHilight", "ADD")
-	cart:RegisterForClicks("LeftButtonUp")
-	cart:SetScript("OnClick", function(self)
-		ns.Shopping.Click(ns.BestCrafts.ShoppingModel(self.row), self, IsShiftKeyDown(), IsControlKeyDown())
-	end)
-	cart:SetScript("OnEnter", cartTooltip)
-	cart:SetScript("OnLeave", GameTooltip_Hide)
-	button.cart = cart
-
-	local ignore = CreateFrame("Button", nil, button)
-	ignore:SetSize(CART_SIZE, CART_SIZE)
-	ignore:SetHighlightTexture("Interface\\Buttons\\UI-Common-MouseHilight", "ADD")
-	ignore:RegisterForClicks("LeftButtonUp")
-	ignore:SetScript("OnClick", function(self)
-		setIgnored(self.row, not ns.db.bestIgnored[self.row.entry.recipeID])
-	end)
-	ignore:SetScript("OnEnter", function(self)
-		GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
-		if ns.db.bestIgnored[self.row.entry.recipeID] then
-			GameTooltip:SetText("Stop ignoring")
-			GameTooltip:AddLine("Puts this recipe back on the list.", 1, 1, 1, true)
-		else
-			GameTooltip:SetText("Ignore")
-			GameTooltip:AddLine("Hides this recipe from the list, for when its price makes no sense. "
-				.. "Show ignored recipes in the Filter menu brings it back.", 1, 1, 1, true)
-		end
-		GameTooltip:Show()
-	end)
-	ignore:SetScript("OnLeave", GameTooltip_Hide)
-	button.ignore = ignore
+	-- Three dots, the usual sign for "more actions", drawn so they stay sharp.
+	local actions = CreateFrame("Button", nil, button)
+	actions:SetSize(ACTIONS_SIZE, ACTIONS_SIZE)
+	actions:SetHitRectInsets(-ACTIONS_REACH_LEFT, -ACTIONS_REACH_RIGHT, -(ROW_HEIGHT - ACTIONS_SIZE) / 2, -(ROW_HEIGHT - ACTIONS_SIZE) / 2)
+	for dot = -1, 1 do
+		local texture = actions:CreateTexture(nil, "ARTWORK")
+		texture:SetSize(ACTIONS_DOT, ACTIONS_DOT)
+		texture:SetPoint("CENTER", 0, dot * ACTIONS_DOT_GAP)
+		texture:SetColorTexture(1, 0.82, 0)
+	end
+	actions:SetHighlightTexture("Interface\\Buttons\\UI-Common-MouseHilight", "ADD")
+	actions:RegisterForClicks("LeftButtonUp")
+	actions:SetScript("OnClick", function(self) openActions(self, self.row) end)
+	actions:SetScript("OnEnter", actionsTooltip)
+	actions:SetScript("OnLeave", GameTooltip_Hide)
+	button.actions = actions
 
 	button:SetScript("OnClick", function(self, mouseButton)
 		if mouseButton == "RightButton" then
-			setIgnored(self.row, not ns.db.bestIgnored[self.row.entry.recipeID])
+			openActions(self, self.row)
 			return
 		end
 		if not ns.BestCrafts.IsMine(self.row.entry) then
@@ -473,8 +479,7 @@ end
 local function drawRow(button, row)
 	if not button.cells then createRow(button) end
 	button.row = row
-	button.cart.row = row
-	button.ignore.row = row
+	button.actions.row = row
 	local layout = columnLayout(scrollBox:GetWidth())
 	for key, text in pairs(button.cells) do
 		local place = layout[key]
@@ -485,11 +490,8 @@ local function drawRow(button, row)
 			text:SetWidth(place.width)
 		end
 	end
-	button.cart:ClearAllPoints()
-	button.cart:SetPoint("LEFT", button, "LEFT", layout.cart.x, 0)
-	button.ignore:ClearAllPoints()
-	button.ignore:SetPoint("LEFT", button, "LEFT", layout.ignore.x, 0)
-	setIcon(button.ignore, ns.db.bestIgnored[row.entry.recipeID] and UNIGNORE_ICON or IGNORE_ICON)
+	button.actions:ClearAllPoints()
+	button.actions:SetPoint("LEFT", button, "LEFT", layout.actions.x, 0)
 
 	local entry = row.entry
 	button.icon:SetTexture(row.output and C_Item.GetItemIconByID(row.output.itemID) or entry.icon)
@@ -504,6 +506,7 @@ local function drawRow(button, row)
 	button.tags:SetText(tagText)
 	local nameCell = button.cells.name
 	-- In its rarity's color; grey when ignored or without a price.
+	button.pin:SetText(isPinned(row) and pinMarkup() or "")
 	nameCell:SetText((row.profit and not ignored) and ns.Format.RarityColored(row.output and row.output.itemID, name)
 		or Color("muted", name))
 	-- The name takes what the icons leave, and is cut short with "..." past that.
@@ -526,7 +529,6 @@ local function drawRow(button, row)
 	button.cells.perDay:SetText(row.soldPerDay and perDayText(row.soldPerDay) or Color("muted", "-"))
 	button.cells.sold:SetText(not row.itemName and Color("muted", "-")
 		or row.sold > 0 and tostring(row.sold) or Color("muted", "0"))
-	button.cart:SetShown(ns.db.shoppingButton and ns.Shopping.ListTarget() ~= nil)
 end
 
 ---------------------------------------------------------------------------
@@ -588,11 +590,21 @@ function BestCraftsList.Render()
 	updateHeaders()
 end
 
+-- A redraw swaps the rows' frames, which loses a click in progress and closes a
+-- menu opened from one, so it waits for those.
+local function renderWhenIdle()
+	if IsMouseButtonDown("LeftButton") or IsMouseButtonDown("RightButton") or Menu.GetManager():GetOpenMenu() then
+		C_Timer.After(REFRESH_DELAY, renderWhenIdle)
+		return
+	end
+	BestCraftsList.Render()
+end
+
 -- Redraws once shortly, however many times it's called.
 function BestCraftsList.Refresh()
 	if refreshQueued or not (list and list:IsShown()) then return end
 	refreshQueued = true
-	C_Timer.After(REFRESH_DELAY, BestCraftsList.Render)
+	C_Timer.After(REFRESH_DELAY, renderWhenIdle)
 end
 
 local function setSort(key)
@@ -692,7 +704,7 @@ local function filterMenu(_, root)
 	root:CreateButton("Show all", function() return setAllGroups(false) end)
 	root:CreateButton("Hide all", function() return setAllGroups(true) end)
 
-	-- Recipes you ignored with a right-click.
+	-- Recipes you ignored from their menu.
 	local ignored = ignoredCount()
 	root:CreateDivider()
 	local show = root:CreateCheckbox(format("Show ignored recipes %s", Color("muted", "(" .. ignored .. ")")),
@@ -703,8 +715,8 @@ local function filterMenu(_, root)
 		end)
 	show:SetTooltip(function(tip)
 		GameTooltip_SetTitle(tip, "Show ignored recipes")
-		GameTooltip_AddNormalLine(tip, "Right-click a recipe in the list to ignore it, for when its price makes no sense. "
-			.. "Ignored recipes show here in grey, marked ignored; right-click one again to stop ignoring it.")
+		GameTooltip_AddNormalLine(tip, "Right-click a recipe in the list and pick Ignore, for when its price makes no sense. "
+			.. "Ignored recipes show here in grey, marked ignored; pick Stop ignoring in the same menu to bring one back.")
 	end)
 	if ignored > 0 then
 		root:CreateButton("Stop ignoring all", function()

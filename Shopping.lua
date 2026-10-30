@@ -682,32 +682,35 @@ StaticPopupDialogs.CRAFTPROFIT_CRAFTS = {
 }
 
 -- The menu a click on the button opens.
+-- The menu of craft counts for `model`, added to `root`: a menu or a submenu.
+function Shopping.AddCraftCounts(root, model)
+	local tsm = Shopping.ListTarget() == "tsm"
+	root:CreateTitle(tsm and "Copy a TSM search" or format("Add to \"%s\" list", model.listName or Shopping.ListName()))
+
+	local counts = { unpack(PRESET_CRAFTS) }
+	if customCrafts and not tContains(counts, customCrafts) then
+		counts[#counts + 1] = customCrafts
+		table.sort(counts)
+	end
+	for _, crafts in ipairs(counts) do
+		local total = Shopping.Total(model.missingFor(crafts))
+		local note = total > 0 and format("(%d missing)", total) or "(nothing missing)"
+		local button = root:CreateButton(format("For %s %s", Shopping.CraftsText(crafts), ns.Color("muted", note)),
+			function() addForCrafts(model, crafts) end)
+		button:SetEnabled(total > 0)
+	end
+	root:CreateButton("Other amount...", function() StaticPopup_Show("CRAFTPROFIT_CRAFTS", nil, nil, model) end)
+
+	if not tsm then
+		root:CreateDivider()
+		root:CreateButton("Clear shopping list", function() Shopping.Clear(model.listName) end)
+	end
+	Shopping.AddShopWithChoice(root)
+end
+
 local function openMenu(owner, model)
 	GameTooltip:Hide()
-	MenuUtil.CreateContextMenu(owner, function(_, root)
-		local tsm = Shopping.ListTarget() == "tsm"
-		root:CreateTitle(tsm and "Copy a TSM search" or format("Add to \"%s\" list", model.listName or Shopping.ListName()))
-
-		local counts = { unpack(PRESET_CRAFTS) }
-		if customCrafts and not tContains(counts, customCrafts) then
-			counts[#counts + 1] = customCrafts
-			table.sort(counts)
-		end
-		for _, crafts in ipairs(counts) do
-			local total = Shopping.Total(model.missingFor(crafts))
-			local note = total > 0 and format("(%d missing)", total) or "(nothing missing)"
-			local button = root:CreateButton(format("For %s %s", Shopping.CraftsText(crafts), ns.Color("muted", note)),
-				function() addForCrafts(model, crafts) end)
-			button:SetEnabled(total > 0)
-		end
-		root:CreateButton("Other amount...", function() StaticPopup_Show("CRAFTPROFIT_CRAFTS", nil, nil, model) end)
-
-		if not tsm then
-			root:CreateDivider()
-			root:CreateButton("Clear shopping list", function() Shopping.Clear(model.listName) end)
-		end
-		Shopping.AddShopWithChoice(root)
-	end)
+	MenuUtil.CreateContextMenu(owner, function(_, root) Shopping.AddCraftCounts(root, model) end)
 end
 
 -- What a click on the panel's button does: adds what's missing for one craft.

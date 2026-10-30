@@ -31,6 +31,7 @@ local function loadSettings()
 	db.listItems = db.listItems or {} -- what Craft Profit put on each shopping list (see Shopping.lua)
 	db.bestHidden = db.bestHidden or {} -- kinds of item the Best crafts list hides: group key -> true
 	db.bestIgnored = db.bestIgnored or {} -- recipes the Best crafts list hides: recipeID -> true
+	db.bestPinned = db.bestPinned or {} -- recipes at the top of the Best crafts list: recipeID -> true
 	return db
 end
 
