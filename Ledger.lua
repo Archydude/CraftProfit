@@ -262,6 +262,7 @@ function Ledger.Analyze(db)
 			local done = craft.sold + craft.used
 			craft.earned = craft.money + (craft.unit - share) * craft.used - share * craft.sold
 			craft.pending = craft.left * craft.unit
+			craft.expected = craft.unit > 0 and (craft.unit - share) * craft.qty or 0
 			-- Compared only when the item had a price at the time.
 			if craft.unit > 0 and done > 0 then
 				craft.compareActual = craft.earned
@@ -270,6 +271,7 @@ function Ledger.Analyze(db)
 		else
 			craft.earned = craft.profit
 			craft.pending = 0
+			craft.expected = craft.forecast
 			if craft.forecast ~= 0 then
 				craft.compareActual, craft.compareForecast = craft.profit, craft.forecast
 			end
@@ -315,11 +317,11 @@ function Ledger.BoughtItems(bought)
 end
 
 -- Totals for a list of crafts: { crafts, items, cost, earned, pending, unsold,
--- sold, money, actual, forecast }; actual and forecast only count crafts that
--- have both, so they can be compared.
+-- sold, money, expected, actual, forecast }. Expected is the profit forecast for
+-- all of them; actual and forecast only count what's done, so they can be compared.
 function Ledger.Summarize(crafts)
 	local total = { crafts = 0, items = 0, cost = 0, earned = 0, pending = 0, unsold = 0, sold = 0, money = 0,
-		actual = 0, forecast = 0 }
+		expected = 0, actual = 0, forecast = 0 }
 	for _, craft in ipairs(crafts) do
 		total.crafts = total.crafts + 1
 		total.items = total.items + craft.qty
@@ -329,6 +331,7 @@ function Ledger.Summarize(crafts)
 		total.unsold = total.unsold + craft.left
 		total.sold = total.sold + craft.sold
 		total.money = total.money + craft.money
+		total.expected = total.expected + craft.expected
 		if craft.compareForecast then
 			total.actual = total.actual + craft.compareActual
 			total.forecast = total.forecast + craft.compareForecast
@@ -390,11 +393,17 @@ function Ledger.Items(crafts)
 	for _, group in ipairs(list) do
 		local total = Ledger.Summarize(group.made)
 		for key, value in pairs(total) do group[key] = value end
-		local soldForecast, soldDays = 0, 0
+		local soldForecast, soldDays, madeForecast, priced = 0, 0, 0, 0
 		for _, craft in ipairs(group.made) do
 			soldForecast = soldForecast + craft.unit * craft.sold
 			soldDays = soldDays + craft.soldDays
+			if craft.unit > 0 then
+				madeForecast = madeForecast + craft.unit * craft.qty
+				priced = priced + craft.qty
+			end
 		end
+		-- What sold is what to compare with, once anything has.
+		if priced > 0 then group.unitForecast = madeForecast / priced end
 		if total.sold > 0 then
 			group.unitSold = total.money / total.sold
 			group.unitForecast = soldForecast / total.sold
@@ -606,16 +615,6 @@ function Ledger.RollUp(db, now)
 			db.days[day] = nil
 		end
 	end
-end
-
--- Totals of every month rolled up, or nil when there are none.
-function Ledger.Older()
-	local older
-	for _, month in pairs(saved and saved.months or {}) do
-		older = older or { crafts = 0, items = 0, cost = 0, profit = 0, spent = 0 }
-		for key, value in pairs(month) do older[key] = older[key] + value end
-	end
-	return older
 end
 
 -- An item's name, from the game or from when you crafted it.

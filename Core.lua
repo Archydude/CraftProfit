@@ -23,6 +23,8 @@ local function loadSettings()
 	end
 	-- Up to 2.6 there was a "Most profit" crafting strategy.
 	if db.craftStrategy == "profit" then db.craftStrategy = "highest" end
+	-- The Ledger's "All time" was gone before it was ever released.
+	if db.ledgerRange == 0 then db.ledgerRange = 90 end
 	for key, value in pairs(ns.DEFAULTS) do
 		if db[key] == nil then db[key] = value end
 	end

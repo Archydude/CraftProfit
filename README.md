@@ -196,9 +196,9 @@ Your crafting history in its own window: what you made, what sold, and how close
 
 - **Overview:** totals by type (regular crafts, patron, personal, guild and public orders), by profession and by character, the items furthest below their forecast, and a chart of profit by the day it was crafted.
 - **Crafts:** every craft with when, who, what type, how many, its status, the forecast and the profit so far. Hover a row for the details.
-- **Items:** one row per item and rank: how many you made, sold and still have, what each was forecast at against what each sold for, how long sales took, and the profit so far.
-- **Bought:** one row per item and rank: how many you bought, what you spent, what you paid each against the market price at the time, and what you resold and made on it.
-- **Filters:** time range, character and profession at the top, and a search box on Crafts, Items and Bought. Purchases have no profession, so **Spent** hides while one is picked. **Export** gives you the crafts in view to paste into a spreadsheet.
+- **Performance:** one row per item and rank: how many you made, sold and still have, what each was forecast at against what each sold for, how long sales took, and the profit so far.
+- **Purchased:** one row per item and rank: how many you bought, what you spent, what you paid each against the market price at the time, and what you resold and made on it.
+- **Filters:** time range, character and profession at the top, and a search box on Crafts, Performance and Purchased. Purchases have no profession, so **Spent** hides while one is picked. **Export** gives you the crafts in view to paste into a spreadsheet.
 
 How the numbers work:
 
@@ -210,7 +210,7 @@ How the numbers work:
 - **Purchases** cover the auction house, through any addon, and materials from vendors. A sale no craft explains counts toward what you bought of that item.
 - **Not counted:** items you trade, vendor or equip stay under **Not sold yet**, and lost deposits on expired auctions aren't counted.
 - A craft with the panel hidden has no forecast and no materials cost.
-- History is kept for 90 days. After that, each month is kept as totals, shown under **All time**.
+- The window shows up to the last 90 days.
 
 ## Options
 Click the gear on the panel (or Craft Profit options in the gear menu under the Patron tab's list), type `/craftprofit`, or go to **Esc → Options → AddOns → Craft Profit**. The main page has what to craft and where prices come from; click the **+** next to Craft Profit for the other pages.
