@@ -40,7 +40,8 @@ local STALE_DAYS = 3       -- Auctionator counts this old or older show in grey
 local STALE_SCAN_DAYS = 7  -- other characters' saved scans this old or older show in the warning color
 -- Columns right of the item name, right to left: key, width, header, sort key,
 -- needsTSM: true shows it only with TSM, false only without, and allCharacters:
--- the same for the All characters view, and goldWidth: its width when amounts
+-- the same for the All characters view, needsProcs: only while procs count, and
+-- goldWidth: its width when amounts
 -- show in whole gold. The demand column is TSM's Sells/day, or without TSM, You sold.
 local COLUMNS = {
 	{ key = "actions", width = ACTIONS_SIZE },
@@ -50,6 +51,8 @@ local COLUMNS = {
 	{ key = "gold", width = 74, header = "Gold/day", sort = "gold" },
 	{ key = "cost", width = 112, goldWidth = 70, header = "Cost", sort = "cost" },
 	{ key = "profit", width = 112, goldWidth = 70, header = "Profit", sort = "profit" },
+	{ key = "procs", width = 96, goldWidth = 56, header = "Procs", sort = "procs", needsProcs = true },
+	{ key = "plain", width = 112, goldWidth = 64, header = "No procs", sort = "plain", needsProcs = true },
 	{ key = "crafter", width = 64, header = "Crafter", sort = "crafter", allCharacters = true },
 }
 local HEADER_TIPS = {
@@ -61,6 +64,8 @@ local HEADER_TIPS = {
 	gold = "Roughly what this recipe could make in a day: the profit on each item times how many sell per day. For "
 		.. "comparing recipes, not a promise: with TSM it counts sales across your whole region, and you'd only get a "
 		.. "share of them. Without TSM, it counts your own recent sales. Recipes that lose gold or haven't sold show -.",
+	plain = "What one craft makes with no procs at all: the part that doesn't depend on luck.",
+	procs = "What multicraft and resourcefulness add to a craft on average. Any one craft can get all of it or none.",
 	cost = "What the materials for one craft cost, at the rank and with the materials your crafting strategy picks.",
 	listed ="How many were up for sale the last time Auctionator saw them. Needs Auctionator.",
 	perDay = "How many sell per day across your region, on average, from TSM.",
@@ -104,6 +109,8 @@ local SORT_VALUES = {
 	profit = shownProfit,
 	gold = goldPerDay,
 	crafter = crafterKey,
+	plain = function(row) return row.profit end,
+	procs = function(row) return row.profit and row.procs and row.procs.total end,
 	cost = function(row) return row.cost end,
 	listed = function(row) return row.listed end,
 	sold = function(row) return row.itemName and row.sold or nil end,
@@ -170,6 +177,7 @@ end
 
 -- Whether a column shows, with these addons and in this view.
 local function columnShown(column)
+	if column.needsProcs and not ns.db.countProcs then return false end
 	if column.needsTSM ~= nil and column.needsTSM ~= ns.Prices.HasTSM() then return false end
 	return column.allCharacters == nil or column.allCharacters == ns.db.bestAllCharacters
 end
@@ -528,6 +536,9 @@ local function drawRow(button, row)
 	else
 		button.cells.profit:SetText(Color("muted", "No price"))
 	end
+	button.cells.plain:SetText(row.profit and signedMoney(row.profit) or Color("muted", "-"))
+	local procs = row.profit and row.procs and row.procs.total
+	button.cells.procs:SetText(procs and signedMoney(procs) or Color("muted", "-"))
 	button.cells.cost:SetText((row.cost or 0) > 0 and Color("loss", Money(-row.cost)) or Color("muted", "-"))
 	local daily = goldPerDay(row)
 	button.cells.gold:SetText(daily and dailyText(daily) or Color("muted", "-"))

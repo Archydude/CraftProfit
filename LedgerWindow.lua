@@ -72,6 +72,13 @@ local function signedOrDash(amount)
 	return amount and signedMoney(amount) or Color("muted", "-")
 end
 
+-- What procs added, or a dash for crafts from before it was saved.
+local function procsText(amount)
+	if not amount then return Color("muted", "-") end
+	if math.abs(amount) < 1 then return Color("muted", "0") end
+	return signedMoney(amount)
+end
+
 local function offText(off)
 	if not off then return Color("muted", "-") end
 	return Color(ns.AmountColor(off), format("%+.0f%%", off * 100))
@@ -245,27 +252,31 @@ local COLUMNS = {
 		{ key = "kind", header = "Type", width = 60, sort = "kind", text = function(row) return KIND_SHORT[row.kind] or row.kind end },
 		{ key = "qty", header = "Made", width = 44, sort = "qty", text = function(row) return count(row.qty) end },
 		{ key = "status", header = "Status", width = 96, sort = statusOrder, text = craftStatus },
-		{ key = "forecast", header = "Forecast", width = 104, sort = "forecast", text = function(row)
-			return row.forecast ~= 0 and signedMoney(row.forecast) or Color("muted", "-") end },
+		{ key = "forecast", header = "Forecast", width = 104, sort = "expected", text = function(row)
+			return row.expected ~= 0 and signedMoney(row.expected) or Color("muted", "-") end },
+		{ key = "procs", header = "Procs", width = 76, sort = "procGain",
+			text = function(row) return procsText(row.hasProcs and row.procGain or nil) end },
 		{ key = "earned", header = "Profit so far", width = 110, sort = "earned", text = function(row) return signedMoney(row.earned) end },
 	},
 	items = {
 		{ key = "name", header = "Item", sort = function(row) return nameOf(row):lower() end },
-		{ key = "kind", header = "Type", width = 60, sort = "kind", text = function(row) return KIND_SHORT[row.kind] or row.kind end },
-		{ key = "items", header = "Made", width = 46, sort = "items", text = function(row) return count(row.items) end },
-		{ key = "sold", header = "Sold", width = 46, sort = "sold", text = function(row) return count(row.sold) end },
-		{ key = "unitForecast", header = "Forecast each", width = 90, sort = "unitForecast",
+		{ key = "kind", header = "Type", width = 54, sort = "kind", text = function(row) return KIND_SHORT[row.kind] or row.kind end },
+		{ key = "items", header = "Made", width = 38, sort = "items", text = function(row) return count(row.items) end },
+		{ key = "sold", header = "Sold", width = 38, sort = "sold", text = function(row) return count(row.sold) end },
+		{ key = "unitForecast", header = "Forecast each", width = 84, sort = "unitForecast",
 			text = function(row) return signedOrDash(row.unitForecast) end },
-		{ key = "unitCost", header = "Cost each", width = 76, sort = "unitCost",
+		{ key = "unitCost", header = "Cost each", width = 68, sort = "unitCost",
 			text = function(row) return plainMoney(row.unitCost, "loss") end },
-		{ key = "unitSold", header = "Sold each", width = 76, sort = "unitSold",
+		{ key = "unitSold", header = "Sold each", width = 68, sort = "unitSold",
 			text = function(row) return plainMoney(row.unitSold) end },
-		{ key = "unitProfit", header = "Profit each", width = 76, sort = "unitProfit",
+		{ key = "unitProcs", header = "Procs each", width = 68, sort = "unitProcs",
+			text = function(row) return procsText(row.unitProcs) end },
+		{ key = "unitProfit", header = "Profit each", width = 68, sort = "unitProfit",
 			text = function(row) return signedOrDash(row.unitProfit) end },
-		{ key = "off", header = "Off by", width = 54, sort = function(row) return ns.Ledger.Off(row) end,
+		{ key = "off", header = "Off by", width = 50, sort = function(row) return ns.Ledger.Off(row) end,
 			text = function(row) return offText(ns.Ledger.Off(row)) end },
-		{ key = "margin", header = "Margin", width = 54, sort = "margin", text = function(row) return marginText(row.margin) end },
-		{ key = "days", header = "Days to sell", width = 76, sort = "days", text = function(row)
+		{ key = "margin", header = "Margin", width = 50, sort = "margin", text = function(row) return marginText(row.margin) end },
+		{ key = "days", header = "Days to sell", width = 72, sort = "days", text = function(row)
 			return row.days and format("%.1f", row.days) or Color("muted", "-") end },
 		{ key = "earned", header = "Profit so far", width = 96, sort = "earned", text = function(row) return signedMoney(row.earned) end },
 	},
@@ -332,7 +343,13 @@ local function craftTooltip(craft)
 	if craft.count > 1 then addPair("Crafts", craft.count) end
 	addPair("Made", craft.qty)
 	addPair("Materials cost", Money(craft.cost))
-	if craft.forecast ~= 0 then addPair("Forecast on the panel", signedMoney(craft.forecast)) end
+	if craft.hasProcs then
+		if craft.expected ~= 0 then addPair("Forecast without procs", signedMoney(craft.expected)) end
+		if craft.forecast ~= craft.expected then addPair("Forecast with average procs", signedMoney(craft.forecast)) end
+		addPair("Procs added", procsText(craft.procGain))
+	elseif craft.forecast ~= 0 then
+		addPair("Forecast with average procs", signedMoney(craft.forecast))
+	end
 	if craft.kind == "craft" and craft.itemID then
 		if craft.unit > 0 then addPair("Worth each when crafted", Money(craft.unit)) end
 		if craft.sold > 0 then
@@ -364,6 +381,7 @@ local function itemTooltip(item)
 	if item.margin then addPair("Margin on what sold", marginText(item.margin)) end
 	if item.forecast ~= 0 then
 		addPair("Forecast for what's done", signedMoney(item.forecast))
+		if item.unitProcs then addPair("Procs added", procsText(item.procs)) end
 		addPair("Off by", offText(ns.Ledger.Off(item)))
 	end
 end
@@ -611,7 +629,8 @@ local function drawTiles(total, spent)
 		"What the materials in these crafts were worth when you crafted them, whether you bought or gathered them."
 			.. (spent and format("\n\nPurchased in this time: %s. That isn't added on top, or what you buy and then use would count twice.",
 				Money(spent)) or ""),
-		off and format("What's done made %s, against %s forecast on the panel.", signedMoney(total.actual), signedMoney(total.forecast))
+		off and format("Leaving procs out, what's done made %s, against a forecast of %s. Procs added %s.", signedMoney(total.actual),
+			signedMoney(total.forecast), procsText(total.procs))
 			or "Nothing to compare yet: this fills in as things sell.",
 		format("%s items, at what they were worth when crafted.", BreakUpLargeNumbers(total.unsold)),
 	}
@@ -626,7 +645,7 @@ local function showNote(self)
 	GameTooltip:SetText("How this is worked out")
 	GameTooltip:AddLine(MATCH_NOTE, 1, 1, 1, true)
 	GameTooltip:AddLine(" ")
-	GameTooltip:AddLine("Forecasts and prices use your price options, as they were when each craft or purchase was recorded, so they don't change later.", 1, 1, 1, true)
+	GameTooltip:AddLine("Forecasts and prices use your price options, as they were when each craft or purchase was recorded, so they don't change later. Forecasts leave procs out, because they're luck: what procs really added shows on its own. Crafts from before that was saved show a forecast with average procs.", 1, 1, 1, true)
 	if other and other.qty > 0 then
 		GameTooltip:AddLine(" ")
 		GameTooltip:AddLine(format("%s sold with no craft or purchase on record, for %s: from before the Ledger.",
@@ -717,12 +736,12 @@ local function csvField(text)
 end
 
 local function exportText()
-	local lines = { "Date,Character,Profession,Item,Rank,Type,Made,Sold,Unsold,Materials cost (gold),Forecast (gold),Sold for (gold),Profit so far (gold)" }
+	local lines = { "Date,Character,Profession,Item,Rank,Type,Made,Sold,Unsold,Materials cost (gold),Forecast (gold),Procs (gold),Sold for (gold),Profit so far (gold)" }
 	local function gold(amount) return format("%.2f", amount / 10000) end
 	for _, craft in ipairs(inView()) do
 		lines[#lines + 1] = table.concat({ date("%Y-%m-%d %H:%M", craft.t), csvField(craft.character or "?"),
 			csvField(craft.profession or "?"), csvField(nameOf(craft)), craft.rank, KIND_SHORT[craft.kind] or craft.kind,
-			craft.qty, craft.sold, craft.left, gold(craft.cost), gold(craft.forecast), gold(craft.money), gold(craft.earned) }, ",")
+			craft.qty, craft.sold, craft.left, gold(craft.cost), gold(craft.expected), craft.hasProcs and gold(craft.procGain) or "", gold(craft.money), gold(craft.earned) }, ",")
 	end
 	return table.concat(lines, "\n")
 end

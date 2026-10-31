@@ -32,7 +32,9 @@ Ledger.KIND_ORDER = { "craft", "patron", "personal", "guild", "public" }
 --   items = itemID -> name, of what you've crafted,
 --   days = day number -> { crafts, sales, posts, used }, each a string of lines:
 --     crafts: time, character, profession, recipeID, itemID, rank, qty, kind,
---             value of one item then, materials cost, forecast profit, profit at craft
+--             value of one item then, materials cost, forecast profit with average
+--             procs, profit at craft, forecast profit without procs, what procs really
+--             added (older crafts stop at profit at craft)
 --     sales:  time, character, item name, qty, gold after the cut, price of one
 --     posts:  time, character, itemID, rank, qty, price of one, item name
 --     used:   time, itemID, qty (your own crafts used up as materials)
@@ -110,6 +112,7 @@ local function parseCraft(names, fields)
 		recipeID = tonumber(fields[4]), itemID = itemID > 0 and itemID or nil, rank = tonumber(fields[6]),
 		qty = tonumber(fields[7]), kind = fields[8], unit = tonumber(fields[9]), cost = tonumber(fields[10]),
 		forecast = tonumber(fields[11]), profit = tonumber(fields[12]),
+		plain = tonumber(fields[13]), bonus = tonumber(fields[14]),
 	}
 end
 
@@ -125,7 +128,11 @@ function Ledger.Unpack(db)
 	local crafts, sales, posts, used, bought = {}, {}, {}, {}, {}
 	local names = db.names
 	for _, day in pairs(db.days) do
-		eachLine(day.crafts, function(fields) crafts[#crafts + 1] = parseCraft(names, fields) end)
+		eachLine(day.crafts, function(fields)
+			local craft = parseCraft(names, fields)
+			-- Older records can hold a craft with nothing to say what it was.
+			if craft.itemID or craft.recipeID > 0 then crafts[#crafts + 1] = craft end
+		end)
 		eachLine(day.sales, function(fields)
 			sales[#sales + 1] = { t = tonumber(fields[1]), character = names[tonumber(fields[2])], name = fields[3],
 				qty = tonumber(fields[4]), money = tonumber(fields[5]), unit = tonumber(fields[6]) }
@@ -256,31 +263,37 @@ function Ledger.Analyze(db)
 		end
 	end
 
-	-- What's known so far of each craft.
+	-- What's known so far of each craft. Procs are luck, so the forecast leaves them
+	-- out and so does what it's compared with. Older crafts only have the forecast
+	-- with procs, and hasProcs false.
 	for _, craft in ipairs(crafts) do
+		craft.hasProcs = craft.plain ~= nil
+		local forecast, bonus = craft.plain or craft.forecast, craft.bonus or 0
 		if craft.kind == "craft" and craft.itemID then
 			local share = craft.cost / craft.qty
 			local done = craft.sold + craft.used
 			craft.earned = craft.money + (craft.unit - share) * craft.used - share * craft.sold
 			craft.pending = craft.left * craft.unit
 			local priced = craft.unit > 0 and (craft.unit - share) * craft.qty or 0
-			craft.expected = craft.forecast ~= 0 and craft.forecast or priced
+			craft.expected = forecast ~= 0 and forecast or priced
+			craft.procGain = bonus * done / craft.qty
 			-- Compared with what the panel said, so only when it was open.
-			if craft.forecast ~= 0 and done > 0 then
-				craft.compareActual = craft.earned
-				craft.compareForecast = craft.forecast * done / craft.qty
+			if forecast ~= 0 and done > 0 then
+				craft.compareActual = craft.earned - craft.procGain
+				craft.compareForecast = forecast * done / craft.qty
 			end
 		else
 			craft.earned = craft.profit
 			craft.pending = 0
-			craft.expected = craft.forecast
-			if craft.forecast ~= 0 then
-				craft.compareActual, craft.compareForecast = craft.profit, craft.forecast
+			craft.expected = forecast
+			craft.procGain = bonus
+			if forecast ~= 0 then
+				craft.compareActual, craft.compareForecast = craft.profit - bonus, forecast
 			end
 			if craft.kind ~= "craft" then
 				craft.sold = craft.qty
 				craft.money = craft.profit + craft.cost
-				if craft.forecast ~= 0 then craft.unit = (craft.forecast + math.max(craft.cost, 0)) / craft.qty end
+				if forecast ~= 0 then craft.unit = (forecast + math.max(craft.cost + bonus, 0)) / craft.qty end
 			end
 		end
 		-- What resourcefulness returns can beat what you put in: a gain, already in
@@ -327,11 +340,12 @@ function Ledger.BoughtItems(bought)
 end
 
 -- Totals for a list of crafts: { crafts, items, cost, earned, pending, unsold,
--- sold, money, expected, actual, forecast }. Expected is the profit forecast for
--- all of them; actual and forecast only count what's done, so they can be compared.
+-- sold, money, expected, procs, actual, forecast }. Expected is the profit forecast
+-- for all of them, procs what they really added; actual and forecast only count
+-- what's done, without procs, so they can be compared.
 function Ledger.Summarize(crafts)
 	local total = { crafts = 0, items = 0, cost = 0, earned = 0, pending = 0, unsold = 0, sold = 0, money = 0,
-		expected = 0, actual = 0, forecast = 0 }
+		expected = 0, procs = 0, actual = 0, forecast = 0 }
 	for _, craft in ipairs(crafts) do
 		total.crafts = total.crafts + 1
 		total.items = total.items + craft.qty
@@ -342,6 +356,7 @@ function Ledger.Summarize(crafts)
 		total.sold = total.sold + craft.sold
 		total.money = total.money + craft.money
 		total.expected = total.expected + craft.expected
+		total.procs = total.procs + craft.procGain
 		if craft.compareForecast then
 			total.actual = total.actual + craft.compareActual
 			total.forecast = total.forecast + craft.compareForecast
@@ -375,8 +390,9 @@ function Ledger.Merge(crafts)
 		else
 			row.count = row.count + 1
 			row.unit = row.unit + craft.unit * craft.qty
-			for _, field in ipairs({ "qty", "cost", "forecast", "profit", "left", "sold", "money", "used", "soldDays", "earned", "pending" }) do
-				row[field] = row[field] + craft[field]
+			for _, field in ipairs({ "qty", "cost", "forecast", "profit", "left", "sold", "money", "used", "soldDays", "earned", "pending",
+				"expected", "procGain" }) do
+				row[field] = (row[field] or 0) + (craft[field] or 0)
 			end
 		end
 	end
@@ -386,7 +402,8 @@ end
 
 -- One row per item, rank and kind of craft in `crafts`, since a patron order and a
 -- personal one for the same item pay nothing alike: { itemID, rank, kind, recipeID,
--- counts as Summarize, plus, per item, unitForecast and unitProfit (of what's done),
+-- counts as Summarize, plus, per item, unitForecast, unitProcs and unitProfit (of
+-- what's done; unitProcs only from crafts that saved it),
 -- unitPrice (the sale price or an order's pay expected), unitCost and unitSold, days
 -- (to sell, for regular crafts), and margin (the share of what sold that was profit,
 -- 0.26 is 26%) }.
@@ -408,10 +425,15 @@ function Ledger.Items(crafts)
 		local total = Ledger.Summarize(group.made)
 		for key, value in pairs(total) do group[key] = value end
 		local soldForecast, soldDays, madeForecast, priced, soldCost, listed, done = 0, 0, 0, 0, 0, 0, 0
+		local procsDone, procsGain = 0, 0
 		for _, craft in ipairs(group.made) do
 			soldForecast = soldForecast + craft.unit * craft.sold
 			soldCost = soldCost + craft.cost / craft.qty * craft.sold
 			done = done + craft.sold + craft.used
+			if craft.hasProcs then
+				procsDone = procsDone + craft.sold + craft.used
+				procsGain = procsGain + craft.procGain
+			end
 			soldDays = soldDays + craft.soldDays
 			if craft.kind == "craft" then listed = listed + craft.sold end
 			if craft.unit > 0 then
@@ -423,6 +445,7 @@ function Ledger.Items(crafts)
 		if priced > 0 then group.unitPrice = madeForecast / priced end
 		if total.expected ~= 0 then group.unitForecast = total.expected / total.items end
 		if done > 0 then group.unitProfit = total.earned / done end
+		if procsDone > 0 then group.unitProcs = procsGain / procsDone end
 		group.unitCost = total.cost / total.items
 		if listed > 0 then group.days = soldDays / listed end
 		if total.sold > 0 then
@@ -484,6 +507,8 @@ function Ledger.RecordCraft(data, model, result)
 	-- A recraft, or a recipe that makes nothing to sell.
 	if model and model.kind == "craft" and not model.output then link = nil end
 	if not link then itemID = nil end
+	-- With neither, there's no telling what this was.
+	if not (link or model) then return end
 	local kind = kindOf(model)
 	local qty = math.max(data.quantity or 1, 1)
 	local unit = result and result.unit
@@ -499,7 +524,7 @@ function Ledger.RecordCraft(data, model, result)
 
 	append("crafts", t, indexOf(me()), indexOf(profession and profession.professionName), recipeID, itemID or 0,
 		rankOf(link, data.craftingQuality), qty, kind, whole(unit), whole(cost),
-		whole(model and ns.Model.Shown(model)), whole(actual))
+		whole(model and ns.Model.Shown(model)), whole(actual), whole(model and model.total), whole(result and result.bonus))
 
 	-- Your own crafts used as materials aren't waiting to sell.
 	local returned = {}
