@@ -130,7 +130,7 @@ function Ledger.Unpack(db)
 	for _, day in pairs(db.days) do
 		eachLine(day.crafts, function(fields)
 			local craft = parseCraft(names, fields)
-			-- Older records can hold a craft with nothing to say what it was.
+			-- Older records hold imbues and poisons, which aren't crafts (see RecordCraft).
 			if craft.itemID or craft.recipeID > 0 then crafts[#crafts + 1] = craft end
 		end)
 		eachLine(day.sales, function(fields)
@@ -507,8 +507,8 @@ function Ledger.RecordCraft(data, model, result)
 	-- A recraft, or a recipe that makes nothing to sell.
 	if model and model.kind == "craft" and not model.output then link = nil end
 	if not link then itemID = nil end
-	-- With neither, there's no telling what this was.
-	if not (link or model) then return end
+	-- A shaman's imbue or a rogue's poison reports as an enchant, with no recipe open.
+	if not (itemID or model) then return end
 	local kind = kindOf(model)
 	local qty = math.max(data.quantity or 1, 1)
 	local unit = result and result.unit
