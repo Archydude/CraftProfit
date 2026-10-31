@@ -264,7 +264,7 @@ local COLUMNS = {
 	bought = {
 		{ key = "name", header = "Item", sort = function(row) return nameOf(row):lower() end },
 		{ key = "qty", header = "Purchased", width = 70, sort = "qty", text = function(row) return count(row.qty) end },
-		{ key = "spent", header = "Spent", width = 110, sort = "spent", text = function(row) return Money(row.spent) end },
+		{ key = "spent", header = "Spent", width = 110, sort = "spent", text = function(row) return Color("loss", Money(row.spent)) end },
 		{ key = "unitPaid", header = "Paid each", width = 96, sort = "unitPaid", text = function(row) return Money(row.unitPaid) end },
 		{ key = "unitMarket", header = "Price each", width = 96, sort = "unitMarket",
 			text = function(row) return plainMoney(row.unitMarket) end },
@@ -650,6 +650,9 @@ function LedgerWindow.Render()
 	scrollBox:SetPoint("TOPLEFT", frame.Inset, "TOPLEFT", INSET_PAD,
 		-(INSET_PAD + HEADER_HEIGHT + (overview and CHART_HEIGHT or 0)))
 	PanelTemplates_SetTab(frame, tIndexOf(TAB_KEYS, tab))
+	-- The selected tab's label uses a smaller font: a width measured then would cut
+	-- it short once another tab is picked, so all of them measure again each time.
+	for _, button in ipairs(frame.Tabs) do PanelTemplates_TabResize(button, TAB_PADDING) end
 	local rows
 	if overview then
 		drawChart(list)
@@ -991,8 +994,6 @@ function LedgerWindow.Show()
 	if not frame then create() end
 	crafts, other, bought = ns.Ledger.Load()
 	frame:Show()
-	-- Labels measure true only once the window is on screen.
-	for _, button in ipairs(frame.Tabs) do PanelTemplates_TabResize(button, TAB_PADDING) end
 	LedgerWindow.Render()
 end
 
