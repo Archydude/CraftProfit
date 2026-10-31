@@ -599,6 +599,7 @@ function Model.Order(ctx)
 	local model = {
 		kind = "order",
 		key = order.orderID,
+		orderType = order.orderType,
 		recipeID = order.spellID,
 		title = "Crafting Order",
 		commission = order.tipAmount,

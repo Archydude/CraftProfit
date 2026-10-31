@@ -56,6 +56,7 @@ events:SetScript("OnEvent", function(self, event, ...)
 		ns.db = loadSettings()
 		ns.Ranks.Init()
 		ns.Sales.Init()
+		ns.Ledger.Init()
 		ns.Procs.Init()
 		ns.Minimap.Init()
 		ns.Options.Create()
@@ -112,6 +113,16 @@ SlashCmdList.CRAFTPROFIT = function(msg)
 	if command == "minimap" then
 		ns.Options.Set("minimap", not ns.db.minimap)
 		ns.Shopping.Say(ns.db.minimap and "Minimap button shown." or "Minimap button hidden. /craftprofit minimap shows it again.")
+		return
+	end
+	if command == "ledger" then
+		ns.LedgerWindow.Toggle()
+		return
+	end
+	if command == "testledger" then
+		-- Testing: made-up records in the Ledger window. Nothing is saved.
+		ns.Shopping.Say(ns.LedgerWindow.ToggleDemo() and "Testing: the Ledger shows made-up records. /craftprofit testledger again goes back to yours."
+			or "Testing off: the Ledger shows your records.")
 		return
 	end
 	if command == "best" then

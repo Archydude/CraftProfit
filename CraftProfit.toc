@@ -24,6 +24,7 @@ EnchantScrolls.lua
 Blizzard.lua
 Prices.lua
 Sales.lua
+Ledger.lua
 Procs.lua
 Reminder.lua
 Format.lua
@@ -40,6 +41,7 @@ Ranks.lua
 Scans.lua
 BestCrafts.lua
 BestCraftsList.lua
+LedgerWindow.lua
 Options.lua
 Minimap.lua
 Core.lua

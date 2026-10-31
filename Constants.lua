@@ -76,6 +76,7 @@ ns.DEFAULTS = {
 	bestAllCharacters = false, -- the Best crafts list shows your other characters' and professions' recipes
 	bestProfitableOnly = false, -- the Best crafts list hides recipes that don't make a profit
 	bestShowIgnored = false, -- the Best crafts list shows the recipes you ignored, in grey
+	ledgerRange = 30,     -- the Ledger window's days, 0 for all of them
 }
 
 -- Patron order rewards that give profession knowledge: itemID -> points each.

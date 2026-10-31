@@ -45,11 +45,12 @@ local function inboxSales()
 	local list = {}
 	local now = time()
 	for index = 1, GetInboxNumItems() do
-		local invoiceType, itemName, _, bid, _, _, _, _, _, _, count = GetInboxInvoiceInfo(index)
+		local invoiceType, itemName, _, bid, _, _, consignment, _, _, _, count = GetInboxInvoiceInfo(index)
 		if invoiceType == "seller" and itemName then
 			local daysLeft = select(7, GetInboxHeaderInfo(index))
 			if daysLeft then
-				list[#list + 1] = { name = itemName, qty = count or 1, money = bid or 0, t = now + (daysLeft - MAIL_DAYS) * DAY }
+				list[#list + 1] = { name = itemName, qty = count or 1, money = bid or 0, net = (bid or 0) - (consignment or 0),
+					t = now + (daysLeft - MAIL_DAYS) * DAY }
 			end
 		end
 	end
@@ -78,6 +79,7 @@ local function record()
 				saved.list[#saved.list + 1] = sale
 				matched[#saved.list] = true
 				totals = nil
+				ns.Ledger.RecordSale(sale)
 			end
 		end
 	end

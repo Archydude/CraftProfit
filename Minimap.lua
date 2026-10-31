@@ -89,6 +89,7 @@ local function openMenu()
 			root:CreateButton(format("|T%s:16|t %s: Best crafts", profession.icon, profession.name),
 				function() openBestCrafts(profession.skillLine) end)
 		end
+		root:CreateButton("Ledger", ns.LedgerWindow.Show)
 		local strategies = root:CreateButton("Crafting strategy")
 		for _, strategy in ipairs(ns.STRATEGIES) do
 			local key = strategy[1]
@@ -118,7 +119,7 @@ local function fillTooltip(tooltip)
 	tooltip:AddLine(" ")
 	local profession = lastProfession()
 	tooltip:AddLine(profession and format("Click: %s's Best crafts", profession.name) or "Click: options", 0.6, 0.6, 0.6)
-	tooltip:AddLine("Right-click: professions, crafting strategy, options", 0.6, 0.6, 0.6)
+	tooltip:AddLine("Right-click: professions, Ledger, crafting strategy, options", 0.6, 0.6, 0.6)
 end
 
 ---------------------------------------------------------------------------

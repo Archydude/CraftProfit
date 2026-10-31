@@ -190,6 +190,28 @@ Hover an item you can craft, in your bags, at the auction house or in a chat lin
 - Drag it around the minimap. It's also in the minimap's addon menu, and works with minimap button collectors.
 - Hide it with **Show minimap button** in the options, or type `/craftprofit minimap` (type it again to bring it back).
 
+## Ledger
+
+Your crafting history in its own window: what you made, what sold, and how close the forecast was. Open it with the book button next to **Best crafts** on the panel, from the minimap button's right-click menu, or with `/craftprofit ledger`. It records from the moment you have this version, for all your characters.
+
+- **Overview:** totals by type (regular crafts, patron, personal, guild and public orders), by profession and by character, the items furthest below their forecast, and a chart of profit by the day it was crafted.
+- **Crafts:** every craft with when, who, what type, how many, its status, the forecast and the profit so far. Hover a row for the details.
+- **Items:** one row per item and rank: how many you made, sold and still have, what each was forecast at against what each sold for, how long sales took, and the profit so far.
+- **Bought:** one row per item and rank: how many you bought, what you spent, what you paid each against the market price at the time, and what you resold and made on it.
+- **Filters:** time range, character and profession at the top, and a search box on Crafts, Items and Bought. Purchases have no profession, so **Spent** hides while one is picked. **Export** gives you the crafts in view to paste into a spreadsheet.
+
+How the numbers work:
+
+- **Orders** count as soon as you finish them. **Regular crafts** count as they sell, after the auction house cut, minus their share of the materials.
+- **Sales** come from your "Auction successful" mail, so open your mailbox for them to count. A sale counts toward your oldest unsold craft of that item and rank, so one craft's result is an estimate; totals are what really sold.
+- **Ranks:** the mail only names the item, so Craft Profit also notes what you post, and uses the price to find the rank. If it can't tell, the sale goes to your oldest craft of any rank.
+- **Your own crafts used as materials** count as used, at what they were worth when crafted, not as unsold.
+- **Materials cost** is what they were worth when you crafted, not what you paid for them, so profit says whether a craft is worth doing. **Spent** is the gold that really left your bags.
+- **Purchases** cover the auction house, through any addon, and materials from vendors. A sale no craft explains counts toward what you bought of that item.
+- **Not counted:** items you trade, vendor or equip stay under **Not sold yet**, and lost deposits on expired auctions aren't counted.
+- A craft with the panel hidden has no forecast and no materials cost.
+- History is kept for 90 days. After that, each month is kept as totals, shown under **All time**.
+
 ## Options
 Click the gear on the panel (or Craft Profit options in the gear menu under the Patron tab's list), type `/craftprofit`, or go to **Esc → Options → AddOns → Craft Profit**. The main page has what to craft and where prices come from; click the **+** next to Craft Profit for the other pages.
 

@@ -26,6 +26,8 @@ local TOGGLE_HEIGHT = 20   -- the Best crafts button on the panel
 local TOGGLE_RIGHT = 28    -- panel's right edge to the button (room for its gear)
 local TOGGLE_TOP = 5       -- panel's top edge to the button
 local TOGGLE_GAP = 6       -- the button to the panel's title
+local LEDGER_GAP = 4       -- the Ledger button to the Best crafts button
+local LEDGER_ICON = "Interface\\Icons\\INV_Misc_Book_09"
 local OPEN_TRIES, OPEN_RETRY = 20, 0.1 -- from an order: waiting for the recipes to show
 local FILTER_WIDTH = 90
 local STRATEGY_WIDTH = 130 -- the crafting strategy dropdown at the bottom
@@ -111,7 +113,7 @@ local SORT_ARROW_ATLAS = "auctionhouse-ui-sortarrow"
 local SORT_ARROW_FILE = "Interface\\Buttons\\UI-SortArrow"
 local SORT_ARROW_SIZE = 10
 
-local list, toggle, scrollBox, status, title, strategyDropdown, charactersButton
+local list, toggle, ledgerButton, scrollBox, status, title, strategyDropdown, charactersButton
 local headers = {}
 local refreshQueued = false
 
@@ -942,12 +944,13 @@ function BestCraftsList.UpdateToggle()
 	if not toggle then return end
 	local page = ns.Blizzard.ActivePage()
 	toggle:SetShown((page == "craft" and canShow()) or (page == "order" and ns.Blizzard.IsOwnProfession()))
+	ledgerButton:SetShown(toggle:IsShown())
 	if list:IsShown() then toggle:LockHighlight() else toggle:UnlockHighlight() end
 end
 
 -- The room the panel's first row leaves for the button.
 function BestCraftsList.HeaderSpace()
-	return toggle and toggle:IsShown() and (toggle:GetWidth() + TOGGLE_GAP) or 0
+	return toggle and toggle:IsShown() and (toggle:GetWidth() + TOGGLE_GAP + ledgerButton:GetWidth() + LEDGER_GAP) or 0
 end
 
 function BestCraftsList.Show()
@@ -1014,6 +1017,24 @@ local function createToggle()
 		GameTooltip:Show()
 	end)
 	toggle:SetScript("OnLeave", GameTooltip_Hide)
+
+	-- The Ledger, beside it.
+	ledgerButton = CreateFrame("Button", nil, panel)
+	ledgerButton:SetSize(TOGGLE_HEIGHT, TOGGLE_HEIGHT)
+	ledgerButton:SetPoint("RIGHT", toggle, "LEFT", -LEDGER_GAP, 0)
+	ledgerButton:SetFrameLevel(panel:GetFrameLevel() + 5)
+	ledgerButton:SetNormalTexture(LEDGER_ICON)
+	ledgerButton:SetHighlightTexture("Interface\\Buttons\\UI-Common-MouseHilight", "ADD")
+	ledgerButton:Hide()
+	ledgerButton:SetScript("OnClick", ns.LedgerWindow.Toggle)
+	ledgerButton:SetScript("OnEnter", function(self)
+		GameTooltip:SetOwner(self, "ANCHOR_TOP")
+		GameTooltip:SetText("Ledger")
+		GameTooltip:AddLine("What you crafted, what sold, and how it compared with the forecast.", 1, 1, 1, true)
+		GameTooltip:AddLine(Color("simulated", "Click: open the Ledger"))
+		GameTooltip:Show()
+	end)
+	ledgerButton:SetScript("OnLeave", GameTooltip_Hide)
 end
 
 -- Creates the button and the list. Safe to call more than once; needs the panel.

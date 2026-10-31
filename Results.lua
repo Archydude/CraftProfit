@@ -254,6 +254,7 @@ local function evaluate(data, model)
 	end
 
 	proc.bonus = (proc.multicraftValue or 0) + proc.savedValue
+	proc.unit = unit
 	if unit and (data.quantity or 0) > 0 then
 		-- quantity includes the multicraft extras.
 		proc.actual = data.quantity * unit - model.realCost + proc.savedValue
@@ -300,9 +301,13 @@ local function onCraftResult(data)
 	-- order, so the list's numbers for it are used, and procs show on the list.
 	local listModel = ns.Craft.TakeCraftModel()
 	local model = listModel or (shown and ns.Panel.current)
-	if not model then return end
+	if not model then
+		ns.Ledger.RecordCraft(data)
+		return
+	end
 
 	local result = evaluate(data, model)
+	ns.Ledger.RecordCraft(data, model, result)
 
 	-- Every craft counts, those with nothing to sell as a loss of what their materials cost.
 	if result.actual then
