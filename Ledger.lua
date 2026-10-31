@@ -16,7 +16,8 @@ local PRICE_SLACK = 1      -- copper a sale's price may differ from what was pos
 local CRAFT_SLACK = 3600   -- seconds a sale may seem to come before its craft (a mail's time is rough)
 local MONEY_FLOOR = 1      -- rounding of the amounts saved, in copper
 
--- Kinds of craft. Only "craft" ends in a sale; an order is paid when it's done.
+-- Kinds of craft. "craft" sells later; an order counts as sold, for what it paid,
+-- when it's done.
 Ledger.KINDS = {
 	craft = "Regular crafts",
 	patron = "Patron orders",
@@ -262,11 +263,12 @@ function Ledger.Analyze(db)
 			local done = craft.sold + craft.used
 			craft.earned = craft.money + (craft.unit - share) * craft.used - share * craft.sold
 			craft.pending = craft.left * craft.unit
-			craft.expected = craft.unit > 0 and (craft.unit - share) * craft.qty or 0
-			-- Compared only when the item had a price at the time.
-			if craft.unit > 0 and done > 0 then
+			local priced = craft.unit > 0 and (craft.unit - share) * craft.qty or 0
+			craft.expected = craft.forecast ~= 0 and craft.forecast or priced
+			-- Compared with what the panel said, so only when it was open.
+			if craft.forecast ~= 0 and done > 0 then
 				craft.compareActual = craft.earned
-				craft.compareForecast = (craft.unit - share) * done
+				craft.compareForecast = craft.forecast * done / craft.qty
 			end
 		else
 			craft.earned = craft.profit
@@ -275,7 +277,15 @@ function Ledger.Analyze(db)
 			if craft.forecast ~= 0 then
 				craft.compareActual, craft.compareForecast = craft.profit, craft.forecast
 			end
+			if craft.kind ~= "craft" then
+				craft.sold = craft.qty
+				craft.money = craft.profit + craft.cost
+				if craft.forecast ~= 0 then craft.unit = (craft.forecast + math.max(craft.cost, 0)) / craft.qty end
+			end
 		end
+		-- What resourcefulness returns can beat what you put in: a gain, already in
+		-- the profit, not negative spending.
+		craft.cost = math.max(craft.cost, 0)
 	end
 	return crafts, other, bought
 end
@@ -374,16 +384,20 @@ function Ledger.Merge(crafts)
 	return list
 end
 
--- One row per item and rank in `crafts`: { itemID, rank, recipeID, kind counts as
--- Summarize, plus unitForecast and unitSold (per item), days (to sell) }.
+-- One row per item, rank and kind of craft in `crafts`, since a patron order and a
+-- personal one for the same item pay nothing alike: { itemID, rank, kind, recipeID,
+-- counts as Summarize, plus, per item, unitForecast and unitProfit (of what's done),
+-- unitPrice (the sale price or an order's pay expected), unitCost and unitSold, days
+-- (to sell, for regular crafts), and margin (the share of what sold that was profit,
+-- 0.26 is 26%) }.
 function Ledger.Items(crafts)
 	local groups, list = {}, {}
 	for _, craft in ipairs(crafts) do
 		if craft.itemID then
-			local key = format("%d:%d", craft.itemID, craft.rank)
+			local key = format("%d:%d:%s", craft.itemID, craft.rank, craft.kind)
 			local group = groups[key]
 			if not group then
-				group = { itemID = craft.itemID, rank = craft.rank, recipeID = craft.recipeID, made = {} }
+				group = { itemID = craft.itemID, rank = craft.rank, kind = craft.kind, recipeID = craft.recipeID, made = {} }
 				groups[key] = group
 				list[#list + 1] = group
 			end
@@ -393,21 +407,28 @@ function Ledger.Items(crafts)
 	for _, group in ipairs(list) do
 		local total = Ledger.Summarize(group.made)
 		for key, value in pairs(total) do group[key] = value end
-		local soldForecast, soldDays, madeForecast, priced = 0, 0, 0, 0
+		local soldForecast, soldDays, madeForecast, priced, soldCost, listed, done = 0, 0, 0, 0, 0, 0, 0
 		for _, craft in ipairs(group.made) do
 			soldForecast = soldForecast + craft.unit * craft.sold
+			soldCost = soldCost + craft.cost / craft.qty * craft.sold
+			done = done + craft.sold + craft.used
 			soldDays = soldDays + craft.soldDays
+			if craft.kind == "craft" then listed = listed + craft.sold end
 			if craft.unit > 0 then
 				madeForecast = madeForecast + craft.unit * craft.qty
 				priced = priced + craft.qty
 			end
 		end
 		-- What sold is what to compare with, once anything has.
-		if priced > 0 then group.unitForecast = madeForecast / priced end
+		if priced > 0 then group.unitPrice = madeForecast / priced end
+		if total.expected ~= 0 then group.unitForecast = total.expected / total.items end
+		if done > 0 then group.unitProfit = total.earned / done end
+		group.unitCost = total.cost / total.items
+		if listed > 0 then group.days = soldDays / listed end
 		if total.sold > 0 then
 			group.unitSold = total.money / total.sold
-			group.unitForecast = soldForecast / total.sold
-			group.days = soldDays / total.sold
+			group.unitPrice = soldForecast / total.sold
+			if total.money > 0 then group.margin = (total.money - soldCost) / total.money end
 		end
 		group.made = nil
 	end

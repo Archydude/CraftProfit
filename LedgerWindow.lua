@@ -8,7 +8,7 @@ ns.LedgerWindow = LedgerWindow
 local Color, Money = ns.Color, ns.Format.Money
 local format = string.format
 
-local WIDTH, HEIGHT = 1000, 660
+local WIDTH, HEIGHT = 1240, 660
 local SIDE = 12             -- window edge to its content
 local FILTERS_TOP = 30      -- window top to the filters
 local TILES_TOP = 62        -- window top to the totals
@@ -21,10 +21,11 @@ local CHART_HEIGHT = 104
 local HEADER_HEIGHT = 22
 local ROW_HEIGHT = 24
 local ICON_SIZE = 20
-local CELL_GAP = 10
+local CELL_GAP = 8
+local TAB_PADDING = 16      -- room beside a tab's label, so it's never cut short
 local TAB_KEYS = { "overview", "crafts", "items", "bought" }
 local TAB_LABELS = { "Overview", "Crafts", "Performance", "Purchased" }
-local TILE_LABELS = { "Profit so far", "Sold for", "Spent", "Forecast off by", "Not sold yet" }
+local TILE_LABELS = { "Profit so far", "Sold for", "Spent on materials", "Forecast off by", "Not sold yet" }
 local SORT_ARROW_ATLAS = "auctionhouse-ui-sortarrow"
 local SORT_ARROW_FILE = "Interface\\Buttons\\UI-SortArrow"
 local SORT_ARROW_SIZE = 10
@@ -36,7 +37,10 @@ local EXPORT_BACKDROP = {
 	insets = { left = 4, right = 4, top = 4, bottom = 4 },
 }
 local REFRESH_DELAY = 0.2   -- redraws are batched this long
-local MAX_BARS = 30         -- the chart's bars; longer ranges share a bar between days
+local MAX_BARS = 90         -- the chart's bars; longer ranges share a bar between days
+local BAR_WIDTH = 18        -- at most, so a few days don't make wide blocks
+local CHART_LABEL_ROOM = 20 -- under the bars, for the dates
+local CHART_TOP_ROOM = 8    -- over the tallest bar
 local MISSES_SHOWN = 5      -- items on the Overview's "furthest below forecast"
 local DAY = 86400
 local RANGES = { { 7, "Last 7 days" }, { 30, "Last 30 days" }, { 90, "Last 90 days" } }
@@ -47,9 +51,9 @@ local MATCH_NOTE = "A sale counts toward your oldest unsold craft of that item a
 
 local frame, scrollBox, headerBar, footer, empty, chart, searchBox, exportFrame
 local tiles, headers, bars = {}, {}, {}
-local rangeDropdown, characterDropdown, professionDropdown
+local rangeDropdown, characterDropdown, professionDropdown, kindDropdown
 local tab = "overview"
-local characterFilter, professionFilter -- nil for all
+local characterFilter, professionFilter, kindFilter -- nil for all
 local sorts = { crafts = { key = "time", ascending = false }, items = { key = "earned", ascending = false },
 	bought = { key = "spent", ascending = false } }
 local crafts, other, bought -- unpacked while the window is open
@@ -59,14 +63,23 @@ local function signedMoney(amount)
 	return Color(ns.AmountColor(amount), (amount > 0 and "+" or "") .. Money(amount))
 end
 
-local function plainMoney(amount)
+local function plainMoney(amount, color)
 	if not amount or amount == 0 then return Color("muted", "-") end
-	return Money(amount)
+	return color and Color(color, Money(amount)) or Money(amount)
+end
+
+local function signedOrDash(amount)
+	return amount and signedMoney(amount) or Color("muted", "-")
 end
 
 local function offText(off)
 	if not off then return Color("muted", "-") end
 	return Color(ns.AmountColor(off), format("%+.0f%%", off * 100))
+end
+
+local function marginText(margin)
+	if not margin then return Color("muted", "-") end
+	return Color(ns.AmountColor(margin), format("%.0f%%", margin * 100))
 end
 
 local function count(amount)
@@ -103,6 +116,7 @@ local function inView()
 	for _, craft in ipairs(crafts or {}) do
 		if craft.t >= since and (not characterFilter or craft.character == characterFilter)
 			and (not professionFilter or craft.profession == professionFilter)
+			and (not kindFilter or craft.kind == kindFilter)
 			and (search == "" or nameOf(craft):lower():find(search, 1, true)) then
 			list[#list + 1] = craft
 		end
@@ -168,7 +182,7 @@ local function overviewRows(list)
 		local off = ns.Ledger.Off(item)
 		if off and off < 0 then
 			item.off = off
-			item.label = nameOf(item) .. rankMarkup(item)
+			item.label = format("%s%s %s", nameOf(item), rankMarkup(item), Color("muted", KIND_SHORT[item.kind] or item.kind))
 			missed[#missed + 1] = item
 		end
 	end
@@ -197,7 +211,7 @@ local function craftStatus(craft)
 	return Color("missing", "Not sold yet")
 end
 
--- Paying under the market is the good direction.
+-- Paying under your price source is the good direction.
 local function vsMarketText(row)
 	if not row.vsMarket then return Color("muted", "-") end
 	return Color(row.vsMarket <= 0 and "profit" or "loss", format("%+.0f%%", row.vsMarket * 100))
@@ -229,27 +243,32 @@ local COLUMNS = {
 	},
 	items = {
 		{ key = "name", header = "Item", sort = function(row) return nameOf(row):lower() end },
+		{ key = "kind", header = "Type", width = 60, sort = "kind", text = function(row) return KIND_SHORT[row.kind] or row.kind end },
 		{ key = "items", header = "Made", width = 46, sort = "items", text = function(row) return count(row.items) end },
 		{ key = "sold", header = "Sold", width = 46, sort = "sold", text = function(row) return count(row.sold) end },
-		{ key = "unsold", header = "Unsold", width = 50, sort = "unsold", text = function(row) return count(row.unsold) end },
-		{ key = "unitForecast", header = "Forecast each", width = 100, sort = "unitForecast",
-			text = function(row) return plainMoney(row.unitForecast) end },
-		{ key = "unitSold", header = "Sold each", width = 100, sort = "unitSold",
+		{ key = "unitForecast", header = "Forecast each", width = 90, sort = "unitForecast",
+			text = function(row) return signedOrDash(row.unitForecast) end },
+		{ key = "unitCost", header = "Cost each", width = 76, sort = "unitCost",
+			text = function(row) return plainMoney(row.unitCost, "loss") end },
+		{ key = "unitSold", header = "Sold each", width = 76, sort = "unitSold",
 			text = function(row) return plainMoney(row.unitSold) end },
+		{ key = "unitProfit", header = "Profit each", width = 76, sort = "unitProfit",
+			text = function(row) return signedOrDash(row.unitProfit) end },
 		{ key = "off", header = "Off by", width = 54, sort = function(row) return ns.Ledger.Off(row) end,
 			text = function(row) return offText(ns.Ledger.Off(row)) end },
+		{ key = "margin", header = "Margin", width = 54, sort = "margin", text = function(row) return marginText(row.margin) end },
 		{ key = "days", header = "Days to sell", width = 76, sort = "days", text = function(row)
 			return row.days and format("%.1f", row.days) or Color("muted", "-") end },
-		{ key = "earned", header = "Profit so far", width = 110, sort = "earned", text = function(row) return signedMoney(row.earned) end },
+		{ key = "earned", header = "Profit so far", width = 96, sort = "earned", text = function(row) return signedMoney(row.earned) end },
 	},
 	bought = {
 		{ key = "name", header = "Item", sort = function(row) return nameOf(row):lower() end },
 		{ key = "qty", header = "Purchased", width = 70, sort = "qty", text = function(row) return count(row.qty) end },
 		{ key = "spent", header = "Spent", width = 110, sort = "spent", text = function(row) return Money(row.spent) end },
 		{ key = "unitPaid", header = "Paid each", width = 96, sort = "unitPaid", text = function(row) return Money(row.unitPaid) end },
-		{ key = "unitMarket", header = "Market each", width = 96, sort = "unitMarket",
+		{ key = "unitMarket", header = "Price each", width = 96, sort = "unitMarket",
 			text = function(row) return plainMoney(row.unitMarket) end },
-		{ key = "vsMarket", header = "Vs market", width = 66, sort = "vsMarket", text = vsMarketText },
+		{ key = "vsMarket", header = "Vs price", width = 66, sort = "vsMarket", text = vsMarketText },
 		{ key = "resold", header = "Resold", width = 50, sort = "resold", text = function(row) return count(row.resold) end },
 		{ key = "resaleProfit", header = "Resale profit", width = 104, sort = "resaleProfit", text = function(row)
 			return row.resaleProfit and signedMoney(row.resaleProfit) or Color("muted", "-") end },
@@ -314,6 +333,8 @@ local function craftTooltip(craft)
 		end
 		if craft.used > 0 then addPair("Used in your crafts", craft.used) end
 		if craft.left > 0 then addPair("Not sold yet", craft.left) end
+	elseif craft.kind ~= "craft" then
+		addPair("Paid", Money(craft.money))
 	end
 	addPair("Profit so far", signedMoney(craft.earned))
 	GameTooltip:AddLine(" ")
@@ -322,12 +343,17 @@ end
 
 local function itemTooltip(item)
 	GameTooltip:SetText(nameOf(item) .. rankMarkup(item))
+	addPair("Type", ns.Ledger.KINDS[item.kind] or item.kind)
 	addPair("Made", item.items)
 	addPair("Sold", item.sold)
 	addPair("Not sold yet", item.unsold)
 	addPair("Materials cost", Money(item.cost))
 	if item.pending > 0 then addPair("Unsold value when crafted", Money(item.pending)) end
+	if item.unitPrice then
+		addPair(item.kind == "craft" and "Expected sale price each" or "Expected pay each", Money(item.unitPrice))
+	end
 	addPair("Profit so far", signedMoney(item.earned))
+	if item.margin then addPair("Margin on what sold", marginText(item.margin)) end
 	if item.forecast ~= 0 then
 		addPair("Forecast for what's done", signedMoney(item.forecast))
 		addPair("Off by", offText(ns.Ledger.Off(item)))
@@ -340,7 +366,7 @@ local function boughtTooltip(row)
 	addPair("From", row.source == "vendor" and "Vendors" or "The auction house")
 	addPair("Spent", Money(row.spent))
 	addPair("Paid each", Money(row.unitPaid))
-	if row.unitMarket then addPair("Market each when purchased", Money(row.unitMarket)) end
+	if row.unitMarket then addPair("Your price source then", Money(row.unitMarket)) end
 	if row.resold > 0 then
 		addPair("Resold", format("%d for %s", row.resold, Money(row.resoldMoney)))
 		addPair("Resale profit", signedMoney(row.resaleProfit))
@@ -464,23 +490,31 @@ local function drawChart(list)
 		local index = total - math.min(back, total - 1)
 		amounts[index] = (amounts[index] or 0) + craft.earned
 	end
-	local biggest = 1
-	for _, amount in pairs(amounts) do biggest = math.max(biggest, math.abs(amount)) end
+	-- The zero line sits as low as the losses allow, so the bars get all the height.
+	local highest, lowest = 0, 0
+	for _, amount in pairs(amounts) do
+		highest, lowest = math.max(highest, amount), math.min(lowest, amount)
+	end
+	local spread = math.max(highest - lowest, 1)
 
-	local width, height = chart:GetWidth(), chart:GetHeight() - 20
+	local width, height = chart:GetWidth(), chart:GetHeight() - CHART_LABEL_ROOM - CHART_TOP_ROOM
 	local slot = width / total
-	local middle = height / 2
+	local zero = -lowest / spread * height
+	chart.zero:ClearAllPoints()
+	chart.zero:SetPoint("LEFT", chart, "BOTTOMLEFT", 0, CHART_LABEL_ROOM + zero)
+	chart.zero:SetPoint("RIGHT", chart, "BOTTOMRIGHT", 0, CHART_LABEL_ROOM + zero)
+	chart.top:SetText(highest > 0 and format("Best %s: %s", perBar == 1 and "day" or "stretch", signedMoney(highest)) or "")
 	for index = 1, total do
 		local amount = amounts[index]
 		if amount then
 			local bar = barOf(index)
-			local size = math.max(math.abs(amount) / biggest * middle, 1)
+			local size = math.max(math.abs(amount) / spread * height, 1)
 			bar:ClearAllPoints()
 			bar:SetSize(math.max(slot - 2, 1), height)
-			bar:SetPoint("BOTTOMLEFT", chart, "BOTTOMLEFT", (index - 1) * slot + 1, 20)
+			bar:SetPoint("BOTTOMLEFT", chart, "BOTTOMLEFT", (index - 1) * slot + 1, CHART_LABEL_ROOM)
 			bar.fill:ClearAllPoints()
-			bar.fill:SetSize(math.max(slot - 2, 1), size)
-			bar.fill:SetPoint(amount >= 0 and "BOTTOM" or "TOP", bar, "BOTTOM", 0, middle)
+			bar.fill:SetSize(math.min(math.max(slot - 2, 1), BAR_WIDTH), size)
+			bar.fill:SetPoint(amount >= 0 and "BOTTOM" or "TOP", bar, "BOTTOM", 0, zero)
 			if amount >= 0 then bar.fill:SetColorTexture(0.3, 0.72, 0.36, 0.95) else bar.fill:SetColorTexture(0.82, 0.3, 0.28, 0.95) end
 			local last = now - (total - index) * perBar * DAY
 			bar.label = perBar == 1 and date("%b %d", last)
@@ -559,16 +593,17 @@ local function drawTiles(total, spent)
 	local values = {
 		signedMoney(total.earned),
 		Money(total.money),
-		spent and Money(spent) or Color("muted", "-"),
+		Color("loss", Money(total.cost)),
 		offText(off),
 		Money(total.pending),
 	}
 	local notes = {
 		"Orders when they're done, regular crafts as they sell, each minus its materials.",
-		format("%s items sold, after the auction house cut.", BreakUpLargeNumbers(total.sold)),
-		spent and "The gold you really paid on the auction house and to vendors for materials."
-			or "Purchases have no profession, so there's no total with one picked.",
-		off and format("What's done made %s, against a forecast of %s.", Money(total.actual), Money(total.forecast))
+		format("%s items: what sold on the auction house, after its cut, and what orders paid.", BreakUpLargeNumbers(total.sold)),
+		"What the materials in these crafts were worth when you crafted them, whether you bought or gathered them."
+			.. (spent and format("\n\nPurchased in this time: %s. That isn't added on top, or what you buy and then use would count twice.",
+				Money(spent)) or ""),
+		off and format("What's done made %s, against %s forecast on the panel.", signedMoney(total.actual), signedMoney(total.forecast))
 			or "Nothing to compare yet: this fills in as things sell.",
 		format("%s items, at what they were worth when crafted.", BreakUpLargeNumbers(total.unsold)),
 	}
@@ -582,6 +617,8 @@ local function showNote(self)
 	GameTooltip:SetOwner(self, "ANCHOR_TOP")
 	GameTooltip:SetText("How this is worked out")
 	GameTooltip:AddLine(MATCH_NOTE, 1, 1, 1, true)
+	GameTooltip:AddLine(" ")
+	GameTooltip:AddLine("Forecasts and prices use your price options, as they were when each craft or purchase was recorded, so they don't change later.", 1, 1, 1, true)
 	if other and other.qty > 0 then
 		GameTooltip:AddLine(" ")
 		GameTooltip:AddLine(format("%s sold with no craft or purchase on record, for %s: from before the Ledger.",
@@ -596,13 +633,14 @@ function LedgerWindow.Render()
 	local list = inView()
 	local total = ns.Ledger.Summarize(list)
 	local purchases = boughtInView()
-	-- Purchases have no profession, so with one picked they aren't part of the sum.
-	local spent = not professionFilter and 0 or nil
+	-- Purchases have no profession or type, so with one picked there's no sum.
+	local spent = not (professionFilter or kindFilter) and 0 or nil
 	if spent then
 		for _, entry in ipairs(purchases) do spent = spent + entry.spent end
 	end
 	drawTiles(total, spent)
-	footer:SetText(Color("muted", format("%s crafts, %s items", BreakUpLargeNumbers(total.crafts), BreakUpLargeNumbers(total.items))))
+	footer:SetText(Color("muted", format("%s crafts, %s items · Prices: %s", BreakUpLargeNumbers(total.crafts),
+		BreakUpLargeNumbers(total.items), ns.Prices.SourceLabel())))
 	empty:SetText(tab == "bought" and NO_BOUGHT or NO_CRAFTS)
 	empty:SetShown(#(tab == "bought" and (bought or {}) or crafts or {}) == 0)
 
@@ -632,6 +670,7 @@ function LedgerWindow.Render()
 	rangeDropdown:GenerateMenu()
 	characterDropdown:GenerateMenu()
 	professionDropdown:GenerateMenu()
+	kindDropdown:GenerateMenu()
 end
 
 -- A redraw swaps the rows' frames, so it waits for a click or a menu in progress.
@@ -762,6 +801,22 @@ local function professionMenu(_, root)
 	end
 end
 
+local function kindMenu(_, root)
+	root:CreateRadio("All types", function() return kindFilter == nil end, function()
+		kindFilter = nil
+		LedgerWindow.Render()
+	end)
+	local present = distinct("kind")
+	for _, kind in ipairs(ns.Ledger.KIND_ORDER) do
+		if tContains(present, kind) then
+			root:CreateRadio(ns.Ledger.KINDS[kind], function() return kindFilter == kind end, function()
+				kindFilter = kind
+				LedgerWindow.Render()
+			end)
+		end
+	end
+end
+
 local function createDropdown(menu, width)
 	local dropdown = CreateFrame("DropdownButton", nil, frame, "WowStyle1DropdownTemplate")
 	dropdown:SetWidth(width)
@@ -781,7 +836,7 @@ local function createTabs()
 			tab = TAB_KEYS[index]
 			LedgerWindow.Render()
 		end)
-		PanelTemplates_TabResize(button, 0)
+		PanelTemplates_TabResize(button, TAB_PADDING)
 	end
 	frame.Tabs[1]:SetPoint("TOPLEFT", frame, "BOTTOMLEFT", 12, 2)
 	PanelTemplates_SetNumTabs(frame, #TAB_LABELS)
@@ -830,11 +885,11 @@ local function createChart()
 	local back = chart:CreateTexture(nil, "BACKGROUND")
 	back:SetAllPoints()
 	back:SetColorTexture(0, 0, 0, 0.3)
-	local line = chart:CreateTexture(nil, "BORDER")
-	line:SetColorTexture(1, 1, 1, 0.15)
-	line:SetHeight(1)
-	line:SetPoint("LEFT", chart, "BOTTOMLEFT", 0, 20 + (CHART_HEIGHT - 28) / 2)
-	line:SetPoint("RIGHT", chart, "BOTTOMRIGHT", 0, 20 + (CHART_HEIGHT - 28) / 2)
+	chart.zero = chart:CreateTexture(nil, "BORDER")
+	chart.zero:SetColorTexture(1, 1, 1, 0.15)
+	chart.zero:SetHeight(1)
+	chart.top = chart:CreateFontString(nil, "OVERLAY", "GameFontDisable")
+	chart.top:SetPoint("TOPLEFT", 6, -4)
 	chart.first = chart:CreateFontString(nil, "OVERLAY", "GameFontDisable")
 	chart.first:SetPoint("BOTTOMLEFT", 6, 3)
 	chart.last = chart:CreateFontString(nil, "OVERLAY", "GameFontDisable")
@@ -876,6 +931,8 @@ local function create()
 	characterDropdown:SetPoint("RIGHT", rangeDropdown, "LEFT", -8, 0)
 	professionDropdown = createDropdown(professionMenu, 150)
 	professionDropdown:SetPoint("RIGHT", characterDropdown, "LEFT", -8, 0)
+	kindDropdown = createDropdown(kindMenu, 130)
+	kindDropdown:SetPoint("RIGHT", professionDropdown, "LEFT", -8, 0)
 
 	createTabs()
 	createTiles()
@@ -934,6 +991,8 @@ function LedgerWindow.Show()
 	if not frame then create() end
 	crafts, other, bought = ns.Ledger.Load()
 	frame:Show()
+	-- Labels measure true only once the window is on screen.
+	for _, button in ipairs(frame.Tabs) do PanelTemplates_TabResize(button, TAB_PADDING) end
 	LedgerWindow.Render()
 end
 

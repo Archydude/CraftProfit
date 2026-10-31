@@ -196,17 +196,17 @@ Your crafting history in its own window: what you made, what sold, and how close
 
 - **Overview:** totals by type (regular crafts, patron, personal, guild and public orders), by profession and by character, the items furthest below their forecast, and a chart of profit by the day it was crafted.
 - **Crafts:** every craft with when, who, what type, how many, its status, the forecast and the profit so far. Hover a row for the details.
-- **Performance:** one row per item and rank: how many you made, sold and still have, what each was forecast at against what each sold for, how long sales took, and the profit so far.
-- **Purchased:** one row per item and rank: how many you bought, what you spent, what you paid each against the market price at the time, and what you resold and made on it.
-- **Filters:** time range, character and profession at the top, and a search box on Crafts, Performance and Purchased. Purchases have no profession, so **Spent** hides while one is picked. **Export** gives you the crafts in view to paste into a spreadsheet.
+- **Performance:** one row per item, rank and type of craft: how many you made and sold, the profit each was forecast to make, what each cost in materials, sold for and really made, **Off by** (how far the profit landed from the panel's forecast), **Margin** (the share of what sold that was profit, after the cut and materials), how long sales took, and the profit so far. Orders fill in the same way, with what they paid as the sale.
+- **Purchased:** one row per item and rank: how many you bought, what you spent, what you paid each against your price source at the time, and what you resold and made on it.
+- **Filters:** time range, character, profession and type at the top, and a search box on Crafts, Performance and Purchased. Purchases have no profession or type, so those filters don't apply to them. **Export** gives you the crafts in view to paste into a spreadsheet.
 
 How the numbers work:
 
-- **Orders** count as soon as you finish them. **Regular crafts** count as they sell, after the auction house cut, minus their share of the materials.
+- **Orders** count as sold as soon as you finish them, for what they paid. **Regular crafts** count as they sell, after the auction house cut, minus their share of the materials.
 - **Sales** come from your "Auction successful" mail, so open your mailbox for them to count. A sale counts toward your oldest unsold craft of that item and rank, so one craft's result is an estimate; totals are what really sold.
 - **Ranks:** the mail only names the item, so Craft Profit also notes what you post, and uses the price to find the rank. If it can't tell, the sale goes to your oldest craft of any rank.
 - **Your own crafts used as materials** count as used, at what they were worth when crafted, not as unsold.
-- **Materials cost** is what they were worth when you crafted, not what you paid for them, so profit says whether a craft is worth doing. **Spent** is the gold that really left your bags.
+- **Materials cost** is what they were worth when you crafted, not what you paid for them, so profit says whether a craft is worth doing. **Spent on materials** adds these up, whether you bought or gathered them; what you really paid is on the **Purchased** tab.
 - **Purchases** cover the auction house, through any addon, and materials from vendors. A sale no craft explains counts toward what you bought of that item.
 - **Not counted:** items you trade, vendor or equip stay under **Not sold yet**, and lost deposits on expired auctions aren't counted.
 - A craft with the panel hidden has no forecast and no materials cost.
