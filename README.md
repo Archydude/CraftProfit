@@ -11,7 +11,9 @@ Craft Profit tells you, in gold, whether a craft or a crafting order makes or lo
 
 - **Crafting strategy:** pick what to craft: the highest rank you can make (default), the highest rank using what you own, or the cheapest materials. One click, or a checkbox on the crafting page and the order form, puts its materials in; missing materials and the shopping list follow it too. On an order, the cheapest materials that reach its minimum quality.
 
-- **Best crafts:** every recipe you know in a profession, or across all your characters, enchants as scrolls included, ranked by profit, with what each could make in a day, how many are listed and how many you've sold.
+- **Best crafts:** a tab with every recipe you know in a profession, or across all your characters, enchants as scrolls included, ranked by profit, with the profit with and without procs, what the materials cost, what each could make in a day, how many are listed and how many you've sold.
+
+- **Ledger:** your crafting history in its own window: what you crafted, what sold, your orders and what you bought, and how each item did against its forecast.
 
 - **Shopping list:** adds what you're short of, for one or more crafts or for every patron order at once, to an Auctionator shopping list, or as a TSM search to copy. The Auctionator list checks materials off as you get them.
 
@@ -198,7 +200,7 @@ Your crafting history in its own window: what you made, what sold, and how close
 - **Crafts:** every craft with when, who, what type, how many, its status, the forecast and the profit so far. Hover a row for the details.
 - **Performance:** one row per item, rank and type of craft: how many you made and sold, the profit each was forecast to make without procs, what each cost in materials and sold for, what procs really added, what each really made, **Off by** (how far the result landed from the forecast, with procs left out of both), **Margin** (the share of what sold that was profit, after the cut and materials), how long sales took, and the profit so far. Orders fill in the same way, with what they paid as the sale.
 - **Purchased:** one row per item and rank: how many you bought, what you spent, what you paid each against your price source at the time, and what you resold and made on it.
-- **Filters:** time range, character, profession and type at the top, and a search box on Crafts, Performance and Purchased. Purchases have no profession or type, so those filters don't apply to them. **Export** gives you the crafts in view to paste into a spreadsheet.
+- **Filters:** time range, character, profession and type at the top, and a search box on Crafts, Performance and Purchased. Purchases have no profession or type, so those filters don't apply to them. **Export** gives you the crafts in view to paste into a spreadsheet. **Clear** forgets the whole Ledger, for all your characters, after asking.
 
 How the numbers work:
 

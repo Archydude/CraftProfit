@@ -13,7 +13,7 @@ Craft Profit
 
 **Summary**
 ```
-Profit or loss on every craft and crafting order, a Best crafts list across all your characters, and patron orders priced in Blizzard's Patron tab. Prices from TSM or Auctionator.
+Profit or loss on every craft and crafting order, a Best crafts tab across all your characters, a Ledger of how it really went, and patron orders priced in Blizzard's Patron tab. Prices from TSM or Auctionator.
 ```
 
 **Main category:** `Professions`
@@ -29,10 +29,11 @@ Profit or loss on every craft and crafting order, a Best crafts list across all 
 ```markdown
 ## Is this craft worth it?
 
-Craft Profit answers in gold: **profit or loss?** A panel next to your profession window prices every craft and crafting order, and a **Best crafts** list shows what's worth crafting.
+Craft Profit answers in gold: **profit or loss?** A panel next to your profession window prices every craft and crafting order, a **Best crafts** tab shows what's worth crafting, and the **Ledger** shows how it really went.
 
 - **Expected profit** on every craft, procs included
 - **Best crafts**: every recipe ranked by profit, across all your characters
+- **Ledger**: your crafts, sales, orders and purchases against the forecast
 - **Patron orders** priced and crafted right in Blizzard's Patron tab
 - **Crafting strategy**: highest rank, what you own or cheapest materials
 - **Craft Rank** on tooltips
@@ -41,25 +42,22 @@ Craft Profit answers in gold: **profit or loss?** A panel next to your professio
 The panel leads with the answer: the sale price at the rank you'll get, minus the 5% cut and your materials, with and without procs, plus what **concentration** would add. On orders: the commission, minus the materials **you** supply, plus sellable rewards.
 
 ### What should I craft?
-**Best crafts** lists every recipe you know, enchants as scrolls included, most profitable first, with what each could make in a day, how many are listed and how many sell. Pin your favorites to the top.
+**Best crafts** lists every recipe you know, most profitable first, with the profit with and without procs, what the materials cost, what each could make in a day, how many are listed and how many sell. Pin your favorites. **All characters** puts every character's professions in one list, so you know who to log in to.
 
-### Which character?
-Click **All characters** for every profession of all your characters in one list, so you know who to log in to for the most gold.
+### Did it pay off?
+The **Ledger** is your crafting history in its own window. See what each item cost, sold for and really made, what procs added, and how far it landed from the forecast, by regular crafts and order type. Sales count when you open your auction mail.
 
-### Which rank, which materials?
-Pick a **crafting strategy**: highest rank (the default), use what you own or cheapest materials. Craft Profit puts those materials in and shops for exactly those.
+### Which materials?
+Pick a **crafting strategy** and Craft Profit puts those materials in and shops for exactly those.
 
 ### Patron orders
 Blizzard's Patron tab shows each order's **expected profit**, **rewards** and missing **materials**. Sort by profit, shop for the profitable ones, and craft each with one click per step.
 
 ### Shopping list
-One click adds what you're missing to an **Auctionator** shopping list or a **TSM** search. The Auctionator list checks itself off as materials come in.
-
-### Procs and luck
-Procs pop up as bonus gold, and a session total and **luck** meter show how your crafts went.
+One click adds what you're missing to an **Auctionator** shopping list or a **TSM** search.
 
 ### Good to know
-- Needs **TradeSkillMaster** or **Auctionator** for prices. **Both together give the best experience**: TSM adds sales rates, Auctionator adds listings and the shopping list.
+- Needs **TradeSkillMaster** or **Auctionator** for prices. **Both together give the best experience**.
 - Click the minimap button, or type **/craftprofit** for options.
 
 **Feedback and bug reports are welcome** in the comments.
@@ -71,11 +69,11 @@ Procs pop up as bonus gold, and a session total and **luck** meter show how your
 
 ## B. Upload File form
 
-**File:** `dist\CraftProfit-2.7.0.zip`
+**File:** `dist\CraftProfit-3.0.0.zip`
 
 **Display name**
 ```
-Craft Profit 2.7.0
+Craft Profit 3.0.0
 ```
 
 **Release type:** `Release`
@@ -84,6 +82,13 @@ Craft Profit 2.7.0
 
 **Changelog** (paste only the newest part; paste older parts too if they never went up)
 ```markdown
+3.0.0
+- **Ledger:** a new window with your crafting history. It tracks what you crafted, what sold, your patron, personal, guild and public orders and what you bought, and shows how each item did against its forecast. Open it with the book button on the panel, the minimap button's right-click menu or `/craftprofit ledger`. It records from now on, for all your characters.
+- **What each item really made:** the Performance tab shows, per item, rank and type, the forecast, the cost, what each sold for, what procs added, the profit, the margin and how far it landed from the forecast. Forecasts leave procs out, because procs are luck. Filter by time, character, profession and type, and sort by any column.
+- **Best crafts is now a tab:** it sits next to the profession window's own tabs and fills the whole recipe area, so names get more room. It replaces the button on the panel.
+- **New Best crafts columns:** **Cost** shows what the materials for a craft cost. **No procs** and **Procs** split Expected into the part you can count on and the part that's luck.
+- Sales count when you open your "Auction successful" mail. Crafts you vendor or give away stay under **Not sold yet**, since only auction sales are seen.
+
 2.7.0
 - **Most profit is gone:** it picked ranks by their listed price, but a listed price doesn't mean an item sells, so it could steer you to a lower rank nobody buys. If you had it on, you're now on **Highest rank**.
 - **Use what I own:** a new crafting strategy. It picks the highest rank you have every material for, even if buying could reach a better one, and Best crafts then only shows what you can craft now. If you're short for every rank, it picks the highest rank and spends as little as it can on what's missing.

@@ -2,10 +2,17 @@
 ArchdudeWhatsNew:Register("CraftProfit", {
 	title = "Craft Profit",
 	icon = "Interface\\Icons\\INV_Hammer_20",
-	version = "2.7.0",
+	version = "3.0.0",
 	seen = "CraftProfitWhatsNew",
 	saved = { "CraftProfitDB", "CraftProfitCharDB" },
 	changes = {
+		{ "3.0.0",
+			"|cffffd100Ledger:|r a new window with your crafting history. It tracks what you crafted, what sold, your patron, personal, guild and public orders and what you bought, and shows how each item did against its forecast. Open it with the book button on the panel, the minimap button's right-click menu or |cffffd100/craftprofit ledger|r. It records from now on, for all your characters.",
+			"|cffffd100What each item really made:|r the Performance tab shows, per item, rank and type, the forecast, the cost, what each sold for, what procs added, the profit, the margin and how far it landed from the forecast. Forecasts leave procs out, because procs are luck. Filter by time, character, profession and type, and sort by any column.",
+			"|cffffd100Best crafts is now a tab:|r it sits next to the profession window's own tabs and fills the whole recipe area, so names get more room. It replaces the button on the panel.",
+			"|cffffd100New Best crafts columns:|r |cffffd100Cost|r shows what the materials for a craft cost. |cffffd100No procs|r and |cffffd100Procs|r split Expected into the part you can count on and the part that's luck.",
+			"Sales count when you open your \"Auction successful\" mail. Crafts you vendor or give away stay under |cffffd100Not sold yet|r, since only auction sales are seen.",
+		},
 		{ "2.7.0",
 			"|cffffd100Most profit is gone:|r it picked ranks by their listed price, but a listed price doesn't mean an item sells, so it could steer you to a lower rank nobody buys. If you had it on, you're now on |cffffd100Highest rank|r.",
 			"|cffffd100Use what I own:|r a new crafting strategy. It picks the highest rank you have every material for, even if buying could reach a better one, and Best crafts then only shows what you can craft now. If you're short for every rank, it picks the highest rank and spends as little as it can on what's missing.",
@@ -68,9 +75,6 @@ ArchdudeWhatsNew:Register("CraftProfit", {
 		{ "1.22.0",
 			"New choice for |cffffd100Spend concentration on|r: |cffffd100Don't use concentration|r, in the options and the gear under the Patron tab. Patron orders then never spend concentration: an order that needs it to reach its minimum quality shows its profit in grey and |cffffd100No concentration|r, gets no cart or craft button, and Add profitable and Add all skip it. On its order form, Use Most Profitable Reagents leaves the materials alone. Orders that reach their minimum without concentration work as usual, and the crafting page isn't affected.",
 			"Click the |cffffd100Actions|r header to put the orders you can craft now first; click it again for the ones to shop for first. Each group goes by profit, and the header shows the hammer or the cart while it sorts.",
-		},
-		{ "1.21.1",
-			"Fixed: when an order crafted from the Patron tab procced resourcefulness, the bonus gold and the gold border flash didn't show.",
 		},
 	},
 })

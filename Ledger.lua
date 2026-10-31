@@ -663,6 +663,14 @@ function Ledger.RollUp(db, now)
 	end
 end
 
+-- Forgets every record, for all your characters. Sales from before stay out: seeded
+-- stays set, so what the mailbox told us doesn't come back.
+function Ledger.Clear()
+	saved.names, saved.items, saved.days, saved.months = {}, {}, {}, {}
+	wipe(nameIndex)
+	onChange()
+end
+
 -- An item's name, from the game or from when you crafted it.
 function Ledger.ItemName(itemID)
 	local records = demo or saved

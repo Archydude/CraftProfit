@@ -1,5 +1,12 @@
 # Changelog
 
+## 3.0.0
+- **Ledger:** a new window with your crafting history. It tracks what you crafted, what sold, your patron, personal, guild and public orders and what you bought, and shows how each item did against its forecast. Open it with the book button on the panel, the minimap button's right-click menu or `/craftprofit ledger`. It records from now on, for all your characters.
+- **What each item really made:** the Performance tab shows, per item, rank and type, the forecast, the cost, what each sold for, what procs added, the profit, the margin and how far it landed from the forecast. Forecasts leave procs out, because procs are luck. Filter by time, character, profession and type, and sort by any column.
+- **Best crafts is now a tab:** it sits next to the profession window's own tabs and fills the whole recipe area, so names get more room. It replaces the button on the panel.
+- **New Best crafts columns:** **Cost** shows what the materials for a craft cost. **No procs** and **Procs** split Expected into the part you can count on and the part that's luck.
+- Sales count when you open your "Auction successful" mail. Crafts you vendor or give away stay under **Not sold yet**, since only auction sales are seen.
+
 ## 2.7.0
 - **Most profit is gone:** it picked ranks by their listed price, but a listed price doesn't mean an item sells, so it could steer you to a lower rank nobody buys. If you had it on, you're now on **Highest rank**.
 - **Use what I own:** a new crafting strategy. It picks the highest rank you have every material for, even if buying could reach a better one, and Best crafts then only shows what you can craft now. If you're short for every rank, it picks the highest rank and spends as little as it can on what's missing.

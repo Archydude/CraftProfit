@@ -746,6 +746,17 @@ local function exportText()
 	return table.concat(lines, "\n")
 end
 
+-- Asks first: there's no getting the records back.
+StaticPopupDialogs.CRAFTPROFIT_CLEAR_LEDGER = {
+	text = "Clear the whole Ledger, for all your characters?\n\nEvery craft, sale and purchase in it is gone for good.",
+	button1 = "Clear",
+	button2 = CANCEL,
+	OnAccept = function() ns.Ledger.Clear() end,
+	timeout = 0,
+	whileDead = true,
+	hideOnEscape = true,
+}
+
 local function showExport()
 	if not exportFrame then
 		exportFrame = CreateFrame("Frame", nil, frame, "BackdropTemplate")
@@ -994,6 +1005,12 @@ local function create()
 	export:SetSize(export:GetFontString():GetUnboundedStringWidth() + 24, 22)
 	export:SetPoint("BOTTOMRIGHT", -SIDE + 4, 6)
 	export:SetScript("OnClick", showExport)
+
+	local clear = CreateFrame("Button", nil, frame, "UIPanelButtonTemplate")
+	clear:SetText("Clear")
+	clear:SetSize(clear:GetFontString():GetUnboundedStringWidth() + 24, 22)
+	clear:SetPoint("RIGHT", export, "LEFT", -6, 0)
+	clear:SetScript("OnClick", function() StaticPopup_Show("CRAFTPROFIT_CLEAR_LEDGER") end)
 
 	footer = frame:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
 	footer:SetPoint("BOTTOMLEFT", SIDE + 4, 10)

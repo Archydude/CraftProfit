@@ -1032,6 +1032,7 @@ end
 -- The tab after the profession window's own.
 local function createTab()
 	listTab = CreateFrame("Button", nil, ProfessionsFrame, "TabSystemButtonArtTemplate")
+	listTab.selectedFontObject, listTab.unselectedFontObject = GameFontHighlight, GameFontNormal
 	listTab:SetText("Best crafts")
 	listTab:SetTabSelected(false)
 	listTab:SetSize(listTab.Text:GetStringWidth() + TAB_TEXT_ROOM, ns.Blizzard.RecipesTab():GetHeight())
