@@ -211,6 +211,14 @@ local function craftStatus(craft)
 	return Color("missing", "Not sold yet")
 end
 
+-- For sorting by status: what still needs selling comes first.
+local function statusOrder(craft)
+	if craft.kind ~= "craft" then return 1 end
+	if not craft.itemID then return 0 end
+	if craft.left == 0 then return 2 end
+	return craft.sold + craft.used > 0 and 3 or 4
+end
+
 -- Paying under your price source is the good direction.
 local function vsMarketText(row)
 	if not row.vsMarket then return Color("muted", "-") end
@@ -236,7 +244,7 @@ local COLUMNS = {
 			text = function(row) return ns.Ranks.CharacterName(row.character or "?") end },
 		{ key = "kind", header = "Type", width = 60, sort = "kind", text = function(row) return KIND_SHORT[row.kind] or row.kind end },
 		{ key = "qty", header = "Made", width = 44, sort = "qty", text = function(row) return count(row.qty) end },
-		{ key = "status", header = "Status", width = 96, text = craftStatus },
+		{ key = "status", header = "Status", width = 96, sort = statusOrder, text = craftStatus },
 		{ key = "forecast", header = "Forecast", width = 104, sort = "forecast", text = function(row)
 			return row.forecast ~= 0 and signedMoney(row.forecast) or Color("muted", "-") end },
 		{ key = "earned", header = "Profit so far", width = 110, sort = "earned", text = function(row) return signedMoney(row.earned) end },

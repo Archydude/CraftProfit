@@ -823,7 +823,7 @@ function Panel.Render()
 	rowCount, dividerCount, contentHeight, profitRow, procRow = 0, 0, 0, nil, nil
 	rowButtonUsed, strategyUsed = false, false
 	-- Before the rows, which leave room for it.
-	ns.BestCraftsList.UpdateToggle()
+	ns.BestCraftsList.UpdateTab()
 
 	Panel.current = model
 	shownItems = model and itemsOf(model) or {}

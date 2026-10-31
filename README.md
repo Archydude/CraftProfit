@@ -128,7 +128,7 @@ Under the list: how much concentration the orders use, this session's total (cli
 Turn off **Show Craft Profit on the Patron tab** in the options to get Blizzard's own columns back.
 
 ### Best crafts
-Click **Best crafts** at the top of the panel, next to its gear (on the crafting page, or on a crafting order, where it goes back to your recipes first), or type `/craftprofit best`. A list opens over the recipe details with every recipe you know in the profession shown (Midnight Blacksmithing, say), most profitable first. It works out each recipe for a few seconds after it opens, and shows how far it's got at the bottom.
+Click the **Best crafts** tab, next to the profession window's own tabs (from any of them, it goes back to your recipes first), or type `/craftprofit best`. The tab fills the recipe list and the recipe details with every recipe you know in the profession shown (Midnight Blacksmithing, say), most profitable first. It works out each recipe for a few seconds after it opens, and shows how far it's got at the bottom.
 
 - **Expected** (or **Profit**): what one craft makes after the 5% auction house cut, at the rank your crafting strategy picks (without concentration), with the materials it picks: the same ones the crafting page would use. With **Count multicraft and resourcefulness** on (the default), it's what a craft makes on average with procs, and the list ranks by it; off, the column is **Profit**, without them. Its quality icon is after the name. Recipes whose item has no auction price at the rank you'd make say **No price**, in grey, at the bottom.
 - **Gold/day:** roughly what the recipe could make in a day: the profit on each item times how many sell per day. So a recipe with a big profit that hardly sells stops looking better than one that sells all day. It's for comparing recipes, not a promise: with TSM it counts sales across your whole region, and you'd only get a share of them; without TSM, your own sales from the last 14 days. Recipes that lose gold or haven't sold show **-**. The list still opens sorted by profit; click the header to sort by it.
@@ -192,7 +192,7 @@ Hover an item you can craft, in your bags, at the auction house or in a chat lin
 
 ## Ledger
 
-Your crafting history in its own window: what you made, what sold, and how close the forecast was. Open it with the book button next to **Best crafts** on the panel, from the minimap button's right-click menu, or with `/craftprofit ledger`. It records from the moment you have this version, for all your characters.
+Your crafting history in its own window: what you made, what sold, and how close the forecast was. Open it with the book button at the top of the panel, from the minimap button's right-click menu, or with `/craftprofit ledger`. It records from the moment you have this version, for all your characters.
 
 - **Overview:** totals by type (regular crafts, patron, personal, guild and public orders), by profession and by character, the items furthest below their forecast, and a chart of profit by the day it was crafted.
 - **Crafts:** every craft with when, who, what type, how many, its status, the forecast and the profit so far. Hover a row for the details.

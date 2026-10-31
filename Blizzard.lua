@@ -502,6 +502,11 @@ function Blizzard.RecipeDetails()
 	return ProfessionsFrame.CraftingPage.SchematicForm
 end
 
+-- The recipe list on the crafting page: the list covers it too.
+function Blizzard.RecipeList()
+	return ProfessionsFrame.CraftingPage.RecipeList
+end
+
 -- Whether the crafting page shows its recipe list (it's hidden in the small view).
 function Blizzard.ShowsRecipeList()
 	local page = ProfessionsFrame.CraftingPage
@@ -519,6 +524,37 @@ function Blizzard.ShowRecipesTab()
 	if ProfessionsFrame.SetTab and ProfessionsFrame.recipesTabID then
 		ProfessionsFrame:SetTab(ProfessionsFrame.recipesTabID)
 	end
+end
+
+-- The profession window's Recipes tab.
+function Blizzard.RecipesTab()
+	return ProfessionsFrame:GetTabButton(ProfessionsFrame.recipesTabID)
+end
+
+-- Whether the profession window shows its tabs (not in the small view).
+function Blizzard.TabsShown()
+	return not ProfessionsUtil.IsCraftingMinimized()
+end
+
+-- What a new tab goes after: the last tab, which may be another addon's.
+function Blizzard.LastTab()
+	local other = _G.OpenChatOrdersButton
+	return other and other:IsShown() and other or ProfessionsFrame.TabSystem
+end
+
+-- Our tab isn't one of Blizzard's: it can't join their tab system without tainting
+-- it. So while ours is open, the Recipes tab looks unselected, and stays clickable.
+function Blizzard.SetRecipesTabSelected(selected)
+	if ProfessionsFrame:GetTab() ~= ProfessionsFrame.recipesTabID then return end
+	local button = Blizzard.RecipesTab()
+	if button:IsSelected() ~= selected then button:SetTabSelected(selected) end
+end
+
+-- Calls onClick() after a click on a tab, and onRedraw() when the tabs were drawn
+-- again. The tab system's callback holds the original SetTab, so that can't be hooked.
+function Blizzard.WatchTabs(onClick, onRedraw)
+	hooksecurefunc(ProfessionsFrame.TabSystem, "SetTab", onClick)
+	hooksecurefunc(ProfessionsFrame.TabSystem, "SetTabVisuallySelected", onRedraw)
 end
 
 -- Shows a recipe on the crafting page, as a recipe link does.

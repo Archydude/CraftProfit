@@ -22,11 +22,13 @@ local HEADER_HEIGHT = 20
 local TOP_HEIGHT = 34      -- title, search and filter
 local FOOTER_HEIGHT = 24
 local TAG_GAP = 4          -- item name to its rank and other icons
-local TOGGLE_HEIGHT = 20   -- the Best crafts button on the panel
-local TOGGLE_RIGHT = 28    -- panel's right edge to the button (room for its gear)
-local TOGGLE_TOP = 5       -- panel's top edge to the button
-local TOGGLE_GAP = 6       -- the button to the panel's title
-local LEDGER_GAP = 4       -- the Ledger button to the Best crafts button
+local LEDGER_SIZE = 20     -- the Ledger button on the panel
+local LEDGER_RIGHT = 28    -- panel's right edge to the button (room for its gear)
+local LEDGER_TOP = 5       -- panel's top edge to the button
+local LEDGER_GAP = 6       -- the button to the panel's title
+local TAB_TEXT_ROOM = 40   -- the Best crafts tab's width beyond its label
+local BACK_INSET = 4       -- the list's edge to its background
+local TAB_GAP = 2          -- the tab before it to the Best crafts tab
 local LEDGER_ICON = "Interface\\Icons\\INV_Misc_Book_09"
 local OPEN_TRIES, OPEN_RETRY = 20, 0.1 -- from an order: waiting for the recipes to show
 local FILTER_WIDTH = 90
@@ -46,6 +48,7 @@ local COLUMNS = {
 	{ key = "perDay", width = 64, header = "Sells/day", sort = "perDay", needsTSM = true },
 	{ key = "listed", width = 46, header = "Listed", sort = "listed" },
 	{ key = "gold", width = 74, header = "Gold/day", sort = "gold" },
+	{ key = "cost", width = 112, goldWidth = 70, header = "Cost", sort = "cost" },
 	{ key = "profit", width = 112, goldWidth = 70, header = "Profit", sort = "profit" },
 	{ key = "crafter", width = 64, header = "Crafter", sort = "crafter", allCharacters = true },
 }
@@ -58,6 +61,7 @@ local HEADER_TIPS = {
 	gold = "Roughly what this recipe could make in a day: the profit on each item times how many sell per day. For "
 		.. "comparing recipes, not a promise: with TSM it counts sales across your whole region, and you'd only get a "
 		.. "share of them. Without TSM, it counts your own recent sales. Recipes that lose gold or haven't sold show -.",
+	cost = "What the materials for one craft cost, at the rank and with the materials your crafting strategy picks.",
 	listed ="How many were up for sale the last time Auctionator saw them. Needs Auctionator.",
 	perDay = "How many sell per day across your region, on average, from TSM.",
 	sold = format("How many your characters sold on the auction house in the last %d days, from the auction "
@@ -100,6 +104,7 @@ local SORT_VALUES = {
 	profit = shownProfit,
 	gold = goldPerDay,
 	crafter = crafterKey,
+	cost = function(row) return row.cost end,
 	listed = function(row) return row.listed end,
 	sold = function(row) return row.itemName and row.sold or nil end,
 	perDay = function(row) return row.soldPerDay end,
@@ -113,7 +118,7 @@ local SORT_ARROW_ATLAS = "auctionhouse-ui-sortarrow"
 local SORT_ARROW_FILE = "Interface\\Buttons\\UI-SortArrow"
 local SORT_ARROW_SIZE = 10
 
-local list, toggle, ledgerButton, scrollBox, status, title, strategyDropdown, charactersButton
+local list, listTab, ledgerButton, scrollBox, status, title, strategyDropdown, charactersButton
 local headers = {}
 local refreshQueued = false
 
@@ -523,6 +528,7 @@ local function drawRow(button, row)
 	else
 		button.cells.profit:SetText(Color("muted", "No price"))
 	end
+	button.cells.cost:SetText((row.cost or 0) > 0 and Color("loss", Money(-row.cost)) or Color("muted", "-"))
 	local daily = goldPerDay(row)
 	button.cells.gold:SetText(daily and dailyText(daily) or Color("muted", "-"))
 	button.cells.crafter:SetText(ns.Ranks.CharacterName(crafterKey(row)))
@@ -859,8 +865,10 @@ end
 
 local function createList()
 	list = CreateFrame("Frame", "CraftProfitBestCrafts", ProfessionsFrame.CraftingPage, "BackdropTemplate")
-	list:SetAllPoints(ns.Blizzard.RecipeDetails())
-	-- Over everything on the recipe details, other addons' frames there included.
+	-- The recipe list and the recipe details, as a page of its own.
+	list:SetPoint("TOPRIGHT", ns.Blizzard.RecipeDetails(), "TOPRIGHT")
+	list:SetPoint("BOTTOMLEFT", ns.Blizzard.RecipeList(), "BOTTOMLEFT")
+	-- Over everything there, other addons' frames included.
 	list:SetFrameLevel(math.max(ns.Blizzard.RecipeDetails():GetFrameLevel() + 40, LIST_LEVEL))
 	list:SetBackdrop({
 		bgFile = "Interface\\Tooltips\\UI-Tooltip-Background",
@@ -870,6 +878,11 @@ local function createList()
 	})
 	list:SetBackdropColor(0.05, 0.05, 0.05, 0.97)
 	list:SetBackdropBorderColor(0.6, 0.6, 0.6, 1)
+	-- The backdrop's texture lets the recipes show through.
+	local solid = list:CreateTexture(nil, "BACKGROUND", nil, -8)
+	solid:SetPoint("TOPLEFT", BACK_INSET, -BACK_INSET)
+	solid:SetPoint("BOTTOMRIGHT", -BACK_INSET, BACK_INSET)
+	solid:SetColorTexture(0.05, 0.05, 0.05, 1)
 	list:EnableMouse(true)
 	list:Hide()
 
@@ -938,25 +951,34 @@ local function canShow()
 	return ns.Blizzard.IsOwnProfession() and ns.Blizzard.ShowsRecipeList()
 end
 
--- Shows the panel's button on the crafting page and on your crafting orders, lit
--- while the list is open.
-function BestCraftsList.UpdateToggle()
-	if not toggle then return end
+-- Shows the tab with the profession's own tabs, selected while the list is open,
+-- and the panel's Ledger button on the crafting page and your crafting orders.
+function BestCraftsList.UpdateTab()
+	if not listTab then return end
 	local page = ns.Blizzard.ActivePage()
-	toggle:SetShown((page == "craft" and canShow()) or (page == "order" and ns.Blizzard.IsOwnProfession()))
-	ledgerButton:SetShown(toggle:IsShown())
-	if list:IsShown() then toggle:LockHighlight() else toggle:UnlockHighlight() end
+	local own = ns.Blizzard.IsOwnProfession()
+	ledgerButton:SetShown((page == "craft" and canShow()) or (page == "order" and own))
+	listTab:SetShown(own and ns.Blizzard.TabsShown())
+	local open = list:IsShown()
+	if listTab.isSelected ~= open then listTab:SetTabSelected(open) end
+	ns.Blizzard.SetRecipesTabSelected(not open)
+	local before = ns.Blizzard.LastTab()
+	if listTab.before ~= before then
+		listTab.before = before
+		listTab:ClearAllPoints()
+		listTab:SetPoint("TOPLEFT", before, "TOPRIGHT", TAB_GAP, 0)
+	end
 end
 
 -- The room the panel's first row leaves for the button.
 function BestCraftsList.HeaderSpace()
-	return toggle and toggle:IsShown() and (toggle:GetWidth() + TOGGLE_GAP + ledgerButton:GetWidth() + LEDGER_GAP) or 0
+	return ledgerButton and ledgerButton:IsShown() and (ledgerButton:GetWidth() + LEDGER_GAP) or 0
 end
 
 function BestCraftsList.Show()
 	if not (list and canShow()) then return false end
 	list:Show()
-	BestCraftsList.UpdateToggle()
+	BestCraftsList.UpdateTab()
 	ns.BestCrafts.Scan()
 	BestCraftsList.Render()
 	local text = ns.Reminder.BestCraftsNotice()
@@ -972,16 +994,13 @@ function BestCraftsList.Hide()
 	if not list then return end
 	list:Hide()
 	GameTooltip:Hide()
-	BestCraftsList.UpdateToggle()
+	BestCraftsList.UpdateTab()
 end
 
-function BestCraftsList.Toggle()
-	if list and list:IsShown() then
-		BestCraftsList.Hide()
-		return
-	end
+-- The tab, from any page of the profession window.
+local function openFromTab()
 	if BestCraftsList.Show() or not ns.Blizzard.IsOwnProfession() then return end
-	-- From a crafting order: back to the recipes, and the list once they show.
+	-- From another page: back to the recipes, and the list once they show.
 	ns.Blizzard.ShowRecipesTab()
 	local tries = 0
 	local function try()
@@ -999,29 +1018,30 @@ local function onLayout()
 	ns.Panel.Refresh()
 end
 
--- The button at the top of the panel, left of its gear.
-local function createToggle()
-	local panel = ns.Panel.Frame()
-	toggle = CreateFrame("Button", nil, panel, "UIPanelButtonTemplate")
-	toggle:SetText("Best crafts")
-	toggle:SetSize(toggle:GetFontString():GetUnboundedStringWidth() + 24, TOGGLE_HEIGHT)
-	toggle:SetPoint("TOPRIGHT", -TOGGLE_RIGHT, -TOGGLE_TOP)
-	toggle:SetFrameLevel(panel:GetFrameLevel() + 5)
-	toggle:Hide()
-	toggle:SetScript("OnClick", BestCraftsList.Toggle)
-	toggle:SetScript("OnEnter", function(self)
+-- The tab after the profession window's own.
+local function createTab()
+	listTab = CreateFrame("Button", nil, ProfessionsFrame, "TabSystemButtonArtTemplate")
+	listTab:SetText("Best crafts")
+	listTab:SetTabSelected(false)
+	listTab:SetSize(listTab.Text:GetStringWidth() + TAB_TEXT_ROOM, ns.Blizzard.RecipesTab():GetHeight())
+	listTab:Hide()
+	listTab:SetScript("OnClick", openFromTab)
+	listTab:SetScript("OnEnter", function(self)
 		GameTooltip:SetOwner(self, "ANCHOR_TOP")
 		GameTooltip:SetText("Best crafts")
 		GameTooltip:AddLine("Every recipe you know in this profession, most profitable first.", 1, 1, 1, true)
-		GameTooltip:AddLine(Color("simulated", list:IsShown() and "Click: back to the recipe" or "Click: open the list"))
 		GameTooltip:Show()
 	end)
-	toggle:SetScript("OnLeave", GameTooltip_Hide)
+	listTab:SetScript("OnLeave", GameTooltip_Hide)
+	ns.Blizzard.WatchTabs(BestCraftsList.Hide, BestCraftsList.UpdateTab)
+end
 
-	-- The Ledger, beside it.
+-- The button at the top of the panel, left of its gear.
+local function createLedgerButton()
+	local panel = ns.Panel.Frame()
 	ledgerButton = CreateFrame("Button", nil, panel)
-	ledgerButton:SetSize(TOGGLE_HEIGHT, TOGGLE_HEIGHT)
-	ledgerButton:SetPoint("RIGHT", toggle, "LEFT", -LEDGER_GAP, 0)
+	ledgerButton:SetSize(LEDGER_SIZE, LEDGER_SIZE)
+	ledgerButton:SetPoint("TOPRIGHT", -LEDGER_RIGHT, -LEDGER_TOP)
 	ledgerButton:SetFrameLevel(panel:GetFrameLevel() + 5)
 	ledgerButton:SetNormalTexture(LEDGER_ICON)
 	ledgerButton:SetHighlightTexture("Interface\\Buttons\\UI-Common-MouseHilight", "ADD")
@@ -1037,11 +1057,12 @@ local function createToggle()
 	ledgerButton:SetScript("OnLeave", GameTooltip_Hide)
 end
 
--- Creates the button and the list. Safe to call more than once; needs the panel.
+-- Creates the tab, the panel's button and the list. Safe to call more than once; needs the panel.
 function BestCraftsList.Init()
 	if list or not (ns.Blizzard.IsLoaded() and ns.Panel.Frame()) then return end
 	createList()
-	createToggle()
+	createTab()
+	createLedgerButton()
 	ns.BestCrafts.Watch(BestCraftsList.Refresh, function() return list:IsShown() end)
 	ns.Blizzard.WatchCraftingPage(BestCraftsList.Hide, onLayout)
 	ns.Panel.Refresh()
