@@ -1,5 +1,8 @@
 # Changelog
 
+## 3.0.1
+- Fixed: recrafts didn't get the crafting strategy's materials, so **Use Craft Profit Reagents** left the lowest qualities in and the recraft could come out a rank lower than you can make. Recrafts now get them like any other craft.
+
 ## 3.0.0
 - **Ledger:** a new window with your crafting history. It tracks what you crafted, what sold, your patron, personal, guild and public orders and what you bought, and shows how each item did against its forecast. Open it with the book button on the panel, the minimap button's right-click menu or `/craftprofit ledger`. It records from now on, for all your characters.
 - **What each item really made:** the Performance tab shows, per item, rank and type, the forecast, the cost, what each sold for, what procs added, the profit, the margin and how far it landed from the forecast. Forecasts leave procs out, because procs are luck. Filter by time, character, profession and type, and sort by any column.

@@ -2,10 +2,13 @@
 ArchdudeWhatsNew:Register("CraftProfit", {
 	title = "Craft Profit",
 	icon = "Interface\\Icons\\INV_Hammer_20",
-	version = "3.0.0",
+	version = "3.0.1",
 	seen = "CraftProfitWhatsNew",
 	saved = { "CraftProfitDB", "CraftProfitCharDB" },
 	changes = {
+		{ "3.0.1",
+			"Fixed: recrafts didn't get the crafting strategy's materials, so |cffffd100Use Craft Profit Reagents|r left the lowest qualities in and the recraft could come out a rank lower than you can make. Recrafts now get them like any other craft.",
+		},
 		{ "3.0.0",
 			"|cffffd100Ledger:|r a new window with your crafting history. It tracks what you crafted, what sold, your patron, personal, guild and public orders and what you bought, and shows how each item did against its forecast. Open it with the book button on the panel, the minimap button's right-click menu or |cffffd100/craftprofit ledger|r. It records from now on, for all your characters.",
 			"|cffffd100What each item really made:|r the Performance tab shows, per item, rank and type, the forecast, the cost, what each sold for, what procs added, the profit, the margin and how far it landed from the forecast. Forecasts leave procs out, because procs are luck. Filter by time, character, profession and type, and sort by any column.",
@@ -71,10 +74,6 @@ ArchdudeWhatsNew:Register("CraftProfit", {
 			"The options are split into pages: Craft Profit (crafting strategy, minimap button and prices), then Panel, Shopping list, Patron orders and Tooltips under its |cffffd100+|r.",
 			"Fewer stutters in the profession window, especially on recipes with many material qualities.",
 			"Craft Profit's icon is now a blacksmith's hammer.",
-		},
-		{ "1.22.0",
-			"New choice for |cffffd100Spend concentration on|r: |cffffd100Don't use concentration|r, in the options and the gear under the Patron tab. Patron orders then never spend concentration: an order that needs it to reach its minimum quality shows its profit in grey and |cffffd100No concentration|r, gets no cart or craft button, and Add profitable and Add all skip it. On its order form, Use Most Profitable Reagents leaves the materials alone. Orders that reach their minimum without concentration work as usual, and the crafting page isn't affected.",
-			"Click the |cffffd100Actions|r header to put the orders you can craft now first; click it again for the ones to shop for first. Each group goes by profit, and the header shows the hammer or the cart while it sorts.",
 		},
 	},
 })
