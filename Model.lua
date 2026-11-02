@@ -467,7 +467,7 @@ function Model.Craft(ctx)
 
 	-- What the crafting strategy would craft; its qualities fill the empty slots.
 	local plan
-	if not (planning or ctx.isRecraft) then
+	if not planning then
 		local pending
 		plan, pending = ns.Planner.ForCraft(ctx)
 		if pending then return nil, true end
@@ -547,7 +547,7 @@ function Model.Craft(ctx)
 	-- strategy's qualities you're short of.
 	model.realCost = (simulating or short) and costOf(craftMaterials(scroll, schematic, transaction, {}, nil, fill)) or model.cost
 	model.realProfit = not simulating and (model.total + model.cost - model.realCost) or nil
-	if not (planning or simulating or ctx.isRecraft) then model.best = bestCraftMaterials(ctx, model) end
+	if not (planning or simulating) then model.best = bestCraftMaterials(ctx, model) end
 	return model
 end
 

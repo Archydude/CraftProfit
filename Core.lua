@@ -138,5 +138,10 @@ SlashCmdList.CRAFTPROFIT = function(msg)
 		if not ns.Ranks.Explain() then ns.Shopping.Say("Testing: open a crafting order first.") end
 		return
 	end
+	if command == "testplan" then
+		-- Testing: every material mix the crafting page's plan tries, and its rank.
+		if not ns.Planner.Explain() then ns.Shopping.Say("Testing: open a recipe on the crafting page first.") end
+		return
+	end
 	ns.Options.Open()
 end

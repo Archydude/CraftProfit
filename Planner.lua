@@ -286,10 +286,14 @@ function Planner.ForOrder(order, schematic, provided)
 end
 
 -- What the game's answers for a crafting page plan depend on: the recipe, your
--- skill, its concentration, and what's in the slots the plan doesn't pick
--- (optional and finishing reagents can change the rank).
+-- skill, its concentration, the item being recrafted (a recraft needs fewer
+-- materials and starts from that item, so it can't share a craft's answers), and
+-- what's in the slots the plan doesn't pick (optional and finishing reagents can
+-- change the rank).
 local function craftContext(recipeID, schematic, transaction, slots, concentrating)
-	local parts = { "craft", recipeID, skillKey(recipeID), tostring(concentrating) }
+	local recraft = transaction.IsRecraft and transaction:IsRecraft() or false
+	local parts = { "craft", recipeID, skillKey(recipeID), tostring(concentrating),
+		tostring(recraft), tostring(transaction:GetAllocationItemGUID()) }
 	local picked = {}
 	for _, entry in ipairs(slots) do picked[entry.slotIndex] = true end
 	for slotIndex in ipairs(schematic.reagentSlotSchematics) do
@@ -446,6 +450,46 @@ function Planner.ForCraft(ctx)
 		craftPlan, craftPlanKey = plan or false, key
 	end
 	return craftPlan or nil
+end
+
+-- Testing (/craftprofit testplan): prints every mix the crafting page's plan
+-- tries, the rank the game predicts for each, and the plan it picks. False when
+-- the crafting page shows no recipe.
+function Planner.Explain()
+	local ctx = ns.Blizzard.ActivePage() == "craft" and ns.Blizzard.CraftContext()
+	if not ctx then return false end
+	local recipeInfo, schematic, transaction = ctx.recipeInfo, ctx.schematic, ctx.transaction
+	local recipeID = recipeInfo.recipeID
+	local function say(...) print("|cffffd100Craft Profit:|r " .. format(...)) end
+	local function name(itemID)
+		return format("%s (rank %s)", C_Item.GetItemNameByID(itemID) or itemID,
+			tostring(C_TradeSkillUI.GetItemReagentQualityByItemInfo(itemID)))
+	end
+	local concentrating = ns.Blizzard.IsConcentrating(transaction)
+	say("Recipe %d, recraft %s, item %s, concentrating %s, strategy %s", recipeID, tostring(ctx.isRecraft),
+		tostring(transaction:GetAllocationItemGUID()), tostring(concentrating), tostring(ns.db.craftStrategy))
+	for _, entry in ipairs(transaction:CreateCraftingReagentInfoTbl()) do
+		local itemID = entry.reagent and entry.reagent.itemID
+		say("  form: slot %s, %s x%s", tostring(entry.dataSlotIndex), itemID and name(itemID) or "?", tostring(entry.quantity))
+	end
+	local quality, concentration = ns.Blizzard.PredictQuality(recipeID, schematic, transaction, {})
+	say("Form: rank %s, concentration %s", tostring(quality), tostring(concentration))
+
+	local slots = qualitySlots(schematic, {})
+	for _, mix in ipairs(mixesOf(slots)) do
+		local overrides = picksOf(slots, mix)
+		local names = {}
+		for i, entry in ipairs(slots) do names[i] = format("%dx %s", entry.qty, name(entry.options[mix[i]].itemID)) end
+		quality, concentration = ns.Blizzard.PredictQuality(recipeID, schematic, transaction, overrides)
+		say("Mix: rank %s, concentration %s, cost %s: %s", tostring(quality), tostring(concentration),
+			tostring(math.floor(mix.cost / 10000)), table.concat(names, ", "))
+	end
+	local plan = Planner.ForCraft(ctx)
+	if not plan then return say("Plan: none") or true end
+	local names = {}
+	for _, pick in ipairs(plan.picks) do names[#names + 1] = format("%dx %s", pick.qty, name(pick.itemID)) end
+	say("Plan: rank %s, concentration %s: %s", tostring(plan.quality), tostring(plan.concentration), table.concat(names, ", "))
+	return true
 end
 
 -- Specializations and profession gear change the game's answers.
