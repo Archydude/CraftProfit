@@ -1,5 +1,8 @@
 # Changelog
 
+## 3.0.2
+- Fixed: since 3.0.1, opening a recipe on the crafting page could show the error "bad argument #1 to 'tostring' (value expected)".
+
 ## 3.0.1
 - Fixed: recrafts didn't get the crafting strategy's materials, so **Use Craft Profit Reagents** left the lowest qualities in and the recraft could come out a rank lower than you can make. Recrafts now get them like any other craft.
 

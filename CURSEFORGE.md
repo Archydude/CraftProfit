@@ -69,11 +69,11 @@ One click adds what you're missing to an **Auctionator** shopping list or a **TS
 
 ## B. Upload File form
 
-**File:** `dist\CraftProfit-3.0.1.zip`
+**File:** `dist\CraftProfit-3.0.2.zip`
 
 **Display name**
 ```
-Craft Profit 3.0.1
+Craft Profit 3.0.2
 ```
 
 **Release type:** `Release`
@@ -82,6 +82,9 @@ Craft Profit 3.0.1
 
 **Changelog** (paste only the newest part; paste older parts too if they never went up)
 ```markdown
+3.0.2
+- Fixed: since 3.0.1, opening a recipe on the crafting page could show the error "bad argument #1 to 'tostring' (value expected)".
+
 3.0.1
 - Fixed: recrafts didn't get the crafting strategy's materials, so **Use Craft Profit Reagents** left the lowest qualities in and the recraft could come out a rank lower than you can make. Recrafts now get them like any other craft.
 

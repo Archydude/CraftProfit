@@ -293,7 +293,8 @@ end
 local function craftContext(recipeID, schematic, transaction, slots, concentrating)
 	local recraft = transaction.IsRecraft and transaction:IsRecraft() or false
 	local parts = { "craft", recipeID, skillKey(recipeID), tostring(concentrating),
-		tostring(recraft), tostring(transaction:GetAllocationItemGUID()) }
+		-- In parentheses: with no item to recraft, it returns nothing, not nil.
+		tostring(recraft), tostring((transaction:GetAllocationItemGUID())) }
 	local picked = {}
 	for _, entry in ipairs(slots) do picked[entry.slotIndex] = true end
 	for slotIndex in ipairs(schematic.reagentSlotSchematics) do
@@ -467,7 +468,7 @@ function Planner.Explain()
 	end
 	local concentrating = ns.Blizzard.IsConcentrating(transaction)
 	say("Recipe %d, recraft %s, item %s, concentrating %s, strategy %s", recipeID, tostring(ctx.isRecraft),
-		tostring(transaction:GetAllocationItemGUID()), tostring(concentrating), tostring(ns.db.craftStrategy))
+		tostring((transaction:GetAllocationItemGUID())), tostring(concentrating), tostring(ns.db.craftStrategy))
 	for _, entry in ipairs(transaction:CreateCraftingReagentInfoTbl()) do
 		local itemID = entry.reagent and entry.reagent.itemID
 		say("  form: slot %s, %s x%s", tostring(entry.dataSlotIndex), itemID and name(itemID) or "?", tostring(entry.quantity))
