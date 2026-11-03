@@ -59,7 +59,7 @@ local HEADER_TIPS = {
 	name = "Click to sort by name.",
 	crafter = "Which of your characters makes it. A character shows up here after opening Best crafts once.",
 	profit = "What one craft makes after the 5% auction house cut, at the rank and with the materials your crafting "
-		.. "strategy picks. A rank is never priced above a better one.\n\nWith Count multicraft and resourcefulness on (Filter menu), "
+		.. "strategy picks. A rank is never priced above a better one.\n\nWith Count procs in profits on (Filter menu), "
 		.. "it's Expected: what a craft makes on average with procs.",
 	gold = "Roughly what this recipe could make in a day: the profit on each item times how many sell per day. For "
 		.. "comparing recipes, not a promise: with TSM it counts sales across your whole region, and you'd only get a "
@@ -696,10 +696,10 @@ local function filterMenu(_, root)
 		ns.db.bestProfitableOnly = not ns.db.bestProfitableOnly
 		BestCraftsList.Render()
 	end)
-	local procs = root:CreateCheckbox("Count multicraft and resourcefulness", function() return ns.db.countProcs end,
+	local procs = root:CreateCheckbox("Count procs in profits", function() return ns.db.countProcs end,
 		function() ns.Options.Set("countProcs", not ns.db.countProcs) end)
 	procs:SetTooltip(function(tip)
-		GameTooltip_SetTitle(tip, "Count multicraft and resourcefulness")
+		GameTooltip_SetTitle(tip, "Count procs in profits")
 		GameTooltip_AddNormalLine(tip, "Profit becomes Expected: what a craft makes on average with procs, and the "
 			.. "list ranks by it. Your chances come from the game; how big a proc is, from your own crafts.")
 	end)

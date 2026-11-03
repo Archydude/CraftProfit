@@ -1,4 +1,5 @@
--- Craft Profit: prices from TradeSkillMaster or Auctionator.
+-- Craft Profit: prices from TradeSkillMaster or Auctionator, or TSM prices
+-- another character saved when TSM isn't loaded here (see SavedPrices.lua).
 local ADDON_NAME, ns = ...
 
 local Prices = {}
@@ -6,6 +7,12 @@ ns.Prices = Prices
 
 local function tsmAvailable()
 	return ns.db.provider ~= "auctionator" and TSM_API and TSM_API.GetCustomPriceValue
+end
+
+-- Whether TSM's prices come from another character's save: TSM isn't loaded here.
+local function savedPrices()
+	return ns.db.provider ~= "auctionator" and not (TSM_API and TSM_API.GetCustomPriceValue)
+		and ns.SavedPrices.InUse()
 end
 
 local function auctionatorAPI()
@@ -31,6 +38,7 @@ end
 function Prices.Vendor(itemID)
 	local api = auctionatorAPI()
 	return (tsmAvailable() and tsmValue("vendorbuy", "i:" .. itemID))
+		or (savedPrices() and ns.SavedPrices.Vendor(itemID))
 		or (api and auctionatorValue(api.GetVendorPriceByItemID, itemID))
 end
 
@@ -41,6 +49,7 @@ function Prices.Material(itemID)
 	if value then return value end
 	local api = auctionatorAPI()
 	return (tsmAvailable() and tsmValue(ns.db.matSource, "i:" .. itemID))
+		or (savedPrices() and ns.SavedPrices.Material(itemID))
 		or (api and auctionatorValue(api.GetAuctionPriceByItemID, itemID))
 		-- Price addons may not know vellums, and a vendor always has them.
 		or (itemID == ns.VELLUM_ITEM and ns.VELLUM_PRICE or nil)
@@ -52,6 +61,9 @@ function Prices.Sale(link, itemID)
 	if tsmAvailable() then
 		local ok, itemString = pcall(TSM_API.ToItemString, link)
 		local value = ok and itemString and tsmValue(ns.db.saleSource, itemString)
+		if value then return value end
+	elseif savedPrices() then
+		local value = ns.SavedPrices.Sale(link, itemID)
 		if value then return value end
 	end
 	local api = auctionatorAPI()
@@ -106,9 +118,19 @@ function Prices.Listed(link)
 	if ok then return count, age end
 end
 
--- Whether TSM is loaded, whatever the price addon option says (for its sales numbers).
+-- Whether TSM is loaded, whatever the price addon option says (for its sales
+-- numbers), or another character's save of its prices is used here.
 function Prices.HasTSM()
-	return TSM_API ~= nil and TSM_API.GetCustomPriceValue ~= nil
+	return (TSM_API ~= nil and TSM_API.GetCustomPriceValue ~= nil)
+		or (ns.SavedPrices.InUse() and ns.SavedPrices.Age() ~= nil)
+end
+
+-- How many days ago the saved TSM prices used here were saved, and the name of
+-- the character who saved them. Nil when prices don't come from a save.
+function Prices.SavedAge()
+	if not savedPrices() then return end
+	local age, name = ns.SavedPrices.Age()
+	return age, name
 end
 
 -- How many sell per day across the region, from TSM, or nil without TSM or a
@@ -116,6 +138,7 @@ end
 -- number and divided back.
 function Prices.SoldPerDay(link)
 	if not Prices.HasTSM() then return end
+	if not (TSM_API and TSM_API.GetCustomPriceValue) then return ns.SavedPrices.SoldPerDay(link) end
 	local ok, itemString = pcall(TSM_API.ToItemString, link)
 	if not (ok and itemString) then return end
 	local value = tsmValue("dbregionsoldperday*1000", itemString)
@@ -127,7 +150,7 @@ end
 -- today), or false when it's over three weeks or never. nil when prices don't
 -- come from Auctionator (TSM keeps its own data).
 local function auctionAge(fnName, arg)
-	if tsmAvailable() then return end
+	if tsmAvailable() or Prices.SavedAge() then return end
 	local api = auctionatorAPI()
 	local fn = api and api[fnName]
 	if not fn then return end
@@ -138,11 +161,12 @@ end
 
 -- How many days ago Auctionator last scanned the auction house, with its full scan
 -- or its automatic one (0 is within the last day), or false when it never has.
--- Nil when prices don't come from Auctionator (TSM keeps its own up to date).
+-- Nil when prices don't come from Auctionator (TSM keeps its own up to date, and
+-- saved TSM prices have their own age, see Prices.SavedAge).
 -- Auctionator keeps those times in its own saved state, not its API, so a change
 -- on its side just means no answer.
 function Prices.ScanAge()
-	if tsmAvailable() or not auctionatorAPI() then return end
+	if tsmAvailable() or Prices.SavedAge() or not auctionatorAPI() then return end
 	local state = Auctionator.SavedState
 	if type(state) ~= "table" then return end
 	local last = 0
@@ -178,9 +202,20 @@ function Prices.AgeText(age)
 	return age == 1 and "yesterday" or string.format("%d days ago", age)
 end
 
--- Where prices currently come from, for the panel's footer.
+-- Where prices currently come from, for the panel's footer. Saved TSM prices say
+-- whose they are, and how old while that's recent (old ones say it in red after
+-- this, see Reminder.FooterText).
 function Prices.SourceLabel()
-	if tsmAvailable() then return "TSM (" .. ns.db.matSource .. ")" end
+	if tsmAvailable() then
+		return "TSM (" .. ns.db.matSource .. ")" .. (ns.SavedPrices.Saving() and ", saving for alts..." or "")
+	end
+	local age, name, source
+	if savedPrices() then age, name, source = ns.SavedPrices.Age() end
+	if age then
+		local label = string.format("%s's TSM (%s)", name, source)
+		if age < ns.Reminder.OLD_DAYS then label = label .. ", saved " .. Prices.AgeText(age) end
+		return label
+	end
 	if auctionatorAPI() then return "Auctionator" end
 	if ns.db.provider == "tsm" then return "TSM is not loaded" end
 	if ns.db.provider == "auctionator" then return "Auctionator is not loaded" end

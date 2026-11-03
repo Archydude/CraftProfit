@@ -184,6 +184,8 @@ function Scans.Save(run)
 	for i, entry in ipairs(run.recipes) do recipes[i] = packRecipe(entry) end
 	me.scans = me.scans or {}
 	me.scans[run.professionID] = { format = FORMAT, time = time(), name = run.name, recipes = recipes }
+	-- With TSM loaded, the new recipes' prices are saved for characters without it.
+	ns.SavedPrices.ScanSaved()
 end
 
 local function entriesOf(saved, professionID, character)

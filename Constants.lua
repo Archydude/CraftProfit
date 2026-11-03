@@ -50,6 +50,8 @@ ns.DEFAULTS = {
 	matSource = "dbmarket",
 	saleSource = "dbmarket",
 	useVendor = true,
+	saveTSMPrices = false, -- characters with TSM save its prices for the ones without it (see SavedPrices.lua)
+	saveItems = "recipes", -- which items' prices they save (see ns.SAVE_ITEMS_CHOICES)
 	ahCut = true,
 	procFx = true,        -- animate multicraft / resourcefulness procs
 	procSound = true,     -- coin sound on procs
@@ -69,6 +71,7 @@ ns.DEFAULTS = {
 	minimap = true,       -- the minimap button (its position is in minimapIcon, kept by LibDBIcon)
 	countProcs = true,    -- multicraft and resourcefulness count in the Best crafts list
 	rankTooltip = true,   -- best rank you can craft, on crafted items' tooltips
+	priceTooltip = true,  -- saved TSM prices on item tooltips, on characters without TSM
 	rankConcentration = true, -- add the concentration that rank takes
 	rankCharacters = "all", -- whose ranks: "all" your characters | "current" one
 	bestSort = "profit",  -- the Best crafts list's sort: "profit" | "plain" | "procs" | "cost" | "gold" | "listed" | "sold" | "crafter" | "name"
@@ -147,6 +150,24 @@ ns.LIST_ADDON_CHOICES = {
 -- The Auctionator shopping list the missing materials button adds to, when the
 -- list isn't named after the character or profession.
 ns.SHOPPING_LIST = "Crafting"
+
+-- Which items' TSM prices are saved for your alts: key, name, and what it saves.
+ns.SAVE_ITEMS_CHOICES = {
+	{ "recipes", "Your recipes", "The materials and crafts of your characters' recipes, once you've opened their " ..
+		"Best crafts list. The smallest save." },
+	{ "crafting", "All crafting items", "Your recipes, plus every material, reagent, consumable, gem, enchant and " ..
+		"recipe the auction house has a price for." },
+	{ "all", "Everything but gear", "Your recipes, plus every item that isn't gear the auction house has a price " ..
+		"for. The biggest save, and the longest wait after you log in." },
+}
+
+-- Kinds of item "All crafting items" saves, by item class. Housing is decor,
+-- on game versions that have it.
+ns.CRAFTING_CLASSES = {}
+for _, class in ipairs({ "Consumable", "Gem", "Reagent", "Tradegoods", "ItemEnhancement", "Recipe", "Housing" }) do
+	local classID = Enum.ItemClass[class]
+	if classID then ns.CRAFTING_CLASSES[classID] = true end
+end
 
 -- TSM price types offered in the options.
 ns.TSM_SOURCES = {

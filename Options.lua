@@ -26,6 +26,9 @@ local function onChanged()
 	ns.Minimap.Update()
 end
 
+-- Settings that change which TSM prices are saved for your alts: a change saves them again.
+local RESAVE = { saveTSMPrices = true, saveItems = true, provider = true, matSource = true, saleSource = true }
+
 -- Changes a setting from elsewhere (the Best crafts list), as the options would.
 function Options.Set(key, value)
 	if settings[key] then settings[key]:SetValue(value) else ns.db[key] = value; onChanged() end
@@ -48,7 +51,14 @@ function Options.Create()
 
 	local function setting(key, varType, name)
 		local s = Settings.RegisterAddOnSetting(page, "CRAFTPROFIT_" .. key:upper(), key, db, varType, name, ns.DEFAULTS[key])
-		s:SetValueChangedCallback(onChanged)
+		s:SetValueChangedCallback(function(...)
+			onChanged(...)
+			if key == "saveTSMPrices" and not db.saveTSMPrices then
+				ns.SavedPrices.Forget()
+			elseif RESAVE[key] then
+				ns.SavedPrices.Save(true)
+			end
+		end)
 		settings[key] = s
 		return s
 	end
@@ -85,7 +95,7 @@ function Options.Create()
 		"It picks the materials for Use Craft Profit Reagents and the panel's blue row, prices missing materials, " ..
 		"decides what the shopping list buys, and ranks the Best crafts list. Patron orders keep their own rule: the " ..
 		"cheapest materials that reach the order's minimum quality.\n\nAlso on the panel when a recipe is open, and at the bottom of the Best crafts list.")
-	checkbox("countProcs", "Count multicraft and resourcefulness",
+	checkbox("countProcs", "Count procs in profits",
 		"The Best crafts list ranks recipes by what they make on average with procs. The Patron tab shows and sorts orders by what they make on average with " ..
 		"resourcefulness, the customer's materials included (the customer gets the item, so multicraft doesn't " ..
 		"count). Your chances come from the " ..
@@ -101,7 +111,7 @@ function Options.Create()
 
 	header("Prices")
 	dropdown("provider", "Price addon", {
-		{ "auto", "Automatic (TSM, then Auctionator)" },
+		{ "auto", "Automatic (TSM first)" },
 		{ "tsm", "TradeSkillMaster only" },
 		{ "auctionator", "Auctionator only" },
 	}, "Where prices come from. Automatic uses TSM and falls back to Auctionator for items TSM has no price for.")
@@ -109,14 +119,31 @@ function Options.Create()
 		"What you'd pay for materials. Market value smooths out spikes; lowest auction is what you'd pay right now.")
 	dropdown("saleSource", "TSM price for crafted items", ns.TSM_SOURCES,
 		"What you'd get for the item you craft.")
-	checkbox("scanReminder", "Remind me to scan the auction house",
+	checkbox("scanReminder", "Remind me of old prices",
 		"With prices from Auctionator: when its last scan is over a day old, a chat line reminds you when you open " ..
 		"the auction house, and when it's over 3 days old, a notice over the Best crafts list when you open it (once a " ..
-		"session). The panel's and the list's footers always say how old the scan is, in red once it's a day old.")
-	checkbox("useVendor", "Use vendor price for vendor items",
+		"session). The panel's and the list's footers always say how old the scan is, in red once it's a day old.\n\n" ..
+		"With TSM prices saved by another character: the same reminders, to log in on a character with TSM.")
+	checkbox("useVendor", "Use vendor prices",
 		"Materials a vendor sells (vials, thread...) are priced at the vendor instead of the auction house.")
 	checkbox("ahCut", format("Subtract auction house cut (%d%%)", ns.AH_CUT * 100),
 		"The auction house keeps 5% of every sale.")
+
+	header("TSM prices for alts")
+	checkbox("saveTSMPrices", "Save TSM prices for alts",
+		"Each time a character with TSM logs in, its prices are kept for your characters that don't load TSM. " ..
+		"Turn TSM off on your crafting alts, and they still get TSM prices. The bottom of the panel says whose " ..
+		"prices they are and how old.\n\n" ..
+		"Gear prices only count on the realm they were saved on and its connected realms; other prices count " ..
+		"on every realm. Prices over 2 weeks old aren't used.\n\n" ..
+		"Turning it off deletes the saved prices, for all your characters.")
+	local saveTip = "Which items' prices are saved:\n\n"
+	for _, choice in ipairs(ns.SAVE_ITEMS_CHOICES) do
+		saveTip = saveTip .. choice[2] .. ": " .. choice[3] .. "\n\n"
+	end
+	dropdown("saveItems", "Save prices for", ns.SAVE_ITEMS_CHOICES, saveTip ..
+		"Gear is only saved from your recipes. Items an alt has no price for get one the next time a character " ..
+		"with TSM logs in.")
 
 	---------------------------------------------------------------------------
 	-- Panel
@@ -147,7 +174,7 @@ function Options.Create()
 	end, "Put the panel back next to the profession window.")
 
 	header("Procs and session total")
-	checkbox("procFx", "Animate multicraft & resourcefulness procs",
+	checkbox("procFx", "Animate procs",
 		"When a craft procs, the bonus gold pops up over the Profit line and the panel flashes gold.")
 	checkbox("procSound", "Coin sound on procs",
 		"Play a coin sound when a craft procs multicraft or resourcefulness.")
@@ -161,7 +188,7 @@ function Options.Create()
 	---------------------------------------------------------------------------
 
 	startPage("Shopping list")
-	checkbox("shoppingButton", "Show the Shopping list button",
+	checkbox("shoppingButton", "Show Shopping list button",
 		format("A button under your materials for buying what you're short of, and the shopping buttons on the " ..
 		"Patron tab: Add profitable, Add all and each order's cart button.\n\n" ..
 		"Auctionator: a click opens a menu that adds what's missing for 1, 5, 10 or any number of crafts " ..
@@ -173,11 +200,11 @@ function Options.Create()
 		"When Auctionator and TSM are both installed: add missing materials to Auctionator's shopping list, " ..
 		"or get a TSM search to copy. With only one of them, that one is used.\n\n" ..
 		"You can also switch it at the bottom of the Shopping list menus.")
-	checkbox("listPerCharacter", "One shopping list per character",
+	checkbox("listPerCharacter", "One list per character",
 		format("Each character gets its own Auctionator list, named after it, like \"%s\".\n\n" ..
 			"Can be combined with one list per profession: \"%s - Blacksmithing\".",
 			UnitName("player") or "Name", UnitName("player") or "Name"))
-	checkbox("listPerProfession", "One shopping list per profession",
+	checkbox("listPerProfession", "One list per profession",
 		format("Each profession gets its own Auctionator list, like \"Blacksmithing\".\n\n" ..
 			"Can be combined with one list per character. With neither, the list is \"%s\".", ns.SHOPPING_LIST))
 	checkbox("checkOff", "Check off what you get",
@@ -194,7 +221,7 @@ function Options.Create()
 	---------------------------------------------------------------------------
 
 	startPage("Patron orders")
-	checkbox("patronList", "Show Craft Profit on the Patron tab",
+	checkbox("patronList", "Show on the Patron tab",
 		"The Patron tab's order list shows each order's profit or loss, its rewards and what materials you're " ..
 		"missing, with buttons to shop for it and to start, craft and complete it. Buttons above the list shop for the profitable " ..
 		"orders or all of them; under it, the concentration they use and the session total.\n\n" ..
@@ -218,7 +245,7 @@ function Options.Create()
 	---------------------------------------------------------------------------
 
 	startPage("Tooltips")
-	checkbox("rankTooltip", "Show the best rank you can craft",
+	checkbox("rankTooltip", "Show your best rank",
 		"On the tooltip of an item you can craft: the highest rank you can make it at with top-quality materials, " ..
 		"using concentration if that reaches a higher rank.\n\n" ..
 		"Updates each time you open your profession window.")
@@ -227,11 +254,15 @@ function Options.Create()
 		{ "current", "This character only" },
 	}, "All your characters: one line for each character that knows the recipe, best rank first.\n\n" ..
 		"A character shows up once you've opened its profession window, on any version of Craft Profit since 1.7.")
-	checkbox("rankConcentration", "Show the concentration it takes",
+	checkbox("rankConcentration", "Show its concentration",
 		"When the best rank needs concentration, add how much.")
 	button("Saved characters", "Forget...", ns.Ranks.OpenForgetMenu,
 		"Pick a character you deleted, renamed or moved, so its Craft Rank no longer shows on tooltips.\n\n" ..
 		"A character you still play comes back once you open its profession window again.")
+	checkbox("priceTooltip", "Show saved TSM prices",
+		"On characters without TSM that use TSM prices saved by another character (see Save TSM prices for alts, " ..
+		"on the main page): one line with the item's price, as Craft Profit prices it, and whose " ..
+		"prices they are and how old.\n\nOnly items in those saved prices show it.")
 
 	Settings.RegisterAddOnCategory(category)
 end

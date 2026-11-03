@@ -19,11 +19,13 @@ Craft Profit tells you, in gold, whether a craft or a crafting order makes or lo
 
 - **Session total:** under Profit/Loss, what all your crafts made since you logged in on this character (a `/reload` keeps it), including orders crafted from the Patron tab, where it also shows under the order list. Crafts whose item has no sale price, like enchants and treatises, count as a loss of what their materials cost, less what resourcefulness gives back. Click it to reset it to zero. After 5 crafts it also shows your **luck**: how much more (or less) your procs made than expected, like **Luck +14%**.
 
+- **TSM prices for alts:** keep TSM turned off on your crafting alts and they still get TSM prices, saved by a character with TSM each time it logs in.
+
 - **Minimap button:** opens your profession window on the Best crafts list; hover for this session's total.
 
 - **Best rank on tooltips:** an item you can craft shows the highest rank you can make it at with top-quality materials, anywhere you see its tooltip.
 
-Nothing runs until you open your profession window, apart from noting your auction sales when you open your mailbox. Procs are counted as an average, always shown next to the profit without them.
+Nothing runs until you open your profession window, apart from noting your auction sales when you open your mailbox and, if you turn it on, saving TSM prices for your alts when you log in. Procs are counted as an average, always shown next to the profit without them.
 
 Requires **TradeSkillMaster** or **Auctionator** for prices. Both together give the best experience: TSM adds how fast items sell, Auctionator adds how many are listed and the shopping list that checks itself off. Built for WoW Midnight 12.1.
 
@@ -127,12 +129,12 @@ Under the list: how much concentration the orders use, this session's total (cli
 
 **Optimize concentration:** in the gear menu under the list, also on the crafting order form and the crafting page (above Use Craft Profit Reagents) and in the options. With it on, an order that needs concentration uses the material qualities that need the least of it, and the cheapest of those, so your concentration covers more orders. The materials cost more. Use Craft Profit Reagents and the blue row on the order form pick the same materials.
 
-Turn off **Show Craft Profit on the Patron tab** in the options to get Blizzard's own columns back.
+Turn off **Show on the Patron tab** in the options to get Blizzard's own columns back.
 
 ### Best crafts
 Click the **Best crafts** tab, next to the profession window's own tabs (from any of them, it goes back to your recipes first), or type `/craftprofit best`. The tab fills the recipe list and the recipe details with every recipe you know in the profession shown (Midnight Blacksmithing, say), most profitable first. It works out each recipe for a few seconds after it opens, and shows how far it's got at the bottom.
 
-- **Expected** (or **Profit**): what one craft makes after the 5% auction house cut, at the rank your crafting strategy picks (without concentration), with the materials it picks: the same ones the crafting page would use. With **Count multicraft and resourcefulness** on (the default), it's what a craft makes on average with procs, and the list ranks by it; off, the column is **Profit**, without them. Its quality icon is after the name. Recipes whose item has no auction price at the rank you'd make say **No price**, in grey, at the bottom.
+- **Expected** (or **Profit**): what one craft makes after the 5% auction house cut, at the rank your crafting strategy picks (without concentration), with the materials it picks: the same ones the crafting page would use. With **Count procs in profits** on (the default), it's what a craft makes on average with procs, and the list ranks by it; off, the column is **Profit**, without them. Its quality icon is after the name. Recipes whose item has no auction price at the rank you'd make say **No price**, in grey, at the bottom.
 - **Gold/day:** roughly what the recipe could make in a day: the profit on each item times how many sell per day. So a recipe with a big profit that hardly sells stops looking better than one that sells all day. It's for comparing recipes, not a promise: with TSM it counts sales across your whole region, and you'd only get a share of them; without TSM, your own sales from the last 14 days. Recipes that lose gold or haven't sold show **-**. The list still opens sorted by profit; click the header to sort by it.
 - **Listed:** how many were up for sale the last time Auctionator saw them, in grey when that was 3 days ago or more. Needs Auctionator; without it, **-**.
 - **Sells/day** (with TSM): how many sell per day across your region, on average.
@@ -148,7 +150,7 @@ Click a column header to sort by it; click again to reverse. Recipes without a v
 
 **Filter:** the button next to the search box.
 - **Profitable only** hides the recipes that lose gold or have no price.
-- **Count multicraft and resourcefulness** switches the first column between Expected and Profit (also in the options).
+- **Count procs in profits** switches the first column between Expected and Profit (also in the options).
 - **Show:** a checkbox for each kind of item the profession makes, with how many: **Gear** (weapons, armor and profession tools), **Decor**, **Materials** (reagents, trade goods and gems), **Enchants and kits**, **Consumables**, **Bags** and **Other**. **Show all** and **Hide all** set them all at once.
 - **Show ignored recipes** shows the recipes you ignored (below), in grey and marked **ignored**. **Stop ignoring all** brings back every ignored recipe of the profession shown.
 - The list remembers the filter. The small red button on it puts everything back (ignored recipes stay ignored).
@@ -214,6 +216,16 @@ How the numbers work:
 - A craft with the panel hidden has no forecast and no materials cost.
 - The window shows up to the last 90 days.
 
+## TSM prices for alts
+Keep TSM turned off on your crafting alts and they still get TSM prices. Turn on **Save TSM prices for alts** in the options, and each time a character with TSM logs in, Craft Profit keeps its prices for your other characters on the same WoW account.
+
+- **What's saved**, under **Save prices for**: **Your recipes** (the materials and crafts of every character's recipes, once you've opened their Best crafts list), **All crafting items**, or **Everything but gear**. Chat says when a save starts and ends, and the footers say **saving for alts...** while it runs.
+- **On an alt**, the panel, the Patron tab, Best crafts (Sells/day and Gold/day included) and the Ledger use those prices. The footer says whose they are and how old, like **Archarcher's TSM (dbmarket), saved today**. From a day old the age is in red, and the reminders tell you to log in on a character with TSM.
+- **Item tooltips** show the saved price in one line, down to the copper: **TSM dbmarket (Archarcher, today)**. Turn it off with **Show saved TSM prices** on the Tooltips page.
+- An item an alt has no price for gets one the next time a character with TSM logs in.
+- Gear prices only count on the realm they were saved on and its connected realms; everything else counts on every realm. Prices over 2 weeks old aren't used.
+- Turning the option off deletes the saved prices, for all your characters.
+
 ## Options
 Click the gear on the panel (or Craft Profit options in the gear menu under the Patron tab's list), type `/craftprofit`, or go to **Esc → Options → AddOns → Craft Profit**. The main page has what to craft and where prices come from; click the **+** next to Craft Profit for the other pages.
 
@@ -222,13 +234,15 @@ Click the gear on the panel (or Craft Profit options in the gear menu under the 
 | Option | What it does |
 |---|---|
 | Crafting strategy | What the crafting page crafts: Highest rank, cheapest materials (default), Use what I own, or Cheapest materials. Also at the bottom of the Best crafts list. |
-| Count multicraft and resourcefulness | On by default. The Best crafts list ranks by what crafts make on average with procs. Also in the Best crafts list's Filter menu. |
+| Count procs in profits | On by default. The Best crafts list ranks by what crafts make on average with procs. Also in the Best crafts list's Filter menu. |
 | Show minimap button | On by default. Also `/craftprofit minimap`. |
-| Price addon | Automatic (TSM, then Auctionator for anything TSM has no price for), TSM only, or Auctionator only. |
+| Price addon | Automatic (TSM first, then Auctionator for anything TSM has no price for), TSM only, or Auctionator only. |
 | TSM price for materials / crafted items | Market value (default), lowest auction right now, historical price or region market average. |
-| Remind me to scan the auction house | On by default. With Auctionator prices: a chat reminder at the auction house after a day, and a notice over the Best crafts list after 3 days. |
-| Use vendor price for vendor items | On by default. |
+| Remind me of old prices | On by default. With Auctionator prices: a chat reminder at the auction house after a day, and a notice over the Best crafts list after 3 days. With TSM prices saved for alts: the same, to log in on a character with TSM. |
+| Use vendor prices | On by default. |
 | Subtract auction house cut (5%) | On by default. |
+| Save TSM prices for alts | Off by default. Characters with TSM keep its prices for your characters that don't load it (see [TSM prices for alts](#tsm-prices-for-alts)). Turning it off deletes the saved prices. |
+| Save prices for | Your recipes (default), All crafting items, or Everything but gear. |
 
 **Panel**
 
@@ -239,7 +253,7 @@ Click the gear on the panel (or Craft Profit options in the gear menu under the 
 | Show amounts down to | Gold, silver (default) or copper. |
 | Lock panel position | Stops the panel from being dragged. |
 | Panel position: Reset | Puts the panel back next to the profession window. |
-| Animate multicraft & resourcefulness procs | On by default. |
+| Animate procs | On by default. |
 | Coin sound on procs | On by default. |
 | Show this session's total | On by default. |
 | Session total: Reset | Starts the session total from zero. |
@@ -248,9 +262,9 @@ Click the gear on the panel (or Craft Profit options in the gear menu under the 
 
 | Option | What it does |
 |---|---|
-| Show the Shopping list button | The Shopping list button under your materials, and on the Patron tab Add profitable, Add all and the cart buttons. On by default; hidden anyway without Auctionator or TSM. |
+| Show Shopping list button | The Shopping list button under your materials, and on the Patron tab Add profitable, Add all and the cart buttons. On by default; hidden anyway without Auctionator or TSM. |
 | Shop with | With Auctionator and TSM both installed: Auctionator shopping list (default) or TSM search to copy. Also at the bottom of the Shopping list menu and in the gear menu under the Patron tab's list. |
-| One shopping list per character / per profession | On by default. Either or both split the shopping list, e.g. Thrall - Blacksmithing. With both off, it's called Crafting. |
+| One list per character / per profession | On by default. Either or both split the shopping list, e.g. Thrall - Blacksmithing. With both off, it's called Crafting. |
 | Check off what you get | On by default. Materials come off the Auctionator shopping list as you get them: bought, looted, from the mailbox or crafted. |
 | Auctionator shopping list: Clear | Empties the shopping list. With one list per profession and no profession window open, it empties all this character's profession lists. |
 
@@ -258,7 +272,7 @@ Click the gear on the panel (or Craft Profit options in the gear menu under the 
 
 | Option | What it does |
 |---|---|
-| Show Craft Profit on the Patron tab | Materials, Rewards, Profit and Actions columns, the shopping buttons and the footer on the Patron tab. On by default; off gives back Blizzard's own columns. |
+| Show on the Patron tab | Materials, Rewards, Profit and Actions columns, the shopping buttons and the footer on the Patron tab. On by default; off gives back Blizzard's own columns. |
 | Spend concentration on | Most profit (default): the most gold per concentration point first. Knowledge first: orders that reward profession knowledge first, then by profit. Don't use concentration: patron orders never spend it, and the ones that need it get no buttons. Also in the gear menu under the Patron tab's list. |
 | Optimize concentration | Orders that need concentration use the qualities that need the least of it, the cheapest of those. Off by default. Also in the gear menu under the Patron tab's list, on the crafting order form and on the crafting page. |
 
@@ -266,12 +280,13 @@ Click the gear on the panel (or Craft Profit options in the gear menu under the 
 
 | Option | What it does |
 |---|---|
-| Show the best rank you can craft | The **Craft Rank** line on item tooltips. On by default. |
+| Show your best rank | The **Craft Rank** line on item tooltips. On by default. |
 | Show it for | All your characters (default) or this character only. |
-| Show the concentration it takes | Adds the concentration when the best rank needs it. On by default. |
+| Show its concentration | Adds the concentration when the best rank needs it. On by default. |
 | Saved characters: Forget... | Pick a character you deleted, renamed or moved to take it off Craft Rank tooltips and the Best crafts list. |
+| Show saved TSM prices | On characters using TSM prices saved for alts: the saved price on item tooltips. On by default. |
 
 ## Notes
-- With Auctionator, prices come from your own auction house scans. Once Auctionator's last scan is over a day old, the panel's and the Best crafts list's footers say so in red ("last scan 2 days ago"), and opening the auction house reminds you in chat to run a full scan. Over 3 days old, opening the Best crafts list shows a notice in the middle of the list, once a session. Turn the reminders off with **Remind me to scan the auction house** in the options. With TSM, the TSM desktop app keeps them up to date for you. With Auctionator, the panel's notes say how old its oldest price is (**seen today**, or **oldest 4 days ago**, in red and in sight at the bottom of the panel once it's 3 days or more), and each material's tooltip says when Auctionator last saw it. Visit the auction house to refresh them.
+- With Auctionator, prices come from your own auction house scans. Once Auctionator's last scan is over a day old, the panel's and the Best crafts list's footers say so in red ("last scan 2 days ago"), and opening the auction house reminds you in chat to run a full scan. Over 3 days old, opening the Best crafts list shows a notice in the middle of the list, once a session. Turn the reminders off with **Remind me of old prices** in the options. With TSM, the TSM desktop app keeps them up to date for you. With Auctionator, the panel's notes say how old its oldest price is (**seen today**, or **oldest 4 days ago**, in red and in sight at the bottom of the panel once it's 3 days or more), and each material's tooltip says when Auctionator last saw it. Visit the auction house to refresh them.
 - A big Blizzard update to the profession window may need a Craft Profit update too.
 - After an update, a What's New window shows what changed since the version you had. Tick **Don't show this after updates** to stop it opening, for all the addons that use it. Type `/whatsnew` to see the latest changes, or to turn it back on.

@@ -2,10 +2,15 @@
 ArchdudeWhatsNew:Register("CraftProfit", {
 	title = "Craft Profit",
 	icon = "Interface\\Icons\\INV_Hammer_20",
-	version = "3.0.2",
+	version = "3.1.0",
 	seen = "CraftProfitWhatsNew",
 	saved = { "CraftProfitDB", "CraftProfitCharDB" },
 	changes = {
+		{ "3.1.0",
+			"|cffffd100TSM prices for alts:|r keep TSM turned off on your crafting alts and they still get TSM prices. Turn on |cffffd100Save TSM prices for alts|r in the options, and each time a character with TSM logs in, its prices are kept for your other characters. Pick what's saved under |cffffd100Save prices for|r: your recipes, all crafting items, or everything but gear. On an alt, the panel, the Patron tab, Best crafts and the Ledger use them, and the footer says whose prices they are and how old. Off by default.",
+			"|cffffd100Saved TSM prices on tooltips:|r on those alts, item tooltips show the saved TSM price down to the copper, with which TSM price it is, whose and how old.",
+			"|cffffd100Shorter option names|r, so they're no longer cut off. For example, |cffffd100Count multicraft and resourcefulness|r is now |cffffd100Count procs in profits|r, and |cffffd100Remind me to scan the auction house|r is now |cffffd100Remind me of old prices|r.",
+		},
 		{ "3.0.2",
 			"Fixed: since 3.0.1, opening a recipe on the crafting page could show the error \"bad argument #1 to 'tostring' (value expected)\".",
 		},
@@ -59,10 +64,6 @@ ArchdudeWhatsNew:Register("CraftProfit", {
 			"|cffffd100Item names in their rarity's color|r (green, blue, purple...) in the Best crafts list, the panel's materials and every tooltip.",
 			"|cffffd100Luck|r now shows from your first craft that can proc, instead of after 5.",
 			"Fixed: on patron orders, Luck read far too high, because what resourcefulness gave back of the customer's materials counted but wasn't expected. The luck tooltip now says |cffffd100Procs make on average|r instead of Expected.",
-		},
-		{ "2.1.0",
-			"|cffffd100Ignore recipes in Best crafts:|r click the eye at the end of a row (or right-click the row) to hide a recipe whose price makes no sense. |cffffd100Show ignored recipes|r in the Filter menu shows them again, in grey, with an undo button on each; |cffffd100Stop ignoring all|r brings them all back. The ignore list is the same for all your characters.",
-			"|cffffd100Reminders to scan the auction house|r, with Auctionator prices: once its last scan is over a day old, opening the auction house reminds you in chat to run a full scan, and the footers of the panel and the Best crafts list say |cffffd100last scan 2 days ago|r in red. Over 3 days old, opening Best crafts shows an |cffffd100Old prices|r notice, once a session. Turn the reminders off with |cffffd100Remind me to scan the auction house|r in the options, under Prices.",
 		},
 	},
 })

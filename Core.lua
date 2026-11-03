@@ -57,6 +57,7 @@ events:SetScript("OnEvent", function(self, event, ...)
 	if name == ADDON_NAME then
 		ns.db = loadSettings()
 		ns.Ranks.Init()
+		ns.SavedPrices.Init()
 		ns.Sales.Init()
 		ns.Ledger.Init()
 		ns.Procs.Init()

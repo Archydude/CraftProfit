@@ -1,5 +1,10 @@
 # Changelog
 
+## 3.1.0
+- **TSM prices for alts:** keep TSM turned off on your crafting alts and they still get TSM prices. Turn on **Save TSM prices for alts** in the options, and each time a character with TSM logs in, its prices are kept for your other characters. Pick what's saved under **Save prices for**: your recipes, all crafting items, or everything but gear. On an alt, the panel, the Patron tab, Best crafts and the Ledger use them, and the footer says whose prices they are and how old. Off by default.
+- **Saved TSM prices on tooltips:** on those alts, item tooltips show the saved TSM price down to the copper, with which TSM price it is, whose and how old.
+- **Shorter option names**, so they're no longer cut off. For example, **Count multicraft and resourcefulness** is now **Count procs in profits**, and **Remind me to scan the auction house** is now **Remind me of old prices**.
+
 ## 3.0.2
 - Fixed: since 3.0.1, opening a recipe on the crafting page could show the error "bad argument #1 to 'tostring' (value expected)".
 

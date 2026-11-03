@@ -792,7 +792,7 @@ end
 local HEADERS = {
 	profit = { text = "Profit", sorts = "profit", tip = "Commission after the cut, plus the rewards that sell, minus the "
 		.. "materials you supply, at the qualities that reach the order's minimum quality. The concentration it "
-		.. "takes is shown after it.\n\nWith Count multicraft and resourcefulness on (Craft Profit options), it's "
+		.. "takes is shown after it.\n\nWith Count procs in profits on (Craft Profit options), it's "
 		.. "Expected: what the order makes on average with resourcefulness, on the materials you supply and the "
 		.. "ones the customer sent (what it saves comes back to you). Multicraft doesn't count, since the customer "
 		.. "gets the item." },

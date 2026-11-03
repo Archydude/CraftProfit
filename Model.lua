@@ -28,7 +28,7 @@ local _, ns = ...
 local Model = {}
 ns.Model = Model
 
--- The profit to show and rank by: with Count multicraft and resourcefulness on,
+-- The profit to show and rank by: with Count procs in profits on,
 -- the expected profit.
 function Model.Shown(model)
 	return ns.db.countProcs and model.expected or model.total

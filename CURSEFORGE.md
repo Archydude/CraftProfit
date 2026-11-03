@@ -36,22 +36,26 @@ Craft Profit answers in gold: **profit or loss?** A panel next to your professio
 - **Ledger**: your crafts, sales, orders and purchases against the forecast
 - **Patron orders** priced and crafted right in Blizzard's Patron tab
 - **Crafting strategy**: highest rank, what you own or cheapest materials
+- **TSM prices for alts** that keep TSM turned off
 - **Craft Rank** on tooltips
 
 ### Crafts and orders
 The panel leads with the answer: the sale price at the rank you'll get, minus the 5% cut and your materials, with and without procs, plus what **concentration** would add. On orders: the commission, minus the materials **you** supply, plus sellable rewards.
 
 ### What should I craft?
-**Best crafts** lists every recipe you know, most profitable first, with the profit with and without procs, what the materials cost, what each could make in a day, how many are listed and how many sell. Pin your favorites. **All characters** puts every character's professions in one list, so you know who to log in to.
+**Best crafts** lists every recipe you know, most profitable first, with what each costs, could make in a day and sells. Pin your favorites. **All characters** puts every character's professions in one list, so you know who to log in to.
 
 ### Did it pay off?
-The **Ledger** is your crafting history in its own window. See what each item cost, sold for and really made, what procs added, and how far it landed from the forecast, by regular crafts and order type. Sales count when you open your auction mail.
+The **Ledger** is your crafting history: what each item cost, sold for and really made, what procs added, and how far it landed from the forecast.
 
 ### Which materials?
 Pick a **crafting strategy** and Craft Profit puts those materials in and shops for exactly those.
 
 ### Patron orders
 Blizzard's Patron tab shows each order's **expected profit**, **rewards** and missing **materials**. Sort by profit, shop for the profitable ones, and craft each with one click per step.
+
+### TSM prices for alts
+Keep TSM off on your crafting alts and they still get its prices, saved by a character with TSM each time it logs in, on their tooltips too.
 
 ### Shopping list
 One click adds what you're missing to an **Auctionator** shopping list or a **TSM** search.
@@ -69,11 +73,11 @@ One click adds what you're missing to an **Auctionator** shopping list or a **TS
 
 ## B. Upload File form
 
-**File:** `dist\CraftProfit-3.0.2.zip`
+**File:** `dist\CraftProfit-3.1.0.zip`
 
 **Display name**
 ```
-Craft Profit 3.0.2
+Craft Profit 3.1.0
 ```
 
 **Release type:** `Release`
@@ -82,6 +86,11 @@ Craft Profit 3.0.2
 
 **Changelog** (paste only the newest part; paste older parts too if they never went up)
 ```markdown
+3.1.0
+- **TSM prices for alts:** keep TSM turned off on your crafting alts and they still get TSM prices. Turn on **Save TSM prices for alts** in the options, and each time a character with TSM logs in, its prices are kept for your other characters. Pick what's saved under **Save prices for**: your recipes, all crafting items, or everything but gear. On an alt, the panel, the Patron tab, Best crafts and the Ledger use them, and the footer says whose prices they are and how old. Off by default.
+- **Saved TSM prices on tooltips:** on those alts, item tooltips show the saved TSM price down to the copper, with which TSM price it is, whose and how old.
+- **Shorter option names**, so they're no longer cut off. For example, **Count multicraft and resourcefulness** is now **Count procs in profits**, and **Remind me to scan the auction house** is now **Remind me of old prices**.
+
 3.0.2
 - Fixed: since 3.0.1, opening a recipe on the crafting page could show the error "bad argument #1 to 'tostring' (value expected)".
 
