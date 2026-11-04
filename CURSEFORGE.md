@@ -73,11 +73,11 @@ One click adds what you're missing to an **Auctionator** shopping list or a **TS
 
 ## B. Upload File form
 
-**File:** `dist\CraftProfit-3.1.0.zip`
+**File:** `dist\CraftProfit-3.1.1.zip`
 
 **Display name**
 ```
-Craft Profit 3.1.0
+Craft Profit 3.1.1
 ```
 
 **Release type:** `Release`
@@ -86,6 +86,12 @@ Craft Profit 3.1.0
 
 **Changelog** (paste only the newest part; paste older parts too if they never went up)
 ```markdown
+3.1.1
+- **TSM prices for alts:** **Everything but gear** is now **Everything TSM has**, and saves gear too, at each item level, so alts get prices for gear from your realm. **All crafting items** now includes decor.
+- Saving every item takes seconds instead of about a minute, and is much lighter on TSM.
+- A save now starts half a minute after you log in, after TSM's own work, and waits while you're in combat.
+- If TSM has far fewer prices than the last save, for example when its desktop app hasn't run, your alts keep the last save and chat says so.
+
 3.1.0
 - **TSM prices for alts:** keep TSM turned off on your crafting alts and they still get TSM prices. Turn on **Save TSM prices for alts** in the options, and each time a character with TSM logs in, its prices are kept for your other characters. Pick what's saved under **Save prices for**: your recipes, all crafting items, or everything but gear. On an alt, the panel, the Patron tab, Best crafts and the Ledger use them, and the footer says whose prices they are and how old. Off by default.
 - **Saved TSM prices on tooltips:** on those alts, item tooltips show the saved TSM price down to the copper, with which TSM price it is, whose and how old.

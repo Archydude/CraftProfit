@@ -142,8 +142,7 @@ function Options.Create()
 		saveTip = saveTip .. choice[2] .. ": " .. choice[3] .. "\n\n"
 	end
 	dropdown("saveItems", "Save prices for", ns.SAVE_ITEMS_CHOICES, saveTip ..
-		"Gear is only saved from your recipes. Items an alt has no price for get one the next time a character " ..
-		"with TSM logs in.")
+		"Items an alt has no price for get one the next time a character with TSM logs in.")
 
 	---------------------------------------------------------------------------
 	-- Panel

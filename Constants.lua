@@ -155,10 +155,10 @@ ns.SHOPPING_LIST = "Crafting"
 ns.SAVE_ITEMS_CHOICES = {
 	{ "recipes", "Your recipes", "The materials and crafts of your characters' recipes, once you've opened their " ..
 		"Best crafts list. The smallest save." },
-	{ "crafting", "All crafting items", "Your recipes, plus every material, reagent, consumable, gem, enchant and " ..
-		"recipe the auction house has a price for." },
-	{ "all", "Everything but gear", "Your recipes, plus every item that isn't gear the auction house has a price " ..
-		"for. The biggest save, and the longest wait after you log in." },
+	{ "crafting", "All crafting items", "Your recipes, plus every material, reagent, consumable, gem, enchant, " ..
+		"recipe and decor item TSM has auction prices for." },
+	{ "all", "Everything TSM has", "Your recipes, plus every item TSM has auction prices for on your realm, gear " ..
+		"at each item level included. The biggest save." },
 }
 
 -- Kinds of item "All crafting items" saves, by item class. Housing is decor,

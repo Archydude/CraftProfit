@@ -219,7 +219,8 @@ How the numbers work:
 ## TSM prices for alts
 Keep TSM turned off on your crafting alts and they still get TSM prices. Turn on **Save TSM prices for alts** in the options, and each time a character with TSM logs in, Craft Profit keeps its prices for your other characters on the same WoW account.
 
-- **What's saved**, under **Save prices for**: **Your recipes** (the materials and crafts of every character's recipes, once you've opened their Best crafts list), **All crafting items**, or **Everything but gear**. Chat says when a save starts and ends, and the footers say **saving for alts...** while it runs.
+- **What's saved**, under **Save prices for**: **Your recipes** (the materials and crafts of every character's recipes, once you've opened their Best crafts list), **All crafting items**, or **Everything TSM has** (every item TSM has auction prices for on your realm, gear at each item level included). A save starts half a minute after you log in and waits while you're in combat. Chat says when it starts and ends, and the footers say **saving for alts...** while it runs.
+- If TSM has far fewer prices than the last save, for example when its desktop app hasn't run, the last save stays and chat says so.
 - **On an alt**, the panel, the Patron tab, Best crafts (Sells/day and Gold/day included) and the Ledger use those prices. The footer says whose they are and how old, like **Archarcher's TSM (dbmarket), saved today**. From a day old the age is in red, and the reminders tell you to log in on a character with TSM.
 - **Item tooltips** show the saved price in one line, down to the copper: **TSM dbmarket (Archarcher, today)**. Turn it off with **Show saved TSM prices** on the Tooltips page.
 - An item an alt has no price for gets one the next time a character with TSM logs in.
@@ -242,7 +243,7 @@ Click the gear on the panel (or Craft Profit options in the gear menu under the 
 | Use vendor prices | On by default. |
 | Subtract auction house cut (5%) | On by default. |
 | Save TSM prices for alts | Off by default. Characters with TSM keep its prices for your characters that don't load it (see [TSM prices for alts](#tsm-prices-for-alts)). Turning it off deletes the saved prices. |
-| Save prices for | Your recipes (default), All crafting items, or Everything but gear. |
+| Save prices for | Your recipes (default), All crafting items, or Everything TSM has. |
 
 **Panel**
 

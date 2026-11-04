@@ -2,8 +2,12 @@
 -- When a character with TSM logs in, the materials and crafts in every
 -- character's saved scans (see Scans.lua) are priced and saved for its realm,
 -- with the items that characters without TSM had no price for, and, if the
--- option says so, every crafting item or every item but gear. Those characters
--- price from the save (see Prices.lua).
+-- option says so, the crafting items or all the items TSM has auction data for.
+-- Those characters price from the save (see Prices.lua).
+--
+-- Which items TSM has data for comes from TSM's own data as the game loads it
+-- (see onTSMData); their prices still come through TSM's API, like every other
+-- price in Craft Profit.
 --
 -- A saved file only loads up to a limit of unique values, so each realm's prices
 -- are saved as one string.
@@ -16,24 +20,25 @@ local format = string.format
 
 -- Saved prices older than this many days aren't used.
 local MAX_DAYS = 14
--- Seconds after login before pricing, so TSM has its prices loaded.
-local LOGIN_DELAY = 5
+-- Seconds after login before pricing, so TSM's own work after login goes first.
+local LOGIN_DELAY = 30
 -- Seconds to wait for the game to load items it didn't have yet.
 local ITEM_DELAY = 3
 -- Milliseconds of pricing per frame, so the game doesn't stutter.
-local FRAME_BUDGET = 5
+local FRAME_BUDGET = 2
+-- Seconds between checks while you're in combat, when pricing waits.
+local COMBAT_WAIT = 2
+-- A save with fewer than this share of the prices of the one it would replace
+-- (with the same Save prices for choice) is kept out: TSM was missing data.
+local SHRINK_LIMIT = 0.5
 -- At most this many items wait for a character with TSM to price them.
 local MAX_WANTED = 2000
--- Saving every item tries item IDs up to this, or further past the highest one
--- your recipes use. Midnight's go up to about 275,000.
-local ITEM_ID_LIMIT = 300000
-local ITEM_ID_MARGIN = 25000
 
 -- CraftProfitDB.tsmPrices[realm] = {
 --   time = when it was saved, character = who saved it ("Name-Realm"),
 --   matSource, saleSource = the TSM prices it used for materials and crafts,
---   complete = "crafting" or "all" when it tried every such item (see
---     ns.SAVE_ITEMS_CHOICES), so an item it doesn't have has no price,
+--   items = the Save prices for choice it was made with (see ns.SAVE_ITEMS_CHOICES),
+--   count = how many items it has a price for,
 --   prices = "key,material,vendor,sale,soldPerDay;..." in copper, sold per day
 --     times a thousand, each empty when TSM had none,
 -- }
@@ -58,9 +63,71 @@ function SavedPrices.InUse()
 	return ns.db.saveTSMPrices and not tsmLoaded()
 end
 
--- "Area 52" and "Area52" are the same realm.
+-- "Area 52" and "Area52" are the same realm, and "Azjol-Nerub" and "AzjolNerub".
 local function realmKey(realm)
 	return realm and (realm:gsub("[%s%-]", ""))
+end
+
+---------------------------------------------------------------------------
+-- TSM's item list, on characters with TSM
+---------------------------------------------------------------------------
+
+-- TSM's auction data for this realm and the region, as text, while the game
+-- loads it. Kept only to list its items (see tsmItems); TSM keeps the same text.
+local tsmData = {}
+-- TSM's kinds of auction data that list items: the region's commodities and
+-- this realm's other items.
+local TSM_ITEM_DATA = { AUCTIONDB_COMMODITY_DATA = "region", AUCTIONDB_NON_COMMODITY_DATA = "realm" }
+
+-- Realm names with only letters and digits, to match TSM's spelling of them.
+local function bareRealm(realm)
+	return type(realm) == "string" and (realm:gsub("[^%w]", "")) or nil
+end
+
+local function onTSMData(tag, realmOrRegion, data)
+	local kind = TSM_ITEM_DATA[tag]
+	if not kind or type(data) ~= "string" then return end
+	if kind == "realm" and bareRealm(realmOrRegion) ~= bareRealm(GetRealmName()) then return end
+	tsmData[#tsmData + 1] = data
+end
+
+-- TSM hands its data to this function as the game loads TradeSkillMaster_AppHelper,
+-- which loads after Craft Profit. Without it (TSM changed, or isn't loaded), saves
+-- of more than your recipes save just your recipes.
+if type(TSM_APPHELPER_LOAD_DATA) == "function" then
+	hooksecurefunc("TSM_APPHELPER_LOAD_DATA", onTSMData)
+end
+
+-- Every item in TSM's auction data, one per call: its key (see SaleKey), the
+-- itemID, and TSM's name for it ("i:12345", or "i:12345::i639" for gear at an
+-- item level); nil after the last. Battle pets and other kinds are left out.
+local function tsmItems()
+	local index, nextText = 0, nil
+	return function()
+		while true do
+			local text = nextText and nextText()
+			if text then
+				local id = text:match("^(%d+)$") or text:match("^i:(%d+)$")
+				if id then return id, tonumber(id), "i:" .. id end
+				local gearID, level = text:match("^i:(%d+)::i(%d+)$")
+				if gearID then return gearID .. "@" .. level, tonumber(gearID), text end
+			else
+				index = index + 1
+				if not tsmData[index] then return end
+				-- Each item's data starts with "{itemString," ({173202,... or {"i:258947::i260",...).
+				nextText = tsmData[index]:gmatch('{"?([^,"{}]+)"?,')
+			end
+		end
+	end
+end
+
+-- Whether a Save prices for choice keeps an item from TSM's list. "crafting":
+-- crafting items, not gear. "all": everything.
+local function keeps(choice, itemID, gear)
+	if choice == "all" then return true end
+	if choice ~= "crafting" or gear then return false end
+	local classID = select(6, C_Item.GetItemInfoInstant(itemID))
+	return classID ~= nil and ns.CRAFTING_CLASSES[classID] == true
 end
 
 ---------------------------------------------------------------------------
@@ -129,39 +196,11 @@ local function mapOf(source)
 	return source.map
 end
 
--- Whether saving every item of a kind ("crafting" or "all", see
--- ns.SAVE_ITEMS_CHOICES) tries this item. Never gear, whose price depends on an
--- item level its ID doesn't have, nor battle pets and tokens, which TSM doesn't
--- price by item.
-local function triedBy(complete, itemID)
-	if complete ~= "crafting" and complete ~= "all" then return false end
-	local id, _, _, equipLoc, _, classID = C_Item.GetItemInfoInstant(itemID)
-	if not id then return false end
-	if equipLoc and equipLoc ~= "" and equipLoc ~= "INVTYPE_NON_EQUIP_IGNORE" then return false end
-	if classID == Enum.ItemClass.Battlepet or classID == Enum.ItemClass.WoWToken then return false end
-	return complete == "all" or ns.CRAFTING_CLASSES[classID] == true
-end
-
-local covered = {} -- key -> whether a save tried it and TSM had no price
-
--- Whether a save this character prices from tried the item: one without it then
--- means TSM had no price, and there's no use wanting it.
-local function isCovered(key)
-	if key:find("@", 1, true) then return false end
-	local found = covered[key]
-	if found == nil then
-		found = false
-		for _, source in ipairs(usable()) do
-			if triedBy(source.saved.complete, tonumber(key)) then found = true break end
-		end
-		covered[key] = found
-	end
-	return found
-end
-
 -- Keeps an item with no saved price for the next character with TSM to price.
+-- Only items Craft Profit prices are wanted, not every item you hover, so these
+-- stay few: an item missing from TSM's auction data can still have a vendor price.
 local function want(key, value)
-	if wanted[key] or wantedCount >= MAX_WANTED or isCovered(key) then return end
+	if wanted[key] or wantedCount >= MAX_WANTED then return end
 	wanted[key] = value
 	wantedCount = wantedCount + 1
 end
@@ -289,8 +328,10 @@ local function copper(value)
 	return value and format("%.0f", value) or ""
 end
 
--- One key's saved line (see CraftProfitDB.tsmPrices), and whether TSM had any price for it.
-local function priceKey(key, link)
+-- One key's saved line (see CraftProfitDB.tsmPrices), and whether TSM had any
+-- price for it. The sale price is for `link`, or for TSM's name for the item
+-- (`tsmName`, see tsmItems).
+local function priceKey(key, link, tsmName)
 	local itemID = key:match("^%d+")
 	local itemString = "i:" .. itemID
 	local material, vendor
@@ -301,9 +342,11 @@ local function priceKey(key, link)
 	if link then
 		local ok, fromLink = pcall(TSM_API.ToItemString, link)
 		if ok and fromLink then itemString = fromLink end
+	elseif tsmName then
+		itemString = tsmName
 	end
 	local sale
-	if link or ns.db.saleSource ~= ns.db.matSource then
+	if itemString ~= "i:" .. itemID or ns.db.saleSource ~= ns.db.matSource then
 		sale = tsmValue(ns.db.saleSource, itemString)
 	else
 		sale = material
@@ -324,16 +367,14 @@ end
 
 -- Every item of your recipes and the wanted list to price: key -> its link, or
 -- false for a material known by itemID. Also whether some gear wasn't loaded yet
--- (asked for, to try again shortly), and the highest itemID among them.
+-- (asked for, to try again shortly).
 local function collect()
-	local items, waiting, highest = {}, false, 0
+	local items, waiting = {}, false
 	local function addMaterial(itemID)
 		local key = tostring(itemID)
 		if items[key] == nil then items[key] = false end
-		highest = math.max(highest, itemID)
 	end
 	local function addSale(link, itemID)
-		if itemID then highest = math.max(highest, itemID) end
 		local key = SavedPrices.SaleKey(link, itemID)
 		if key then
 			items[key] = link or items[key] or false
@@ -354,7 +395,7 @@ local function collect()
 	for key, value in pairs(wanted) do
 		if type(value) == "string" then items[key] = value else addMaterial(value) end
 	end
-	return items, waiting, highest
+	return items, waiting
 end
 
 local start
@@ -368,22 +409,29 @@ local function redrawFooters()
 end
 
 -- Saves the prices: replaces this realm's save, unless TSM had no price at all
--- (its prices weren't loaded), and forgets the wanted items it priced.
--- `complete` is the kind of items it tried every one of, if it did; `count`,
--- how many items it has a price for.
-local function finish(items, lines, anyPrice, complete, count)
+-- (its prices weren't loaded) or far fewer than the save it would replace, and
+-- forgets the wanted items it priced. `count` is how many items it has a price
+-- for; `noList`, whether the choice wanted TSM's item list and there was none.
+local function finish(items, lines, count, choice, noList)
 	running = false
 	local me, myKey = ns.Ranks.Me()
 	local realm = realmKey(me and me.realm or GetNormalizedRealmName())
-	if announce then
-		ns.Shopping.Say(anyPrice and format("Saved TSM prices of %s items for your alts (%d seconds).",
-				BreakUpLargeNumbers(count), math.floor(GetTime() - startedAt + 0.5))
-			or "TSM has no prices yet, so your alts keep the TSM prices saved before.")
+	local old = realm and saved[realm]
+	local shrank = old and old.items == choice and (old.count or 0) > 0 and count < old.count * SHRINK_LIMIT
+	local seconds = math.floor(GetTime() - startedAt + 0.5)
+	if count == 0 then
+		if announce then ns.Shopping.Say("TSM has no prices yet, so your alts keep the TSM prices saved before.") end
+	elseif shrank then
+		-- Said even when the save itself is quiet: something is wrong on TSM's side.
+		ns.Shopping.Say(format("TSM had prices for %s items, far fewer than the %s saved before, so your alts keep " ..
+			"those. Check that the TSM desktop app is running.", BreakUpLargeNumbers(count), BreakUpLargeNumbers(old.count)))
+	elseif announce then
+		ns.Shopping.Say(format("Saved TSM prices of %s items for your alts (%d seconds).", BreakUpLargeNumbers(count), seconds)
+			.. (noList and " TSM's item list wasn't there, so only your recipes' items were saved." or ""))
 	end
-	redrawFooters()
-	if anyPrice and realm then
+	if count > 0 and realm and not shrank then
 		saved[realm] = { time = time(), character = myKey, matSource = ns.db.matSource,
-			saleSource = ns.db.saleSource, complete = complete, prices = table.concat(lines, ";") }
+			saleSource = ns.db.saleSource, items = choice, count = count, prices = table.concat(lines, ";") }
 		for key in pairs(items) do
 			if wanted[key] then wanted[key], wantedCount = nil, wantedCount - 1 end
 		end
@@ -392,23 +440,25 @@ local function finish(items, lines, anyPrice, complete, count)
 			if (save.time or 0) < oldest then saved[other] = nil end
 		end
 		sources = nil
-		wipe(covered)
 	end
+	redrawFooters()
 	if again then
 		again = false
 		SavedPrices.Save(againAnnounce)
 	end
 end
 
--- Prices every item a few milliseconds a frame: your recipes' and the wanted
--- ones, then, when the option says to save every item of a kind, every item ID
--- of that kind. Of those, only the ones TSM has a price for are kept.
-local function price(items, highest, run)
+-- Prices every item a couple of milliseconds a frame, waiting while you're in
+-- combat: your recipes' and the wanted ones, then, when the option says so, the
+-- items in TSM's auction data (see tsmItems). Of those, only the ones TSM has a
+-- price for are kept.
+local function price(items, run)
 	local keys = {}
 	for key in pairs(items) do keys[#keys + 1] = key end
-	local complete = ns.db.saveItems ~= "recipes" and ns.db.saveItems or nil
-	local limit = math.max(ITEM_ID_LIMIT, highest + ITEM_ID_MARGIN)
-	local lines, index, nextID, count = {}, 1, 1, 0
+	local choice = ns.db.saveItems
+	local nextItem = choice ~= "recipes" and tsmItems() or nil
+	local noList = nextItem ~= nil and #tsmData == 0
+	local lines, index, count = {}, 1, 0
 	-- A frame's worth of pricing; true when there's more to do.
 	local function work()
 		local stop = debugprofilestop() + FRAME_BUDGET
@@ -419,19 +469,21 @@ local function price(items, highest, run)
 				lines[#lines + 1] = line
 				if priced then count = count + 1 end
 				index = index + 1
-			elseif complete and nextID <= limit then
-				local key = tostring(nextID)
-				if items[key] == nil and triedBy(complete, nextID) then
-					local line, priced = priceKey(key)
+			else
+				local key, itemID, tsmName
+				if nextItem then key, itemID, tsmName = nextItem() end
+				if not key then
+					finish(items, lines, count, choice, noList)
+					return false
+				end
+				if items[key] == nil and keeps(choice, itemID, key:find("@", 1, true)) then
+					items[key] = false -- once, if TSM lists it twice
+					local line, priced = priceKey(key, nil, tsmName)
 					if priced then
 						lines[#lines + 1] = line
 						count = count + 1
 					end
 				end
-				nextID = nextID + 1
-			else
-				finish(items, lines, count > 0, complete, count)
-				return false
 			end
 		end
 		return true
@@ -440,6 +492,10 @@ local function price(items, highest, run)
 	-- next save can still run.
 	local function step()
 		if run ~= runID then return end -- deleted while it ran (see SavedPrices.Forget)
+		if InCombatLockdown() then
+			C_Timer.After(COMBAT_WAIT, step)
+			return
+		end
 		local ok, more = pcall(work)
 		if not ok then
 			running = false
@@ -454,18 +510,18 @@ end
 
 function start(run)
 	if run ~= runID then return end
-	local items, waiting, highest = collect()
+	local items, waiting = collect()
 	if waiting and not retried then
 		retried = true
 		C_Timer.After(ITEM_DELAY, function() start(run) end)
 		return
 	end
-	price(items, highest, run)
+	price(items, run)
 end
 
--- After a Best crafts scan: saves the new recipes' prices. Saves of every item
--- (which also try materials) wait for the next login rather than try them all
--- again each time you spend knowledge.
+-- After a Best crafts scan: saves the new recipes' prices. Saves of TSM's whole
+-- list (which has the materials already) wait for the next login rather than
+-- price it all again each time you spend knowledge.
 function SavedPrices.ScanSaved()
 	if ns.db.saveItems == "recipes" then SavedPrices.Save() end
 end
@@ -505,7 +561,6 @@ function SavedPrices.Forget()
 	wipe(wanted)
 	wantedCount = 0
 	sources = nil
-	wipe(covered)
 	redrawFooters()
 	if had then ns.Shopping.Say("Deleted the TSM prices saved for your alts.") end
 end
