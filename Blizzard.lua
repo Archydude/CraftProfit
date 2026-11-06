@@ -613,6 +613,19 @@ function Blizzard.WatchSideTabs(onClick, onRedraw)
 	if ProfessionsFrame.RefreshRightTabs then hooksecurefunc(ProfessionsFrame, "RefreshRightTabs", onRedraw) end
 end
 
+-- How long the profession window stays hidden before it counts as closed: a
+-- profession switch can hide it for a moment.
+local CLOSED_DELAY = 0.5
+
+-- Calls onClosed() when you close the profession window (not for a moment).
+function Blizzard.WatchWindowClosed(onClosed)
+	ProfessionsFrame:HookScript("OnHide", function()
+		C_Timer.After(CLOSED_DELAY, function()
+			if not ProfessionsFrame:IsShown() then onClosed() end
+		end)
+	end)
+end
+
 -- Shows a recipe on the crafting page, as a recipe link does.
 function Blizzard.ShowRecipe(recipeID)
 	C_TradeSkillUI.OpenRecipe(recipeID)

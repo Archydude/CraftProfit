@@ -33,6 +33,7 @@ local SIDE_TAB_GAP = 2     -- Forever: the side tab above it to the Best crafts 
 local LEDGER_ICON = "Interface\\Icons\\INV_Misc_Book_09"
 local SIDE_TAB_ICON = "Interface\\AddOns\\CraftProfit\\Media\\logo" -- the addon's logo
 local OPEN_TRIES, OPEN_RETRY = 20, 0.1 -- from an order: waiting for the recipes to show
+local REOPEN_TRIES = 40    -- after a profession switch: waiting for its recipes (OPEN_RETRY apart)
 local FILTER_WIDTH = 90
 local STRATEGY_WIDTH = 130 -- the crafting strategy dropdown at the bottom
 local STRATEGY_LABEL = "Strategy:"
@@ -1030,8 +1031,16 @@ function BestCraftsList.HeaderSpace()
 	return ledgerButton and ledgerButton:IsShown() and (ledgerButton:GetWidth() + LEDGER_GAP) or 0
 end
 
+-- Whether you opened the list and haven't closed it: switching profession hides
+-- it only until the new profession's recipes show. Closing the profession window
+-- forgets it.
+local wantOpen = false
+-- The profession the list last opened on.
+local openFor
+
 function BestCraftsList.Show()
 	if not (list and canShow()) then return false end
+	wantOpen, openFor = true, ns.Blizzard.ShownBaseProfession()
 	list:Show()
 	BestCraftsList.UpdateTab()
 	ns.BestCrafts.Scan()
@@ -1045,11 +1054,37 @@ function BestCraftsList.IsShown()
 	return list ~= nil and list:IsVisible()
 end
 
+-- Closes the list, as you asked: the tab, a recipe from it, the minimap button.
 function BestCraftsList.Hide()
 	if not list then return end
+	wantOpen = false
 	list:Hide()
 	GameTooltip:Hide()
 	BestCraftsList.UpdateTab()
+end
+
+-- Opens the list again once it can show (the new profession's recipes are up),
+-- if you still want it. Gives up after a few seconds.
+local function reopenSoon()
+	local tries = 0
+	local function try()
+		if not wantOpen or list:IsShown() then return end
+		if BestCraftsList.Show() then return end
+		tries = tries + 1
+		if tries < REOPEN_TRIES then C_Timer.After(OPEN_RETRY, try) end
+	end
+	C_Timer.After(0, try)
+end
+
+-- Hides the list for something you didn't ask to close it for: another
+-- profession, or the window's layout. It comes back when it can.
+local function hideForNow()
+	if list:IsShown() then
+		list:Hide()
+		GameTooltip:Hide()
+		BestCraftsList.UpdateTab()
+	end
+	if wantOpen then reopenSoon() end
 end
 
 -- The tab, from any page of the profession window.
@@ -1066,9 +1101,21 @@ local function openFromTab()
 	C_Timer.After(0, try)
 end
 
--- The crafting page switched view, showed or hid: the list only fits the full view.
+-- The crafting page showed another recipe. In another profession that's the
+-- switch (the list comes back for it); in the same one it's a recipe you opened,
+-- from a link or the list, so the list closes.
+local function onSelectRecipe()
+	if ns.Blizzard.ShownBaseProfession() ~= openFor then hideForNow() else BestCraftsList.Hide() end
+end
+
+-- The crafting page switched view, showed or hid: the list only fits the full
+-- view, and comes back when it fits again.
 local function onLayout()
-	if list:IsShown() and not canShow() then list:Hide() end
+	if list:IsShown() and not canShow() then
+		hideForNow()
+	elseif wantOpen and not list:IsShown() and canShow() then
+		reopenSoon()
+	end
 	-- The panel shows the button, and leaves room for it.
 	ns.Panel.Refresh()
 end
@@ -1096,7 +1143,8 @@ local function createSideTab()
 	end)
 	listTab:SetScript("OnEnter", showTabTooltip)
 	listTab:SetScript("OnLeave", GameTooltip_Hide)
-	ns.Blizzard.WatchSideTabs(BestCraftsList.Hide, BestCraftsList.UpdateTab)
+	-- Another profession's tab: the list comes back for it.
+	ns.Blizzard.WatchSideTabs(hideForNow, BestCraftsList.UpdateTab)
 end
 
 -- The tab after the profession window's own.
@@ -1142,6 +1190,7 @@ function BestCraftsList.Init()
 	createTab()
 	createLedgerButton()
 	ns.BestCrafts.Watch(BestCraftsList.Refresh, function() return list:IsShown() end)
-	ns.Blizzard.WatchCraftingPage(BestCraftsList.Hide, onLayout)
+	ns.Blizzard.WatchCraftingPage(onSelectRecipe, onLayout)
+	ns.Blizzard.WatchWindowClosed(function() wantOpen = false end)
 	ns.Panel.Refresh()
 end
