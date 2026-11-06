@@ -56,6 +56,8 @@ events:SetScript("OnEvent", function(self, event, ...)
 	local name = ...
 	if name == ADDON_NAME then
 		ns.db = loadSettings()
+		-- No multicraft or resourcefulness here: nothing for procs to add.
+		if not ns.QUALITY_CRAFTING then ns.db.countProcs = false end
 		ns.Ranks.Init()
 		ns.SavedPrices.Init()
 		ns.Sales.Init()
@@ -137,6 +139,11 @@ SlashCmdList.CRAFTPROFIT = function(msg)
 	if command == "testrank" then
 		-- Testing: the open order next to Craft Rank's numbers for its recipe.
 		if not ns.Ranks.Explain() then ns.Shopping.Say("Testing: open a crafting order first.") end
+		return
+	end
+	if command == "testbest" then
+		-- Testing: each step the Best crafts scan takes with the crafting page's recipe.
+		if not ns.BestCrafts.Explain() then ns.Shopping.Say("Testing: open a recipe on the crafting page first.") end
 		return
 	end
 	if command == "testplan" then

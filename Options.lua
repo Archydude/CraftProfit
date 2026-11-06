@@ -84,24 +84,27 @@ function Options.Create()
 	-- The main page: what to craft and where prices come from
 	---------------------------------------------------------------------------
 
-	header("Crafting")
-	local strategyChoices = {}
-	local strategyTip = "Which rank, and which materials, to craft on the crafting page:\n\n"
-	for _, strategy in ipairs(ns.STRATEGIES) do
-		strategyChoices[#strategyChoices + 1] = { strategy[1], strategy[2] }
-		strategyTip = strategyTip .. strategy[2] .. ": " .. strategy[4] .. "\n\n"
+	-- Both only matter with qualities and procs (not on WoW Forever).
+	if ns.QUALITY_CRAFTING then
+		header("Crafting")
+		local strategyChoices = {}
+		local strategyTip = "Which rank, and which materials, to craft on the crafting page:\n\n"
+		for _, strategy in ipairs(ns.STRATEGIES) do
+			strategyChoices[#strategyChoices + 1] = { strategy[1], strategy[2] }
+			strategyTip = strategyTip .. strategy[2] .. ": " .. strategy[4] .. "\n\n"
+		end
+		dropdown("craftStrategy", "Crafting strategy", strategyChoices, strategyTip ..
+			"It picks the materials for Use Craft Profit Reagents and the panel's blue row, prices missing materials, " ..
+			"decides what the shopping list buys, and ranks the Best crafts list. Patron orders keep their own rule: the " ..
+			"cheapest materials that reach the order's minimum quality.\n\nAlso on the panel when a recipe is open, and at the bottom of the Best crafts list.")
+		checkbox("countProcs", "Count procs in profits",
+			"The Best crafts list ranks recipes by what they make on average with procs. The Patron tab shows and sorts orders by what they make on average with " ..
+			"resourcefulness, the customer's materials included (the customer gets the item, so multicraft doesn't " ..
+			"count). Your chances come from the " ..
+			"game; how big a proc is, from your own crafts.\n\n" ..
+			"The panel always shows both: the expected profit, and Without procs under it.\n\n" ..
+			"Also in the Best crafts list's Filter menu.")
 	end
-	dropdown("craftStrategy", "Crafting strategy", strategyChoices, strategyTip ..
-		"It picks the materials for Use Craft Profit Reagents and the panel's blue row, prices missing materials, " ..
-		"decides what the shopping list buys, and ranks the Best crafts list. Patron orders keep their own rule: the " ..
-		"cheapest materials that reach the order's minimum quality.\n\nAlso on the panel when a recipe is open, and at the bottom of the Best crafts list.")
-	checkbox("countProcs", "Count procs in profits",
-		"The Best crafts list ranks recipes by what they make on average with procs. The Patron tab shows and sorts orders by what they make on average with " ..
-		"resourcefulness, the customer's materials included (the customer gets the item, so multicraft doesn't " ..
-		"count). Your chances come from the " ..
-		"game; how big a proc is, from your own crafts.\n\n" ..
-		"The panel always shows both: the expected profit, and Without procs under it.\n\n" ..
-		"Also in the Best crafts list's Filter menu.")
 
 	header("Minimap button")
 	checkbox("minimap", "Show minimap button",
@@ -161,11 +164,14 @@ function Options.Create()
 		return format("%d%%", value * 100 + 0.5)
 	end)
 	Settings.CreateSlider(page, setting("scale", Settings.VarType.Number, "Panel size"), scaleOptions)
-	dropdown("precision", "Show amounts down to", {
-		{ "gold", "Gold (2,904g)" },
-		{ "silver", "Silver (2,903g 83s)" },
-		{ "copper", "Copper (2,903g 83s 45c)" },
-	}, "Rounds every amount to this coin. Amounts smaller than one coin still show the next coin down.")
+	-- WoW Forever always shows the two biggest coins (see Format.Money).
+	if ns.QUALITY_CRAFTING then
+		dropdown("precision", "Show amounts down to", {
+			{ "gold", "Gold (2,904g)" },
+			{ "silver", "Silver (2,903g 83s)" },
+			{ "copper", "Copper (2,903g 83s 45c)" },
+		}, "Rounds every amount to this coin. Amounts smaller than one coin still show the next coin down.")
+	end
 	checkbox("locked", "Lock panel position", "Stop the panel from being dragged.")
 	button("Panel position", "Reset", function()
 		db.pos = nil

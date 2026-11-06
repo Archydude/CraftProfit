@@ -29,7 +29,9 @@ local LEDGER_GAP = 6       -- the button to the panel's title
 local TAB_TEXT_ROOM = 40   -- the Best crafts tab's width beyond its label
 local BACK_INSET = 4       -- the list's edge to its background
 local TAB_GAP = 2          -- the tab before it to the Best crafts tab
+local SIDE_TAB_GAP = 2     -- Forever: the side tab above it to the Best crafts side tab, as Blizzard's
 local LEDGER_ICON = "Interface\\Icons\\INV_Misc_Book_09"
+local SIDE_TAB_ICON = "Interface\\Icons\\INV_Misc_Coin_02"
 local OPEN_TRIES, OPEN_RETRY = 20, 0.1 -- from an order: waiting for the recipes to show
 local FILTER_WIDTH = 90
 local STRATEGY_WIDTH = 130 -- the crafting strategy dropdown at the bottom
@@ -41,16 +43,17 @@ local STALE_SCAN_DAYS = 7  -- other characters' saved scans this old or older sh
 -- Columns right of the item name, right to left: key, width, header, sort key,
 -- needsTSM: true shows it only with TSM, false only without, and allCharacters:
 -- the same for the All characters view, needsProcs: only while procs count, and
--- goldWidth: its width when amounts
--- show in whole gold. The demand column is TSM's Sells/day, or without TSM, You sold.
+-- goldWidth: its width when amounts show in whole gold, and foreverWidth: on WoW
+-- Forever, whose amounts are two coins at most (4g 12s), leaving the names room.
+-- The demand column is TSM's Sells/day, or without TSM, You sold.
 local COLUMNS = {
 	{ key = "actions", width = ACTIONS_SIZE },
 	{ key = "sold", width = 64, header = "You sold", sort = "sold", needsTSM = false },
 	{ key = "perDay", width = 64, header = "Sells/day", sort = "perDay", needsTSM = true },
 	{ key = "listed", width = 46, header = "Listed", sort = "listed" },
-	{ key = "gold", width = 74, header = "Gold/day", sort = "gold" },
-	{ key = "cost", width = 112, goldWidth = 70, header = "Cost", sort = "cost" },
-	{ key = "profit", width = 112, goldWidth = 70, header = "Profit", sort = "profit" },
+	{ key = "gold", width = 74, foreverWidth = 80, header = "Gold/day", sort = "gold" },
+	{ key = "cost", width = 112, goldWidth = 70, foreverWidth = 76, header = "Cost", sort = "cost" },
+	{ key = "profit", width = 112, goldWidth = 70, foreverWidth = 76, header = "Profit", sort = "profit" },
 	{ key = "procs", width = 96, goldWidth = 56, header = "Procs", sort = "procs", needsProcs = true },
 	{ key = "plain", width = 112, goldWidth = 64, header = "No procs", sort = "plain", needsProcs = true },
 	{ key = "crafter", width = 64, header = "Crafter", sort = "crafter", allCharacters = true },
@@ -72,6 +75,11 @@ local HEADER_TIPS = {
 	sold = format("How many your characters sold on the auction house in the last %d days, from the auction "
 		.. "house's mail. Counts sales from when you first opened your mailbox with this version.", ns.Sales.DAYS),
 }
+-- WoW Forever has no ranks, crafting strategy or procs to explain.
+if not ns.QUALITY_CRAFTING then
+	HEADER_TIPS.profit = "What one craft makes after the 5% auction house cut."
+	HEADER_TIPS.cost = "What the materials for one craft cost."
+end
 -- What the Profit column shows: with procs counted, the expected profit.
 local function shownProfit(row)
 	if ns.db.countProcs then return row.expected end
@@ -370,7 +378,8 @@ local function columnLayout(width)
 	local layout, right = {}, width - 4
 	for _, column in ipairs(COLUMNS) do
 		if columnShown(column) then
-			local columnWidth = ns.db.precision == "gold" and column.goldWidth or column.width
+			local columnWidth = (not ns.QUALITY_CRAFTING and column.foreverWidth)
+				or (ns.db.precision == "gold" and column.goldWidth) or column.width
 			layout[column.key] = { x = right - columnWidth, width = columnWidth }
 			right = right - columnWidth - CELL_GAP
 		end
@@ -605,7 +614,7 @@ function BestCraftsList.Render()
 	scrollBox:SetDataProvider(CreateDataProvider(rows), ScrollBoxConstants.RetainScrollPosition)
 	status:SetText(statusText(#rows, #allRows))
 	-- The strategy can change in the options too.
-	strategyDropdown:GenerateMenu()
+	if strategyDropdown then strategyDropdown:GenerateMenu() end
 	updateHeaders()
 end
 
@@ -696,13 +705,15 @@ local function filterMenu(_, root)
 		ns.db.bestProfitableOnly = not ns.db.bestProfitableOnly
 		BestCraftsList.Render()
 	end)
-	local procs = root:CreateCheckbox("Count procs in profits", function() return ns.db.countProcs end,
-		function() ns.Options.Set("countProcs", not ns.db.countProcs) end)
-	procs:SetTooltip(function(tip)
-		GameTooltip_SetTitle(tip, "Count procs in profits")
-		GameTooltip_AddNormalLine(tip, "Profit becomes Expected: what a craft makes on average with procs, and the "
-			.. "list ranks by it. Your chances come from the game; how big a proc is, from your own crafts.")
-	end)
+	if ns.QUALITY_CRAFTING then
+		local procs = root:CreateCheckbox("Count procs in profits", function() return ns.db.countProcs end,
+			function() ns.Options.Set("countProcs", not ns.db.countProcs) end)
+		procs:SetTooltip(function(tip)
+			GameTooltip_SetTitle(tip, "Count procs in profits")
+			GameTooltip_AddNormalLine(tip, "Profit becomes Expected: what a craft makes on average with procs, and the "
+				.. "list ranks by it. Your chances come from the game; how big a proc is, from your own crafts.")
+		end)
+	end
 	root:CreateDivider()
 	root:CreateTitle("Show")
 	local counts = {}
@@ -751,6 +762,8 @@ end
 ---------------------------------------------------------------------------
 
 local function createStrategyDropdown()
+	-- Without qualities every strategy picks the same materials.
+	if not ns.QUALITY_CRAFTING then return 0 end
 	strategyDropdown = CreateFrame("DropdownButton", nil, list, "WowStyle1DropdownTemplate")
 	strategyDropdown:SetWidth(STRATEGY_WIDTH)
 	strategyDropdown:SetPoint("BOTTOMRIGHT", -PAD, PAD - 4)
@@ -969,8 +982,23 @@ function BestCraftsList.UpdateTab()
 	local page = ns.Blizzard.ActivePage()
 	local own = ns.Blizzard.IsOwnProfession()
 	ledgerButton:SetShown((page == "craft" and canShow()) or (page == "order" and own))
-	listTab:SetShown(own and ns.Blizzard.TabsShown())
 	local open = list:IsShown()
+	if listTab.side then
+		-- Forever: only next to the recipes, as the list opens over them.
+		listTab:SetShown(canShow())
+		if listTab.checked ~= open then
+			listTab.checked = open
+			listTab:SetChecked(open)
+		end
+		local above = ns.Blizzard.LastSideTab(listTab)
+		if listTab.before ~= above and above then
+			listTab.before = above
+			listTab:ClearAllPoints()
+			listTab:SetPoint("TOPLEFT", above, "BOTTOMLEFT", 0, -SIDE_TAB_GAP)
+		end
+		return
+	end
+	listTab:SetShown(own and ns.Blizzard.TabsShown())
 	if listTab.isSelected ~= open then listTab:SetTabSelected(open) end
 	ns.Blizzard.SetRecipesTabSelected(not open)
 	local before = ns.Blizzard.LastTab()
@@ -1029,8 +1057,35 @@ local function onLayout()
 	ns.Panel.Refresh()
 end
 
+local function showTabTooltip(self)
+	GameTooltip:SetOwner(self, self.side and "ANCHOR_RIGHT" or "ANCHOR_TOP")
+	GameTooltip:SetText("Best crafts")
+	GameTooltip:AddLine("Every recipe you know in this profession, most profitable first.", 1, 1, 1, true)
+	GameTooltip:Show()
+end
+
+-- Forever's profession window has no tab bar: a side tab under its profession
+-- tabs instead. A click opens the list, or closes it when it's open.
+local function createSideTab()
+	listTab = CreateFrame("Frame", nil, ProfessionsFrame, "LargeSideTabButtonTemplate")
+	listTab.side = true
+	listTab.Icon:SetTexture(SIDE_TAB_ICON)
+	listTab:SetFillToInterior(true)
+	listTab.checked = false
+	listTab:SetChecked(false)
+	listTab:Hide()
+	listTab:SetCustomOnMouseUpHandler(function(_, button, upInside)
+		if button ~= "LeftButton" or upInside == false then return end
+		if list:IsShown() then BestCraftsList.Hide() else openFromTab() end
+	end)
+	listTab:SetScript("OnEnter", showTabTooltip)
+	listTab:SetScript("OnLeave", GameTooltip_Hide)
+	ns.Blizzard.WatchSideTabs(BestCraftsList.Hide, BestCraftsList.UpdateTab)
+end
+
 -- The tab after the profession window's own.
 local function createTab()
+	if not ns.Blizzard.HasTabBar() then return createSideTab() end
 	listTab = CreateFrame("Button", nil, ProfessionsFrame, "TabSystemButtonArtTemplate")
 	listTab.selectedFontObject, listTab.unselectedFontObject = GameFontHighlight, GameFontNormal
 	listTab:SetText("Best crafts")
@@ -1038,12 +1093,7 @@ local function createTab()
 	listTab:SetSize(listTab.Text:GetStringWidth() + TAB_TEXT_ROOM, ns.Blizzard.RecipesTab():GetHeight())
 	listTab:Hide()
 	listTab:SetScript("OnClick", openFromTab)
-	listTab:SetScript("OnEnter", function(self)
-		GameTooltip:SetOwner(self, "ANCHOR_TOP")
-		GameTooltip:SetText("Best crafts")
-		GameTooltip:AddLine("Every recipe you know in this profession, most profitable first.", 1, 1, 1, true)
-		GameTooltip:Show()
-	end)
+	listTab:SetScript("OnEnter", showTabTooltip)
 	listTab:SetScript("OnLeave", GameTooltip_Hide)
 	ns.Blizzard.WatchTabs(BestCraftsList.Hide, BestCraftsList.UpdateTab)
 end

@@ -15,9 +15,14 @@ end
 function Format.Money(copper)
 	copper = math.floor(copper + 0.5)
 	local amount = math.abs(copper)
-	local precision = ns.db.precision
-	local unit = (precision == "gold" and amount >= 10000 and 10000)
-		or (precision ~= "copper" and amount >= 100 and 100)
+	local unit
+	if ns.QUALITY_CRAFTING then
+		local precision = ns.db.precision
+		unit = (precision == "gold" and amount >= 10000 and 10000) or (precision ~= "copper" and amount >= 100 and 100)
+	else
+		-- WoW Forever's prices are small, so always the two biggest coins: 4g 12s, or 1s 4c.
+		unit = amount >= 10000 and 100 or nil
+	end
 	if unit then amount = math.floor(amount / unit + 0.5) * unit end
 	local text = GetMoneyString(amount, true)
 	return copper < 0 and ("-" .. text) or text

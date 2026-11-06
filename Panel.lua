@@ -684,8 +684,11 @@ local function drawCraft(model)
 	end
 	drawMaterials(model)
 	-- Right above the blue row, which follows it. (Orders have their own rule.)
-	addGap()
-	addStrategyDropdown()
+	-- Without qualities every strategy picks the same materials.
+	if ns.QUALITY_CRAFTING then
+		addGap()
+		addStrategyDropdown()
+	end
 	drawBest(model)
 	drawProcs(model)
 	drawFooter(model)
@@ -874,7 +877,8 @@ end
 -- Puts the panel at its saved spot (relative to the profession window) and size.
 function Panel.Place()
 	if not frame then return end
-	local pos = ns.db.pos or Layout.DEFAULT_POS
+	-- By default clear of Forever's side tabs, as far from them as from the window elsewhere.
+	local pos = ns.db.pos or { x = Layout.DEFAULT_POS.x + ns.Blizzard.SideTabsWidth(), y = Layout.DEFAULT_POS.y }
 	frame:SetScale(ns.db.scale)
 	frame:ClearAllPoints()
 	frame:SetPoint("TOPLEFT", ProfessionsFrame, "TOPRIGHT", pos.x, pos.y)

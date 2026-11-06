@@ -178,13 +178,19 @@ end
 local function shownProfession()
 	local child = C_TradeSkillUI.GetChildProfessionInfo()
 	if child and child.professionID and child.professionID > 0 then return child.professionID, child.professionName end
+	-- Forever's professions may have no expansion parts: the profession itself.
+	local base = C_TradeSkillUI.GetBaseProfessionInfo()
+	if base and base.professionID and base.professionID > 0 then return base.professionID, base.professionName end
 end
 
--- Whether a learned recipe belongs on the list of the profession shown.
+-- Whether a learned recipe belongs on the list of the profession shown. On
+-- Forever the window shows the profession (Engineering, 202) while its recipes
+-- belong to a part of it with an ID of its own (2941), whose parent it is.
 local function listable(recipeID, info, professionID)
 	if not (info and info.learned) or info.isRecraft or info.isSalvageRecipe or info.isDummyRecipe then return false end
 	local profession = C_TradeSkillUI.GetProfessionInfoByRecipeID(recipeID)
-	return profession ~= nil and profession.professionID == professionID
+	return profession ~= nil
+		and (profession.professionID == professionID or profession.parentProfessionID == professionID)
 end
 
 local function scanAll(run, recipeIDs)
@@ -246,6 +252,42 @@ function BestCrafts.Scan()
 		if active == run then C_Timer.After(0, step) end
 	end
 	step()
+end
+
+-- Testing: says in chat what each step of the scan makes of the crafting page's
+-- recipe, and where it drops out. False without a recipe there.
+function BestCrafts.Explain()
+	local ctx = ns.Blizzard.ActivePage() == "craft" and ns.Blizzard.CraftContext()
+	if not ctx then return false end
+	local function say(...) print("|cffffd100Craft Profit:|r " .. string.format(...)) end
+	local recipeID = ctx.recipeInfo.recipeID
+	local professionID, name = shownProfession()
+	local recipeIDs = (C_TradeSkillUI.GetAllRecipeIDs or C_TradeSkillUI.GetFilteredRecipeIDs)() or {}
+	say("Shown profession %s (%s), %d recipe IDs from the game", tostring(professionID), tostring(name), #recipeIDs)
+	local info = C_TradeSkillUI.GetRecipeInfo(recipeID)
+	local profession = C_TradeSkillUI.GetProfessionInfoByRecipeID(recipeID)
+	say("Recipe %d: learned %s, its profession %s (part of %s), recraft %s, salvage %s, dummy %s", recipeID,
+		tostring(info and info.learned), tostring(profession and profession.professionID),
+		tostring(profession and profession.parentProfessionID),
+		tostring(info and info.isRecraft), tostring(info and info.isSalvageRecipe), tostring(info and info.isDummyRecipe))
+	say("Listed: %s", tostring(listable(recipeID, info, professionID)))
+	local schematic = C_TradeSkillUI.GetRecipeSchematic(recipeID, false)
+	say("Recipe type %s (items are %s), scroll %s, qualities %s", tostring(schematic and schematic.recipeType),
+		tostring(Enum.TradeskillRecipeType.Item), tostring(ns.Blizzard.MakesScroll(recipeID)),
+		tostring(info and info.supportsQualities))
+	local ok, output = pcall(C_TradeSkillUI.GetRecipeOutputItemData, recipeID, {}, nil, nil)
+	say("Makes %s", ok and output and tostring(output.hyperlink) or ("nothing: " .. tostring(output)))
+	-- The scan pauses between steps; here it runs in one go.
+	local before = deadline
+	deadline = math.huge
+	local scanned, entry = pcall(scanRecipe, recipeID, info, professionID)
+	deadline = before
+	if not scanned then
+		say("Scan error: %s", tostring(entry))
+	else
+		say("Scan: %s", entry and string.format("%d options, %d outputs", #entry.options, #entry.outputs) or "dropped")
+	end
+	return true
 end
 
 -- The scan to show: { name, total, done, finished, recipes }, or nil.

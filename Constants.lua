@@ -4,6 +4,12 @@ local _, ns = ...
 -- The auction house keeps 5% of every sale.
 ns.AH_CUT = 0.05
 
+-- Whether this game has Dragonflight's crafting: material and item qualities
+-- (ranks), multicraft, resourcefulness and concentration. Retail does; WoW
+-- Forever (game version 1.x) doesn't, so the crafting strategy and procs stay
+-- out of sight there.
+ns.QUALITY_CRAFTING = select(4, GetBuildInfo()) >= 100000
+
 -- Panel layout, in pixels before the panel's own scale.
 ns.Layout = {
 	WIDTH = 380,

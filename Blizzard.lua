@@ -16,18 +16,30 @@ local format = string.format
 local currentOrder
 
 function Blizzard.IsLoaded()
-	return ProfessionsFrame and ProfessionsFrame.OrdersPage and ProfessionsFrame.CraftingPage and true or false
+	return ProfessionsFrame and ProfessionsFrame.CraftingPage and true or false
+end
+
+-- Whether the profession window has crafting orders. Forever's has none, and no
+-- tab bar either: its professions are side tabs on the right.
+function Blizzard.HasOrders()
+	return ProfessionsFrame and ProfessionsFrame.OrdersPage ~= nil or false
+end
+
+function Blizzard.HasTabBar()
+	return ProfessionsFrame and ProfessionsFrame.TabSystem ~= nil or false
 end
 
 -- Calls onChange() whenever what the panel shows may have changed.
 function Blizzard.Watch(onChange, owner)
-	local orderView = ProfessionsFrame.OrdersPage.OrderView
-	hooksecurefunc(orderView, "SetOrder", function(_, order)
-		currentOrder = order
-		onChange()
-	end)
-	orderView:HookScript("OnShow", onChange)
-	orderView:HookScript("OnHide", onChange)
+	if Blizzard.HasOrders() then
+		local orderView = ProfessionsFrame.OrdersPage.OrderView
+		hooksecurefunc(orderView, "SetOrder", function(_, order)
+			currentOrder = order
+			onChange()
+		end)
+		orderView:HookScript("OnShow", onChange)
+		orderView:HookScript("OnHide", onChange)
+	end
 
 	local craftPage = ProfessionsFrame.CraftingPage
 	hooksecurefunc(craftPage.SchematicForm, "Init", onChange)
@@ -51,7 +63,7 @@ end
 
 -- Which page is showing: "order", "craft" or nil.
 function Blizzard.ActivePage()
-	if ProfessionsFrame.OrdersPage.OrderView:IsVisible() and currentOrder then
+	if Blizzard.HasOrders() and ProfessionsFrame.OrdersPage.OrderView:IsVisible() and currentOrder then
 		return "order"
 	end
 	local craftPage = ProfessionsFrame.CraftingPage
@@ -122,8 +134,9 @@ function Blizzard.Allocated(transaction, slotIndex)
 	return list
 end
 
--- The order screen's form.
+-- The order screen's form, or nil without crafting orders.
 local function orderForm()
+	if not Blizzard.HasOrders() then return end
 	local details = ProfessionsFrame.OrdersPage.OrderView.OrderDetails
 	return details and details.SchematicForm
 end
@@ -217,7 +230,7 @@ function Blizzard.WatchForms(onBestQuality, onNewForm, owner)
 		form:RegisterCallback(ProfessionsRecipeSchematicFormMixin.Event.UseBestQualityModified,
 			function(_, checked) onBestQuality(checked) end, owner)
 	end
-	hooksecurefunc(ProfessionsFrame.OrdersPage.OrderView, "SetOrder", onNewForm)
+	if Blizzard.HasOrders() then hooksecurefunc(ProfessionsFrame.OrdersPage.OrderView, "SetOrder", onNewForm) end
 	hooksecurefunc(ProfessionsFrame.CraftingPage.SchematicForm, "Init", onNewForm)
 end
 
@@ -231,8 +244,8 @@ function Blizzard.ResetMaterials(stopConcentration)
 	if page == "craft" and transaction.SetManuallyAllocated then transaction:SetManuallyAllocated(false) end
 	Professions.AllocateAllBasicReagents(transaction, Professions.ShouldAllocateBestQualityReagents())
 	-- Puts back what the customer provides, as Blizzard does after re-filling.
-	local view = ProfessionsFrame.OrdersPage.OrderView
-	if page == "order" and view.SchematicPostInit then view:SchematicPostInit() end
+	local view = page == "order" and ProfessionsFrame.OrdersPage.OrderView
+	if view and view.SchematicPostInit then view:SchematicPostInit() end
 	form:UpdateAllSlots()
 	if stopConcentration and transaction.SetApplyConcentration then transaction:SetApplyConcentration(false) end
 end
@@ -545,7 +558,7 @@ end
 -- Our tab isn't one of Blizzard's: it can't join their tab system without tainting
 -- it. So while ours is open, the Recipes tab looks unselected, and stays clickable.
 function Blizzard.SetRecipesTabSelected(selected)
-	if ProfessionsFrame:GetTab() ~= ProfessionsFrame.recipesTabID then return end
+	if not Blizzard.HasTabBar() or ProfessionsFrame:GetTab() ~= ProfessionsFrame.recipesTabID then return end
 	local button = Blizzard.RecipesTab()
 	if button:IsSelected() ~= selected then button:SetTabSelected(selected) end
 end
@@ -555,6 +568,49 @@ end
 function Blizzard.WatchTabs(onClick, onRedraw)
 	hooksecurefunc(ProfessionsFrame.TabSystem, "SetTab", onClick)
 	hooksecurefunc(ProfessionsFrame.TabSystem, "SetTabVisuallySelected", onRedraw)
+end
+
+-- Forever's side tabs on the profession window's right edge: the overview tab,
+-- then one per profession.
+local function sideTabs()
+	local tabs = { ProfessionsFrame.ProfessionsOverviewTab }
+	for _, tab in ipairs(ProfessionsFrame.rightProfessionTabs or {}) do tabs[#tabs + 1] = tab end
+	return tabs
+end
+
+-- The lowest side tab showing, for a new tab (`own`) to go under, or nil. Other
+-- addons add tabs there (All The Things), and may move Blizzard's into a frame of
+-- their own, so this goes by what sits in the overview tab's column, among the
+-- frames next to it.
+function Blizzard.LastSideTab(own)
+	local first = ProfessionsFrame.ProfessionsOverviewTab
+	local column = first and first:GetLeft()
+	if not column then return first end
+	local last, lowest = first, first:GetBottom()
+	for _, child in ipairs({ first:GetParent():GetChildren() }) do
+		local left, bottom = child:GetLeft(), child:GetBottom()
+		if child ~= own and child:IsShown() and left and bottom and math.abs(left - column) < 1 and bottom < lowest then
+			last, lowest = child, bottom
+		end
+	end
+	return last
+end
+
+-- How far the side tabs reach past the profession window's right edge (0 without them).
+function Blizzard.SideTabsWidth()
+	local tab = ProfessionsFrame and ProfessionsFrame.ProfessionsOverviewTab
+	return tab and tab:GetWidth() or 0
+end
+
+-- Calls onClick() after a click on one of the side tabs, and onRedraw() when the
+-- game sets them up again (another profession, one learned or dropped).
+function Blizzard.WatchSideTabs(onClick, onRedraw)
+	for _, tab in ipairs(sideTabs()) do
+		tab:HookScript("OnMouseUp", function(_, button)
+			if button == "LeftButton" then onClick() end
+		end)
+	end
+	if ProfessionsFrame.RefreshRightTabs then hooksecurefunc(ProfessionsFrame, "RefreshRightTabs", onRedraw) end
 end
 
 -- Shows a recipe on the crafting page, as a recipe link does.

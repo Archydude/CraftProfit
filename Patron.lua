@@ -1315,7 +1315,7 @@ function Patron.ProcTarget(orderID)
 end
 
 function Patron.Init()
-	if footer or not ns.Blizzard.IsLoaded() then return end
+	if footer or not (ns.Blizzard.IsLoaded() and ns.Blizzard.HasOrders()) then return end
 	local list = ns.Blizzard.OrderList()
 	addAllButton = makeButton(list:GetParent(), addAll, allTooltip)
 	-- On the row of order type tabs, at the list's right end.
