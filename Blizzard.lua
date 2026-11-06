@@ -628,6 +628,15 @@ end
 
 -- Shows a recipe on the crafting page, as a recipe link does.
 function Blizzard.ShowRecipe(recipeID)
+	-- WoW Forever's window takes a recipe of the profession it shows for one of
+	-- another profession (its recipes belong to a part of it with an ID of its own)
+	-- and waits for a switch that never comes. So there it's picked in the recipe
+	-- list, as a click on it does, and scrolled to.
+	if not Blizzard.HasTabBar() then
+		local info = C_TradeSkillUI.GetRecipeInfo(recipeID)
+		local list = ProfessionsFrame.CraftingPage.RecipeList
+		if info and list:IsShown() and list.SelectRecipe and list:SelectRecipe(info, true) then return end
+	end
 	C_TradeSkillUI.OpenRecipe(recipeID)
 end
 
