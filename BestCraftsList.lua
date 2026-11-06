@@ -47,13 +47,15 @@ local STALE_SCAN_DAYS = 7  -- other characters' saved scans this old or older sh
 -- goldWidth: its width when amounts show in whole gold, and foreverWidth: on WoW
 -- Forever, whose amounts are two coins at most (4g 12s), leaving the names room.
 -- forever: true shows it only on WoW Forever, false only off it (Per skill-up
--- takes Gold/day's place there). The demand column is TSM's Sells/day, or without
--- TSM, You sold.
+-- takes Gold/day's place there). saleRate: true shows it only with TSM's sale
+-- rate (WoW Forever with TSM, see Prices.ShowsSaleRate), false only without it.
+-- The demand column is TSM's Sells/day, or without TSM, You sold.
 local COLUMNS = {
 	{ key = "actions", width = ACTIONS_SIZE },
 	{ key = "sold", width = 64, header = "You sold", sort = "sold", needsTSM = false },
-	{ key = "perDay", width = 64, header = "Sells/day", sort = "perDay", needsTSM = true },
-	{ key = "listed", width = 46, header = "Listed", sort = "listed" },
+	{ key = "perDay", width = 64, header = "Sells/day", sort = "perDay", needsTSM = true, saleRate = false },
+	{ key = "saleRate", width = 64, header = "Sale rate", sort = "saleRate", saleRate = true },
+	{ key = "listed", width = 46, header = "Listed", sort = "listed", saleRate = false },
 	{ key = "gold", width = 74, header = "Gold/day", sort = "gold", forever = false },
 	{ key = "skillup", width = 84, header = "Per skill-up", sort = "skillup", forever = true },
 	{ key = "cost", width = 112, goldWidth = 70, foreverWidth = 76, header = "Cost", sort = "cost" },
@@ -76,6 +78,8 @@ local HEADER_TIPS = {
 	cost = "What the materials for one craft cost, at the rank and with the materials your crafting strategy picks.",
 	listed ="How many were up for sale the last time Auctionator saw them. Needs Auctionator.",
 	perDay = "How many sell per day across your region, on average, from TSM.",
+	saleRate = "Of the auctions posted for this item, the share that sells, from TSM. On WoW Forever your region is "
+		.. "one server, so this is your own market: a high rate means it sells, a low one that most expire.",
 	sold = format("How many your characters sold on the auction house in the last %d days, from the auction "
 		.. "house's mail. Counts sales from when you first opened your mailbox with this version.", ns.Sales.DAYS),
 }
@@ -131,6 +135,7 @@ local SORT_VALUES = {
 	listed = function(row) return row.listed end,
 	sold = function(row) return row.itemName and row.sold or nil end,
 	perDay = function(row) return row.soldPerDay end,
+	saleRate = function(row) return row.saleRate end,
 	skillup = function(row) return row.skillup and row.skillup.cost end,
 }
 -- A pinned row's mark: the first atlas the game has, or else the word.
@@ -195,6 +200,7 @@ end
 -- Whether a column shows, with these addons and in this view.
 local function columnShown(column)
 	if column.forever ~= nil and column.forever == ns.QUALITY_CRAFTING then return false end
+	if column.saleRate ~= nil and column.saleRate ~= ns.Prices.ShowsSaleRate() then return false end
 	if column.needsProcs and not ns.db.countProcs then return false end
 	if column.needsTSM ~= nil and column.needsTSM ~= ns.Prices.HasTSM() then return false end
 	return column.allCharacters == nil or column.allCharacters == ns.db.bestAllCharacters
@@ -366,6 +372,10 @@ local function rowTooltip(tip, row)
 		row.itemName and tostring(row.sold) or Color("muted", "-"))
 	if ns.Prices.HasTSM() then
 		addPair(tip, "Sells per day in your region (TSM)", row.soldPerDay and perDayText(row.soldPerDay) or Color("muted", "-"))
+		if ns.Prices.ShowsSaleRate() then
+			addPair(tip, "Sale rate in your region (TSM)",
+				row.saleRate and format("%.0f%%", row.saleRate * 100) or Color("muted", "-"))
+		end
 	end
 	local daily = goldPerDay(row)
 	if daily then addPair(tip, "Gold per day", signedMoney(daily)) end
@@ -573,6 +583,7 @@ local function drawRow(button, row)
 	local listed = row.listed and BreakUpLargeNumbers(row.listed) or "-"
 	button.cells.listed:SetText((row.listed and (row.listedAge or 0) < STALE_DAYS) and listed or Color("muted", listed))
 	button.cells.perDay:SetText(row.soldPerDay and perDayText(row.soldPerDay) or Color("muted", "-"))
+	button.cells.saleRate:SetText(row.saleRate and format("%.0f%%", row.saleRate * 100) or Color("muted", "-"))
 	button.cells.sold:SetText(not row.itemName and Color("muted", "-")
 		or row.sold > 0 and tostring(row.sold) or Color("muted", "0"))
 end

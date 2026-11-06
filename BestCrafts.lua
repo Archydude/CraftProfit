@@ -397,6 +397,7 @@ local function marketOf(link)
 		found = {}
 		found.listed, found.listedAge = ns.Prices.Listed(link)
 		found.soldPerDay = ns.Prices.SoldPerDay(link)
+		found.saleRate = ns.Prices.ShowsSaleRate() and ns.Prices.SaleRate(link) or nil
 		market[link] = found
 	end
 	return found
@@ -546,6 +547,7 @@ local function priceEntry(entry)
 	if row.output then
 		local found = marketOf(row.output.link)
 		row.listed, row.listedAge, row.soldPerDay = found.listed, found.listedAge, found.soldPerDay
+		row.saleRate = found.saleRate
 	end
 
 	-- WoW Forever: what a skill point costs with it. The game only knows your skill

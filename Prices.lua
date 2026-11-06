@@ -181,6 +181,23 @@ function Prices.SoldPerDay(link)
 	return tsmValue("dbregionsoldperday", itemString)
 end
 
+-- Whether the Best crafts list shows TSM's region sale rate: on WoW Forever,
+-- where a region is one server, so it's your own market, and only with TSM loaded.
+function Prices.ShowsSaleRate()
+	return not ns.QUALITY_CRAFTING and TSM_API ~= nil and TSM_API.GetCustomPriceValue ~= nil
+end
+
+-- The share of an item's auctions that sell across the region, from TSM (0.42
+-- for 42%), or nil without TSM or a number. Asked for a thousand times, like
+-- Prices.SoldPerDay, since TSM rounds to whole numbers.
+function Prices.SaleRate(link)
+	if not (TSM_API and TSM_API.GetCustomPriceValue) then return end
+	local ok, itemString = pcall(TSM_API.ToItemString, link)
+	if not (ok and itemString) then return end
+	local value = tsmValue("dbregionsalerate*1000", itemString)
+	return value and value / 1000
+end
+
 -- How many days ago Auctionator last saw an item on the auction house (0 is
 -- today), or false when it's over three weeks or never. nil when prices don't
 -- come from Auctionator (TSM keeps its own data).
