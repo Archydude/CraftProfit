@@ -13,7 +13,7 @@ Craft Profit
 
 **Summary**
 ```
-Profit or loss on every craft and crafting order, a Best crafts tab across all your characters, a Ledger of how it really went, and patron orders priced in Blizzard's Patron tab. On WoW Forever, cost per skill-up too. Prices from TSM or Auctionator.
+Profit or loss on every craft, and which recipes are worth making. Priced with TSM or Auctionator, on Retail and WoW Forever.
 ```
 
 **Main category:** `Professions`
