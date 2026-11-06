@@ -45,6 +45,12 @@ local MISSES_SHOWN = 5      -- items on the Overview's "furthest below forecast"
 local DAY = 86400
 local RANGES = { { 7, "Last 7 days" }, { 30, "Last 30 days" }, { 90, "Last 90 days" } }
 local KIND_SHORT = { craft = "Regular", patron = "Patron", personal = "Personal", guild = "Guild", public = "Public" }
+-- Whether crafts come in types. WoW Forever has no crafting orders, so every
+-- craft there is a regular one: no type filter, section, column or label.
+local SHOWS_TYPES = ns.QUALITY_CRAFTING
+-- Whether crafts proc. WoW Forever has no multicraft or resourcefulness, so no
+-- procs columns or lines there; the forecast stays, since prices still move.
+local SHOWS_PROCS = ns.QUALITY_CRAFTING
 local NO_CRAFTS = "Nothing here yet. Crafts are recorded from now on, with what the panel forecast for them."
 local NO_BOUGHT = "Nothing here yet. What you buy on the auction house, and materials from vendors, are recorded from now on."
 local MATCH_NOTE = "A sale counts toward your oldest unsold craft of that item and rank, so one craft's result is an estimate. Totals are what really sold."
@@ -177,8 +183,10 @@ end
 
 local function overviewRows(list)
 	local rows = {}
-	addHeading(rows, "By type")
-	addAll(rows, groupRows(list, "kind", function(kind) return ns.Ledger.KINDS[kind] or kind end))
+	if SHOWS_TYPES then
+		addHeading(rows, "By type")
+		addAll(rows, groupRows(list, "kind", function(kind) return ns.Ledger.KINDS[kind] or kind end))
+	end
 	addHeading(rows, "By profession")
 	addAll(rows, groupRows(list, "profession"))
 	addHeading(rows, "By character")
@@ -189,7 +197,8 @@ local function overviewRows(list)
 		local off = ns.Ledger.Off(item)
 		if off and off < 0 then
 			item.off = off
-			item.label = format("%s%s %s", nameOf(item), rankMarkup(item), Color("muted", KIND_SHORT[item.kind] or item.kind))
+			item.label = nameOf(item) .. rankMarkup(item)
+				.. (SHOWS_TYPES and (" " .. Color("muted", KIND_SHORT[item.kind] or item.kind)) or "")
 			missed[#missed + 1] = item
 		end
 	end
@@ -293,6 +302,15 @@ local COLUMNS = {
 			return row.resaleProfit and signedMoney(row.resaleProfit) or Color("muted", "-") end },
 	},
 }
+-- Columns WoW Forever has nothing for (see SHOWS_TYPES and SHOWS_PROCS).
+local HIDDEN = {}
+if not SHOWS_TYPES then HIDDEN.kind = true end
+if not SHOWS_PROCS then HIDDEN.procs, HIDDEN.unitProcs = true, true end
+for _, columns in pairs(COLUMNS) do
+	for i = #columns, 1, -1 do
+		if HIDDEN[columns[i].key] then table.remove(columns, i) end
+	end
+end
 
 -- Where each column sits in a row `width` wide; the name takes what the others leave.
 local function columnPlaces(columns, width)
@@ -339,11 +357,13 @@ local function craftTooltip(craft)
 	GameTooltip:SetText(nameOf(craft) .. rankMarkup(craft))
 	addPair("Crafted", date("%b %d %Y, %H:%M", craft.t))
 	addPair("Crafter", ns.Ranks.CharacterName(craft.character or "?"))
-	addPair("Type", ns.Ledger.KINDS[craft.kind] or craft.kind)
+	if SHOWS_TYPES then addPair("Type", ns.Ledger.KINDS[craft.kind] or craft.kind) end
 	if craft.count > 1 then addPair("Crafts", craft.count) end
 	addPair("Made", craft.qty)
 	addPair("Materials cost", Money(craft.cost))
-	if craft.hasProcs then
+	if not SHOWS_PROCS then
+		if craft.expected ~= 0 then addPair("Forecast", signedMoney(craft.expected)) end
+	elseif craft.hasProcs then
 		if craft.expected ~= 0 then addPair("Forecast without procs", signedMoney(craft.expected)) end
 		if craft.forecast ~= craft.expected then addPair("Forecast with average procs", signedMoney(craft.forecast)) end
 		addPair("Procs added", procsText(craft.procGain))
@@ -368,7 +388,7 @@ end
 
 local function itemTooltip(item)
 	GameTooltip:SetText(nameOf(item) .. rankMarkup(item))
-	addPair("Type", ns.Ledger.KINDS[item.kind] or item.kind)
+	if SHOWS_TYPES then addPair("Type", ns.Ledger.KINDS[item.kind] or item.kind) end
 	addPair("Made", item.items)
 	addPair("Sold", item.sold)
 	addPair("Not sold yet", item.unsold)
@@ -381,7 +401,7 @@ local function itemTooltip(item)
 	if item.margin then addPair("Margin on what sold", marginText(item.margin)) end
 	if item.forecast ~= 0 then
 		addPair("Forecast for what's done", signedMoney(item.forecast))
-		if item.unitProcs then addPair("Procs added", procsText(item.procs)) end
+		if item.unitProcs and SHOWS_PROCS then addPair("Procs added", procsText(item.procs)) end
 		addPair("Off by", offText(ns.Ledger.Off(item)))
 	end
 end
@@ -629,8 +649,11 @@ local function drawTiles(total, spent)
 		"What the materials in these crafts were worth when you crafted them, whether you bought or gathered them."
 			.. (spent and format("\n\nPurchased in this time: %s. That isn't added on top, or what you buy and then use would count twice.",
 				Money(spent)) or ""),
-		off and format("Leaving procs out, what's done made %s, against a forecast of %s. Procs added %s.", signedMoney(total.actual),
-			signedMoney(total.forecast), procsText(total.procs))
+		off and (SHOWS_PROCS
+			and format("Leaving procs out, what's done made %s, against a forecast of %s. Procs added %s.",
+				signedMoney(total.actual), signedMoney(total.forecast), procsText(total.procs))
+			or format("What's done made %s, against a forecast of %s.", signedMoney(total.actual),
+				signedMoney(total.forecast)))
 			or "Nothing to compare yet: this fills in as things sell.",
 		format("%s items, at what they were worth when crafted.", BreakUpLargeNumbers(total.unsold)),
 	}
@@ -645,7 +668,9 @@ local function showNote(self)
 	GameTooltip:SetText("How this is worked out")
 	GameTooltip:AddLine(MATCH_NOTE, 1, 1, 1, true)
 	GameTooltip:AddLine(" ")
-	GameTooltip:AddLine("Forecasts and prices use your price options, as they were when each craft or purchase was recorded, so they don't change later. Forecasts leave procs out, because they're luck: what procs really added shows on its own. Crafts from before that was saved show a forecast with average procs.", 1, 1, 1, true)
+	GameTooltip:AddLine("Forecasts and prices use your price options, as they were when each craft or purchase was recorded, so they don't change later."
+		.. (SHOWS_PROCS and " Forecasts leave procs out, because they're luck: what procs really added shows on its own. Crafts from before that was saved show a forecast with average procs." or ""),
+		1, 1, 1, true)
 	if other and other.qty > 0 then
 		GameTooltip:AddLine(" ")
 		GameTooltip:AddLine(format("%s sold with no craft or purchase on record, for %s: from before the Ledger.",
@@ -974,6 +999,7 @@ local function create()
 	professionDropdown:SetPoint("RIGHT", characterDropdown, "LEFT", -8, 0)
 	kindDropdown = createDropdown(kindMenu, 130)
 	kindDropdown:SetPoint("RIGHT", professionDropdown, "LEFT", -8, 0)
+	kindDropdown:SetShown(SHOWS_TYPES)
 
 	createTabs()
 	createTiles()
