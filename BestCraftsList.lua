@@ -45,13 +45,16 @@ local STALE_SCAN_DAYS = 7  -- other characters' saved scans this old or older sh
 -- the same for the All characters view, needsProcs: only while procs count, and
 -- goldWidth: its width when amounts show in whole gold, and foreverWidth: on WoW
 -- Forever, whose amounts are two coins at most (4g 12s), leaving the names room.
--- The demand column is TSM's Sells/day, or without TSM, You sold.
+-- forever: true shows it only on WoW Forever, false only off it (Per skill-up
+-- takes Gold/day's place there). The demand column is TSM's Sells/day, or without
+-- TSM, You sold.
 local COLUMNS = {
 	{ key = "actions", width = ACTIONS_SIZE },
 	{ key = "sold", width = 64, header = "You sold", sort = "sold", needsTSM = false },
 	{ key = "perDay", width = 64, header = "Sells/day", sort = "perDay", needsTSM = true },
 	{ key = "listed", width = 46, header = "Listed", sort = "listed" },
-	{ key = "gold", width = 74, foreverWidth = 80, header = "Gold/day", sort = "gold" },
+	{ key = "gold", width = 74, header = "Gold/day", sort = "gold", forever = false },
+	{ key = "skillup", width = 84, header = "Per skill-up", sort = "skillup", forever = true },
 	{ key = "cost", width = 112, goldWidth = 70, foreverWidth = 76, header = "Cost", sort = "cost" },
 	{ key = "profit", width = 112, goldWidth = 70, foreverWidth = 76, header = "Profit", sort = "profit" },
 	{ key = "procs", width = 96, goldWidth = 56, header = "Procs", sort = "procs", needsProcs = true },
@@ -75,10 +78,14 @@ local HEADER_TIPS = {
 	sold = format("How many your characters sold on the auction house in the last %d days, from the auction "
 		.. "house's mail. Counts sales from when you first opened your mailbox with this version.", ns.Sales.DAYS),
 }
--- WoW Forever has no ranks, crafting strategy or procs to explain.
+-- WoW Forever has no ranks or procs to explain.
 if not ns.QUALITY_CRAFTING then
 	HEADER_TIPS.profit = "What one craft makes after the 5% auction house cut."
-	HEADER_TIPS.cost = "What the materials for one craft cost."
+	HEADER_TIPS.cost = "What the materials for one craft cost, with your crafting strategy."
+	HEADER_TIPS.skillup = "What one skill point costs with this recipe at your skill: the materials, minus what the "
+		.. "item is worth back (its auction price after the cut, or what a vendor pays if that's more), divided by "
+		.. "the chance a craft gives a skill-up.\n\nOrange recipes always give one; yellow and green ones less often "
+		.. "the closer they get to grey. Grey recipes give none and show -. A + means leveling with it makes gold."
 end
 -- What the Profit column shows: with procs counted, the expected profit.
 local function shownProfit(row)
@@ -123,6 +130,7 @@ local SORT_VALUES = {
 	listed = function(row) return row.listed end,
 	sold = function(row) return row.itemName and row.sold or nil end,
 	perDay = function(row) return row.soldPerDay end,
+	skillup = function(row) return row.skillup and row.skillup.cost end,
 }
 -- A pinned row's mark: the first atlas the game has, or else the word.
 local PIN_ATLASES = { "Waypoint-MapPin-Tracked", "Waypoint-MapPin-Untracked" }
@@ -185,6 +193,7 @@ end
 
 -- Whether a column shows, with these addons and in this view.
 local function columnShown(column)
+	if column.forever ~= nil and column.forever == ns.QUALITY_CRAFTING then return false end
 	if column.needsProcs and not ns.db.countProcs then return false end
 	if column.needsTSM ~= nil and column.needsTSM ~= ns.Prices.HasTSM() then return false end
 	return column.allCharacters == nil or column.allCharacters == ns.db.bestAllCharacters
@@ -359,6 +368,11 @@ local function rowTooltip(tip, row)
 	end
 	local daily = goldPerDay(row)
 	if daily then addPair(tip, "Gold per day", signedMoney(daily)) end
+	if row.skillup then
+		local s = row.skillup
+		addPair(tip, "Per skill-up (" .. ns.Skillups.ChanceText(s.chance, s.color) .. ")",
+			s.cost and signedMoney(-s.cost) or Color("muted", "-"))
+	end
 	if row.firstCraft then addLine(tip, firstCraftMarkup() .. " First craft: gives profession knowledge") end
 	if row.cooldown then addLine(tip, COOLDOWN_ICON .. " On cooldown: ready in " .. timeText(row.cooldown)) end
 
@@ -551,6 +565,9 @@ local function drawRow(button, row)
 	button.cells.cost:SetText((row.cost or 0) > 0 and Color("loss", Money(-row.cost)) or Color("muted", "-"))
 	local daily = goldPerDay(row)
 	button.cells.gold:SetText(daily and dailyText(daily) or Color("muted", "-"))
+	-- A cost is gold spent, so it shows like Cost; a gain like Profit.
+	local skillup = row.skillup and row.skillup.cost
+	button.cells.skillup:SetText(skillup and signedMoney(-skillup) or Color("muted", "-"))
 	button.cells.crafter:SetText(ns.Ranks.CharacterName(crafterKey(row)))
 	local listed = row.listed and BreakUpLargeNumbers(row.listed) or "-"
 	button.cells.listed:SetText((row.listed and (row.listedAge or 0) < STALE_DAYS) and listed or Color("muted", listed))
@@ -639,7 +656,8 @@ local function setSort(key)
 	if sortKey() == key then
 		ns.db.bestSortAscending = not ns.db.bestSortAscending
 	else
-		ns.db.bestSort, ns.db.bestSortAscending = key, key == "name" or key == "crafter"
+		-- Names and crafters A to Z, skill-ups cheapest first, the rest most first.
+		ns.db.bestSort, ns.db.bestSortAscending = key, key == "name" or key == "crafter" or key == "skillup"
 	end
 	BestCraftsList.Render()
 end

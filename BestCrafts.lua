@@ -547,6 +547,15 @@ local function priceEntry(entry)
 		local found = marketOf(row.output.link)
 		row.listed, row.listedAge, row.soldPerDay = found.listed, found.listedAge, found.soldPerDay
 	end
+
+	-- WoW Forever: what a skill point costs with it. The game only knows your skill
+	-- for the profession window that's open, so only its fresh scan has one.
+	if ns.SKILLUPS and entry.character == nil and row.output then
+		local schematic = entry.schematic
+		local made = ((schematic.quantityMin or 1) + (schematic.quantityMax or 1)) / 2
+		local cost, chance, color = ns.Skillups.Cost(entry.recipeID, row.cost or 0, row.sale, row.output.itemID, made)
+		if color then row.skillup = { cost = cost, chance = chance, color = color } end
+	end
 	return row
 end
 

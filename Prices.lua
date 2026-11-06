@@ -34,12 +34,14 @@ local function auctionatorValue(fn, arg)
 end
 
 -- What a vendor sells an item for, in copper (nil if no vendor sells it, or
--- nobody knows).
+-- nobody knows). On WoW Forever, common reagents (thread, flux, vials...) are
+-- known before a price addon has seen a vendor sell them (Data\Forever.lua).
 function Prices.Vendor(itemID)
 	local api = auctionatorAPI()
 	return (tsmAvailable() and tsmValue("vendorbuy", "i:" .. itemID))
 		or (savedPrices() and ns.SavedPrices.Vendor(itemID))
 		or (api and auctionatorValue(api.GetVendorPriceByItemID, itemID))
+		or (ns.VENDOR_PRICES and ns.VENDOR_PRICES[itemID])
 end
 
 -- What a material costs you, in copper (nil if nobody knows): what it costs to

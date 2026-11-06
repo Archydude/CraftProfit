@@ -499,7 +499,7 @@ function Model.Craft(ctx)
 		local price, cappedBy, listed = cappedSale(ctx, link, itemID, quality)
 		if cappedBy then notes[#notes + 1] = Model.CappedNote(recipeInfo.recipeID, cappedBy, listed) end
 		local output = {
-			link = link,
+			link = link, itemID = itemID, made = (qtyMin + qtyMax) / 2,
 			qtyText = qtyMin == qtyMax and tostring(qtyMin) or (qtyMin .. "-" .. qtyMax),
 		}
 		model.output = output

@@ -666,6 +666,17 @@ local function drawConcentration(model)
 	end
 end
 
+-- WoW Forever: what a skill point costs with this recipe, with its color and chance.
+local function drawSkillup(model)
+	local output = model.output
+	if not (ns.SKILLUPS and output and model.recipeID) then return end
+	local sale = output.sale and (output.sale - (output.ahCut or 0))
+	local cost, chance, color = ns.Skillups.Cost(model.recipeID, model.cost or 0, sale, output.itemID, output.made)
+	if not color then return end
+	addRow("Per skill-up  " .. Color("muted", "(") .. ns.Skillups.ChanceText(chance, color) .. Color("muted", ")"),
+		cost and signedMoney(-cost) or Color("muted", "-"))
+end
+
 local function drawCraft(model)
 	addRow(model.title, nil, fonts.title)
 	drawHeadline(model)
@@ -683,6 +694,7 @@ local function drawCraft(model)
 		else
 			addRow("Sells for", Color("warning", "no price"))
 		end
+		drawSkillup(model)
 		drawConcentration(model)
 	end
 	drawMaterials(model)

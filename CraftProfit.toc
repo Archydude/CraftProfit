@@ -20,6 +20,7 @@ Libs\LibDataBroker-1.1\LibDataBroker-1.1.lua
 Libs\LibDBIcon-1.0\LibDBIcon-1.0.lua
 
 Constants.lua
+Data\Forever.lua
 EnchantScrolls.lua
 Blizzard.lua
 Prices.lua
@@ -29,6 +30,7 @@ Ledger.lua
 Procs.lua
 Reminder.lua
 Format.lua
+Skillups.lua
 Simulation.lua
 Shopping.lua
 Model.lua
