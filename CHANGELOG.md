@@ -1,5 +1,14 @@
 # Changelog
 
+## 3.2.0
+- **WoW Forever:** Craft Profit now works on WoW Forever: the profit panel, Best crafts and the shopping list. Forever has no ranks, procs, concentration or crafting orders, so everything about those stays out of sight there, options included.
+- **Best crafts on Forever** opens from a tab with Craft Profit's logo, under your profession tabs.
+- **Buy missing or Craft myself:** Forever's crafting strategies. **Buy missing** prices what you're short of at the auction house. **Craft myself** prices a material you know the recipe for at what crafting it costs, down to what has to be bought, and the shopping list buys those instead. All this character's professions count once you've opened their Best crafts list, so Engineering can use your smelting.
+- **Cost per skill-up on Forever:** a **Per skill-up** column in Best crafts, in Gold/day's place, and a line on the panel: what one skill point costs with a recipe at your skill, after what the item is worth back, with the recipe's color and chance. Sort it to find the cheapest way to level.
+- **Vendor prices built in on Forever:** thread, flux, vials, dyes and other vendor reagents cost their vendor price even before your price addon has seen a vendor sell them. Amounts there show the two biggest coins, like 1s 4c, and Best crafts leaves room for full item names.
+- **Buy vendor items on the auction house:** a new option, off by default, in place of **Use vendor prices**. With it on, materials a vendor sells are priced at the auction house and go on the shopping list, and the tooltips of what's missing say when a vendor sells one for less. If you had turned Use vendor prices off, the new option is on.
+- **Best crafts stays open** when you switch to another profession, and comes back with its recipes, until you close it.
+
 ## 3.1.1
 - **TSM prices for alts:** **Everything but gear** is now **Everything TSM has**, and saves gear too, at each item level, so alts get prices for gear from your realm. **All crafting items** now includes decor.
 - Saving every item takes seconds instead of about a minute, and is much lighter on TSM.

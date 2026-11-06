@@ -27,7 +27,7 @@ Craft Profit tells you, in gold, whether a craft or a crafting order makes or lo
 
 Nothing runs until you open your profession window, apart from noting your auction sales when you open your mailbox and, if you turn it on, saving TSM prices for your alts when you log in. Procs are counted as an average, always shown next to the profit without them.
 
-Requires **TradeSkillMaster** or **Auctionator** for prices. Both together give the best experience: TSM adds how fast items sell, Auctionator adds how many are listed and the shopping list that checks itself off. Built for WoW Midnight 12.1.
+Requires **TradeSkillMaster** or **Auctionator** for prices. Both together give the best experience: TSM adds how fast items sell, Auctionator adds how many are listed and the shopping list that checks itself off. Built for WoW Midnight 12.1, and works on **WoW Forever** too, with a few things of its own there (see [WoW Forever](#wow-forever)).
 
 ## Install
 Copy the `CraftProfit` folder to `World of Warcraft\_retail_\Interface\AddOns\` and restart the game.
@@ -146,6 +146,8 @@ Click the **Best crafts** tab, next to the profession window's own tabs (from an
 
 **Click a row** to open its recipe. With **Use Craft Profit Reagents** on, its materials go straight in. Click **Best crafts** again to go back to the recipe.
 
+The list stays open when you switch to another profession: it comes back with that profession's recipes once they show. It closes when you click its tab, open a recipe from it or from a link, or close the profession window.
+
 Click a column header to sort by it; click again to reverse. Recipes without a value for that column stay at the bottom either way. Type in the search box to find a recipe.
 
 **Filter:** the button next to the search box.
@@ -186,6 +188,17 @@ Hover an item you can craft, in your bags, at the auction house or in a chat lin
 - Finishing materials aren't counted.
 - Only for recipes that come in ranks.
 - It updates each time you open your profession window, so after you gain skill or spend specialization points, open the window once on that character. A character shows up after you've opened its profession window once.
+
+## WoW Forever
+Craft Profit works on WoW Forever: the panel, Best crafts, the shopping list and the Ledger. Forever's crafting has no ranks, procs, concentration or crafting orders, so everything about those stays out of sight there, options included. What's different:
+
+- **Best crafts** opens from a tab with Craft Profit's logo, under your profession tabs on the right of the profession window. Click it again to go back to your recipes.
+- **Crafting strategy** says where the materials you're missing come from:
+  - **Buy missing** (default): bought at their auction house price.
+  - **Craft myself:** a material you know the recipe for costs what crafting it costs, down to what has to be bought (Copper Tube costs its Copper Bars and Weak Flux, and the bars their ore). The shopping list buys those instead, and the panel marks such materials **crafted**. What you own counts once, at every step. Recipes from all this character's professions count, once you've opened that profession's Best crafts list, so Engineering can use your smelting.
+- **Per skill-up:** in Best crafts (in Gold/day's place, which stays in each row's tooltip) and on the panel, what one skill point costs with a recipe at your skill: the materials, minus what the item is worth back (its auction price after the cut, or what a vendor pays if that's more), divided by the chance a craft gives a skill-up. Orange recipes always give one; yellow and green ones less often the closer they get to grey; grey ones never, and show **-**. A **+** means leveling with it makes gold. Click its header to sort cheapest first. Hover a row, or look at the panel, for the recipe's color and chance.
+- **Vendor reagents** (thread, flux, vials, dyes, salt, spices and more) cost their vendor price even before your price addon has seen a vendor sell them.
+- Amounts show the two biggest coins, like **1s 4c** or **4g 12s**.
 
 ## Minimap button
 - **Click:** opens the profession window of the profession you opened last, on its Best crafts list. Click again to close the list.
@@ -234,8 +247,8 @@ Click the gear on the panel (or Craft Profit options in the gear menu under the 
 
 | Option | What it does |
 |---|---|
-| Crafting strategy | What the crafting page crafts: Highest rank, cheapest materials (default), Use what I own, or Cheapest materials. Also at the bottom of the Best crafts list. |
-| Count procs in profits | On by default. The Best crafts list ranks by what crafts make on average with procs. Also in the Best crafts list's Filter menu. |
+| Crafting strategy | What the crafting page crafts: Highest rank, cheapest materials (default), Use what I own, or Cheapest materials. On WoW Forever: Buy missing (default) or Craft myself. Also at the bottom of the Best crafts list. |
+| Count procs in profits | On by default. The Best crafts list ranks by what crafts make on average with procs. Also in the Best crafts list's Filter menu. Not on WoW Forever. |
 | Show minimap button | On by default. Also `/craftprofit minimap`. |
 | Price addon | Automatic (TSM first, then Auctionator for anything TSM has no price for), TSM only, or Auctionator only. |
 | TSM price for materials / crafted items | Market value (default), lowest auction right now, historical price or region market average. |
@@ -249,13 +262,13 @@ Click the gear on the panel (or Craft Profit options in the gear menu under the 
 
 | Option | What it does |
 |---|---|
-| Show on the crafting page / on crafting orders | Turn the panel on or off for each page. |
+| Show on the crafting page / on crafting orders | Turn the panel on or off for each page. WoW Forever has no crafting orders. |
 | Panel size | Size of the whole panel, 60% to 150%. |
-| Show amounts down to | Gold, silver (default) or copper. |
+| Show amounts down to | Gold, silver (default) or copper. Not on WoW Forever, which always shows the two biggest coins. |
 | Lock panel position | Stops the panel from being dragged. |
 | Panel position: Reset | Puts the panel back next to the profession window. |
-| Animate procs | On by default. |
-| Coin sound on procs | On by default. |
+| Animate procs | On by default. Not on WoW Forever. |
+| Coin sound on procs | On by default. Not on WoW Forever. |
 | Show this session's total | On by default. |
 | Session total: Reset | Starts the session total from zero. |
 
@@ -269,7 +282,7 @@ Click the gear on the panel (or Craft Profit options in the gear menu under the 
 | Check off what you get | On by default. Materials come off the Auctionator shopping list as you get them: bought, looted, from the mailbox or crafted. |
 | Auctionator shopping list: Clear | Empties the shopping list. With one list per profession and no profession window open, it empties all this character's profession lists. |
 
-**Patron orders**
+**Patron orders** (not on WoW Forever)
 
 | Option | What it does |
 |---|---|
@@ -281,7 +294,7 @@ Click the gear on the panel (or Craft Profit options in the gear menu under the 
 
 | Option | What it does |
 |---|---|
-| Show your best rank | The **Craft Rank** line on item tooltips. On by default. |
+| Show your best rank | The **Craft Rank** line on item tooltips. On by default. This and the next three aren't on WoW Forever, which has no ranks. |
 | Show it for | All your characters (default) or this character only. |
 | Show its concentration | Adds the concentration when the best rank needs it. On by default. |
 | Saved characters: Forget... | Pick a character you deleted, renamed or moved to take it off Craft Rank tooltips and the Best crafts list. |

@@ -13,7 +13,7 @@ Craft Profit
 
 **Summary**
 ```
-Profit or loss on every craft and crafting order, a Best crafts tab across all your characters, a Ledger of how it really went, and patron orders priced in Blizzard's Patron tab. Prices from TSM or Auctionator.
+Profit or loss on every craft and crafting order, a Best crafts tab across all your characters, a Ledger of how it really went, and patron orders priced in Blizzard's Patron tab. On WoW Forever, cost per skill-up too. Prices from TSM or Auctionator.
 ```
 
 **Main category:** `Professions`
@@ -29,36 +29,35 @@ Profit or loss on every craft and crafting order, a Best crafts tab across all y
 ```markdown
 ## Is this craft worth it?
 
-Craft Profit answers in gold: **profit or loss?** A panel next to your profession window prices every craft and crafting order, a **Best crafts** tab shows what's worth crafting, and the **Ledger** shows how it really went.
+Craft Profit answers in gold: **profit or loss?** A panel next to your profession window prices every craft and crafting order, a **Best crafts** tab shows what's worth crafting, and the **Ledger** shows how it really went. On **Retail** and **WoW Forever**.
 
 - **Expected profit** on every craft, procs included
 - **Best crafts**: every recipe ranked by profit, across all your characters
 - **Ledger**: your crafts, sales, orders and purchases against the forecast
 - **Patron orders** priced and crafted right in Blizzard's Patron tab
-- **Crafting strategy**: highest rank, what you own or cheapest materials
 - **TSM prices for alts** that keep TSM turned off
-- **Craft Rank** on tooltips
+- **WoW Forever**: cost per skill-up, and crafting your own materials
 
 ### Crafts and orders
-The panel leads with the answer: the sale price at the rank you'll get, minus the 5% cut and your materials, with and without procs, plus what **concentration** would add. On orders: the commission, minus the materials **you** supply, plus sellable rewards.
+The panel leads with the answer: the sale price at the rank you'll get, minus the 5% cut and your materials, with and without procs. On orders: the commission, minus the materials **you** supply, plus sellable rewards.
 
 ### What should I craft?
-**Best crafts** lists every recipe you know, most profitable first, with what each costs, could make in a day and sells. Pin your favorites. **All characters** puts every character's professions in one list, so you know who to log in to.
+**Best crafts** lists every recipe you know, most profitable first, with what each costs and sells. **All characters** puts every character's professions in one list.
 
 ### Did it pay off?
-The **Ledger** is your crafting history: what each item cost, sold for and really made, what procs added, and how far it landed from the forecast.
-
-### Which materials?
-Pick a **crafting strategy** and Craft Profit puts those materials in and shops for exactly those.
+The **Ledger** is your crafting history: what each item cost, sold for and really made, and how far it landed from the forecast.
 
 ### Patron orders
-Blizzard's Patron tab shows each order's **expected profit**, **rewards** and missing **materials**. Sort by profit, shop for the profitable ones, and craft each with one click per step.
+Blizzard's Patron tab shows each order's **expected profit**, **rewards** and missing **materials**, and crafts it with one click per step.
+
+### WoW Forever
+Best crafts also shows what a **skill point** costs with each recipe at your skill, so you can level the cheapest way. **Craft myself** prices materials you can make, like Copper Tube, at what crafting them costs, and shops for those. Thread, flux and vials cost their vendor price.
 
 ### TSM prices for alts
-Keep TSM off on your crafting alts and they still get its prices, saved by a character with TSM each time it logs in, on their tooltips too.
+Keep TSM off on your crafting alts and they still get its prices, saved by a character with TSM.
 
 ### Shopping list
-One click adds what you're missing to an **Auctionator** shopping list or a **TSM** search.
+One click adds what you're missing to an **Auctionator** shopping list or a **TSM** search, following your **crafting strategy**.
 
 ### Good to know
 - Needs **TradeSkillMaster** or **Auctionator** for prices. **Both together give the best experience**.
@@ -73,19 +72,28 @@ One click adds what you're missing to an **Auctionator** shopping list or a **TS
 
 ## B. Upload File form
 
-**File:** `dist\CraftProfit-3.1.1.zip`
+**File:** `dist\CraftProfit-3.2.0.zip`
 
 **Display name**
 ```
-Craft Profit 3.1.1
+Craft Profit 3.2.0
 ```
 
 **Release type:** `Release`
 
-**Game versions:** Retail `12.1.0` and `12.1.5`.
+**Game versions:** Retail `12.1.0` and `12.1.5`, WoW Forever `1.60.1`.
 
 **Changelog** (paste only the newest part; paste older parts too if they never went up)
 ```markdown
+3.2.0
+- **WoW Forever:** Craft Profit now works on WoW Forever: the profit panel, Best crafts and the shopping list. Forever has no ranks, procs, concentration or crafting orders, so everything about those stays out of sight there, options included.
+- **Best crafts on Forever** opens from a tab with Craft Profit's logo, under your profession tabs.
+- **Buy missing or Craft myself:** Forever's crafting strategies. **Buy missing** prices what you're short of at the auction house. **Craft myself** prices a material you know the recipe for at what crafting it costs, down to what has to be bought, and the shopping list buys those instead. All this character's professions count once you've opened their Best crafts list, so Engineering can use your smelting.
+- **Cost per skill-up on Forever:** a **Per skill-up** column in Best crafts, in Gold/day's place, and a line on the panel: what one skill point costs with a recipe at your skill, after what the item is worth back, with the recipe's color and chance. Sort it to find the cheapest way to level.
+- **Vendor prices built in on Forever:** thread, flux, vials, dyes and other vendor reagents cost their vendor price even before your price addon has seen a vendor sell them. Amounts there show the two biggest coins, like 1s 4c, and Best crafts leaves room for full item names.
+- **Buy vendor items on the auction house:** a new option, off by default, in place of **Use vendor prices**. With it on, materials a vendor sells are priced at the auction house and go on the shopping list, and the tooltips of what's missing say when a vendor sells one for less. If you had turned Use vendor prices off, the new option is on.
+- **Best crafts stays open** when you switch to another profession, and comes back with its recipes, until you close it.
+
 3.1.1
 - **TSM prices for alts:** **Everything but gear** is now **Everything TSM has**, and saves gear too, at each item level, so alts get prices for gear from your realm. **All crafting items** now includes decor.
 - Saving every item takes seconds instead of about a minute, and is much lighter on TSM.
