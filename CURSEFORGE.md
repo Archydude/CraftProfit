@@ -42,16 +42,16 @@ Craft Profit answers in gold: **profit or loss?** A panel next to your professio
 The panel leads with the answer: the sale price at the rank you'll get, minus the 5% cut and your materials, with and without procs. On orders: the commission, minus the materials **you** supply, plus sellable rewards.
 
 ### What should I craft?
-**Best crafts** lists every recipe you know, most profitable first, with what each costs and sells. **All characters** puts every character's professions in one list.
+**Best crafts** lists every recipe you know, most profitable first, with what each costs and sells. Pick its columns, like gold per **concentration point**. **All characters** puts every character's professions in one list.
 
 ### Did it pay off?
 The **Ledger** is your crafting history: what each item cost, sold for and really made, and how far it landed from the forecast.
 
 ### Patron orders
-Blizzard's Patron tab shows each order's **expected profit**, **rewards** and missing **materials**, and crafts it with one click per step.
+Blizzard's Patron tab shows each order's **expected profit**, **rewards** and missing **materials**. **Next order** works through them, most profitable first, one click per step.
 
 ### WoW Forever
-Best crafts also shows what a **skill point** costs with each recipe at your skill, so you can level the cheapest way, and with TSM, how much of each item **sells**. **Craft myself** prices materials you can make, like Copper Tube, at what crafting them costs, and shops for those. Thread, flux and vials cost their vendor price.
+Best crafts also shows what a **skill point** costs with each recipe at your skill, so you can level the cheapest way, and with TSM, how much of each item **sells**. **Craft myself** prices materials you can make, like Copper Tube, at what crafting them costs, and shops for those.
 
 ### TSM prices for alts
 Crafting alts without TSM still get its prices, saved by a character with TSM.
@@ -72,11 +72,11 @@ One click adds what you're missing to an **Auctionator** shopping list or a **TS
 
 ## B. Upload File form
 
-**File:** `dist\CraftProfit-3.3.2.zip`
+**File:** `dist\CraftProfit-3.4.0.zip`
 
 **Display name**
 ```
-Craft Profit 3.3.2
+Craft Profit 3.4.0
 ```
 
 **Release type:** `Release`
@@ -85,6 +85,12 @@ Craft Profit 3.3.2
 
 **Changelog** (paste only the newest part; paste older parts too if they never went up)
 ```markdown
+3.4.0
+- **Next order on the Patron tab:** a button under the list does the next step of the most profitable order you have everything for: start it, craft it, complete it, one click per step. Once the profitable orders are done, it goes on to the ones that lose gold, smallest loss first, for their rewards; turn off **Next order: include orders that lose gold** (gear menu or options) to stop after the profitable ones.
+- **Patron orders share your materials:** what you own counts once down the list, most profitable order first, so two orders that need the same materials no longer both say Ready on one stack. The one that comes up short shows what it's missing.
+- **Pick Best crafts' columns:** right-click any column header, or open **Filter → Columns**, and choose which columns show.
+- **Per point column in Best crafts** (off by default, Retail): what each concentration point earns with a recipe, to see where your concentration is worth the most.
+
 3.3.2
 - Fixed: on WoW Forever, **Save TSM prices for alts** saved only your recipes' items and said TSM's item list wasn't there. It now finds TSM's list, so **All crafting items** and **Everything TSM has** save what they say.
 

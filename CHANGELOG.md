@@ -1,5 +1,11 @@
 # Changelog
 
+## 3.4.0
+- **Next order on the Patron tab:** a button under the list does the next step of the most profitable order you have everything for: start it, craft it, complete it, one click per step. Once the profitable orders are done, it goes on to the ones that lose gold, smallest loss first, for their rewards; turn off **Next order: include orders that lose gold** (gear menu or options) to stop after the profitable ones.
+- **Patron orders share your materials:** what you own counts once down the list, most profitable order first, so two orders that need the same materials no longer both say Ready on one stack. The one that comes up short shows what it's missing.
+- **Pick Best crafts' columns:** right-click any column header, or open **Filter → Columns**, and choose which columns show.
+- **Per point column in Best crafts** (off by default, Retail): what each concentration point earns with a recipe, to see where your concentration is worth the most.
+
 ## 3.3.2
 - Fixed: on WoW Forever, **Save TSM prices for alts** saved only your recipes' items and said TSM's item list wasn't there. It now finds TSM's list, so **All crafting items** and **Everything TSM has** save what they say.
 
