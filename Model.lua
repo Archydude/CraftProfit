@@ -227,6 +227,9 @@ function Model.MissingForAll(jobs)
 		end
 	end
 
+	-- Craft myself: what you can craft becomes its own materials.
+	if ns.Chains.Active() then return ns.Chains.Missing(needs, owned) end
+
 	local list, byItem = {}, {}
 	for _, need in ipairs(needs) do
 		local short = need.qty

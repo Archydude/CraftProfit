@@ -204,8 +204,9 @@ local function addStrategyDropdown()
 			GameTooltip:SetOwner(self, "ANCHOR_LEFT")
 			GameTooltip:SetText("Crafting strategy")
 			GameTooltip:AddLine(strategy[2] .. ": " .. strategy[4], 1, 1, 1, true)
-			GameTooltip:AddLine("It picks the materials for Use Craft Profit materials, prices what you're missing and "
-				.. "decides what the shopping list buys. Also under the Best crafts list and in the options.",
+			GameTooltip:AddLine((ns.QUALITY_CRAFTING and "It picks the materials for Use Craft Profit materials, prices "
+				.. "what you're missing and decides what the shopping list buys." or "It prices what you're missing and "
+				.. "decides what the shopping list buys.") .. " Also under the Best crafts list and in the options.",
 				0.53, 0.53, 0.53, true)
 			GameTooltip:Show()
 		end)
@@ -391,6 +392,8 @@ local function drawMaterials(model)
 		local tag = (material.simulated and ("  " .. Color("simulated", "simulated")))
 			or (not cart and missingOf(model, material) > 0 and ("  " .. Color("missing", "missing")))
 			or ""
+		-- Craft myself: priced at what crafting it costs.
+		if ns.Chains.Active() and ns.Chains.RecipeFor(material.itemID) then tag = tag .. "  " .. Color("muted", "crafted") end
 		-- Click cycles qualities; Shift-click shops for just this material.
 		local onClick, tooltip
 		local canCycle = model.canSimulate and ns.Simulation.CanChange(material)
@@ -684,11 +687,8 @@ local function drawCraft(model)
 	end
 	drawMaterials(model)
 	-- Right above the blue row, which follows it. (Orders have their own rule.)
-	-- Without qualities every strategy picks the same materials.
-	if ns.QUALITY_CRAFTING then
-		addGap()
-		addStrategyDropdown()
-	end
+	addGap()
+	addStrategyDropdown()
 	drawBest(model)
 	drawProcs(model)
 	drawFooter(model)

@@ -762,8 +762,6 @@ end
 ---------------------------------------------------------------------------
 
 local function createStrategyDropdown()
-	-- Without qualities every strategy picks the same materials.
-	if not ns.QUALITY_CRAFTING then return 0 end
 	strategyDropdown = CreateFrame("DropdownButton", nil, list, "WowStyle1DropdownTemplate")
 	strategyDropdown:SetWidth(STRATEGY_WIDTH)
 	strategyDropdown:SetPoint("BOTTOMRIGHT", -PAD, PAD - 4)

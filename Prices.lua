@@ -42,8 +42,20 @@ function Prices.Vendor(itemID)
 		or (api and auctionatorValue(api.GetVendorPriceByItemID, itemID))
 end
 
--- What a material costs you, in copper (nil if nobody knows).
+-- What a material costs you, in copper (nil if nobody knows): what it costs to
+-- buy, or with Craft myself (WoW Forever), what crafting it costs when you know
+-- its recipe (see Chains.lua).
 function Prices.Material(itemID)
+	if ns.Chains.Active() then
+		local cost = ns.Chains.CraftCost(itemID)
+		if cost then return cost end
+	end
+	return Prices.Buy(itemID)
+end
+
+-- What buying a material costs, in copper (nil if nobody knows), whatever the
+-- crafting strategy.
+function Prices.Buy(itemID)
 	-- Vendor-sold things (vials, thread...) cost the vendor price.
 	local value = ns.db.useVendor and Prices.Vendor(itemID)
 	if value then return value end
@@ -186,6 +198,8 @@ end
 -- A material's price age (see auctionAge). Vendor prices don't age.
 function Prices.MaterialAge(itemID)
 	if ns.db.useVendor and Prices.Vendor(itemID) then return end
+	-- Crafted with Craft myself: its own price isn't used.
+	if ns.Chains.Active() and ns.Chains.RecipeFor(itemID) then return end
 	return auctionAge("GetAuctionAgeByItemID", itemID)
 end
 

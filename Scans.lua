@@ -184,6 +184,9 @@ function Scans.Save(run)
 	for i, entry in ipairs(run.recipes) do recipes[i] = packRecipe(entry) end
 	me.scans = me.scans or {}
 	me.scans[run.professionID] = { format = FORMAT, time = time(), name = run.name, recipes = recipes }
+	-- Craft myself can use the new recipes, and the list prices with them.
+	ns.Chains.Reset()
+	if ns.Chains.Active() then ns.BestCrafts.Reprice(true) end
 	-- With TSM loaded, the new recipes' prices are saved for characters without it.
 	ns.SavedPrices.ScanSaved()
 end
@@ -198,6 +201,19 @@ local function entriesOf(saved, professionID, character)
 		unpacked[saved] = entries
 	end
 	return entries
+end
+
+-- This character's saved recipes, of every profession it has scanned.
+function Scans.Mine()
+	local _, myKey = ns.Ranks.Me()
+	local character = myKey and CraftProfitDB.characters[myKey]
+	local list = {}
+	for professionID, saved in pairs(character and character.scans or {}) do
+		if saved.format == FORMAT then
+			for _, entry in ipairs(entriesOf(saved, professionID, myKey)) do list[#list + 1] = entry end
+		end
+	end
+	return list
 end
 
 -- Every saved recipe of every character, except this character's `shownProfession`,

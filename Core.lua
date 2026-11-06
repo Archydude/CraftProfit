@@ -23,6 +23,10 @@ local function loadSettings()
 	end
 	-- Up to 2.6 there was a "Most profit" crafting strategy.
 	if db.craftStrategy == "profit" then db.craftStrategy = "highest" end
+	-- WoW Forever has its own strategies; one saved before they existed is replaced.
+	local known = false
+	for _, strategy in ipairs(ns.STRATEGIES) do known = known or strategy[1] == db.craftStrategy end
+	if db.craftStrategy and not known then db.craftStrategy = nil end
 	-- The Ledger's "All time" was gone before it was ever released.
 	if db.ledgerRange == 0 then db.ledgerRange = 90 end
 	for key, value in pairs(ns.DEFAULTS) do

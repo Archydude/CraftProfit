@@ -40,6 +40,7 @@ Craft.lua
 Patron.lua
 Ranks.lua
 Scans.lua
+Chains.lua
 BestCrafts.lua
 BestCraftsList.lua
 LedgerWindow.lua

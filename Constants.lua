@@ -72,7 +72,7 @@ ns.DEFAULTS = {
 	concentrationFor = "profit", -- patron orders that need concentration get it by: "profit" | "knowledge", or "none" of it
 	leastConcentration = false, -- orders that need concentration: the qualities that need the least, cheapest of those
 	bestMaterials = false, -- "Use Craft Profit Reagents" on the order form and crafting page: put them in every order or recipe you open
-	craftStrategy = "highest", -- what the crafting page and Best crafts list craft (see ns.STRATEGIES)
+	craftStrategy = ns.QUALITY_CRAFTING and "highest" or "buy", -- what the crafting page and Best crafts list craft (see ns.STRATEGIES)
 	scanReminder = true,  -- remind you to scan the auction house when Auctionator's prices are old
 	minimap = true,       -- the minimap button (its position is in minimapIcon, kept by LibDBIcon)
 	countProcs = true,    -- multicraft and resourcefulness count in the Best crafts list
@@ -108,14 +108,22 @@ ns.CONCENTRATION_CHOICES = {
 }
 
 -- Crafting strategies: which rank and materials the crafting page and the Best
--- crafts list craft. key, name, short name, and what it does.
-ns.STRATEGIES = {
+-- crafts list craft. key, name, short name, and what it does. WoW Forever has no
+-- ranks, so there they say where missing materials come from (see Chains.lua).
+ns.STRATEGIES = ns.QUALITY_CRAFTING and {
 	{ "highest", "Highest rank, cheapest materials", "Highest rank",
 		"The highest rank you can make, with the cheapest materials that reach it." },
 	{ "owned", "Use what I own", "What I own",
 		"The highest rank you have every material for. Short for all of them: the highest rank you can make, spending the least gold on what you're missing. The Best crafts list only shows what you can craft now." },
 	{ "cheapest", "Cheapest materials", "Cheapest",
 		"The cheapest materials, whatever rank they make. For skill-ups, first crafts and knowledge." },
+} or {
+	{ "buy", "Buy missing", "Buy missing",
+		"Materials you're missing are bought at their auction house price." },
+	{ "craft", "Craft myself", "Craft myself",
+		"Materials you know the recipe for are crafted, down to what has to be bought: they cost what their own " ..
+		"materials cost, and the shopping list buys those instead. Recipes from all this character's professions " ..
+		"count, once you've opened that profession's Best crafts list." },
 }
 
 -- The current crafting strategy's entry in ns.STRATEGIES.

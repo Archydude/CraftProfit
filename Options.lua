@@ -87,19 +87,22 @@ function Options.Create()
 	-- The main page: what to craft and where prices come from
 	---------------------------------------------------------------------------
 
-	-- Both only matter with qualities and procs.
+	header("Crafting")
+	local strategyChoices = {}
+	local strategyTip = quality and "Which rank, and which materials, to craft on the crafting page:\n\n"
+		or "Where the materials you're missing come from:\n\n"
+	for _, strategy in ipairs(ns.STRATEGIES) do
+		strategyChoices[#strategyChoices + 1] = { strategy[1], strategy[2] }
+		strategyTip = strategyTip .. strategy[2] .. ": " .. strategy[4] .. "\n\n"
+	end
+	dropdown("craftStrategy", "Crafting strategy", strategyChoices, strategyTip .. (quality and
+		"It picks the materials for Use Craft Profit Reagents and the panel's blue row, prices missing materials, " ..
+		"decides what the shopping list buys, and ranks the Best crafts list. Patron orders keep their own rule: the " ..
+		"cheapest materials that reach the order's minimum quality." or
+		"It prices your materials, decides what the shopping list buys, and ranks the Best crafts list.") ..
+		"\n\nAlso on the panel when a recipe is open, and at the bottom of the Best crafts list.")
+	-- Procs only exist with Dragonflight's crafting.
 	if quality then
-		header("Crafting")
-		local strategyChoices = {}
-		local strategyTip = "Which rank, and which materials, to craft on the crafting page:\n\n"
-		for _, strategy in ipairs(ns.STRATEGIES) do
-			strategyChoices[#strategyChoices + 1] = { strategy[1], strategy[2] }
-			strategyTip = strategyTip .. strategy[2] .. ": " .. strategy[4] .. "\n\n"
-		end
-		dropdown("craftStrategy", "Crafting strategy", strategyChoices, strategyTip ..
-			"It picks the materials for Use Craft Profit Reagents and the panel's blue row, prices missing materials, " ..
-			"decides what the shopping list buys, and ranks the Best crafts list. Patron orders keep their own rule: the " ..
-			"cheapest materials that reach the order's minimum quality.\n\nAlso on the panel when a recipe is open, and at the bottom of the Best crafts list.")
 		checkbox("countProcs", "Count procs in profits",
 			"The Best crafts list ranks recipes by what they make on average with procs. The Patron tab shows and sorts orders by what they make on average with " ..
 			"resourcefulness, the customer's materials included (the customer gets the item, so multicraft doesn't " ..
@@ -112,8 +115,7 @@ function Options.Create()
 	header("Minimap button")
 	checkbox("minimap", "Show minimap button",
 		"Click: your profession window, on the Best crafts list of the profession you opened last. Right-click: a " ..
-		"menu with your professions, the Ledger, " .. (quality and "the crafting strategy " or "") ..
-		"and these options. Hover: this session's total.\n\n" ..
+		"menu with your professions, the Ledger, the crafting strategy and these options. Hover: this session's total.\n\n" ..
 		"Also in the minimap's addon menu, and /craftprofit minimap shows or hides it.")
 
 	header("Prices")

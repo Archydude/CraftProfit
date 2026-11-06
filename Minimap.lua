@@ -90,14 +90,11 @@ local function openMenu()
 				function() openBestCrafts(profession.skillLine) end)
 		end
 		root:CreateButton("Ledger", ns.LedgerWindow.Show)
-		-- WoW Forever has no ranks, so no strategy to pick.
-		if ns.QUALITY_CRAFTING then
-			local strategies = root:CreateButton("Crafting strategy")
-			for _, strategy in ipairs(ns.STRATEGIES) do
-				local key = strategy[1]
-				strategies:CreateRadio(strategy[2], function() return ns.db.craftStrategy == key end,
-					function() ns.Options.Set("craftStrategy", key) end)
-			end
+		local strategies = root:CreateButton("Crafting strategy")
+		for _, strategy in ipairs(ns.STRATEGIES) do
+			local key = strategy[1]
+			strategies:CreateRadio(strategy[2], function() return ns.db.craftStrategy == key end,
+				function() ns.Options.Set("craftStrategy", key) end)
 		end
 		root:CreateDivider()
 		root:CreateButton("Options", ns.Options.Open)
@@ -122,8 +119,7 @@ local function fillTooltip(tooltip)
 	tooltip:AddLine(" ")
 	local profession = lastProfession()
 	tooltip:AddLine(profession and format("Click: %s's Best crafts", profession.name) or "Click: options", 0.6, 0.6, 0.6)
-	tooltip:AddLine(ns.QUALITY_CRAFTING and "Right-click: professions, Ledger, crafting strategy, options"
-		or "Right-click: professions, Ledger, options", 0.6, 0.6, 0.6)
+	tooltip:AddLine("Right-click: professions, Ledger, crafting strategy, options", 0.6, 0.6, 0.6)
 end
 
 ---------------------------------------------------------------------------

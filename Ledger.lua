@@ -564,7 +564,7 @@ end
 local function recordBought(itemID, link, qty, spent, source)
 	if not (saved and itemID and spent and spent > 0 and (qty or 0) > 0) then return end
 	append("bought", time(), indexOf(me()), itemID, rankOf(link or itemID), qty, whole(spent),
-		whole(ns.Prices.Material(itemID)), source, nameIn(link) or C_Item.GetItemNameByID(itemID) or "?")
+		whole(ns.Prices.Buy(itemID)), source, nameIn(link) or C_Item.GetItemNameByID(itemID) or "?")
 	onChange()
 end
 
