@@ -51,7 +51,7 @@ The **Ledger** is your crafting history: what each item cost, sold for and reall
 Blizzard's Patron tab shows each order's **expected profit**, **rewards** and missing **materials**. **Next order** works through them, most profitable first, one click per step.
 
 ### WoW Forever
-Best crafts also shows what a **skill point** costs with each recipe at your skill, so you can level the cheapest way, and with TSM, how much of each item **sells**. **Craft myself** prices materials you can make, like Copper Tube, at what crafting them costs, and shops for those.
+Best crafts also shows what a **skill point** costs with each recipe at your skill, and the **chance** of one, so you can level the cheapest way, and with TSM, how much of each item **sells**. **Craft myself** prices materials you can make at what crafting them costs, and shops for those.
 
 ### TSM prices for alts
 Crafting alts without TSM still get its prices, saved by a character with TSM.
@@ -72,11 +72,11 @@ One click adds what you're missing to an **Auctionator** shopping list or a **TS
 
 ## B. Upload File form
 
-**File:** `dist\CraftProfit-3.4.0.zip`
+**File:** `dist\CraftProfit-3.5.0.zip`
 
 **Display name**
 ```
-Craft Profit 3.4.0
+Craft Profit 3.5.0
 ```
 
 **Release type:** `Release`
@@ -85,6 +85,10 @@ Craft Profit 3.4.0
 
 **Changelog** (paste only the newest part; paste older parts too if they never went up)
 ```markdown
+3.5.0
+- **Chance column on WoW Forever:** Best crafts shows the chance a craft gives a skill-up at your skill, in the recipe's color. Click its header to put the surest skill-ups first.
+- **Per skill-up says Free** for recipes that make gold, instead of a gain that grew the less often a recipe gave a skill-up. That made a profitable green recipe look like the best way to level. Free recipes sort first, surest skill-up first, then the rest from the cheapest.
+
 3.4.0
 - **Next order on the Patron tab:** a button under the list does the next step of the most profitable order you have everything for: start it, craft it, complete it, one click per step. Once the profitable orders are done, it goes on to the ones that lose gold, smallest loss first, for their rewards; turn off **Next order: include orders that lose gold** (gear menu or options) to stop after the profitable ones.
 - **Patron orders share your materials:** what you own counts once down the list, most profitable order first, so two orders that need the same materials no longer both say Ready on one stack. The one that comes up short shows what it's missing.
