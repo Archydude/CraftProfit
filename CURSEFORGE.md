@@ -72,11 +72,11 @@ One click adds what you're missing to an **Auctionator** shopping list or a **TS
 
 ## B. Upload File form
 
-**File:** `dist\CraftProfit-3.3.0.zip`
+**File:** `dist\CraftProfit-3.3.1.zip`
 
 **Display name**
 ```
-Craft Profit 3.3.0
+Craft Profit 3.3.1
 ```
 
 **Release type:** `Release`
@@ -85,6 +85,9 @@ Craft Profit 3.3.0
 
 **Changelog** (paste only the newest part; paste older parts too if they never went up)
 ```markdown
+3.3.1
+- On WoW Forever, the Ledger no longer shows craft types or procs, which Forever doesn't have: no type filter, By type section, Type or Procs columns. Forecast and Off by stay, so you still see whether you got the price the panel predicted.
+
 3.3.0
 - **Sale rate on WoW Forever:** with TSM, Best crafts shows how much of each item's auctions sell, in place of Sells/day and Listed (both still in each row's tooltip). Forever's region is one server, so it's your own market. Click the header to sort by it.
 - Fixed: on WoW Forever, clicking a recipe in Best crafts didn't open it.
