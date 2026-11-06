@@ -79,15 +79,36 @@ local tsmData = {}
 -- this realm's other items.
 local TSM_ITEM_DATA = { AUCTIONDB_COMMODITY_DATA = "region", AUCTIONDB_NON_COMMODITY_DATA = "realm" }
 
--- Realm names with only letters and digits, to match TSM's spelling of them.
+-- Realm names with only lowercase letters and digits, to match TSM's spelling of them.
 local function bareRealm(realm)
-	return type(realm) == "string" and (realm:gsub("[^%w]", "")) or nil
+	return type(realm) == "string" and (realm:gsub("[^%w]", "")):lower() or nil
+end
+
+-- What TSM calls this realm's data. On Retail, the realm's name ("Silvermoon").
+-- Elsewhere the faction is added ("Firemaw-Horde"), and on WoW Forever the realm
+-- is named by its rules instead ("Normal-Alliance", "Roleplay PvP-Horde"),
+-- as TSM's own SessionInfo does.
+local function tsmRealm()
+	local realm = GetRealmName()
+	if WOW_PROJECT_ID == WOW_PROJECT_MAINLINE then return realm end
+	local rules = C_GameRules and C_GameRules.IsGameRuleActive
+	local ids = Enum and Enum.GameRule
+	if WOW_PROJECT_CAMELOT and WOW_PROJECT_ID == WOW_PROJECT_CAMELOT and rules and ids then
+		local function active(id) return id ~= nil and rules(id) end
+		local rp, pvp = active(ids.RPRuleset), active(ids.PvPRuleset)
+		if active(ids.HardcoreRuleset) then realm = "Hardcore"
+		elseif rp and pvp then realm = "Roleplay PvP"
+		elseif rp then realm = "Roleplay"
+		elseif pvp then realm = "PvP"
+		else realm = "Normal" end
+	end
+	return realm .. "-" .. (UnitFactionGroup("player") or "")
 end
 
 local function onTSMData(tag, realmOrRegion, data)
 	local kind = TSM_ITEM_DATA[tag]
 	if not kind or type(data) ~= "string" then return end
-	if kind == "realm" and bareRealm(realmOrRegion) ~= bareRealm(GetRealmName()) then return end
+	if kind == "realm" and bareRealm(realmOrRegion) ~= bareRealm(tsmRealm()) then return end
 	tsmData[#tsmData + 1] = data
 end
 
