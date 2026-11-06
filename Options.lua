@@ -1,6 +1,8 @@
 -- Craft Profit: the options window (Esc > Options > AddOns > Craft Profit). The
 -- main page has what to craft and where prices come from; the rest sit on pages
--- under its "+": Panel, Shopping list, Patron orders and Tooltips.
+-- under its "+": Panel, Shopping list, Patron orders and Tooltips. WoW Forever
+-- has no ranks, procs, concentration or crafting orders, so the options for
+-- those (and the Patron orders page) aren't there.
 local _, ns = ...
 
 local Options = {}
@@ -38,6 +40,7 @@ function Options.Create()
 	local layout
 	category, layout = Settings.RegisterVerticalLayoutCategory("Craft Profit")
 	local db = ns.db
+	local quality = ns.QUALITY_CRAFTING -- false on WoW Forever
 	-- The page settings go on: the main page, then each page under its "+".
 	local page, pageLayout = category, layout
 
@@ -84,8 +87,8 @@ function Options.Create()
 	-- The main page: what to craft and where prices come from
 	---------------------------------------------------------------------------
 
-	-- Both only matter with qualities and procs (not on WoW Forever).
-	if ns.QUALITY_CRAFTING then
+	-- Both only matter with qualities and procs.
+	if quality then
 		header("Crafting")
 		local strategyChoices = {}
 		local strategyTip = "Which rank, and which materials, to craft on the crafting page:\n\n"
@@ -109,7 +112,8 @@ function Options.Create()
 	header("Minimap button")
 	checkbox("minimap", "Show minimap button",
 		"Click: your profession window, on the Best crafts list of the profession you opened last. Right-click: a " ..
-		"menu with your professions, the crafting strategy and these options. Hover: this session's total.\n\n" ..
+		"menu with your professions, the Ledger, " .. (quality and "the crafting strategy " or "") ..
+		"and these options. Hover: this session's total.\n\n" ..
 		"Also in the minimap's addon menu, and /craftprofit minimap shows or hides it.")
 
 	header("Prices")
@@ -155,8 +159,10 @@ function Options.Create()
 	header("Where it shows")
 	checkbox("crafting", "Show on the crafting page",
 		"Profit for the recipe you have selected: sale price minus materials.")
-	checkbox("orders", "Show on crafting orders",
-		"Profit for the order you have open: commission minus the materials you supply.")
+	if quality then
+		checkbox("orders", "Show on crafting orders",
+			"Profit for the order you have open: commission minus the materials you supply.")
+	end
 
 	header("Look")
 	local scaleOptions = Settings.CreateSliderOptions(0.6, 1.5, 0.05)
@@ -165,7 +171,7 @@ function Options.Create()
 	end)
 	Settings.CreateSlider(page, setting("scale", Settings.VarType.Number, "Panel size"), scaleOptions)
 	-- WoW Forever always shows the two biggest coins (see Format.Money).
-	if ns.QUALITY_CRAFTING then
+	if quality then
 		dropdown("precision", "Show amounts down to", {
 			{ "gold", "Gold (2,904g)" },
 			{ "silver", "Silver (2,903g 83s)" },
@@ -178,14 +184,18 @@ function Options.Create()
 		ns.Panel.Place()
 	end, "Put the panel back next to the profession window.")
 
-	header("Procs and session total")
-	checkbox("procFx", "Animate procs",
-		"When a craft procs, the bonus gold pops up over the Profit line and the panel flashes gold.")
-	checkbox("procSound", "Coin sound on procs",
-		"Play a coin sound when a craft procs multicraft or resourcefulness.")
+	if quality then
+		header("Procs and session total")
+		checkbox("procFx", "Animate procs",
+			"When a craft procs, the bonus gold pops up over the Profit line and the panel flashes gold.")
+		checkbox("procSound", "Coin sound on procs",
+			"Play a coin sound when a craft procs multicraft or resourcefulness.")
+	else
+		header("Session total")
+	end
 	checkbox("showSession", "Show this session's total",
 		"Adds up what every craft made since you logged in on this character. A /reload keeps it. Shown on the " ..
-		"panel and at the bottom of the Patron tab's order list.")
+		(quality and "panel and at the bottom of the Patron tab's order list." or "panel."))
 	button("Session total", "Reset", ns.Results.ResetSession, "Start the session total from zero.")
 
 	---------------------------------------------------------------------------
@@ -194,13 +204,14 @@ function Options.Create()
 
 	startPage("Shopping list")
 	checkbox("shoppingButton", "Show Shopping list button",
-		format("A button under your materials for buying what you're short of, and the shopping buttons on the " ..
-		"Patron tab: Add profitable, Add all and each order's cart button.\n\n" ..
+		"A button under your materials for buying what you're short of" ..
+		(quality and ", and the shopping buttons on the Patron tab: Add profitable, Add all and each order's cart "
+			.. "button.\n\n" or ".\n\n") ..
 		"Auctionator: a click opens a menu that adds what's missing for 1, 5, 10 or any number of crafts " ..
 		"to an Auctionator shopping list.\n\n" ..
-		"TSM: the same menu gives you a search to copy into TSM's Shopping tab, for exactly the ranks " ..
-		"and amounts you're missing.\n\n" ..
-		"With neither Auctionator nor TSM installed, it's hidden."))
+		"TSM: the same menu gives you a search to copy into TSM's Shopping tab, for exactly the " ..
+		(quality and "ranks and " or "") .. "amounts you're missing.\n\n" ..
+		"With neither Auctionator nor TSM installed, it's hidden.")
 	dropdown("listAddon", "Shop with", ns.LIST_ADDON_CHOICES,
 		"When Auctionator and TSM are both installed: add missing materials to Auctionator's shopping list, " ..
 		"or get a TSM search to copy. With only one of them, that one is used.\n\n" ..
@@ -225,45 +236,49 @@ function Options.Create()
 	-- Patron orders
 	---------------------------------------------------------------------------
 
-	startPage("Patron orders")
-	checkbox("patronList", "Show on the Patron tab",
-		"The Patron tab's order list shows each order's profit or loss, its rewards and what materials you're " ..
-		"missing, with buttons to shop for it and to start, craft and complete it. Buttons above the list shop for the profitable " ..
-		"orders or all of them; under it, the concentration they use and the session total.\n\n" ..
-		"Off: Blizzard's own columns (Patron Name, Commission, Reagents).")
-	dropdown("concentrationFor", "Spend concentration on", ns.CONCENTRATION_CHOICES,
-		"On the Patron tab, orders that only reach their minimum quality with concentration share what " ..
-		"you have. They get it in this order until it runs out; the rest show their profit in grey and \"No concentration\".\n\n" ..
-		"Most profit: the most gold per concentration point first.\n\n" ..
-		"Knowledge first: orders that reward profession knowledge first, then the rest by profit.\n\n" ..
-		"Don't use concentration: patron orders never spend it. Orders that need it to reach their minimum " ..
-		"quality show \"No concentration\", get no cart or craft button, and Add profitable and Add all skip them; " ..
-		"on their order form, Use Craft Profit Reagents leaves the materials alone. The crafting page isn't affected.\n\n" ..
-		"You can also switch it with the gear at the bottom of the Patron tab.")
-	checkbox("leastConcentration", ns.LEAST_CONCENTRATION, ns.LEAST_CONCENTRATION_TIP ..
-		"\n\nAlso picks the materials for Use Craft Profit Reagents on the order form and the crafting page. " ..
-		"Patron orders don't use concentration while Spend concentration on is set to Don't use concentration. " ..
-		"You can also switch it with the gear at the bottom of the Patron tab.")
+	if quality then
+		startPage("Patron orders")
+		checkbox("patronList", "Show on the Patron tab",
+			"The Patron tab's order list shows each order's profit or loss, its rewards and what materials you're " ..
+			"missing, with buttons to shop for it and to start, craft and complete it. Buttons above the list shop for the profitable " ..
+			"orders or all of them; under it, the concentration they use and the session total.\n\n" ..
+			"Off: Blizzard's own columns (Patron Name, Commission, Reagents).")
+		dropdown("concentrationFor", "Spend concentration on", ns.CONCENTRATION_CHOICES,
+			"On the Patron tab, orders that only reach their minimum quality with concentration share what " ..
+			"you have. They get it in this order until it runs out; the rest show their profit in grey and \"No concentration\".\n\n" ..
+			"Most profit: the most gold per concentration point first.\n\n" ..
+			"Knowledge first: orders that reward profession knowledge first, then the rest by profit.\n\n" ..
+			"Don't use concentration: patron orders never spend it. Orders that need it to reach their minimum " ..
+			"quality show \"No concentration\", get no cart or craft button, and Add profitable and Add all skip them; " ..
+			"on their order form, Use Craft Profit Reagents leaves the materials alone. The crafting page isn't affected.\n\n" ..
+			"You can also switch it with the gear at the bottom of the Patron tab.")
+		checkbox("leastConcentration", ns.LEAST_CONCENTRATION, ns.LEAST_CONCENTRATION_TIP ..
+			"\n\nAlso picks the materials for Use Craft Profit Reagents on the order form and the crafting page. " ..
+			"Patron orders don't use concentration while Spend concentration on is set to Don't use concentration. " ..
+			"You can also switch it with the gear at the bottom of the Patron tab.")
+	end
 
 	---------------------------------------------------------------------------
 	-- Tooltips
 	---------------------------------------------------------------------------
 
 	startPage("Tooltips")
-	checkbox("rankTooltip", "Show your best rank",
-		"On the tooltip of an item you can craft: the highest rank you can make it at with top-quality materials, " ..
-		"using concentration if that reaches a higher rank.\n\n" ..
-		"Updates each time you open your profession window.")
-	dropdown("rankCharacters", "Show it for", {
-		{ "all", "All your characters" },
-		{ "current", "This character only" },
-	}, "All your characters: one line for each character that knows the recipe, best rank first.\n\n" ..
-		"A character shows up once you've opened its profession window, on any version of Craft Profit since 1.7.")
-	checkbox("rankConcentration", "Show its concentration",
-		"When the best rank needs concentration, add how much.")
-	button("Saved characters", "Forget...", ns.Ranks.OpenForgetMenu,
-		"Pick a character you deleted, renamed or moved, so its Craft Rank no longer shows on tooltips.\n\n" ..
-		"A character you still play comes back once you open its profession window again.")
+	if quality then
+		checkbox("rankTooltip", "Show your best rank",
+			"On the tooltip of an item you can craft: the highest rank you can make it at with top-quality materials, " ..
+			"using concentration if that reaches a higher rank.\n\n" ..
+			"Updates each time you open your profession window.")
+		dropdown("rankCharacters", "Show it for", {
+			{ "all", "All your characters" },
+			{ "current", "This character only" },
+		}, "All your characters: one line for each character that knows the recipe, best rank first.\n\n" ..
+			"A character shows up once you've opened its profession window, on any version of Craft Profit since 1.7.")
+		checkbox("rankConcentration", "Show its concentration",
+			"When the best rank needs concentration, add how much.")
+		button("Saved characters", "Forget...", ns.Ranks.OpenForgetMenu,
+			"Pick a character you deleted, renamed or moved, so its Craft Rank no longer shows on tooltips.\n\n" ..
+			"A character you still play comes back once you open its profession window again.")
+	end
 	checkbox("priceTooltip", "Show saved TSM prices",
 		"On characters without TSM that use TSM prices saved by another character (see Save TSM prices for alts, " ..
 		"on the main page): one line with the item's price, as Craft Profit prices it, and whose " ..
