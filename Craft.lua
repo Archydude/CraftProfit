@@ -13,6 +13,10 @@ local format = string.format
 local names = {}     -- the order's name, for chat
 local crafting = {}  -- craft cast under way: its recipe's spellID
 local crafted = {}   -- crafted, waiting to be completed
+-- Asked to start or complete, the game's answer not back yet: when it was asked.
+local claiming, completing = {}, {}
+-- How long an unanswered start or complete holds up the next one.
+local ANSWER_WAIT = 5
 -- Completed orders. The order list only refreshes when Blizzard asks for it
 -- again, so these are left out until then.
 local completed = {}
@@ -38,6 +42,19 @@ end
 
 function Craft.IsCompleted(orderID)
 	return completed[orderID] == true
+end
+
+-- Whether a step is still under way: a start or complete the game hasn't
+-- answered yet, or a craft being cast. The next step waits for it.
+function Craft.Busy()
+	if next(crafting) then return true end
+	local now = GetTime()
+	for _, waiting in ipairs({ claiming, completing }) do
+		for _, asked in pairs(waiting) do
+			if now - asked < ANSWER_WAIT then return true end
+		end
+	end
+	return false
 end
 
 -- Where the row's order is, and what a click on its hammer does now:
@@ -91,6 +108,7 @@ function Craft.Do(row, step)
 	local orderID = row.order.orderID
 	names[orderID] = row.name
 	if step == "claim" then
+		claiming[orderID] = GetTime()
 		C_CraftingOrders.ClaimOrder(orderID, profession())
 	elseif step == "craft" then
 		crafting[orderID] = row.order.spellID
@@ -99,6 +117,7 @@ function Craft.Do(row, step)
 		C_TradeSkillUI.CraftRecipe(row.order.spellID, 1, reagentsFor(row), nil, orderID, concentrate)
 		ns.Patron.Redraw()
 	elseif step == "complete" then
+		completing[orderID] = GetTime()
 		C_CraftingOrders.FulfillOrder(orderID, "", profession())
 	end
 end
@@ -136,6 +155,7 @@ end
 local handlers = {}
 
 function handlers.CRAFTINGORDERS_CLAIM_ORDER_RESPONSE(result, orderID)
+	claiming[orderID] = nil
 	if not names[orderID] then return end
 	if result == Enum.CraftingOrderResult.Ok then
 		say(orderID, "Started %s. Click its hammer again to craft it.")
@@ -160,6 +180,7 @@ function handlers.CRAFTINGORDERS_CLAIMED_ORDER_UPDATED(orderID)
 end
 
 function handlers.CRAFTINGORDERS_FULFILL_ORDER_RESPONSE(result, orderID)
+	completing[orderID] = nil
 	if not names[orderID] then return end
 	if result == Enum.CraftingOrderResult.Ok then
 		completed[orderID], crafted[orderID] = true, nil

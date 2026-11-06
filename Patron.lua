@@ -95,6 +95,36 @@ local READY_ICON = "|TInterface\\RaidFrame\\ReadyCheck-Ready:14|t"
 -- The orders and what they're worth
 ---------------------------------------------------------------------------
 
+-- What each order is missing, with what you own counted once down the list: the
+-- order you've started first, then the ones you'll craft, most profitable first,
+-- then those short of concentration or out of reach. So two orders needing the
+-- same material don't both show Ready on one stack. `rows` is listOrders' list,
+-- most profitable first. An order already crafted takes nothing.
+local function shareStock(rows)
+	local claimed = C_CraftingOrders.GetClaimedOrder()
+	local claimedID = claimed and claimed.orderID
+	local first, later, started = {}, {}, nil
+	for _, row in ipairs(rows) do
+		local step = ns.Craft.Step(row, false)
+		if step == "complete" or step == "crafting" then
+			row.model.missing = {}
+		elseif row.order.orderID == claimedID then
+			started = row
+		elseif row.noConcentration or row.plan and row.plan.unreachable then
+			later[#later + 1] = row
+		else
+			first[#first + 1] = row
+		end
+	end
+	local stock = {}
+	local function take(row)
+		row.model.missing = ns.Model.MissingForAll({ row.job }, stock)
+	end
+	if started then take(started) end
+	for _, row in ipairs(first) do take(row) end
+	for _, row in ipairs(later) do take(row) end
+end
+
 -- The listed orders you can craft, most profitable first: { order, job, model,
 -- plan, noConcentration, name, icon }. Also the orders whose recipe you don't
 -- know: { order, name, icon }, and your concentration: { have, used } or nil.
@@ -133,6 +163,7 @@ local function listOrders()
 		return ns.Model.Shown(a.model) > ns.Model.Shown(b.model)
 	end)
 	local concentration = ns.Planner.SpendConcentration(rows, ns.db.concentrationFor)
+	shareStock(rows)
 	return rows, unknown, concentration
 end
 
@@ -802,7 +833,7 @@ local HEADERS = {
 		.. "Point at it for the list." },
 	actions = { text = "Actions", sorts = "actions", tip = "The cart adds what's missing to the shopping list (Shift-click "
 		.. "takes it back off). When you have everything, the next button starts, crafts and completes the order, one "
-		.. "click per step." },
+		.. "click per step. Next order, below the list, does the same, most profitable order first." },
 }
 local headerBar, headers
 
@@ -1092,15 +1123,88 @@ local function sizeButton(button, text)
 	button:SetSize(button:GetFontString():GetUnboundedStringWidth() + 32, 22)
 end
 
+-- The Next order button: one click per step, like an order's hammer, on the
+-- started order or else the most profitable one you have everything for.
+
+local nextButton
+
+-- What a click on Next order does now: the row and its step, or nil and why not.
+local function nextAction()
+	if ns.Craft.Busy() then return nil, "Waiting for the game to finish the last step." end
+	for _, row in ipairs(state.rows) do
+		local step = shownStep(row)
+		if step == "craft" or step == "complete" then return row, step end
+	end
+	local started = ns.Craft.ClaimedPatronOrder()
+	if started then
+		local row = state.byID[started.orderID]
+		if row and keptOffConcentration(row) then
+			return nil, format(KEPT_OFF_TEXT, row.plan.concentration)
+		end
+		return nil, "Finish the order you've started first."
+	end
+	-- state.rows is most profitable first, so orders that lose gold come smallest loss first.
+	for _, row in ipairs(state.rows) do
+		if (ns.db.nextLosing or ns.Model.Shown(row.model) > 0) and shownStep(row) == "claim" then return row, "claim" end
+	end
+	return nil, (ns.db.nextLosing and "No order is ready" or "No order that makes a profit is ready")
+		.. ": each one is missing materials, short of concentration or out of reach."
+end
+
+-- The button's label for each step; it's as wide as the widest, so it doesn't jump.
+local NEXT_LABELS = { claim = "Start next order", craft = "Craft order", complete = "Complete order" }
+local NEXT_IDLE = "Next order"
+
+local function nextTooltip(self)
+	local row, step = nextAction()
+	GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+	GameTooltip:SetText("Next order")
+	GameTooltip:AddLine("Each click does the next step of the most profitable order you have everything for: "
+		.. "start it, craft it, complete it. " .. (ns.db.nextLosing
+			and "Orders that lose gold come last, smallest loss first."
+			or "Orders that lose gold are left alone."), 1, 1, 1, true)
+	GameTooltip:AddLine(" ")
+	if row then
+		GameTooltip:AddLine(iconText(row.icon, 14) .. row.name .. "  " .. signedMoney(ns.Model.Shown(row.model)), 1, 1, 1)
+		GameTooltip:AddLine(ns.Color("simulated", ns.Craft.StepText(step, row)))
+	else
+		GameTooltip:AddLine(step, 1, 0.4, 0.4, true)
+	end
+	GameTooltip:Show()
+end
+
+local function doNext()
+	local row, step = nextAction()
+	if row then ns.Craft.Do(row, step) end
+end
+
+local function drawNextButton()
+	local shown = active and #state.rows > 0
+	nextButton:SetShown(shown)
+	if not shown then return end
+	local width = 0
+	for _, label in pairs(NEXT_LABELS) do
+		nextButton:SetText(label)
+		width = math.max(width, nextButton:GetFontString():GetUnboundedStringWidth())
+	end
+	local row, step = nextAction()
+	nextButton:SetText(row and NEXT_LABELS[step] or NEXT_IDLE)
+	nextButton:SetSize(width + 32, 22)
+	nextButton:SetEnabled(row ~= nil)
+	if GameTooltip:IsOwned(nextButton) then nextTooltip(nextButton) end
+end
+
 local function drawButtons()
 	local shown = active and ns.Shopping.ListTarget() ~= nil and #state.rows > 0
 	addProfitableButton:SetShown(shown)
 	addAllButton:SetShown(shown)
-	if not shown then return end
-	sizeButton(addProfitableButton, verb() .. " profitable")
-	sizeButton(addAllButton, verb() .. " all")
-	addProfitableButton:SetEnabled(ns.Shopping.Total(missingForAll(profitableRows(state.rows))) > 0)
-	addAllButton:SetEnabled(ns.Shopping.Total(missingForAll((reachableRows(state.rows)))) > 0)
+	if shown then
+		sizeButton(addProfitableButton, verb() .. " profitable")
+		sizeButton(addAllButton, verb() .. " all")
+		addProfitableButton:SetEnabled(ns.Shopping.Total(missingForAll(profitableRows(state.rows))) > 0)
+		addAllButton:SetEnabled(ns.Shopping.Total(missingForAll((reachableRows(state.rows)))) > 0)
+	end
+	drawNextButton()
 end
 
 -- The gear's menu: the list's choices, shopping and the options.
@@ -1128,6 +1232,14 @@ local function openGearMenu(owner)
 				tooltip:AddLine("Patron orders don't use concentration now (Don't use concentration, above). "
 					.. "It still picks the materials on the crafting page.", 1, 0.82, 0, true)
 			end
+		end)
+		local losing = root:CreateCheckbox(ns.NEXT_LOSING, function() return ns.db.nextLosing end, function()
+			ns.Options.Set("nextLosing", not ns.db.nextLosing)
+			return MenuResponse and MenuResponse.Refresh
+		end)
+		losing:SetTooltip(function(tooltip)
+			GameTooltip_SetTitle(tooltip, ns.NEXT_LOSING)
+			tooltip:AddLine(ns.NEXT_LOSING_TIP, 1, 1, 1, true)
 		end)
 
 		ns.Shopping.AddShopWithChoice(root)
@@ -1175,8 +1287,11 @@ local function createFooter()
 	end)
 	gear:SetScript("OnLeave", GameTooltip_Hide)
 
+	footer.gear = gear
 	footer.concentration = footer:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
 	footer.concentration:SetPoint("LEFT", gear, "RIGHT", 8, 0)
+	footer.concentration:SetJustifyH("LEFT")
+	footer.concentration:SetWordWrap(false)
 
 	-- What your crafts made this session, as on the panel, which doesn't show on
 	-- this page. Click to reset.
@@ -1230,9 +1345,17 @@ local function drawFooter()
 	footer.concentration:SetText(concentration and ns.Color("muted", format("Concentration: these orders use %d of your %d",
 		concentration.used, concentration.have)) or "")
 
+	-- At the right end: Next order, then the session total and the TSM search to its left.
+	local rightmost = nextButton:IsShown() and nextButton or nil
 	local session = ns.db.session
 	local showSession = ns.db.showSession and session.crafts > 0
 	footer.session:SetShown(showSession)
+	footer.session:ClearAllPoints()
+	if rightmost then
+		footer.session:SetPoint("RIGHT", rightmost, "LEFT", -16, 0)
+	else
+		footer.session:SetPoint("RIGHT")
+	end
 	if showSession then
 		local luck = ns.Procs.LuckText()
 		footer.session.text:SetText(format("%s %s %s%s", ns.Color("heading", "This session"), signedMoney(session.total),
@@ -1250,9 +1373,22 @@ local function drawFooter()
 		search:ClearAllPoints()
 		if showSession then
 			search:SetPoint("RIGHT", footer.session, "LEFT", -24, 0)
+		elseif rightmost then
+			search:SetPoint("RIGHT", rightmost, "LEFT", -16, 0)
 		else
 			search:SetPoint("RIGHT")
 		end
+	end
+
+	-- The concentration line ends where those begin, cut short rather than under them.
+	local leftmost = searchRows > 0 and search or showSession and footer.session or rightmost
+	local text = footer.concentration
+	text:ClearAllPoints()
+	text:SetPoint("LEFT", footer.gear, "RIGHT", 8, 0)
+	if leftmost then
+		text:SetPoint("RIGHT", leftmost, "LEFT", -16, 0)
+	else
+		text:SetPoint("RIGHT")
 	end
 end
 
@@ -1323,6 +1459,9 @@ function Patron.Init()
 	addProfitableButton = makeButton(list:GetParent(), addProfitable, profitableTooltip)
 	addProfitableButton:SetPoint("RIGHT", addAllButton, "LEFT", -4, 0)
 	createFooter()
+	-- In the footer, at its right end, under the Actions column.
+	nextButton = makeButton(footer, doNext, nextTooltip)
+	nextButton:SetPoint("RIGHT", footer, "RIGHT", 0, 0)
 
 	ns.Blizzard.WatchOrderList(Patron.Redraw)
 	-- Sorting by one of Blizzard's headers ends sorting by profit.

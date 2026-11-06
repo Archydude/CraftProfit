@@ -197,7 +197,10 @@ Model.Owned = owned
 -- both count the same stack. Every quality you own counts toward a slot, as in
 -- the form, and the cheapest quality is the one to buy. A what-if pick
 -- (`overrides`) counts and buys only that quality.
-function Model.MissingForAll(jobs)
+-- With `stock` (itemID -> how many are left, filled in from your bags the first
+-- time an item comes up), what this takes is left out of it for the next call,
+-- so jobs worked out one at a time share what you own too.
+function Model.MissingForAll(jobs, stock)
 	-- One need per set of qualities that can fill a slot.
 	local needs, byKey = {}, {}
 	for _, job in ipairs(jobs) do
@@ -230,10 +233,18 @@ function Model.MissingForAll(jobs)
 	-- Craft myself: what you can craft becomes its own materials.
 	if ns.Chains.Active() then return ns.Chains.Missing(needs, owned) end
 
+	stock = stock or {}
 	local list, byItem = {}, {}
 	for _, need in ipairs(needs) do
 		local short = need.qty
-		for _, itemID in ipairs(need.counts) do short = short - owned(itemID) end
+		for _, itemID in ipairs(need.counts) do
+			if short <= 0 then break end
+			local left = stock[itemID]
+			if left == nil then left = owned(itemID) end
+			local used = math.min(left, short)
+			stock[itemID] = left - used
+			short = short - used
+		end
 		if short > 0 then
 			local entry = byItem[need.itemID]
 			if not entry then

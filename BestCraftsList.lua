@@ -50,6 +50,8 @@ local STALE_SCAN_DAYS = 7  -- other characters' saved scans this old or older sh
 -- takes Gold/day's place there). saleRate: true shows it only with TSM's sale
 -- rate (WoW Forever with TSM, see Prices.ShowsSaleRate), false only without it.
 -- The demand column is TSM's Sells/day, or without TSM, You sold.
+-- Of the columns that can show, you pick which do (right-click a header, see
+-- columnsMenu): offByDefault ones start hidden, and fixed ones always show.
 local COLUMNS = {
 	{ key = "actions", width = ACTIONS_SIZE },
 	{ key = "sold", width = 64, header = "You sold", sort = "sold", needsTSM = false },
@@ -57,12 +59,14 @@ local COLUMNS = {
 	{ key = "saleRate", width = 64, header = "Sale rate", sort = "saleRate", saleRate = true },
 	{ key = "listed", width = 46, header = "Listed", sort = "listed", saleRate = false },
 	{ key = "gold", width = 74, header = "Gold/day", sort = "gold", forever = false },
+	{ key = "perPoint", width = 96, goldWidth = 56, header = "Per point", sort = "perPoint", forever = false,
+		offByDefault = true },
 	{ key = "skillup", width = 84, header = "Per skill-up", sort = "skillup", forever = true },
 	{ key = "cost", width = 112, goldWidth = 70, foreverWidth = 76, header = "Cost", sort = "cost" },
-	{ key = "profit", width = 112, goldWidth = 70, foreverWidth = 76, header = "Profit", sort = "profit" },
+	{ key = "profit", width = 112, goldWidth = 70, foreverWidth = 76, header = "Profit", sort = "profit", fixed = true },
 	{ key = "procs", width = 96, goldWidth = 56, header = "Procs", sort = "procs", needsProcs = true },
 	{ key = "plain", width = 112, goldWidth = 64, header = "No procs", sort = "plain", needsProcs = true },
-	{ key = "crafter", width = 64, header = "Crafter", sort = "crafter", allCharacters = true },
+	{ key = "crafter", width = 64, header = "Crafter", sort = "crafter", allCharacters = true, fixed = true },
 }
 local HEADER_TIPS = {
 	name = "Click to sort by name.",
@@ -82,6 +86,9 @@ local HEADER_TIPS = {
 		.. "one server, so this is your own market: a high rate means it sells, a low one that most expire.",
 	sold = format("How many your characters sold on the auction house in the last %d days, from the auction "
 		.. "house's mail. Counts sales from when you first opened your mailbox with this version.", ns.Sales.DAYS),
+	perPoint = "What each concentration point earns with this recipe: how much more a craft makes when you "
+		.. "concentrate to reach the next rank, divided by the concentration that takes. For seeing where your "
+		.. "concentration is worth the most. Recipes where concentrating adds nothing show -.",
 }
 -- WoW Forever has no ranks or procs to explain.
 if not ns.QUALITY_CRAFTING then
@@ -137,6 +144,7 @@ local SORT_VALUES = {
 	perDay = function(row) return row.soldPerDay end,
 	saleRate = function(row) return row.saleRate end,
 	skillup = function(row) return row.skillup and row.skillup.cost end,
+	perPoint = function(row) return row.concentration and row.concentration.extra / row.concentration.points end,
 }
 -- A pinned row's mark: the first atlas the game has, or else the word.
 local PIN_ATLASES = { "Waypoint-MapPin-Tracked", "Waypoint-MapPin-Untracked" }
@@ -197,13 +205,26 @@ local function matches(row, search)
 	return ns.db.bestAllCharacters and crafterKey(row):lower():find(search, 1, true) ~= nil
 end
 
--- Whether a column shows, with these addons and in this view.
-local function columnShown(column)
+-- Whether a column can show, with these addons and in this view.
+local function columnAvailable(column)
 	if column.forever ~= nil and column.forever == ns.QUALITY_CRAFTING then return false end
 	if column.saleRate ~= nil and column.saleRate ~= ns.Prices.ShowsSaleRate() then return false end
 	if column.needsProcs and not ns.db.countProcs then return false end
 	if column.needsTSM ~= nil and column.needsTSM ~= ns.Prices.HasTSM() then return false end
 	return column.allCharacters == nil or column.allCharacters == ns.db.bestAllCharacters
+end
+
+-- Whether you want a column: your pick, or else whether it shows by default.
+local function columnChosen(column)
+	if column.fixed or not column.header then return true end
+	local choice = ns.db.bestColumns[column.key]
+	if choice ~= nil then return choice end
+	return not column.offByDefault
+end
+
+-- Whether a column shows: it can, and you want it.
+local function columnShown(column)
+	return columnAvailable(column) and columnChosen(column)
 end
 
 -- The column the list sorts by. A sort by the demand column that's hidden
@@ -579,6 +600,8 @@ local function drawRow(button, row)
 	-- A cost is gold spent, so it shows like Cost; a gain like Profit.
 	local skillup = row.skillup and row.skillup.cost
 	button.cells.skillup:SetText(skillup and signedMoney(-skillup) or Color("muted", "-"))
+	local perPoint = SORT_VALUES.perPoint(row)
+	button.cells.perPoint:SetText(perPoint and signedMoney(perPoint) or Color("muted", "-"))
 	button.cells.crafter:SetText(ns.Ranks.CharacterName(crafterKey(row)))
 	local listed = row.listed and BreakUpLargeNumbers(row.listed) or "-"
 	button.cells.listed:SetText((row.listed and (row.listedAge or 0) < STALE_DAYS) and listed or Color("muted", listed))
@@ -674,8 +697,44 @@ local function setSort(key)
 	BestCraftsList.Render()
 end
 
+-- Which columns show: a checkbox for each one that can show now, left to right
+-- as they sit in the list. Item, Profit and Crafter always show.
+local function addColumnChoices(root)
+	for i = #COLUMNS, 1, -1 do
+		local column = COLUMNS[i]
+		if column.header and not column.fixed and columnAvailable(column) then
+			local box = root:CreateCheckbox(column.header, function() return columnChosen(column) end, function()
+				-- Kept only while it differs from the default, so new defaults still reach you.
+				local want = not columnChosen(column)
+				if want == not column.offByDefault then want = nil end
+				ns.db.bestColumns[column.key] = want
+				BestCraftsList.Render()
+			end)
+			box:SetTooltip(function(tip)
+				GameTooltip_SetTitle(tip, column.header)
+				GameTooltip_AddNormalLine(tip, HEADER_TIPS[column.key] or "")
+			end)
+		end
+	end
+	root:CreateDivider()
+	root:CreateButton("Default columns", function()
+		wipe(ns.db.bestColumns)
+		BestCraftsList.Render()
+		return MenuResponse.Refresh
+	end)
+end
+
+local function openColumnsMenu(owner)
+	GameTooltip:Hide()
+	MenuUtil.CreateContextMenu(owner, function(_, root)
+		root:CreateTitle("Columns")
+		addColumnChoices(root)
+	end)
+end
+
 local function createHeader(key, label)
 	local header = CreateFrame("Button", nil, list)
+	header:RegisterForClicks("LeftButtonUp", "RightButtonUp")
 	header.text = header:CreateFontString(nil, "OVERLAY", "GameFontHighlight") -- white; the sorted one turns gold
 	header.text:SetAllPoints()
 	header.text:SetJustifyH(key == "name" and "LEFT" or "RIGHT")
@@ -687,12 +746,16 @@ local function createHeader(key, label)
 	else
 		header.arrow:SetTexture(SORT_ARROW_FILE)
 	end
-	header:SetScript("OnClick", function() setSort(key) end)
+	header:SetScript("OnClick", function(self, mouseButton)
+		if mouseButton == "RightButton" then return openColumnsMenu(self) end
+		setSort(key)
+	end)
 	header:SetScript("OnEnter", function(self)
 		GameTooltip:SetOwner(self, "ANCHOR_TOP")
 		GameTooltip:SetText(label)
 		GameTooltip:AddLine(HEADER_TIPS[key], 1, 1, 1, true)
 		if key ~= "name" then GameTooltip:AddLine(Color("simulated", "Click to sort; click again to reverse.")) end
+		GameTooltip:AddLine(Color("simulated", "Right-click: pick the columns"))
 		GameTooltip:Show()
 	end)
 	header:SetScript("OnLeave", GameTooltip_Hide)
@@ -744,6 +807,7 @@ local function filterMenu(_, root)
 				.. "list ranks by it. Your chances come from the game; how big a proc is, from your own crafts.")
 		end)
 	end
+	addColumnChoices(root:CreateButton("Columns"))
 	root:CreateDivider()
 	root:CreateTitle("Show")
 	local counts = {}

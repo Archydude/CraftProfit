@@ -71,6 +71,7 @@ ns.DEFAULTS = {
 	patronSort = false,   -- the Patron tab sorted by profit: "desc" | "asc", or false for Blizzard's sort
 	concentrationFor = "profit", -- patron orders that need concentration get it by: "profit" | "knowledge", or "none" of it
 	leastConcentration = false, -- orders that need concentration: the qualities that need the least, cheapest of those
+	nextLosing = true,    -- the Patron tab's Next order button goes on to orders that lose gold
 	bestMaterials = false, -- "Use Craft Profit Reagents" on the order form and crafting page: put them in every order or recipe you open
 	craftStrategy = ns.QUALITY_CRAFTING and "highest" or "buy", -- what the crafting page and Best crafts list craft (see ns.STRATEGIES)
 	scanReminder = true,  -- remind you to scan the auction house when Auctionator's prices are old
@@ -80,7 +81,7 @@ ns.DEFAULTS = {
 	priceTooltip = true,  -- saved TSM prices on item tooltips, on characters without TSM
 	rankConcentration = true, -- add the concentration that rank takes
 	rankCharacters = "all", -- whose ranks: "all" your characters | "current" one
-	bestSort = "profit",  -- the Best crafts list's sort: "profit" | "plain" | "procs" | "cost" | "gold" | "listed" | "sold" | "crafter" | "name"
+	bestSort = "profit",  -- the Best crafts list's sort: "profit" | "plain" | "procs" | "cost" | "gold" | "perPoint" | "listed" | "sold" | "crafter" | "name"
 	bestSortAscending = false,
 	bestAllCharacters = false, -- the Best crafts list shows your other characters' and professions' recipes
 	bestProfitableOnly = false, -- the Best crafts list hides recipes that don't make a profit
@@ -99,6 +100,12 @@ ns.LEAST_CONCENTRATION = "Optimize concentration"
 ns.LEAST_CONCENTRATION_TIP = "Orders that only reach their minimum quality with concentration use the material " ..
 	"qualities that need the least of it, and the cheapest of those. The materials cost more, but your " ..
 	"concentration lasts for more orders.\n\nOff: the cheapest materials that reach it, whatever concentration they take."
+
+-- The "Next order: include orders that lose gold" option, in the Patron tab's gear menu and the options.
+ns.NEXT_LOSING = "Next order: include orders that lose gold"
+ns.NEXT_LOSING_TIP = "Once the orders that make a profit are done, the Next order button goes on to the ones you " ..
+	"have everything for that lose gold, smallest loss first: for their knowledge or other rewards.\n\n" ..
+	"Off: it stops after the profitable ones. Their own hammer still does any order."
 
 -- Choices for which patron orders get your concentration first.
 ns.CONCENTRATION_CHOICES = {

@@ -39,6 +39,8 @@ local function loadSettings()
 	db.tsmOrders = db.tsmOrders or {} -- the Patron tab's running TSM search (see Patron.lua)
 	db.listItems = db.listItems or {} -- what Craft Profit put on each shopping list (see Shopping.lua)
 	db.bestHidden = db.bestHidden or {} -- kinds of item the Best crafts list hides: group key -> true
+	-- Best crafts columns you turned on or off (key -> true/false); the rest show as they do by default.
+	db.bestColumns = db.bestColumns or {}
 	db.bestIgnored = db.bestIgnored or {} -- recipes the Best crafts list hides: recipeID -> true
 	db.bestPinned = db.bestPinned or {} -- recipes at the top of the Best crafts list: recipeID -> true
 	return db

@@ -261,6 +261,8 @@ function Options.Create()
 			"\n\nAlso picks the materials for Use Craft Profit Reagents on the order form and the crafting page. " ..
 			"Patron orders don't use concentration while Spend concentration on is set to Don't use concentration. " ..
 			"You can also switch it with the gear at the bottom of the Patron tab.")
+		checkbox("nextLosing", ns.NEXT_LOSING, ns.NEXT_LOSING_TIP ..
+			"\n\nYou can also switch it with the gear at the bottom of the Patron tab.")
 	end
 
 	---------------------------------------------------------------------------
