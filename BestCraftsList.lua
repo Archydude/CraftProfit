@@ -62,6 +62,7 @@ local COLUMNS = {
 	{ key = "perPoint", width = 96, goldWidth = 56, header = "Per point", sort = "perPoint", forever = false,
 		offByDefault = true },
 	{ key = "skillup", width = 84, header = "Per skill-up", sort = "skillup", forever = true },
+	{ key = "chance", width = 56, header = "Chance", sort = "chance", forever = true },
 	{ key = "cost", width = 112, goldWidth = 70, foreverWidth = 76, header = "Cost", sort = "cost" },
 	{ key = "profit", width = 112, goldWidth = 70, foreverWidth = 76, header = "Profit", sort = "profit", fixed = true },
 	{ key = "procs", width = 96, goldWidth = 56, header = "Procs", sort = "procs", needsProcs = true },
@@ -96,8 +97,10 @@ if not ns.QUALITY_CRAFTING then
 	HEADER_TIPS.cost = "What the materials for one craft cost, with your crafting strategy."
 	HEADER_TIPS.skillup = "What one skill point costs with this recipe at your skill: the materials, minus what the "
 		.. "item is worth back (its auction price after the cut, or what a vendor pays if that's more), divided by "
-		.. "the chance a craft gives a skill-up.\n\nOrange recipes always give one; yellow and green ones less often "
-		.. "the closer they get to grey. Grey recipes give none and show -. A + means leveling with it makes gold."
+		.. "the chance a craft gives a skill-up.\n\nFree: the recipe makes gold, so its skill points cost nothing. "
+		.. "Sorted cheapest first, the free ones first, surest skill-up first.\n\nGrey recipes give no skill-ups and show -."
+	HEADER_TIPS.chance = "The chance a craft gives a skill-up at your skill, in the recipe's color. Orange recipes always "
+		.. "give one; yellow and green ones less often the closer they get to grey. Grey recipes give none and show -."
 end
 -- What the Profit column shows: with procs counted, the expected profit.
 local function shownProfit(row)
@@ -143,7 +146,14 @@ local SORT_VALUES = {
 	sold = function(row) return row.itemName and row.sold or nil end,
 	perDay = function(row) return row.soldPerDay end,
 	saleRate = function(row) return row.saleRate end,
-	skillup = function(row) return row.skillup and row.skillup.cost end,
+	-- Free skill points first, the surest of those first (as -chance), then the cheapest.
+	skillup = function(row)
+		local s = row.skillup
+		if not (s and s.cost) then return end
+		if s.cost <= 0 then return -s.chance end
+		return s.cost
+	end,
+	chance = function(row) return row.skillup and row.skillup.chance end,
 	perPoint = function(row) return row.concentration and row.concentration.extra / row.concentration.points end,
 }
 -- A pinned row's mark: the first atlas the game has, or else the word.
@@ -402,8 +412,7 @@ local function rowTooltip(tip, row)
 	if daily then addPair(tip, "Gold per day", signedMoney(daily)) end
 	if row.skillup then
 		local s = row.skillup
-		addPair(tip, "Per skill-up (" .. ns.Skillups.ChanceText(s.chance, s.color) .. ")",
-			s.cost and signedMoney(-s.cost) or Color("muted", "-"))
+		addPair(tip, "Per skill-up (" .. ns.Skillups.ChanceText(s.chance, s.color) .. ")", ns.Skillups.CostText(s.cost))
 	end
 	if row.firstCraft then addLine(tip, firstCraftMarkup() .. " First craft: gives profession knowledge") end
 	if row.cooldown then addLine(tip, COOLDOWN_ICON .. " On cooldown: ready in " .. timeText(row.cooldown)) end
@@ -598,8 +607,8 @@ local function drawRow(button, row)
 	local daily = goldPerDay(row)
 	button.cells.gold:SetText(daily and dailyText(daily) or Color("muted", "-"))
 	-- A cost is gold spent, so it shows like Cost; a gain like Profit.
-	local skillup = row.skillup and row.skillup.cost
-	button.cells.skillup:SetText(skillup and signedMoney(-skillup) or Color("muted", "-"))
+	button.cells.skillup:SetText(ns.Skillups.CostText(row.skillup and row.skillup.cost))
+	button.cells.chance:SetText(ns.Skillups.ChancePercent(row.skillup and row.skillup.chance, row.skillup and row.skillup.color))
 	local perPoint = SORT_VALUES.perPoint(row)
 	button.cells.perPoint:SetText(perPoint and signedMoney(perPoint) or Color("muted", "-"))
 	button.cells.crafter:SetText(ns.Ranks.CharacterName(crafterKey(row)))

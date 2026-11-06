@@ -676,7 +676,7 @@ local function drawSkillup(model)
 	local cost, chance, color = ns.Skillups.Cost(model.recipeID, model.cost or 0, sale, output.itemID, output.made)
 	if not color then return end
 	addRow("Per skill-up  " .. Color("muted", "(") .. ns.Skillups.ChanceText(chance, color) .. Color("muted", ")"),
-		cost and signedMoney(-cost) or Color("muted", "-"))
+		ns.Skillups.CostText(cost))
 end
 
 local function drawCraft(model)

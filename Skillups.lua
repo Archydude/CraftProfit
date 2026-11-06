@@ -67,14 +67,30 @@ end
 -- materials, `sale` what one craft sells for after the auction house cut (nil
 -- without a price), `itemID` and `made` the item and how many a craft makes on
 -- average. Worth back is the sale or what a vendor pays, whichever is more.
--- Negative when crafting makes gold. Returns the cost, chance, color and points,
--- or nil when the recipe gives no skill-ups (grey) or can't be placed.
+-- 0 when crafting makes gold: a skill point is free then. (Dividing a gain by
+-- the chance would make a recipe that rarely gives a skill-up look better.)
+-- Returns the cost, chance, color and points, or nil when the recipe gives no
+-- skill-ups (grey) or can't be placed.
 function Skillups.Cost(recipeID, cost, sale, itemID, made)
 	local chance, color, points = Skillups.Chance(recipeID)
 	if not (chance and chance > 0) then return nil, chance, color end
 	local vendor = itemID and select(11, C_Item.GetItemInfo(itemID))
 	local back = math.max(sale or 0, (vendor or 0) * (made or 1))
-	return (cost - back) / (chance * points), chance, color, points
+	return math.max(cost - back, 0) / (chance * points), chance, color, points
+end
+
+-- A skill point's cost as shown: "Free" in green, the gold it costs in red, or
+-- "-" without one.
+function Skillups.CostText(cost)
+	if not cost then return ns.Color("muted", "-") end
+	if cost <= 0 then return ns.Color("good", "Free") end
+	return ns.Color(ns.AmountColor(-cost), ns.Format.Money(-cost))
+end
+
+-- The chance alone, "63%", in the recipe's color; "-" for grey.
+function Skillups.ChancePercent(chance, color)
+	if not chance or chance <= 0 then return ns.Color("muted", "-") end
+	return format("|c%s%.0f%%|r", COLORS[color] or COLORS.grey, chance * 100)
 end
 
 -- "yellow, 65% chance" in its color, for the panel and tooltips.
