@@ -81,7 +81,7 @@ Craft Profit 3.2.0
 
 **Release type:** `Release`
 
-**Game versions:** Retail `12.1.0` and `12.1.5`, WoW Forever `1.60.1`.
+**Game versions:** Retail `12.1.5`, WoW Forever `1.60.1`.
 
 **Changelog** (paste only the newest part; paste older parts too if they never went up)
 ```markdown
