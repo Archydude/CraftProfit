@@ -2,10 +2,14 @@
 ArchdudeWhatsNew:Register("CraftProfit", {
 	title = "Craft Profit",
 	icon = "Interface\\Icons\\INV_Hammer_20",
-	version = "3.2.0",
+	version = "3.3.0",
 	seen = "CraftProfitWhatsNew",
 	saved = { "CraftProfitDB", "CraftProfitCharDB" },
 	changes = {
+		{ "3.3.0",
+			"|cffffd100Sale rate on WoW Forever:|r with TSM, Best crafts shows how much of each item's auctions sell, in place of Sells/day and Listed (both still in each row's tooltip). Forever's region is one server, so it's your own market. Click the header to sort by it.",
+			"Fixed: on WoW Forever, clicking a recipe in Best crafts didn't open it.",
+		},
 		{ "3.2.0",
 			"|cffffd100WoW Forever:|r Craft Profit now works on WoW Forever: the profit panel, Best crafts and the shopping list. Forever has no ranks, procs, concentration or crafting orders, so everything about those stays out of sight there, options included.",
 			"|cffffd100Best crafts on Forever|r opens from a tab with Craft Profit's logo, under your profession tabs.",
@@ -60,12 +64,6 @@ ArchdudeWhatsNew:Register("CraftProfit", {
 			"Removed the |cffffd100Have|r column from Best crafts, to leave more room for item names.",
 			"With amounts shown in whole gold, the Best crafts list's profit column is narrower, so item names get more room.",
 			"|cffffd100Turn off What's New:|r a |cffffd100Don't show this after updates|r checkbox in this window stops it opening after updates, for all the addons that use it. Type |cffffd100/whatsnew|r to see the latest changes, or to turn it back on.",
-		},
-		{ "2.4.0",
-			"|cffffd100Crafting strategy on the panel:|r with a recipe open, a |cffffd100Crafting strategy|r dropdown under your materials switches between Highest rank, Most profit and Cheapest. It's the same setting as under the Best crafts list and in the options.",
-			"|cffffd100Cart buttons:|r a material you're short of has a cart next to its price. Click it to add just what's missing of it to the shopping list (or copy a TSM search for it). Clicking the material itself still tries its other qualities.",
-			"Fixed: when you own some of a material but not enough of the quality your crafting strategy (or, on an order, the Patron tab) picks, the form fills the slot with another quality you have, and the panel priced that one, so it could show a different profit than the Patron tab and the shopping list bought nothing. The panel now prices, and the shopping list buys, the picked quality. What you actually craft still counts at what's in the form.",
-			"Fixed: dragged over the profession window, the panel went behind parts of it. It now stays on top.",
 		},
 	},
 })

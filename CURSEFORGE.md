@@ -51,10 +51,10 @@ The **Ledger** is your crafting history: what each item cost, sold for and reall
 Blizzard's Patron tab shows each order's **expected profit**, **rewards** and missing **materials**, and crafts it with one click per step.
 
 ### WoW Forever
-Best crafts also shows what a **skill point** costs with each recipe at your skill, so you can level the cheapest way. **Craft myself** prices materials you can make, like Copper Tube, at what crafting them costs, and shops for those. Thread, flux and vials cost their vendor price.
+Best crafts also shows what a **skill point** costs with each recipe at your skill, so you can level the cheapest way, and with TSM, how much of each item **sells**. **Craft myself** prices materials you can make, like Copper Tube, at what crafting them costs, and shops for those. Thread, flux and vials cost their vendor price.
 
 ### TSM prices for alts
-Keep TSM off on your crafting alts and they still get its prices, saved by a character with TSM.
+Crafting alts without TSM still get its prices, saved by a character with TSM.
 
 ### Shopping list
 One click adds what you're missing to an **Auctionator** shopping list or a **TSM** search, following your **crafting strategy**.
@@ -72,11 +72,11 @@ One click adds what you're missing to an **Auctionator** shopping list or a **TS
 
 ## B. Upload File form
 
-**File:** `dist\CraftProfit-3.2.0.zip`
+**File:** `dist\CraftProfit-3.3.0.zip`
 
 **Display name**
 ```
-Craft Profit 3.2.0
+Craft Profit 3.3.0
 ```
 
 **Release type:** `Release`
@@ -85,6 +85,10 @@ Craft Profit 3.2.0
 
 **Changelog** (paste only the newest part; paste older parts too if they never went up)
 ```markdown
+3.3.0
+- **Sale rate on WoW Forever:** with TSM, Best crafts shows how much of each item's auctions sell, in place of Sells/day and Listed (both still in each row's tooltip). Forever's region is one server, so it's your own market. Click the header to sort by it.
+- Fixed: on WoW Forever, clicking a recipe in Best crafts didn't open it.
+
 3.2.0
 - **WoW Forever:** Craft Profit now works on WoW Forever: the profit panel, Best crafts and the shopping list. Forever has no ranks, procs, concentration or crafting orders, so everything about those stays out of sight there, options included.
 - **Best crafts on Forever** opens from a tab with Craft Profit's logo, under your profession tabs.

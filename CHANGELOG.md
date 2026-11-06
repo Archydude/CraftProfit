@@ -1,5 +1,9 @@
 # Changelog
 
+## 3.3.0
+- **Sale rate on WoW Forever:** with TSM, Best crafts shows how much of each item's auctions sell, in place of Sells/day and Listed (both still in each row's tooltip). Forever's region is one server, so it's your own market. Click the header to sort by it.
+- Fixed: on WoW Forever, clicking a recipe in Best crafts didn't open it.
+
 ## 3.2.0
 - **WoW Forever:** Craft Profit now works on WoW Forever: the profit panel, Best crafts and the shopping list. Forever has no ranks, procs, concentration or crafting orders, so everything about those stays out of sight there, options included.
 - **Best crafts on Forever** opens from a tab with Craft Profit's logo, under your profession tabs.
