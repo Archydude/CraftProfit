@@ -1,5 +1,8 @@
 # Changelog
 
+## 3.3.2
+- Fixed: on WoW Forever, **Save TSM prices for alts** saved only your recipes' items and said TSM's item list wasn't there. It now finds TSM's list, so **All crafting items** and **Everything TSM has** save what they say.
+
 ## 3.3.1
 - On WoW Forever, the Ledger no longer shows craft types or procs, which Forever doesn't have: no type filter, By type section, Type or Procs columns. Forecast and Off by stay, so you still see whether you got the price the panel predicted.
 

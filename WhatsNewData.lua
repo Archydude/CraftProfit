@@ -2,10 +2,13 @@
 ArchdudeWhatsNew:Register("CraftProfit", {
 	title = "Craft Profit",
 	icon = "Interface\\Icons\\INV_Hammer_20",
-	version = "3.3.1",
+	version = "3.3.2",
 	seen = "CraftProfitWhatsNew",
 	saved = { "CraftProfitDB", "CraftProfitCharDB" },
 	changes = {
+		{ "3.3.2",
+			"Fixed: on WoW Forever, |cffffd100Save TSM prices for alts|r saved only your recipes' items and said TSM's item list wasn't there. It now finds TSM's list, so |cffffd100All crafting items|r and |cffffd100Everything TSM has|r save what they say.",
+		},
 		{ "3.3.1",
 			"On WoW Forever, the Ledger no longer shows craft types or procs, which Forever doesn't have: no type filter, By type section, Type or Procs columns. Forecast and Off by stay, so you still see whether you got the price the panel predicted.",
 		},
@@ -54,12 +57,6 @@ ArchdudeWhatsNew:Register("CraftProfit", {
 			"|cffffd100Concentration on the panel:|r when concentration can raise a craft's rank, a line under the sale price shows what it takes, the rank it makes and the gold that adds. With concentration on, it shows what the craft uses. Either way it says |cffffd100not enough|r when you're short.",
 			"Gold/day in Best crafts shows the gold icon instead of a \"g\".",
 			"Fixed: clicks on Best crafts rows could get lost, and menus could close by themselves, while the list updated.",
-		},
-		{ "2.6.0",
-			"|cffffd100Enchants in Best crafts:|r enchanting recipes now show as the scrolls they make, ranked with everything else. The panel prices them too, and an |cffffd100Enchanting Vellum|r counts as a material and goes on the shopping list.",
-			"|cffffd100Gold/day has no limit anymore:|r it now counts every sale instead of stopping at 20 a day, so items that sell in bulk rank higher. With TSM that's sales across your whole region, so it's for comparing recipes, not a promise.",
-			"Fixed: with |cffffd100All characters|r on, the cart added materials to the list of the character and profession you had open. They now go on the recipe's own list, and the cart's tooltip says which.",
-			"Fixed: on recipes with many reagents, |cffffd100Use Craft Profit Reagents|r and |cffffd100Optimize Concentration|r overlapped them. They now move next to |cffffd100Use Best Quality Reagents|r.",
 		},
 	},
 })
