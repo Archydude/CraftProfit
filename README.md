@@ -240,7 +240,7 @@ Click the gear on the panel (or Craft Profit options in the gear menu under the 
 | Price addon | Automatic (TSM first, then Auctionator for anything TSM has no price for), TSM only, or Auctionator only. |
 | TSM price for materials / crafted items | Market value (default), lowest auction right now, historical price or region market average. |
 | Remind me of old prices | On by default. With Auctionator prices: a chat reminder at the auction house after a day, and a notice over the Best crafts list after 3 days. With TSM prices saved for alts: the same, to log in on a character with TSM. |
-| Use vendor prices | On by default. |
+| Buy vendor items on the auction house | Off by default: materials a vendor sells (thread, flux, vials...) are priced at the vendor, and the shopping list says in chat to buy them there. On: they're priced at their auction house price and go on the shopping list; when the auction house asks more than a vendor, the tooltips of what's missing (the Shopping list button, a material's cart, a Best crafts row) show both prices, and chat says so when the shopping list gets it. |
 | Subtract auction house cut (5%) | On by default. |
 | Save TSM prices for alts | Off by default. Characters with TSM keep its prices for your characters that don't load it (see [TSM prices for alts](#tsm-prices-for-alts)). Turning it off deletes the saved prices. |
 | Save prices for | Your recipes (default), All crafting items, or Everything TSM has. |

@@ -55,18 +55,39 @@ function Prices.Material(itemID)
 	return Prices.Buy(itemID)
 end
 
--- What buying a material costs, in copper (nil if nobody knows), whatever the
--- crafting strategy.
-function Prices.Buy(itemID)
-	-- Vendor-sold things (vials, thread...) cost the vendor price.
-	local value = ns.db.useVendor and Prices.Vendor(itemID)
-	if value then return value end
+-- What a material costs on the auction house, in copper (nil if nobody knows).
+local function auctionPrice(itemID)
 	local api = auctionatorAPI()
 	return (tsmAvailable() and tsmValue(ns.db.matSource, "i:" .. itemID))
 		or (savedPrices() and ns.SavedPrices.Material(itemID))
 		or (api and auctionatorValue(api.GetAuctionPriceByItemID, itemID))
+end
+
+-- Whether materials a vendor sells are bought from a vendor: unless "Buy vendor
+-- items on the auction house" is on.
+function Prices.BuysAtVendor(itemID)
+	return not ns.db.vendorOnAH and Prices.Vendor(itemID) ~= nil
+end
+
+-- What buying a material costs, in copper (nil if nobody knows), whatever the
+-- crafting strategy. Vendor-sold things (vials, thread...) cost the vendor price,
+-- or with "Buy vendor items on the auction house", their auction price (the
+-- vendor's while the auction house has none).
+function Prices.Buy(itemID)
+	local vendor = Prices.Vendor(itemID)
+	if vendor and not ns.db.vendorOnAH then return vendor end
+	return auctionPrice(itemID) or vendor
 		-- Price addons may not know vellums, and a vendor always has them.
 		or (itemID == ns.VELLUM_ITEM and ns.VELLUM_PRICE or nil)
+end
+
+-- With "Buy vendor items on the auction house" on: when the auction house asks
+-- more for a material than a vendor does, both prices. Nil otherwise.
+function Prices.VendorCheaper(itemID)
+	if not ns.db.vendorOnAH then return end
+	local vendor = Prices.Vendor(itemID)
+	local auction = vendor and auctionPrice(itemID)
+	if auction and auction > vendor then return vendor, auction end
 end
 
 -- What a crafted item sells for, in copper. Uses the full link so quality and
@@ -199,7 +220,7 @@ end
 
 -- A material's price age (see auctionAge). Vendor prices don't age.
 function Prices.MaterialAge(itemID)
-	if ns.db.useVendor and Prices.Vendor(itemID) then return end
+	if Prices.BuysAtVendor(itemID) then return end
 	-- Crafted with Craft myself: its own price isn't used.
 	if ns.Chains.Active() and ns.Chains.RecipeFor(itemID) then return end
 	return auctionAge("GetAuctionAgeByItemID", itemID)

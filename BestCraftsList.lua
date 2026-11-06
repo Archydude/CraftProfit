@@ -408,7 +408,7 @@ local function actionsTooltip(self)
 	GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
 	if #model.missing > 0 then
 		GameTooltip:SetText("Missing for 1 craft")
-		for _, material in ipairs(model.missing) do GameTooltip:AddLine(Item(material.itemID, material.qty), 1, 1, 1) end
+		for _, material in ipairs(model.missing) do ns.Shopping.AddMissingLine(GameTooltip, material.itemID, material.qty) end
 	else
 		GameTooltip:SetText("Nothing missing for 1 craft")
 	end

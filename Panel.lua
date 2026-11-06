@@ -312,7 +312,7 @@ local function shoppingTooltip(model, target)
 	return function(tip)
 		if #model.missing > 0 then
 			tip:SetText("Missing for 1 craft")
-			for _, material in ipairs(model.missing) do tip:AddLine(Item(material.itemID, material.qty), 1, 1, 1) end
+			for _, material in ipairs(model.missing) do ns.Shopping.AddMissingLine(tip, material.itemID, material.qty) end
 		else
 			tip:SetText("Nothing missing for 1 craft")
 		end
@@ -372,7 +372,7 @@ local function materialCart(model, material)
 		onClick = function() shopMaterial(model, material) end,
 		tooltip = function(tip)
 			tip:SetText(format("Missing %d for 1 craft", missing))
-			tip:AddLine(Item(material.itemID, missing), 1, 1, 1)
+			ns.Shopping.AddMissingLine(tip, material.itemID, missing)
 			tip:AddLine(" ")
 			tip:AddLine(Color("simulated", target == "tsm" and "Click: copy a TSM search for them"
 				or "Click: add them to the shopping list"))
@@ -393,7 +393,9 @@ local function drawMaterials(model)
 			or (not cart and missingOf(model, material) > 0 and ("  " .. Color("missing", "missing")))
 			or ""
 		-- Craft myself: priced at what crafting it costs.
-		if ns.Chains.Active() and ns.Chains.RecipeFor(material.itemID) then tag = tag .. "  " .. Color("muted", "crafted") end
+		if ns.Chains.Active() and ns.Chains.RecipeFor(material.itemID) then
+			tag = tag .. "  " .. Color("muted", "crafted")
+		end
 		-- Click cycles qualities; Shift-click shops for just this material.
 		local onClick, tooltip
 		local canCycle = model.canSimulate and ns.Simulation.CanChange(material)

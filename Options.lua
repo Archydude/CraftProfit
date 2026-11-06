@@ -133,8 +133,11 @@ function Options.Create()
 		"the auction house, and when it's over 3 days old, a notice over the Best crafts list when you open it (once a " ..
 		"session). The panel's and the list's footers always say how old the scan is, in red once it's a day old.\n\n" ..
 		"With TSM prices saved by another character: the same reminders, to log in on a character with TSM.")
-	checkbox("useVendor", "Use vendor prices",
-		"Materials a vendor sells (vials, thread...) are priced at the vendor instead of the auction house.")
+	checkbox("vendorOnAH", "Buy vendor items on the auction house",
+		"Materials a vendor sells (thread, flux, vials...) are priced at their auction house price and go on the " ..
+		"shopping list.\n\nOff: they're priced at the vendor, and the shopping list says in chat to buy them there.\n\n" ..
+		"When the auction house asks more than a vendor, the tooltips of what's missing say so, and so does chat " ..
+		"when the shopping list gets it.")
 	checkbox("ahCut", format("Subtract auction house cut (%d%%)", ns.AH_CUT * 100),
 		"The auction house keeps 5% of every sale.")
 

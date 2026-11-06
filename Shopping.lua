@@ -440,7 +440,7 @@ local function sortMissing(missing, andThen)
 			}
 			if not name then
 				-- Never loaded; nothing to search for.
-			elseif ns.Prices.Vendor(material.itemID) then
+			elseif ns.Prices.BuysAtVendor(material.itemID) then
 				vendor[#vendor + 1] = item
 			elseif bindType and not TRADEABLE[bindType] then
 				bound[#bound + 1] = item
@@ -452,10 +452,33 @@ local function sortMissing(missing, andThen)
 	end)
 end
 
--- The materials no auction house search covers, listed in chat.
-local function sayUnbuyable(vendor, bound)
+-- One missing material in a tooltip, with a warning under it when it's bought on
+-- the auction house but a vendor sells it for less ("Buy vendor items on the
+-- auction house" on).
+function Shopping.AddMissingLine(tip, itemID, qty)
+	tip:AddLine(ns.Format.Item(itemID, qty), 1, 1, 1)
+	local atVendor, onAH = ns.Prices.VendorCheaper(itemID)
+	if atVendor then
+		tip:AddLine(ns.Color("warning", format("   Cheaper at a vendor: %s (auction house %s)",
+			ns.Format.Money(atVendor), ns.Format.Money(onAH))))
+	end
+end
+
+-- The materials no auction house search covers, listed in chat. With "Buy vendor
+-- items on the auction house" on, also the ones on the list that a vendor sells
+-- for less.
+local function sayUnbuyable(vendor, bound, auction)
 	if #vendor > 0 then say("Buy from a vendor: " .. itemList(vendor) .. ".") end
 	if #bound > 0 then say("Not on the auction house (soulbound): " .. itemList(bound) .. ".") end
+	local cheaper = {}
+	for _, item in ipairs(auction or {}) do
+		local atVendor, onAH = ns.Prices.VendorCheaper(item.itemID)
+		if atVendor then
+			cheaper[#cheaper + 1] = format("%s (%s at a vendor, %s on the auction house)", item.link,
+				ns.Format.Money(atVendor), ns.Format.Money(onAH))
+		end
+	end
+	if #cheaper > 0 then say(ns.Color("warning", "Cheaper at a vendor: ") .. table.concat(cheaper, ", ") .. ".") end
 end
 
 -- Adds the auction house materials to the list.
@@ -473,7 +496,7 @@ local function sendToAuctionator(api, missing, forText, listName)
 				say(ns.Color("warning", "Auctionator couldn't update the shopping list."))
 			end
 		end
-		sayUnbuyable(vendor, bound)
+		sayUnbuyable(vendor, bound, auction)
 	end)
 end
 
@@ -516,7 +539,7 @@ local function copyTSMSearch(missing, forText)
 			say(format("TSM search for %s: %s.", forText, itemList(auction)))
 			StaticPopup_Show("CRAFTPROFIT_TSM_SEARCH", forText, nil, table.concat(parts, ";"))
 		end
-		sayUnbuyable(vendor, bound)
+		sayUnbuyable(vendor, bound, auction)
 	end)
 end
 
