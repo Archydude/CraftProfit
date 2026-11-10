@@ -39,10 +39,10 @@ Craft Profit answers in gold: **profit or loss?** A panel next to your professio
 - **WoW Forever**: cost per skill-up, and crafting your own materials
 
 ### Crafts and orders
-The panel leads with the answer: the sale price at the rank you'll get, minus the 5% cut and your materials, with and without procs. On orders: the commission, minus the materials **you** supply, plus sellable rewards.
+The panel leads with the answer: the sale price at the rank you'll get, minus the 5% cut and your materials. On orders: the commission, minus the materials **you** supply, plus sellable rewards.
 
 ### What should I craft?
-**Best crafts** lists every recipe you know, most profitable first. Pick its columns, like gold per **concentration point**. **All characters** puts every character's professions in one list.
+**Best crafts** lists every recipe you know, most profitable first. Search by item or **material**, and pick its columns, like gold per **concentration point**. **All characters** puts every character's professions in one list.
 
 ### Did it pay off?
 The **Ledger** is your crafting history: what each item cost, sold for and really made.
@@ -72,11 +72,11 @@ One click adds what you're missing to an **Auctionator** shopping list or a **TS
 
 ## B. Upload File form
 
-**File:** `dist\CraftProfit-3.7.0.zip`
+**File:** `dist\CraftProfit-3.8.0.zip`
 
 **Display name**
 ```
-Craft Profit 3.7.0
+Craft Profit 3.8.0
 ```
 
 **Release type:** `Release`
@@ -85,6 +85,9 @@ Craft Profit 3.7.0
 
 **Changelog** (paste only the newest part; paste older parts too if they never went up)
 ```markdown
+3.8.0
+- **Search Best crafts by material:** the search box also finds recipes by a material they use, so **Copper Bar** lists every recipe that takes Copper Bars. It works in All characters too.
+
 3.7.0
 - **Order materials and Reach the minimum with:** crafting orders' own choices, on the panel of an open order, under the Patron list and in the options. **Order materials:** Cheapest (default) or **Use what I own**, which uses the qualities you have first and only buys what you're short of. **Reach the minimum with:** Better materials (default) or **Concentration**, which reaches an order's minimum quality with concentration and lower-rank materials instead of buying better ones, and falls back to better materials when you're out of concentration.
 - The Patron list's footer has two rows: what the orders use and made on top, the choices and **Next order** below, so nothing overlaps.

@@ -1,5 +1,8 @@
 # Changelog
 
+## 3.8.0
+- **Search Best crafts by material:** the search box also finds recipes by a material they use, so **Copper Bar** lists every recipe that takes Copper Bars. It works in All characters too.
+
 ## 3.7.0
 - **Order materials and Reach the minimum with:** crafting orders' own choices, on the panel of an open order, under the Patron list and in the options. **Order materials:** Cheapest (default) or **Use what I own**, which uses the qualities you have first and only buys what you're short of. **Reach the minimum with:** Better materials (default) or **Concentration**, which reaches an order's minimum quality with concentration and lower-rank materials instead of buying better ones, and falls back to better materials when you're out of concentration.
 - The Patron list's footer has two rows: what the orders use and made on top, the choices and **Next order** below, so nothing overlaps.

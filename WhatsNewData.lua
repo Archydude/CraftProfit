@@ -2,10 +2,13 @@
 ArchdudeWhatsNew:Register("CraftProfit", {
 	title = "Craft Profit",
 	icon = "Interface\\Icons\\INV_Hammer_20",
-	version = "3.7.0",
+	version = "3.8.0",
 	seen = "CraftProfitWhatsNew",
 	saved = { "CraftProfitDB", "CraftProfitCharDB" },
 	changes = {
+		{ "3.8.0",
+			"|cffffd100Search Best crafts by material:|r the search box also finds recipes by a material they use, so |cffffd100Copper Bar|r lists every recipe that takes Copper Bars. It works in All characters too.",
+		},
 		{ "3.7.0",
 			"|cffffd100Order materials and Reach the minimum with:|r crafting orders' own choices, on the panel of an open order, under the Patron list and in the options. |cffffd100Order materials:|r Cheapest (default) or |cffffd100Use what I own|r, which uses the qualities you have first and only buys what you're short of. |cffffd100Reach the minimum with:|r Better materials (default) or |cffffd100Concentration|r, which reaches an order's minimum quality with concentration and lower-rank materials instead of buying better ones, and falls back to better materials when you're out of concentration.",
 			"The Patron list's footer has two rows: what the orders use and made on top, the choices and |cffffd100Next order|r below, so nothing overlaps.",
@@ -52,11 +55,6 @@ ArchdudeWhatsNew:Register("CraftProfit", {
 			"Saving every item takes seconds instead of about a minute, and is much lighter on TSM.",
 			"A save now starts half a minute after you log in, after TSM's own work, and waits while you're in combat.",
 			"If TSM has far fewer prices than the last save, for example when its desktop app hasn't run, your alts keep the last save and chat says so.",
-		},
-		{ "3.1.0",
-			"|cffffd100TSM prices for alts:|r keep TSM turned off on your crafting alts and they still get TSM prices. Turn on |cffffd100Save TSM prices for alts|r in the options, and each time a character with TSM logs in, its prices are kept for your other characters. Pick what's saved under |cffffd100Save prices for|r: your recipes, all crafting items, or everything but gear. On an alt, the panel, the Patron tab, Best crafts and the Ledger use them, and the footer says whose prices they are and how old. Off by default.",
-			"|cffffd100Saved TSM prices on tooltips:|r on those alts, item tooltips show the saved TSM price down to the copper, with which TSM price it is, whose and how old.",
-			"|cffffd100Shorter option names|r, so they're no longer cut off. For example, |cffffd100Count multicraft and resourcefulness|r is now |cffffd100Count procs in profits|r, and |cffffd100Remind me to scan the auction house|r is now |cffffd100Remind me of old prices|r.",
 		},
 	},
 })
