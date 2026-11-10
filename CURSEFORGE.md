@@ -72,11 +72,11 @@ One click adds what you're missing to an **Auctionator** shopping list or a **TS
 
 ## B. Upload File form
 
-**File:** `dist\CraftProfit-3.9.0.zip`
+**File:** `dist\CraftProfit-3.9.1.zip`
 
 **Display name**
 ```
-Craft Profit 3.9.0
+Craft Profit 3.9.1
 ```
 
 **Release type:** `Release`
@@ -85,6 +85,9 @@ Craft Profit 3.9.0
 
 **Changelog** (paste only the newest part; paste older parts too if they never went up)
 ```markdown
+3.9.1
+- Fixed: hovering some items could show the error "bad argument #1 to 'DoesItemExist'".
+
 3.9.0
 - **Sale rate on the panel:** with TSM, a line under **Sells for** shows how much of the item's auctions sell on WoW Forever, or how many sell a day on Retail. These are the same numbers as in Best crafts.
 - **Used column in the Ledger:** the Performance tab shows how many of each item went into your own crafts. That's why an item can show a profit with none sold.

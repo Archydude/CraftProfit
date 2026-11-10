@@ -1,5 +1,8 @@
 # Changelog
 
+## 3.9.1
+- Fixed: hovering some items could show the error "bad argument #1 to 'DoesItemExist'".
+
 ## 3.9.0
 - **Sale rate on the panel:** with TSM, a line under **Sells for** shows how much of the item's auctions sell on WoW Forever, or how many sell a day on Retail. These are the same numbers as in Best crafts.
 - **Used column in the Ledger:** the Performance tab shows how many of each item went into your own crafts. That's why an item can show a profit with none sold.

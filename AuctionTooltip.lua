@@ -25,12 +25,20 @@ local function money(copper)
 	return GetMoneyString(math.floor(copper + 0.5), true)
 end
 
+-- Whether the game takes `location` as an item that's there. The game can hand
+-- back a location it then refuses even to check, so a refusal counts as no.
+local function exists(location)
+	return location:IsValid() and C_Item.DoesItemExist(location)
+end
+
 -- Where a tooltip's item sits in your bags or bank, or nil (a link, a vendor's item...).
 local function locationOf(data)
 	local guid = data and data.guid
 	if not guid or (issecretvalue and issecretvalue(guid)) or not C_Item.GetItemLocation then return end
 	local ok, location = pcall(C_Item.GetItemLocation, guid)
-	if ok and location and location:IsValid() and C_Item.DoesItemExist(location) then return location end
+	if not (ok and location) then return end
+	local found, there = pcall(exists, location)
+	if found and there then return location end
 end
 
 -- Whether the item can't be posted: bound, or a quest item.
