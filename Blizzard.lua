@@ -664,6 +664,36 @@ function Blizzard.WatchOrderList(onChange)
 	page.BrowseFrame:HookScript("OnHide", onChange)
 end
 
+-- Blizzard's order list can wait forever: at a crafting table the window may
+-- open on another expansion's profession first (Khaz Algar) and switch, and the
+-- answer to the first search is then dropped while its loading spinner stays.
+-- So when the spinner has turned this long with the list on screen, the orders
+-- are asked for again the way clicking a tab does it, at most this many times.
+local STUCK_SECONDS, STUCK_RETRIES = 5, 2
+
+function Blizzard.WatchStuckOrderList()
+	local page = ProfessionsFrame.OrdersPage
+	local spinner = page and page.BrowseFrame and page.BrowseFrame.OrderList.LoadingSpinner
+	if not (spinner and page.ClearCachedRequests and page.StartDefaultSearch) then return end
+	local waiting, retries = nil, 0
+	local function wait()
+		local token = {}
+		waiting = token
+		C_Timer.After(STUCK_SECONDS, function()
+			if waiting ~= token or not spinner:IsVisible() or retries >= STUCK_RETRIES then return end
+			retries = retries + 1
+			page:ClearCachedRequests()
+			page:StartDefaultSearch()
+			-- Still turning (it doesn't show again), so wait again.
+			if spinner:IsShown() then wait() end
+		end)
+	end
+	spinner:HookScript("OnShow", wait)
+	spinner:HookScript("OnHide", function()
+		waiting, retries = nil, 0
+	end)
+end
+
 -- The order list, for placing things next to it.
 function Blizzard.OrderList()
 	return ProfessionsFrame.OrdersPage.BrowseFrame.OrderList

@@ -19,7 +19,8 @@ local ACTION_GAP = 6        -- between them
 local REWARD_SIZE = 16      -- reward icons in the Rewards column
 local REWARD_GAP = 6        -- between one reward and the next
 local MAX_REWARDS = 4       -- reward icons a row has room for
-local FOOTER_HEIGHT = 28    -- room under the rows for the footer
+local FOOTER_ROW = 26       -- each of the footer's two rows
+local FOOTER_HEIGHT = 2 * FOOTER_ROW + 4 -- room under the rows for the footer
 local GEAR_SIZE = 16
 -- Our columns, in the room Blizzard's Patron Name, Commission, Reagents and
 -- time left columns take together. Time left is Blizzard's own cell and header,
@@ -142,27 +143,45 @@ local function listOrders()
 	local claimed = ns.Craft.ClaimedPatronOrder()
 	if claimed and not listed[claimed.orderID] then table.insert(orders, 1, claimed) end
 
+	-- Prices the order with a plan's qualities (see Planner.ForOrder).
+	local function usePlan(row, plan)
+		row.plan = plan
+		row.job.overrides = plan and plan.overrides
+		row.model = ns.Model.Order({ order = row.order, schematic = row.job.schematic, provided = row.job.provided,
+			overrides = row.job.overrides })
+	end
 	for _, order in ipairs(orders) do
 		local job, name, icon = ns.Blizzard.OrderJob(order)
 		if job then
 			-- What you supply at its cheapest quality, or for an order with a minimum
-			-- quality, the cheapest qualities that reach it.
-			local plan = ns.Planner.ForOrder(order, job.schematic, job.provided)
-			job.overrides = plan and plan.overrides
-			local model = ns.Model.Order({ order = order, schematic = job.schematic, provided = job.provided, overrides = job.overrides })
-			rows[#rows + 1] = { order = order, job = job, model = model, plan = plan, name = job.name or "?", icon = job.icon }
+			-- quality, the qualities Patron materials and Reach the minimum with pick.
+			local row = { order = order, job = job, name = job.name or "?", icon = job.icon }
+			usePlan(row, ns.Planner.ForOrder(order, job.schematic, job.provided))
+			rows[#rows + 1] = row
 		else
 			unknown[#unknown + 1] = { order = order, name = name or "?", icon = icon }
 		end
 	end
 	-- Most profitable first, so concentration goes to them; orders you can't craft
 	-- go last, since their profit is moot.
-	table.sort(rows, function(a, b)
+	local function byProfit(a, b)
 		local aOut, bOut = a.plan and a.plan.unreachable or false, b.plan and b.plan.unreachable or false
 		if aOut ~= bOut then return bOut end
 		return ns.Model.Shown(a.model) > ns.Model.Shown(b.model)
-	end)
+	end
+	table.sort(rows, byProfit)
 	local concentration = ns.Planner.SpendConcentration(rows, ns.db.concentrationFor)
+	-- Concentration first: an order left without concentration goes back to the
+	-- better materials that reach its minimum without it.
+	local fellBack = false
+	for _, row in ipairs(rows) do
+		if row.noConcentration and row.plan and row.plan.fallback then
+			usePlan(row, row.plan.fallback)
+			row.noConcentration = nil
+			fellBack = true
+		end
+	end
+	if fellBack then table.sort(rows, byProfit) end
 	shareStock(rows)
 	return rows, unknown, concentration
 end
@@ -451,7 +470,7 @@ local function materialsTooltip(row, step)
 		tooltip:AddLine("You have the materials, but not enough concentration is left for it once the orders "
 			.. "worth more get theirs.", 1, 0.4, 0.4, true)
 	else
-		tooltip:AddLine(READY_ICON .. " You have everything, in the qualities that make the most profit.", 0.53, 1, 0.53, true)
+		tooltip:AddLine(READY_ICON .. " You have everything, in the qualities picked for it (Materials, below the list).", 0.53, 1, 0.53, true)
 	end
 end
 
@@ -1105,11 +1124,12 @@ local function allTooltip(self)
 	GameTooltip:Show()
 end
 
-local function makeButton(parent, onClick, onEnter)
+-- A button; after a click, the list is drawn again (only the steps, with `stepsOnly`).
+local function makeButton(parent, onClick, onEnter, stepsOnly)
 	local button = CreateFrame("Button", nil, parent, "UIPanelButtonTemplate")
 	button:SetScript("OnClick", function()
 		onClick()
-		Patron.Redraw()
+		Patron.QueueRedraw(stepsOnly)
 	end)
 	button:SetScript("OnEnter", onEnter)
 	button:SetScript("OnLeave", GameTooltip_Hide)
@@ -1173,9 +1193,19 @@ local function nextTooltip(self)
 	GameTooltip:Show()
 end
 
+-- Clicks closer together than this are ignored: the game drops some requests
+-- that come too fast, and needs a moment to show the last step's result.
+local NEXT_DELAY = 0.5
+local lastNext = 0
+
 local function doNext()
+	local now = GetTime()
+	if now - lastNext < NEXT_DELAY then return end
+	lastNext = now
 	local row, step = nextAction()
 	if row then ns.Craft.Do(row, step) end
+	-- Drawn again once the game has caught up, in case nothing else redraws it.
+	C_Timer.After(NEXT_DELAY, function() Patron.QueueRedraw(true) end)
 end
 
 local function drawNextButton()
@@ -1205,6 +1235,62 @@ local function drawButtons()
 		addAllButton:SetEnabled(ns.Shopping.Total(missingForAll((reachableRows(state.rows)))) > 0)
 	end
 	drawNextButton()
+end
+
+-- The footer's dropdowns for Patron materials and Reach the minimum with. Each
+-- shows its choice after a short label ("Materials: Cheapest").
+local FOOTER_CHOICES = {
+	{ key = "patronMaterials", label = "Materials", title = ns.PATRON_MATERIALS_TITLE, choices = ns.PATRON_MATERIALS_CHOICES },
+	{ key = "patronReach", label = "Reach", title = ns.PATRON_REACH_TITLE, choices = ns.PATRON_REACH_CHOICES },
+}
+local FOOTER_GAP = 6 -- between the dropdowns, and to Next order
+
+-- A choice's name without "(default)".
+local function choiceName(choice)
+	return (choice[2]:gsub(" %(default%)$", ""))
+end
+
+local function createChoiceDropdown(setting)
+	local dropdown = CreateFrame("DropdownButton", nil, footer, "WowStyle1DropdownTemplate")
+	if dropdown.SetSelectionTranslator then
+		dropdown:SetSelectionTranslator(function(selection)
+			for _, choice in ipairs(setting.choices) do
+				if choice[1] == selection.data then return setting.label .. ": " .. choiceName(choice) end
+			end
+		end)
+	end
+	dropdown:SetupMenu(function(_, root)
+		root:CreateTitle(setting.title)
+		for _, choice in ipairs(setting.choices) do
+			local radio = root:CreateRadio(choice[2], function(value) return ns.db[setting.key] == value end,
+				function(value) ns.Options.Set(setting.key, value) end, choice[1])
+			radio:SetTooltip(function(tooltip)
+				GameTooltip_SetTitle(tooltip, choice[2])
+				tooltip:AddLine(choice[3], 1, 1, 1, true)
+			end)
+		end
+	end)
+	-- As wide as its longest choice, so it doesn't jump when you switch.
+	local width = 0
+	for _, choice in ipairs(setting.choices) do
+		dropdown.Text:SetText(setting.label .. ": " .. choiceName(choice))
+		width = math.max(width, dropdown.Text:GetUnboundedStringWidth())
+	end
+	dropdown:SetWidth(width + 40)
+	dropdown:GenerateMenu()
+	dropdown.key, dropdown.shown = setting.key, ns.db[setting.key]
+	dropdown:HookScript("OnEnter", function(self)
+		GameTooltip:SetOwner(self, "ANCHOR_TOP")
+		GameTooltip:SetText(setting.title)
+		for _, choice in ipairs(setting.choices) do
+			GameTooltip:AddLine(" ")
+			GameTooltip:AddLine(choiceName(choice), 1, 0.82, 0)
+			GameTooltip:AddLine(choice[3], 1, 1, 1, true)
+		end
+		GameTooltip:Show()
+	end)
+	dropdown:HookScript("OnLeave", GameTooltip_Hide)
+	return dropdown
 end
 
 -- The gear's menu: the list's choices, shopping and the options.
@@ -1272,9 +1358,19 @@ local function createFooter()
 	line:SetPoint("TOPLEFT", footer, "TOPLEFT", -6, 1)
 	line:SetPoint("TOPRIGHT", footer, "TOPRIGHT", 28, 1)
 
+	-- Two rows: what the orders use and made on top, the choices and Next order under it.
+	footer.top = CreateFrame("Frame", nil, footer)
+	footer.top:SetPoint("TOPLEFT")
+	footer.top:SetPoint("TOPRIGHT")
+	footer.top:SetHeight(FOOTER_ROW)
+	footer.bottom = CreateFrame("Frame", nil, footer)
+	footer.bottom:SetPoint("BOTTOMLEFT")
+	footer.bottom:SetPoint("BOTTOMRIGHT")
+	footer.bottom:SetHeight(FOOTER_ROW)
+
 	local gear = CreateFrame("Button", nil, footer)
 	gear:SetSize(GEAR_SIZE, GEAR_SIZE)
-	gear:SetPoint("LEFT")
+	gear:SetPoint("LEFT", footer.top, "LEFT")
 	gear:SetNormalTexture("Interface\\Buttons\\UI-OptionsButton")
 	gear:SetHighlightTexture("Interface\\Buttons\\UI-Common-MouseHilight", "ADD")
 	gear:SetScript("OnClick", openGearMenu)
@@ -1296,8 +1392,8 @@ local function createFooter()
 	-- What your crafts made this session, as on the panel, which doesn't show on
 	-- this page. Click to reset.
 	local session = CreateFrame("Button", nil, footer)
-	session:SetPoint("RIGHT")
-	session:SetHeight(FOOTER_HEIGHT - 4)
+	session:SetPoint("RIGHT", footer.top, "RIGHT")
+	session:SetHeight(FOOTER_ROW)
 	session.text = session:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
 	session.text:SetPoint("RIGHT")
 	session:SetScript("OnClick", ns.Results.ConfirmResetSession)
@@ -1316,7 +1412,7 @@ local function createFooter()
 
 	-- With TSM: the running search, to copy again after its box is closed.
 	local search = CreateFrame("Button", nil, footer)
-	search:SetHeight(FOOTER_HEIGHT - 4)
+	search:SetHeight(FOOTER_ROW)
 	search.text = search:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
 	search.text:SetPoint("RIGHT")
 	search:SetScript("OnClick", showTSMSearch)
@@ -1345,17 +1441,19 @@ local function drawFooter()
 	footer.concentration:SetText(concentration and ns.Color("muted", format("Concentration: these orders use %d of your %d",
 		concentration.used, concentration.have)) or "")
 
-	-- At the right end: Next order, then the session total and the TSM search to its left.
-	local rightmost = nextButton:IsShown() and nextButton or nil
+	-- The choices' dropdowns, switched in the options since: show the choice now.
+	-- (Only then: it would close the dropdown's menu while it's open.)
+	for _, dropdown in ipairs(footer.choices) do
+		if dropdown.shown ~= ns.db[dropdown.key] then
+			dropdown.shown = ns.db[dropdown.key]
+			dropdown:GenerateMenu()
+		end
+	end
+
+	-- The top row's right end: the session total, and the TSM search to its left.
 	local session = ns.db.session
 	local showSession = ns.db.showSession and session.crafts > 0
 	footer.session:SetShown(showSession)
-	footer.session:ClearAllPoints()
-	if rightmost then
-		footer.session:SetPoint("RIGHT", rightmost, "LEFT", -16, 0)
-	else
-		footer.session:SetPoint("RIGHT")
-	end
 	if showSession then
 		local luck = ns.Procs.LuckText()
 		footer.session.text:SetText(format("%s %s %s%s", ns.Color("heading", "This session"), signedMoney(session.total),
@@ -1373,22 +1471,20 @@ local function drawFooter()
 		search:ClearAllPoints()
 		if showSession then
 			search:SetPoint("RIGHT", footer.session, "LEFT", -24, 0)
-		elseif rightmost then
-			search:SetPoint("RIGHT", rightmost, "LEFT", -16, 0)
 		else
-			search:SetPoint("RIGHT")
+			search:SetPoint("RIGHT", footer.top, "RIGHT")
 		end
 	end
 
 	-- The concentration line ends where those begin, cut short rather than under them.
-	local leftmost = searchRows > 0 and search or showSession and footer.session or rightmost
+	local leftmost = searchRows > 0 and search or showSession and footer.session or nil
 	local text = footer.concentration
 	text:ClearAllPoints()
 	text:SetPoint("LEFT", footer.gear, "RIGHT", 8, 0)
 	if leftmost then
 		text:SetPoint("RIGHT", leftmost, "LEFT", -16, 0)
 	else
-		text:SetPoint("RIGHT")
+		text:SetPoint("RIGHT", footer.top, "RIGHT")
 	end
 end
 
@@ -1396,20 +1492,8 @@ end
 -- Redrawing
 ---------------------------------------------------------------------------
 
--- Works out every order again and redraws the list's rows, headers, buttons and
--- footer. Called when the list or what you own changes, and after each step.
-function Patron.Redraw()
-	if not footer then return end
-	active = ns.db.patronList and ns.Blizzard.IsOwnProfession() and ns.Blizzard.IsPatronTable()
-	state = { rows = {}, unknown = {}, byID = {}, unknownByID = {} }
-	if active then
-		-- What you own has changed (materials used up, rewards in).
-		ns.Planner.Reset()
-		state.rows, state.unknown, state.concentration = listOrders()
-		for _, row in ipairs(state.rows) do state.byID[row.order.orderID] = row end
-		for _, row in ipairs(state.unknown) do state.unknownByID[row.order.orderID] = true end
-		sortList()
-	end
+-- The list's rows, headers, buttons and footer, from the orders as last worked out.
+local function drawAll()
 	ns.Blizzard.ForEachOrderRow(drawRow)
 	-- After the rows: the headers line up with what they measure.
 	drawHeaders()
@@ -1417,14 +1501,42 @@ function Patron.Redraw()
 	drawFooter()
 end
 
--- Redraws on the next frame, once for a burst of changes (bags filling up).
-local queued = false
-function Patron.QueueRedraw()
-	if queued or not active then return end
+-- Works out every order again and redraws the list's rows, headers, buttons and
+-- footer. Called when the list or what you own changes. With `stepsOnly`, for
+-- an order's next step (started, crafted), which changes only its buttons and
+-- what it says: the list is drawn again from the orders as they were worked out,
+-- without pricing them all again. (A step can come many times a second.)
+function Patron.Redraw(stepsOnly)
+	if not footer then return end
+	local wasActive = active
+	active = ns.db.patronList and ns.Blizzard.IsOwnProfession() and ns.Blizzard.IsPatronTable()
+	if stepsOnly == true and wasActive and active and state.worked then return drawAll() end
+	state = { rows = {}, unknown = {}, byID = {}, unknownByID = {} }
+	if active then
+		-- What you own has changed (materials used up, rewards in).
+		ns.Planner.Reset()
+		state.rows, state.unknown, state.concentration = listOrders()
+		for _, row in ipairs(state.rows) do state.byID[row.order.orderID] = row end
+		for _, row in ipairs(state.unknown) do state.unknownByID[row.order.orderID] = true end
+		state.worked = true
+		sortList()
+	end
+	drawAll()
+end
+
+-- Redraws on the next frame, once for a burst of changes (bags filling up, a
+-- step's events). `stepsOnly` as for Patron.Redraw: one call that needs more
+-- makes it a full redraw.
+local queued, queuedFull = false, false
+function Patron.QueueRedraw(stepsOnly)
+	if not active then return end
+	if stepsOnly ~= true then queuedFull = true end
+	if queued then return end
 	queued = true
 	C_Timer.After(0, function()
-		queued = false
-		Patron.Redraw()
+		local full = queuedFull
+		queued, queuedFull = false, false
+		Patron.Redraw(not full)
 	end)
 end
 
@@ -1460,10 +1572,23 @@ function Patron.Init()
 	addProfitableButton:SetPoint("RIGHT", addAllButton, "LEFT", -4, 0)
 	createFooter()
 	-- In the footer, at its right end, under the Actions column.
-	nextButton = makeButton(footer, doNext, nextTooltip)
-	nextButton:SetPoint("RIGHT", footer, "RIGHT", 0, 0)
+	-- The bottom row: the choices' dropdowns from the left, Next order at the right.
+	nextButton = makeButton(footer, doNext, nextTooltip, true)
+	nextButton:SetPoint("RIGHT", footer.bottom, "RIGHT")
+	footer.choices = {}
+	for i, setting in ipairs(FOOTER_CHOICES) do
+		local dropdown = createChoiceDropdown(setting)
+		if i == 1 then
+			dropdown:SetPoint("LEFT", footer.bottom, "LEFT", -2, 0)
+		else
+			dropdown:SetPoint("LEFT", footer.choices[i - 1], "RIGHT", FOOTER_GAP, 0)
+		end
+		footer.choices[i] = dropdown
+	end
 
 	ns.Blizzard.WatchOrderList(Patron.Redraw)
+	-- A list stuck loading (a Blizzard bug) asks for the orders again.
+	ns.Blizzard.WatchStuckOrderList()
 	-- Sorting by one of Blizzard's headers ends sorting by profit.
 	ns.Blizzard.WatchSortOrder(function()
 		ns.db.patronSort = false
@@ -1479,5 +1604,5 @@ function Patron.Init()
 	local events = CreateFrame("Frame")
 	events:RegisterEvent("BAG_UPDATE_DELAYED")
 	events:RegisterEvent("CURRENCY_DISPLAY_UPDATE")
-	events:SetScript("OnEvent", Patron.QueueRedraw)
+	events:SetScript("OnEvent", function() Patron.QueueRedraw() end)
 end

@@ -17,6 +17,9 @@ local crafted = {}   -- crafted, waiting to be completed
 local claiming, completing = {}, {}
 -- How long an unanswered start or complete holds up the next one.
 local ANSWER_WAIT = 5
+-- How long a craft that was asked for may take before Craft Profit checks it
+-- started: one that's still casting is checked again this much later.
+local CRAFT_WAIT, CRAFT_RECHECK = 10, 2
 -- Completed orders. The order list only refreshes when Blizzard asks for it
 -- again, so these are left out until then.
 local completed = {}
@@ -113,7 +116,24 @@ local function waitForAnswer(waiting, orderID)
 	C_Timer.After(ANSWER_WAIT, function()
 		if waiting[orderID] ~= asked then return end -- answered, or asked again since
 		waiting[orderID] = nil
-		ns.Patron.Redraw()
+		ns.Patron.QueueRedraw(true)
+	end)
+end
+
+-- When each craft under way was asked for (orderID -> time), to tell them apart.
+local craftAsked = {}
+
+-- The game can turn a craft down without a word (asked too quickly after the
+-- last step), and then nothing ever says it's over. So a while after asking,
+-- if nothing is being cast and the order isn't crafted, the craft is dropped and
+-- its hammer and Next order can try again.
+local function checkCraft(orderID, asked, delay)
+	C_Timer.After(delay or CRAFT_WAIT, function()
+		if craftAsked[orderID] ~= asked or not crafting[orderID] then return end
+		if UnitCastingInfo("player") then return checkCraft(orderID, asked, CRAFT_RECHECK) end
+		crafting[orderID], craftAsked[orderID], pendingModel = nil, nil, nil
+		say(orderID, "Crafting %s didn't start. Click again to try again.", "warning")
+		ns.Patron.QueueRedraw(true)
 	end)
 end
 
@@ -126,10 +146,13 @@ function Craft.Do(row, step)
 		C_CraftingOrders.ClaimOrder(orderID, profession())
 	elseif step == "craft" then
 		crafting[orderID] = row.order.spellID
+		local asked = GetTime()
+		craftAsked[orderID] = asked
+		checkCraft(orderID, asked)
 		pendingModel = row.model
 		local concentrate = row.plan and row.plan.concentration and true or false
 		C_TradeSkillUI.CraftRecipe(row.order.spellID, 1, reagentsFor(row), nil, orderID, concentrate)
-		ns.Patron.Redraw()
+		ns.Patron.QueueRedraw(true)
 	elseif step == "complete" then
 		waitForAnswer(completing, orderID)
 		C_CraftingOrders.FulfillOrder(orderID, "", profession())
@@ -161,7 +184,7 @@ local function craftFailed(spellID)
 		if craftSpell == spellID then
 			crafting[orderID], pendingModel = nil, nil
 			say(orderID, "Crafting %s stopped. Click its hammer to try again.", "warning")
-			ns.Patron.Redraw()
+			ns.Patron.QueueRedraw(true)
 		end
 	end
 end
@@ -226,6 +249,7 @@ function Craft.Init()
 	frame:SetScript("OnEvent", function(_, event, ...)
 		handlers[event](...)
 		-- The hammer's next step may have changed: redraw the list.
-		if not event:find("^UNIT_") then ns.Patron.Redraw() end
+		-- Only a completed order changes the list itself (it leaves it).
+		if not event:find("^UNIT_") then ns.Patron.QueueRedraw(event ~= "CRAFTINGORDERS_FULFILL_ORDER_RESPONSE") end
 	end)
 end

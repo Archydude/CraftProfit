@@ -318,7 +318,7 @@ local function onCraftResult(data)
 	end
 
 	-- The Patron tab's session total has a new amount.
-	ns.Patron.Redraw()
+	ns.Patron.QueueRedraw(true)
 	if result.multicraft == 0 and #result.saved == 0 then
 		-- A craft without procs: Profit/Loss goes back to the normal forecast.
 		lastProc = nil

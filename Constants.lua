@@ -71,6 +71,8 @@ ns.DEFAULTS = {
 	patronSort = false,   -- the Patron tab sorted by profit: "desc" | "asc", or false for Blizzard's sort
 	concentrationFor = "profit", -- patron orders that need concentration get it by: "profit" | "knowledge", or "none" of it
 	leastConcentration = false, -- orders that need concentration: the qualities that need the least, cheapest of those
+	patronMaterials = "cheapest", -- patron orders' material qualities: "cheapest" | "owned" (see ns.PATRON_MATERIALS_CHOICES)
+	patronReach = "materials",    -- reaching an order's minimum quality: "materials" | "concentration" first
 	nextLosing = true,    -- the Patron tab's Next order button goes on to orders that lose gold
 	bestMaterials = false, -- "Use Craft Profit Reagents" on the order form and crafting page: put them in every order or recipe you open
 	craftStrategy = ns.QUALITY_CRAFTING and "highest" or "buy", -- what the crafting page and Best crafts list craft (see ns.STRATEGIES)
@@ -117,6 +119,23 @@ ns.CONCENTRATION_CHOICES = {
 	{ "profit", "Most profit (default)" },
 	{ "knowledge", "Knowledge first" },
 	{ "none", "Don't use concentration" },
+}
+
+-- Patron orders' own choices: which material qualities they use, and how they
+-- reach their minimum quality. { key, label, tooltip }.
+ns.PATRON_MATERIALS_TITLE = "Patron materials"
+ns.PATRON_MATERIALS_CHOICES = {
+	{ "cheapest", "Cheapest (default)", "The cheapest qualities that reach the order's minimum quality, whether you own " ..
+		"them or buy them." },
+	{ "owned", "Use what I own", "Qualities you own first. Only what you're short of is bought, at the cheapest " ..
+		"quality that still reaches the minimum." },
+}
+ns.PATRON_REACH_TITLE = "Reach the minimum with"
+ns.PATRON_REACH_CHOICES = {
+	{ "materials", "Better materials (default)", "Higher-rank materials first; concentration only when no " ..
+		"materials reach the minimum." },
+	{ "concentration", "Concentration", "Concentration with lower-rank materials first; better materials only when " ..
+		"you're out of concentration, or Spend concentration on is set to Don't use concentration." },
 }
 
 -- Crafting strategies: which rank and materials the crafting page and the Best

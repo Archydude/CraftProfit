@@ -103,8 +103,9 @@ end
 
 -- Every mix of qualities (mix[i] = option picked for slots[i]), cheapest first,
 -- or only the top qualities when there are more than `maxMixes` (default
--- MAX_MIXES) to try.
-local function mixesOf(slots, maxMixes)
+-- MAX_MIXES) to try. With `byBuy`, the ones that need the least gold spent come
+-- first (what you own is free), then the cheapest.
+local function mixesOf(slots, maxMixes, byBuy)
 	local count = 1
 	for _, entry in ipairs(slots) do count = count * #entry.options end
 	if count > (maxMixes or MAX_MIXES) then
@@ -132,7 +133,10 @@ local function mixesOf(slots, maxMixes)
 		end
 		mixes = grown
 	end
-	table.sort(mixes, function(a, b) return a.cost < b.cost end)
+	table.sort(mixes, function(a, b)
+		if byBuy and a.buy ~= b.buy then return a.buy < b.buy end
+		return a.cost < b.cost
+	end)
 	return mixes
 end
 Planner.QualitySlots, Planner.Mixes = qualitySlots, mixesOf
@@ -223,20 +227,34 @@ end
 --                                                    "Optimize concentration" option, the mix that
 --                                                    takes the least (the cheapest of those)
 --   { minQuality, overrides, picks, unreachable }    not even the top qualities reach it
+-- With "Patron materials" set to Use what I own, "cheapest" means the least gold
+-- spent (what you own is free), then the cheapest. With "Reach the minimum with"
+-- set to Concentration, a mix that needs concentration wins over a dearer one that
+-- doesn't, which is kept as the plan's `fallback` (same shape, no concentration)
+-- for when there's no concentration for it.
 function Planner.ForOrder(order, schematic, provided)
 	if order.isRecraft then return end
 	local cached = plans[order.orderID]
 	if cached ~= nil then return cached or nil end
 
 	local slots = qualitySlots(schematic, provided)
+	local byBuy = ns.db.patronMaterials == "owned"
 	local minQuality = order.minQuality or 0
 	if Planner.testMinQuality then minQuality = math.max(minQuality, Planner.testMinQuality) end
 	if minQuality <= 1 or not schematic.hasCraftingOperationInfo then
-		-- Any quality will do, so each slot takes its cheapest.
+		-- Any quality will do, so each slot takes its cheapest, or with Use what
+		-- I own, the one that needs the least bought (the cheapest of those).
 		local plan = false
 		if #slots > 0 then
 			local mix = {}
-			for i = 1, #slots do mix[i] = 1 end
+			for i, entry in ipairs(slots) do
+				mix[i] = 1
+				if byBuy then
+					for o, option in ipairs(entry.options) do
+						if option.buy < entry.options[mix[i]].buy then mix[i] = o end
+					end
+				end
+			end
 			plan = {}
 			plan.overrides, plan.picks = picksOf(slots, mix)
 		end
@@ -244,7 +262,7 @@ function Planner.ForOrder(order, schematic, provided)
 		return plan or nil
 	end
 
-	local mixes = mixesOf(slots)
+	local mixes = mixesOf(slots, nil, byBuy)
 	local least = ns.db.leastConcentration
 	local known = predictionsFor(format("order:%s:%s", tostring(order.orderID), skillKey(order.spellID)))
 	local plan, withConcentration, predicted, best
@@ -277,10 +295,23 @@ function Planner.ForOrder(order, schematic, provided)
 		plans[order.orderID] = false
 		return
 	end
+	-- `plan` is the first mix that gets there without concentration. Mixes before
+	-- it are cheaper (or need less bought), so a concentration one among them
+	-- wins with Concentration first, keeping `plan` to fall back on.
+	local fallback
+	if ns.db.patronReach == "concentration" and withConcentration then
+		plan, fallback = withConcentration, plan
+	end
 	plan = plan or withConcentration or { mix = best.mix, unreachable = true }
 	plan.minQuality = minQuality
 	plan.overrides, plan.picks = picksOf(slots, plan.mix)
 	plan.mix = nil
+	if fallback then
+		fallback.minQuality = minQuality
+		fallback.overrides, fallback.picks = picksOf(slots, fallback.mix)
+		fallback.mix = nil
+		plan.fallback = fallback
+	end
 	plans[order.orderID] = plan
 	return plan
 end
