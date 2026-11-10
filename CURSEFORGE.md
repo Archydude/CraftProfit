@@ -45,7 +45,7 @@ The panel leads with the answer: the sale price at the rank you'll get, minus th
 **Best crafts** lists every recipe you know, most profitable first, with what each costs and sells. Pick its columns, like gold per **concentration point**. **All characters** puts every character's professions in one list.
 
 ### Did it pay off?
-The **Ledger** is your crafting history: what each item cost, sold for and really made, and how far it landed from the forecast.
+The **Ledger** is your crafting history: what each item cost, sold for and really made.
 
 ### Patron orders
 Blizzard's Patron tab shows each order's **expected profit**, **rewards** and missing **materials**. **Next order** works through them, most profitable first, one click per step.
@@ -53,8 +53,8 @@ Blizzard's Patron tab shows each order's **expected profit**, **rewards** and mi
 ### WoW Forever
 Best crafts also shows what a **skill point** costs with each recipe at your skill, and the **chance** of one, so you can level the cheapest way, and with TSM, how much of each item **sells**. **Craft myself** prices materials you can make at what crafting them costs, and shops for those.
 
-### TSM prices for alts
-Crafting alts without TSM still get its prices, saved by a character with TSM.
+### Item tooltips
+What vendors charge and pay, the auction price and the **AH deposit**, so you know whether an item is worth posting.
 
 ### Shopping list
 One click adds what you're missing to an **Auctionator** shopping list or a **TSM** search, following your **crafting strategy**.
@@ -72,11 +72,11 @@ One click adds what you're missing to an **Auctionator** shopping list or a **TS
 
 ## B. Upload File form
 
-**File:** `dist\CraftProfit-3.5.0.zip`
+**File:** `dist\CraftProfit-3.6.0.zip`
 
 **Display name**
 ```
-Craft Profit 3.5.0
+Craft Profit 3.6.0
 ```
 
 **Release type:** `Release`
@@ -85,6 +85,10 @@ Craft Profit 3.5.0
 
 **Changelog** (paste only the newest part; paste older parts too if they never went up)
 ```markdown
+3.6.0
+- **Prices on item tooltips:** what a vendor charges for an item (**Vendor Buy**) and pays for it (**Vendor Sell**), what it sells for on the auction house with the price you picked (TSM's price type or Auctionator, with the whole stack's for a stack in your bags), and the **AH deposit** for each auction length. You get the deposit back when the item sells, so a deposit close to the price shows it's hardly worth posting.
+- Each line has its own option on the Tooltips page, all on by default. Items you can't post, like soulbound ones, show only their vendor prices.
+
 3.5.0
 - **Chance column on WoW Forever:** Best crafts shows the chance a craft gives a skill-up at your skill, in the recipe's color. Click its header to put the surest skill-ups first.
 - **Per skill-up says Free** for recipes that make gold, instead of a gain that grew the less often a recipe gave a skill-up. That made a profitable green recipe look like the best way to level. Free recipes sort first, surest skill-up first, then the rest from the cheapest.

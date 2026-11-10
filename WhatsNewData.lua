@@ -2,10 +2,14 @@
 ArchdudeWhatsNew:Register("CraftProfit", {
 	title = "Craft Profit",
 	icon = "Interface\\Icons\\INV_Hammer_20",
-	version = "3.5.0",
+	version = "3.6.0",
 	seen = "CraftProfitWhatsNew",
 	saved = { "CraftProfitDB", "CraftProfitCharDB" },
 	changes = {
+		{ "3.6.0",
+			"|cffffd100Prices on item tooltips:|r what a vendor charges for an item (|cffffd100Vendor Buy|r) and pays for it (|cffffd100Vendor Sell|r), what it sells for on the auction house with the price you picked (TSM's price type or Auctionator, with the whole stack's for a stack in your bags), and the |cffffd100AH deposit|r for each auction length. You get the deposit back when the item sells, so a deposit close to the price shows it's hardly worth posting.",
+			"Each line has its own option on the Tooltips page, all on by default. Items you can't post, like soulbound ones, show only their vendor prices.",
+		},
 		{ "3.5.0",
 			"|cffffd100Chance column on WoW Forever:|r Best crafts shows the chance a craft gives a skill-up at your skill, in the recipe's color. Click its header to put the surest skill-ups first.",
 			"|cffffd100Per skill-up says Free|r for recipes that make gold, instead of a gain that grew the less often a recipe gave a skill-up. That made a profitable green recipe look like the best way to level. Free recipes sort first, surest skill-up first, then the rest from the cheapest.",
@@ -48,9 +52,6 @@ ArchdudeWhatsNew:Register("CraftProfit", {
 		},
 		{ "3.0.2",
 			"Fixed: since 3.0.1, opening a recipe on the crafting page could show the error \"bad argument #1 to 'tostring' (value expected)\".",
-		},
-		{ "3.0.1",
-			"Fixed: recrafts didn't get the crafting strategy's materials, so |cffffd100Use Craft Profit Reagents|r left the lowest qualities in and the recraft could come out a rank lower than you can make. Recrafts now get them like any other craft.",
 		},
 	},
 })

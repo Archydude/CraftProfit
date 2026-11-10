@@ -1,5 +1,9 @@
 # Changelog
 
+## 3.6.0
+- **Prices on item tooltips:** what a vendor charges for an item (**Vendor Buy**) and pays for it (**Vendor Sell**), what it sells for on the auction house with the price you picked (TSM's price type or Auctionator, with the whole stack's for a stack in your bags), and the **AH deposit** for each auction length. You get the deposit back when the item sells, so a deposit close to the price shows it's hardly worth posting.
+- Each line has its own option on the Tooltips page, all on by default. Items you can't post, like soulbound ones, show only their vendor prices.
+
 ## 3.5.0
 - **Chance column on WoW Forever:** Best crafts shows the chance a craft gives a skill-up at your skill, in the recipe's color. Click its header to put the surest skill-ups first.
 - **Per skill-up says Free** for recipes that make gold, instead of a gain that grew the less often a recipe gave a skill-up. That made a profitable green recipe look like the best way to level. Free recipes sort first, surest skill-up first, then the rest from the cheapest.
