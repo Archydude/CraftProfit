@@ -86,6 +86,7 @@ ns.DEFAULTS = {
 	tipVendorSell = true,
 	tipAuction = true,
 	tipDeposit = true,
+	tipSaleRate = true,   -- item tooltips: TSM's sale rate
 	rankConcentration = true, -- add the concentration that rank takes
 	rankCharacters = "all", -- whose ranks: "all" your characters | "current" one
 	bestSort = "profit",  -- the Best crafts list's sort: "profit" | "plain" | "procs" | "cost" | "gold" | "perPoint" | "listed" | "sold" | "crafter" | "name"

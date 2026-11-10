@@ -1,5 +1,8 @@
 # Changelog
 
+## 3.11.0
+- **Sale rate on item tooltips:** with TSM, a **TSM Sale Rate** line shows the share of the item's auctions that sell. On WoW Forever your region is one server, so it's your own market. Turn it off with **Show sale rate** on the Tooltips options page.
+
 ## 3.10.0
 - **Lower of market and lowest:** a new choice for the TSM prices of materials and crafted items. It takes TSM's market value or the lowest auction, whichever is lower. For crafted items it's the careful choice: to sell now you'd have to match a cheaper auction, and high listings that aren't selling don't count. For materials it can show them cheaper than you can buy them right now.
 

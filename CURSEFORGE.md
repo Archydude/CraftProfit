@@ -54,7 +54,7 @@ Blizzard's Patron tab shows each order's **expected profit**, **rewards** and mi
 Best crafts also shows what a **skill point** costs with each recipe at your skill, and the **chance** of one, so you can level the cheapest way. With TSM, Best crafts and the panel show how much of each item **sells**. **Craft myself** prices materials you can make at what crafting them costs, and shops for those.
 
 ### Item tooltips
-What vendors charge and pay, the auction price and the **AH deposit**, so you know whether an item is worth posting.
+What vendors charge and pay, the auction price, TSM's **sale rate** and the **AH deposit**, so you know whether an item is worth posting.
 
 ### Shopping list
 One click adds what you're missing to an **Auctionator** shopping list or a **TSM** search.
@@ -72,11 +72,11 @@ One click adds what you're missing to an **Auctionator** shopping list or a **TS
 
 ## B. Upload File form
 
-**File:** `dist\CraftProfit-3.10.0.zip`
+**File:** `dist\CraftProfit-3.11.0.zip`
 
 **Display name**
 ```
-Craft Profit 3.10.0
+Craft Profit 3.11.0
 ```
 
 **Release type:** `Release`
@@ -85,6 +85,9 @@ Craft Profit 3.10.0
 
 **Changelog** (paste only the newest part; paste older parts too if they never went up)
 ```markdown
+3.11.0
+- **Sale rate on item tooltips:** with TSM, a **TSM Sale Rate** line shows the share of the item's auctions that sell. On WoW Forever your region is one server, so it's your own market. Turn it off with **Show sale rate** on the Tooltips options page.
+
 3.10.0
 - **Lower of market and lowest:** a new choice for the TSM prices of materials and crafted items. It takes TSM's market value or the lowest auction, whichever is lower. For crafted items it's the careful choice: to sell now you'd have to match a cheaper auction, and high listings that aren't selling don't count. For materials it can show them cheaper than you can buy them right now.
 

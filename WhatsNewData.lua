@@ -2,10 +2,13 @@
 ArchdudeWhatsNew:Register("CraftProfit", {
 	title = "Craft Profit",
 	icon = "Interface\\Icons\\INV_Hammer_20",
-	version = "3.10.0",
+	version = "3.11.0",
 	seen = "CraftProfitWhatsNew",
 	saved = { "CraftProfitDB", "CraftProfitCharDB" },
 	changes = {
+		{ "3.11.0",
+			"|cffffd100Sale rate on item tooltips:|r with TSM, a |cffffd100TSM Sale Rate|r line shows the share of the item's auctions that sell. On WoW Forever your region is one server, so it's your own market. Turn it off with |cffffd100Show sale rate|r on the Tooltips options page.",
+		},
 		{ "3.10.0",
 			"|cffffd100Lower of market and lowest:|r a new choice for the TSM prices of materials and crafted items. It takes TSM's market value or the lowest auction, whichever is lower. For crafted items it's the careful choice: to sell now you'd have to match a cheaper auction, and high listings that aren't selling don't count. For materials it can show them cheaper than you can buy them right now.",
 		},
@@ -53,9 +56,6 @@ ArchdudeWhatsNew:Register("CraftProfit", {
 		},
 		{ "3.3.2",
 			"Fixed: on WoW Forever, |cffffd100Save TSM prices for alts|r saved only your recipes' items and said TSM's item list wasn't there. It now finds TSM's list, so |cffffd100All crafting items|r and |cffffd100Everything TSM has|r save what they say.",
-		},
-		{ "3.3.1",
-			"On WoW Forever, the Ledger no longer shows craft types or procs, which Forever doesn't have: no type filter, By type section, Type or Procs columns. Forecast and Off by stay, so you still see whether you got the price the panel predicted.",
 		},
 	},
 })

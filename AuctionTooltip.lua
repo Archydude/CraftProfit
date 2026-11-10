@@ -77,7 +77,7 @@ end
 local function onItem(tooltip, data)
 	local db = ns.db
 	if not db or not C_AuctionHouse then return end
-	if not (db.tipVendorBuy or db.tipVendorSell or db.tipAuction or db.tipDeposit) then return end
+	if not (db.tipVendorBuy or db.tipVendorSell or db.tipAuction or db.tipDeposit or db.tipSaleRate) then return end
 	local itemID = data and data.id
 	if type(itemID) ~= "number" or (issecretvalue and issecretvalue(itemID)) then return end
 	local location = locationOf(data)
@@ -98,7 +98,9 @@ local function onItem(tooltip, data)
 	if postable and db.tipAuction then price, from = ns.Prices.SaleFrom(link or ("item:" .. itemID), itemID) end
 	if from == "saved" then price = nil end
 	local list = postable and db.tipDeposit and deposits(itemID, location, qty) or nil
-	if not (vendorBuy or vendorSell or price or list) then return end
+	-- The share of its auctions that sell, from TSM (nil without TSM).
+	local rate = postable and db.tipSaleRate and ns.Prices.SaleRate(link or ("item:" .. itemID)) or nil
+	if not (vendorBuy or vendorSell or price or list or rate) then return end
 
 	tooltip:AddLine(" ")
 	if vendorBuy then tooltip:AddDoubleLine("Vendor Buy", money(vendorBuy), 1, 0.82, 0, 1, 1, 1) end
@@ -107,6 +109,7 @@ local function onItem(tooltip, data)
 		tooltip:AddDoubleLine(sourceName(from), money(price), 1, 0.82, 0, 1, 1, 1)
 		if qty > 1 then tooltip:AddDoubleLine("  For" .. stack, money(price * qty), 0.53, 0.53, 0.53, 1, 1, 1) end
 	end
+	if rate then tooltip:AddDoubleLine("TSM Sale Rate", format("%.0f%%", rate * 100), 1, 0.82, 0, 1, 1, 1) end
 	if list then
 		tooltip:AddDoubleLine("AH Deposit " .. table.concat(DURATIONS, " / ") .. stack, table.concat(list, " / "),
 			1, 0.82, 0, 1, 1, 1)

@@ -318,6 +318,10 @@ function Options.Create()
 		(quality and "12, 24 or 48" or "2, 8 or 24") .. " hours, for the whole " ..
 		"stack when it's in your bags. You get it back when the item sells and lose it when it doesn't, so a " ..
 		"deposit near the price means it's hardly worth posting.\n\nNot on items you can't post, like soulbound ones.")
+	checkbox("tipSaleRate", "Show sale rate",
+		"On item tooltips, with TSM: TSM Sale Rate, the share of the item's auctions that sell" ..
+		(quality and ", across your region." or ". On WoW Forever your region is one server, so it's your own market.") ..
+		" A high rate means it sells; a low one that most auctions expire.\n\nNot on items you can't post, like soulbound ones.")
 	checkbox("priceTooltip", "Show saved TSM prices",
 		"On characters without TSM that use TSM prices saved by another character (see Save TSM prices for alts, " ..
 		"on the main page): one line with the item's price, as Craft Profit prices it, and whose " ..
