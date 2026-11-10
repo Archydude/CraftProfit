@@ -42,13 +42,13 @@ Craft Profit answers in gold: **profit or loss?** A panel next to your professio
 The panel leads with the answer: the sale price at the rank you'll get, minus the 5% cut and your materials, with and without procs. On orders: the commission, minus the materials **you** supply, plus sellable rewards.
 
 ### What should I craft?
-**Best crafts** lists every recipe you know, most profitable first, with what each costs and sells. Pick its columns, like gold per **concentration point**. **All characters** puts every character's professions in one list.
+**Best crafts** lists every recipe you know, most profitable first. Pick its columns, like gold per **concentration point**. **All characters** puts every character's professions in one list.
 
 ### Did it pay off?
 The **Ledger** is your crafting history: what each item cost, sold for and really made.
 
 ### Patron orders
-Blizzard's Patron tab shows each order's **expected profit**, **rewards** and missing **materials**. **Next order** works through them, most profitable first, one click per step.
+Blizzard's Patron tab shows each order's **expected profit**, **rewards** and missing **materials**. **Next order** works through them, most profitable first, one click per step. Choose whether orders use **what you own** or **concentration** first.
 
 ### WoW Forever
 Best crafts also shows what a **skill point** costs with each recipe at your skill, and the **chance** of one, so you can level the cheapest way, and with TSM, how much of each item **sells**. **Craft myself** prices materials you can make at what crafting them costs, and shops for those.
@@ -57,7 +57,7 @@ Best crafts also shows what a **skill point** costs with each recipe at your ski
 What vendors charge and pay, the auction price and the **AH deposit**, so you know whether an item is worth posting.
 
 ### Shopping list
-One click adds what you're missing to an **Auctionator** shopping list or a **TSM** search, following your **crafting strategy**.
+One click adds what you're missing to an **Auctionator** shopping list or a **TSM** search.
 
 ### Good to know
 - Needs **TradeSkillMaster** or **Auctionator** for prices. **Both together give the best experience**.
@@ -72,11 +72,11 @@ One click adds what you're missing to an **Auctionator** shopping list or a **TS
 
 ## B. Upload File form
 
-**File:** `dist\CraftProfit-3.6.0.zip`
+**File:** `dist\CraftProfit-3.7.0.zip`
 
 **Display name**
 ```
-Craft Profit 3.6.0
+Craft Profit 3.7.0
 ```
 
 **Release type:** `Release`
@@ -85,6 +85,14 @@ Craft Profit 3.6.0
 
 **Changelog** (paste only the newest part; paste older parts too if they never went up)
 ```markdown
+3.7.0
+- **Order materials and Reach the minimum with:** crafting orders' own choices, on the panel of an open order, under the Patron list and in the options. **Order materials:** Cheapest (default) or **Use what I own**, which uses the qualities you have first and only buys what you're short of. **Reach the minimum with:** Better materials (default) or **Concentration**, which reaches an order's minimum quality with concentration and lower-rank materials instead of buying better ones, and falls back to better materials when you're out of concentration.
+- The Patron list's footer has two rows: what the orders use and made on top, the choices and **Next order** below, so nothing overlaps.
+- Fixed: **Next order** could stay greyed out after clicking it quickly, while the order's own button still worked. A craft the game doesn't start no longer blocks it either.
+- Clicking through orders with **Next order** no longer slows the game down.
+- When Blizzard's order list keeps loading, Craft Profit asks for it again after a few seconds.
+- **Known issue:** since TSM 4.15, opening the profession window at a crafting table makes TSM switch it to Khaz Algar and back to look up patron orders, which can leave Blizzard's order list loading. Craft Profit asks for the list again after a few seconds; clicking another order tab and back does the same.
+
 3.6.0
 - **Prices on item tooltips:** what a vendor charges for an item (**Vendor Buy**) and pays for it (**Vendor Sell**), what it sells for on the auction house with the price you picked (TSM's price type or Auctionator, with the whole stack's for a stack in your bags), and the **AH deposit** for each auction length. You get the deposit back when the item sells, so a deposit close to the price shows it's hardly worth posting.
 - Each line has its own option on the Tooltips page, all on by default. Items you can't post, like soulbound ones, show only their vendor prices.

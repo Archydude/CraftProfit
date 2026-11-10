@@ -1,5 +1,13 @@
 # Changelog
 
+## 3.7.0
+- **Order materials and Reach the minimum with:** crafting orders' own choices, on the panel of an open order, under the Patron list and in the options. **Order materials:** Cheapest (default) or **Use what I own**, which uses the qualities you have first and only buys what you're short of. **Reach the minimum with:** Better materials (default) or **Concentration**, which reaches an order's minimum quality with concentration and lower-rank materials instead of buying better ones, and falls back to better materials when you're out of concentration.
+- The Patron list's footer has two rows: what the orders use and made on top, the choices and **Next order** below, so nothing overlaps.
+- Fixed: **Next order** could stay greyed out after clicking it quickly, while the order's own button still worked. A craft the game doesn't start no longer blocks it either.
+- Clicking through orders with **Next order** no longer slows the game down.
+- When Blizzard's order list keeps loading, Craft Profit asks for it again after a few seconds.
+- **Known issue:** since TSM 4.15, opening the profession window at a crafting table makes TSM switch it to Khaz Algar and back to look up patron orders, which can leave Blizzard's order list loading. Craft Profit asks for the list again after a few seconds; clicking another order tab and back does the same.
+
 ## 3.6.0
 - **Prices on item tooltips:** what a vendor charges for an item (**Vendor Buy**) and pays for it (**Vendor Sell**), what it sells for on the auction house with the price you picked (TSM's price type or Auctionator, with the whole stack's for a stack in your bags), and the **AH deposit** for each auction length. You get the deposit back when the item sells, so a deposit close to the price shows it's hardly worth posting.
 - Each line has its own option on the Tooltips page, all on by default. Items you can't post, like soulbound ones, show only their vendor prices.
