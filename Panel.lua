@@ -711,13 +711,28 @@ local function drawConcentration(model)
 	end
 end
 
+-- How well the item sells, from TSM, as Best crafts shows it: on WoW Forever the
+-- share of its auctions that sell, elsewhere how many sell a day in your region.
+local function drawDemand(output)
+	if not output.link then return end
+	if ns.Prices.ShowsSaleRate() then
+		local rate = ns.Prices.SaleRate(output.link)
+		addRow("Sale rate " .. Color("muted", "(TSM)"), rate and format("%.0f%%", rate * 100) or Color("muted", "-"))
+	elseif ns.Prices.HasTSM() then
+		local perDay = ns.Prices.SoldPerDay(output.link)
+		local text = perDay and (perDay < 10 and format("%.1f", perDay) or BreakUpLargeNumbers(math.floor(perDay + 0.5)))
+		addRow("Sells per day " .. Color("muted", "(TSM)"), text or Color("muted", "-"))
+	end
+end
+
 -- WoW Forever: what a skill point costs with this recipe, with its color and chance.
+-- Not for a grey recipe: it gives no skill-ups, so there's nothing to say.
 local function drawSkillup(model)
 	local output = model.output
 	if not (ns.SKILLUPS and output and model.recipeID) then return end
 	local sale = output.sale and (output.sale - (output.ahCut or 0))
 	local cost, chance, color = ns.Skillups.Cost(model.recipeID, model.cost or 0, sale, output.itemID, output.made)
-	if not color then return end
+	if not color or color == "grey" or not (chance and chance > 0) then return end
 	addRow("Per skill-up  " .. Color("muted", "(") .. ns.Skillups.ChanceText(chance, color) .. Color("muted", ")"),
 		ns.Skillups.CostText(cost))
 end
@@ -739,6 +754,7 @@ local function drawCraft(model)
 		else
 			addRow("Sells for", Color("warning", "no price"))
 		end
+		drawDemand(output)
 		drawSkillup(model)
 		drawConcentration(model)
 	end
