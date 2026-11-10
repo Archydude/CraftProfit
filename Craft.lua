@@ -103,12 +103,26 @@ local function reagentsFor(row)
 	return list
 end
 
+-- Notes that a start or complete of the order was asked for (`waiting` is
+-- claiming or completing). The game sometimes never answers, when asked too
+-- quickly, so once the wait is over the request is dropped and the list drawn
+-- again: otherwise Next order would stay greyed out until something else changed.
+local function waitForAnswer(waiting, orderID)
+	local asked = GetTime()
+	waiting[orderID] = asked
+	C_Timer.After(ANSWER_WAIT, function()
+		if waiting[orderID] ~= asked then return end -- answered, or asked again since
+		waiting[orderID] = nil
+		ns.Patron.Redraw()
+	end)
+end
+
 -- Does `step` for the row's order.
 function Craft.Do(row, step)
 	local orderID = row.order.orderID
 	names[orderID] = row.name
 	if step == "claim" then
-		claiming[orderID] = GetTime()
+		waitForAnswer(claiming, orderID)
 		C_CraftingOrders.ClaimOrder(orderID, profession())
 	elseif step == "craft" then
 		crafting[orderID] = row.order.spellID
@@ -117,7 +131,7 @@ function Craft.Do(row, step)
 		C_TradeSkillUI.CraftRecipe(row.order.spellID, 1, reagentsFor(row), nil, orderID, concentrate)
 		ns.Patron.Redraw()
 	elseif step == "complete" then
-		completing[orderID] = GetTime()
+		waitForAnswer(completing, orderID)
 		C_CraftingOrders.FulfillOrder(orderID, "", profession())
 	end
 end
