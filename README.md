@@ -195,6 +195,16 @@ Hover an item you can craft, in your bags, at the auction house or in a chat lin
 - Only for recipes that come in ranks.
 - It updates each time you open your profession window, so after you gain skill or spend specialization points, open the window once on that character. A character shows up after you've opened its profession window once.
 
+### Prices on item tooltips
+Item tooltips get a few lines on what the item is worth, each with its own option (Tooltips page), all on by default:
+
+- **Vendor Buy:** what a vendor charges for one, for items a vendor sells, once your price addon has seen one sell it. On WoW Forever, common crafting reagents are always known.
+- **Vendor Sell:** what a vendor pays you for one.
+- **The auction price,** named after where it comes from: **TSM Market Value** (or the other TSM price you picked for crafted items) or **Auctionator**. For a stack in your bags, a **For (x20)** line gives the whole stack.
+- **AH Deposit 12h / 24h / 48h** (on WoW Forever, **2h / 8h / 24h**): what posting it costs, for the whole stack when it's in your bags. You get the deposit back when the item sells and lose it when it doesn't, so a deposit close to the price shows it's hardly worth posting.
+
+Items you can't post, like soulbound ones, show only their vendor prices. On characters using TSM prices saved for alts, the auction price is the saved price's own line instead.
+
 ## WoW Forever
 Craft Profit works on WoW Forever: the panel, Best crafts, the shopping list and the Ledger. Forever's crafting has no ranks, procs, concentration or crafting orders, so everything about those stays out of sight there, options included. What's different:
 
@@ -307,6 +317,7 @@ Click the gear on the panel (or Craft Profit options in the gear menu under the 
 | Show it for | All your characters (default) or this character only. |
 | Show its concentration | Adds the concentration when the best rank needs it. On by default. |
 | Saved characters: Forget... | Pick a character you deleted, renamed or moved to take it off Craft Rank tooltips and the Best crafts list. |
+| Show vendor buy price / vendor sell price / auction price / AH deposit | Each turns one line on item tooltips on or off: Vendor Buy, Vendor Sell, the auction price (with the stack's), the AH deposit (see [Prices on item tooltips](#prices-on-item-tooltips)). All on by default. |
 | Show saved TSM prices | On characters using TSM prices saved for alts: the saved price on item tooltips. On by default. |
 
 ## Notes

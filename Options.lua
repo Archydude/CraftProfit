@@ -286,6 +286,20 @@ function Options.Create()
 			"Pick a character you deleted, renamed or moved, so its Craft Rank no longer shows on tooltips.\n\n" ..
 			"A character you still play comes back once you open its profession window again.")
 	end
+	checkbox("tipVendorBuy", "Show vendor buy price",
+		"On item tooltips: Vendor Buy, what a vendor charges for one. Only for items a vendor sells, once your " ..
+		"price addon has seen one sell it" .. (quality and "." or " (common crafting reagents are always known)."))
+	checkbox("tipVendorSell", "Show vendor sell price",
+		"On item tooltips: Vendor Sell, what a vendor pays you for one.")
+	checkbox("tipAuction", "Show auction price",
+		"On item tooltips: what the item sells for on the auction house, with the price you picked (the TSM " ..
+		"price for crafted items on the main page, or Auctionator's). For a stack in your bags, also what the " ..
+		"whole stack sells for.\n\nNot on items you can't post, like soulbound ones.")
+	checkbox("tipDeposit", "Show AH deposit",
+		"On item tooltips: the auction house deposit for posting the item for " ..
+		(quality and "12, 24 or 48" or "2, 8 or 24") .. " hours, for the whole " ..
+		"stack when it's in your bags. You get it back when the item sells and lose it when it doesn't, so a " ..
+		"deposit near the price means it's hardly worth posting.\n\nNot on items you can't post, like soulbound ones.")
 	checkbox("priceTooltip", "Show saved TSM prices",
 		"On characters without TSM that use TSM prices saved by another character (see Save TSM prices for alts, " ..
 		"on the main page): one line with the item's price, as Craft Profit prices it, and whose " ..

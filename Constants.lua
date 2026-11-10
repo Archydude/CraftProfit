@@ -79,6 +79,11 @@ ns.DEFAULTS = {
 	countProcs = true,    -- multicraft and resourcefulness count in the Best crafts list
 	rankTooltip = true,   -- best rank you can craft, on crafted items' tooltips
 	priceTooltip = true,  -- saved TSM prices on item tooltips, on characters without TSM
+	-- On item tooltips: what a vendor charges and pays, the auction price, the auction house deposit
+	tipVendorBuy = true,
+	tipVendorSell = true,
+	tipAuction = true,
+	tipDeposit = true,
 	rankConcentration = true, -- add the concentration that rank takes
 	rankCharacters = "all", -- whose ranks: "all" your characters | "current" one
 	bestSort = "profit",  -- the Best crafts list's sort: "profit" | "plain" | "procs" | "cost" | "gold" | "perPoint" | "listed" | "sold" | "crafter" | "name"

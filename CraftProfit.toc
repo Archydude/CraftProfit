@@ -31,6 +31,7 @@ Procs.lua
 Reminder.lua
 Format.lua
 Skillups.lua
+AuctionTooltip.lua
 Simulation.lua
 Shopping.lua
 Model.lua

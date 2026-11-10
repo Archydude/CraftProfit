@@ -90,22 +90,29 @@ function Prices.VendorCheaper(itemID)
 	if auction and auction > vendor then return vendor, auction end
 end
 
--- What a crafted item sells for, in copper. Uses the full link so quality and
--- item level count.
-function Prices.Sale(link, itemID)
+-- What a crafted item sells for, in copper, and where that price came from:
+-- "tsm", "saved" (TSM prices saved for alts) or "auctionator". Uses the full
+-- link so quality and item level count.
+function Prices.SaleFrom(link, itemID)
 	if tsmAvailable() then
 		local ok, itemString = pcall(TSM_API.ToItemString, link)
 		local value = ok and itemString and tsmValue(ns.db.saleSource, itemString)
-		if value then return value end
+		if value then return value, "tsm" end
 	elseif savedPrices() then
 		local value = ns.SavedPrices.Sale(link, itemID)
-		if value then return value end
+		if value then return value, "saved" end
 	end
 	local api = auctionatorAPI()
 	if api then
-		return auctionatorValue(api.GetAuctionPriceByItemLink, link)
+		local value = auctionatorValue(api.GetAuctionPriceByItemLink, link)
 			or (itemID and auctionatorValue(api.GetAuctionPriceByItemID, itemID))
+		if value then return value, "auctionator" end
 	end
+end
+
+-- What a crafted item sells for, in copper (see Prices.SaleFrom).
+function Prices.Sale(link, itemID)
+	return (Prices.SaleFrom(link, itemID))
 end
 
 -- Caps each rank's sale price at the price of every rank above it: nobody pays
