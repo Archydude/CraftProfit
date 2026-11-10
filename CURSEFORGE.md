@@ -45,13 +45,13 @@ The panel leads with the answer: the sale price at the rank you'll get, minus th
 **Best crafts** lists every recipe you know, most profitable first. Search by item or **material**, and pick its columns, like gold per **concentration point**. **All characters** puts every character's professions in one list.
 
 ### Did it pay off?
-The **Ledger** is your crafting history: what each item cost, sold for and really made.
+The **Ledger** is your crafting history: what each item cost, sold for, went into your own crafts and really made.
 
 ### Patron orders
 Blizzard's Patron tab shows each order's **expected profit**, **rewards** and missing **materials**. **Next order** works through them, most profitable first, one click per step. Choose whether orders use **what you own** or **concentration** first.
 
 ### WoW Forever
-Best crafts also shows what a **skill point** costs with each recipe at your skill, and the **chance** of one, so you can level the cheapest way, and with TSM, how much of each item **sells**. **Craft myself** prices materials you can make at what crafting them costs, and shops for those.
+Best crafts also shows what a **skill point** costs with each recipe at your skill, and the **chance** of one, so you can level the cheapest way. With TSM, Best crafts and the panel show how much of each item **sells**. **Craft myself** prices materials you can make at what crafting them costs, and shops for those.
 
 ### Item tooltips
 What vendors charge and pay, the auction price and the **AH deposit**, so you know whether an item is worth posting.
@@ -72,11 +72,11 @@ One click adds what you're missing to an **Auctionator** shopping list or a **TS
 
 ## B. Upload File form
 
-**File:** `dist\CraftProfit-3.8.0.zip`
+**File:** `dist\CraftProfit-3.9.0.zip`
 
 **Display name**
 ```
-Craft Profit 3.8.0
+Craft Profit 3.9.0
 ```
 
 **Release type:** `Release`
@@ -85,6 +85,20 @@ Craft Profit 3.8.0
 
 **Changelog** (paste only the newest part; paste older parts too if they never went up)
 ```markdown
+3.9.0
+- **Sale rate on the panel:** with TSM, a line under **Sells for** shows how much of the item's auctions sell on WoW Forever, or how many sell a day on Retail. These are the same numbers as in Best crafts.
+- **Used column in the Ledger:** the Performance tab shows how many of each item went into your own crafts. That's why an item can show a profit with none sold.
+- **Older months in the Ledger:** crafts from more than 90 days ago show on the Overview as one line per month, with their crafts and profit.
+- **Per skill-up** on the panel only shows when the recipe can still give a skill-up.
+- Fixed: a craft made while the panel showed another recipe, like a queue still crafting while you looked at something else, got that recipe's cost and forecast in the Ledger. So did crafts made from another addon's crafting window. These crafts now say their materials cost isn't known, and are left out of profit.
+- Fixed: a crafting order made without the panel showing counted in the Ledger as a regular craft that never sold.
+- Fixed: with **Craft myself** on WoW Forever, a material you crafted and then used in another craft counted its profit twice in the Ledger. From now on it counts once, in the craft it went into.
+- Fixed: sales were missed when their "Auction successful" mail was over 14 days old by the time you opened your mailbox. Sale mail now counts for all its 30 days.
+- Fixed: a search typed on another Ledger tab kept filtering the Overview.
+- The Ledger's chart and time ranges go by calendar day, so a bar's date is the day you crafted.
+- The Ledger says **Nothing matches the filters** when they leave nothing. **Export** on the Purchased tab exports your purchases, and the character filter lists characters that only bought.
+- The Ledger stays smooth while it's open during a long queue of crafts or while you empty a full mailbox.
+
 3.8.0
 - **Search Best crafts by material:** the search box also finds recipes by a material they use, so **Copper Bar** lists every recipe that takes Copper Bars. It works in All characters too.
 

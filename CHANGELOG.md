@@ -1,5 +1,19 @@
 # Changelog
 
+## 3.9.0
+- **Sale rate on the panel:** with TSM, a line under **Sells for** shows how much of the item's auctions sell on WoW Forever, or how many sell a day on Retail. These are the same numbers as in Best crafts.
+- **Used column in the Ledger:** the Performance tab shows how many of each item went into your own crafts. That's why an item can show a profit with none sold.
+- **Older months in the Ledger:** crafts from more than 90 days ago show on the Overview as one line per month, with their crafts and profit.
+- **Per skill-up** on the panel only shows when the recipe can still give a skill-up.
+- Fixed: a craft made while the panel showed another recipe, like a queue still crafting while you looked at something else, got that recipe's cost and forecast in the Ledger. So did crafts made from another addon's crafting window. These crafts now say their materials cost isn't known, and are left out of profit.
+- Fixed: a crafting order made without the panel showing counted in the Ledger as a regular craft that never sold.
+- Fixed: with **Craft myself** on WoW Forever, a material you crafted and then used in another craft counted its profit twice in the Ledger. From now on it counts once, in the craft it went into.
+- Fixed: sales were missed when their "Auction successful" mail was over 14 days old by the time you opened your mailbox. Sale mail now counts for all its 30 days.
+- Fixed: a search typed on another Ledger tab kept filtering the Overview.
+- The Ledger's chart and time ranges go by calendar day, so a bar's date is the day you crafted.
+- The Ledger says **Nothing matches the filters** when they leave nothing. **Export** on the Purchased tab exports your purchases, and the character filter lists characters that only bought.
+- The Ledger stays smooth while it's open during a long queue of crafts or while you empty a full mailbox.
+
 ## 3.8.0
 - **Search Best crafts by material:** the search box also finds recipes by a material they use, so **Copper Bar** lists every recipe that takes Copper Bars. It works in All characters too.
 

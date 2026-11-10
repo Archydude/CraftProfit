@@ -41,6 +41,7 @@ The panel reads top to bottom: the expected profit or loss, what comes in (the s
 - The sale price follows the quality you'll get, including concentration if you turn it on.
 - Concentration on the crafting page: with it off and able to raise the rank, a line under the sale price shows what it takes, the rank it makes and the gold that rank adds, with the concentration icon, e.g. **38 [icon] makes [rank 3] +95g**. With it on, the line shows what the craft uses. Either way it says **not enough** when you're short.
 - A lower rank is never worth more than a better one: when rank 3 is listed higher than rank 5 sells for, nobody buys it at that price, so it's priced as rank 5 sells and the panel's notes say so. The Best crafts list counts it the same way.
+- With TSM, a line under the sale price shows how well the item sells: on WoW Forever the share of its auctions that sell, elsewhere how many sell a day in your region.
 - Vendor-sold materials (vials, thread...) use the vendor price.
 - For recipes that make a varying amount, the average is used.
 - Materials without any price are shown in red. Profit is then too high, so take it with a grain of salt.
@@ -216,7 +217,7 @@ Craft Profit works on WoW Forever: the panel, Best crafts, the shopping list and
 - **Crafting strategy** says where the materials you're missing come from:
   - **Buy missing** (default): bought at their auction house price.
   - **Craft myself:** a material you know the recipe for costs what crafting it costs, down to what has to be bought (Copper Tube costs its Copper Bars and Weak Flux, and the bars their ore). The shopping list buys those instead, and the panel marks such materials **crafted**. What you own counts once, at every step. Recipes from all this character's professions count, once you've opened that profession's Best crafts list, so Engineering can use your smelting.
-- **Per skill-up:** in Best crafts (in Gold/day's place, which stays in each row's tooltip) and on the panel, what one skill point costs with a recipe at your skill: the materials, minus what the item is worth back (its auction price after the cut, or what a vendor pays if that's more), divided by the chance a craft gives a skill-up. Orange recipes always give one; yellow and green ones less often the closer they get to grey; grey ones never, and show **-**. A recipe that makes gold shows **Free**: its skill points cost nothing. Click its header to sort cheapest first: the free ones first, surest skill-up first, then the rest from the cheapest. Hover a row, or look at the panel, for the recipe's color and chance.
+- **Per skill-up:** in Best crafts (in Gold/day's place, which stays in each row's tooltip) and on the panel, what one skill point costs with a recipe at your skill: the materials, minus what the item is worth back (its auction price after the cut, or what a vendor pays if that's more), divided by the chance a craft gives a skill-up. Orange recipes always give one; yellow and green ones less often the closer they get to grey; grey ones never, and show **-** in Best crafts (the panel leaves the line out for them). A recipe that makes gold shows **Free**: its skill points cost nothing. Click its header to sort cheapest first: the free ones first, surest skill-up first, then the rest from the cheapest. Hover a row, or look at the panel, for the recipe's color and chance.
 - **Chance:** in Best crafts, next to Per skill-up, the chance a craft gives a skill-up at your skill, in the recipe's color (orange, yellow, green); grey recipes show **-**. Click its header to put the surest skill-ups first.
 - **Sale rate** (with TSM): in Best crafts, in place of Sells/day and Listed (both still in each row's tooltip), the share of an item's auctions that sell. Forever's region is one server, so it's your own market: a high rate means it sells, a low one that most auctions expire. Click its header to sort by it.
 - **Vendor reagents** (thread, flux, vials, dyes, salt, spices and more) cost their vendor price even before your price addon has seen a vendor sell them.
@@ -233,23 +234,24 @@ Craft Profit works on WoW Forever: the panel, Best crafts, the shopping list and
 
 Your crafting history in its own window: what you made, what sold, and how close the forecast was. Open it with the book button at the top of the panel, from the minimap button's right-click menu, or with `/craftprofit ledger`. It records from the moment you have this version, for all your characters.
 
-- **Overview:** totals by type (regular crafts, patron, personal, guild and public orders), by profession and by character, the items furthest below their forecast, and a chart of profit by the day it was crafted.
+- **Overview:** totals by type (regular crafts, patron, personal, guild and public orders), by profession and by character, the items furthest below their forecast, and a chart of profit by the day it was crafted. Crafts from more than 90 days ago show at the bottom, one line per month, when no character, profession or type is picked.
 - **Crafts:** every craft with when, who, what type, how many, its status, the forecast and the profit so far. Hover a row for the details.
-- **Performance:** one row per item, rank and type of craft: how many you made and sold, the profit each was forecast to make without procs, what each cost in materials and sold for, what procs really added, what each really made, **Off by** (how far the result landed from the forecast, with procs left out of both), **Margin** (the share of what sold that was profit, after the cut and materials), how long sales took, and the profit so far. Orders fill in the same way, with what they paid as the sale.
+- **Performance:** one row per item, rank and type of craft: how many you made, sold and used in your own crafts, the profit each was forecast to make without procs, what each cost in materials and sold for, what procs really added, what each really made, **Off by** (how far the result landed from the forecast, with procs left out of both), **Margin** (the share of what sold that was profit, after the cut and materials), how long sales took, and the profit so far. Orders fill in the same way, with what they paid as the sale.
 - **Purchased:** one row per item and rank: how many you bought, what you spent, what you paid each against your price source at the time, and what you resold and made on it.
-- **Filters:** time range, character, profession and type at the top, and a search box on Crafts, Performance and Purchased. Purchases have no profession or type, so those filters don't apply to them. **Export** gives you the crafts in view to paste into a spreadsheet. **Clear** forgets the whole Ledger, for all your characters, after asking.
+- **Filters:** time range, character, profession and type at the top, and a search box on Crafts, Performance and Purchased. Purchases have no profession or type, so those filters don't apply to them. **Export** gives you what's in view to paste into a spreadsheet: the purchases on Purchased, the crafts on the other tabs. **Clear** forgets the whole Ledger, for all your characters, after asking.
 
 How the numbers work:
 
 - **Orders** count as sold as soon as you finish them, for what they paid. **Regular crafts** count as they sell, after the auction house cut, minus their share of the materials.
-- **Sales** come from your "Auction successful" mail, so open your mailbox for them to count. A sale counts toward your oldest unsold craft of that item and rank, so one craft's result is an estimate; totals are what really sold.
+- **Sales** come from your "Auction successful" mail, so open your mailbox for them to count, within the 30 days the mail lasts. A sale counts toward your oldest unsold craft of that item and rank, so one craft's result is an estimate; totals are what really sold.
 - **Ranks:** the mail only names the item, so Craft Profit also notes what you post, and uses the price to find the rank. If it can't tell, the sale goes to your oldest craft of any rank.
-- **Your own crafts used as materials** count as used, at what they were worth when crafted, not as unsold.
+- **Your own crafts used as materials** count as used, at what they were worth when crafted, not as unsold. With **Craft myself** on WoW Forever, the craft they went into already counted them at what they cost to make, so they make no profit of their own: it's all in that craft.
 - **Materials cost** is what they were worth when you crafted, not what you paid for them, so profit says whether a craft is worth doing. **Spent on materials** adds these up, whether you bought or gathered them; what you really paid is on the **Purchased** tab.
 - **Purchases** cover the auction house, through any addon, and materials from vendors. A sale no craft explains counts toward what you bought of that item.
 - **Not counted:** items you trade, vendor or equip stay under **Not sold yet**, and lost deposits on expired auctions aren't counted.
-- A craft with the panel hidden has no forecast and no materials cost.
-- The window shows up to the last 90 days.
+- A craft made while the panel was hidden, or showed another recipe, has no forecast, and its materials cost isn't known. It shows **-** for profit and is left out of the totals' profit, but its sales still count.
+- Time ranges and the chart go by calendar day: **Last 7 days** is today and the 6 days before.
+- The window shows each craft for 90 days; after that only its month's totals stay.
 
 ## TSM prices for alts
 Keep TSM turned off on your crafting alts and they still get TSM prices. Turn on **Save TSM prices for alts** in the options, and each time a character with TSM logs in, Craft Profit keeps its prices for your other characters on the same WoW account.
