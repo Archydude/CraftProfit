@@ -209,9 +209,40 @@ end
 -- Which rows, in which order
 ---------------------------------------------------------------------------
 
--- The search finds item names, and in All characters, characters too.
+-- Each recipe's material names, lowercase, one per line, for the search: entry ->
+-- text. Kept once every name is known: the game loads an item's name the first
+-- time it's asked for, and the list is drawn again when one arrives.
+local materialNames = setmetatable({}, { __mode = "k" })
+
+local function materialsText(entry)
+	local text = materialNames[entry]
+	if text then return text end
+	local names, complete = {}, true
+	local function add(itemID)
+		local name = C_Item.GetItemNameByID(itemID)
+		if name then
+			names[#names + 1] = name:lower()
+		else
+			complete = false
+			C_Item.RequestLoadItemDataByID(itemID)
+		end
+	end
+	for _, slot in ipairs(entry.slots or {}) do
+		for _, option in ipairs(slot.options) do add(option.itemID) end
+	end
+	for _, other in ipairs(entry.others or {}) do
+		for _, itemID in ipairs(other.itemIDs) do add(itemID) end
+	end
+	text = table.concat(names, "\n")
+	if complete then materialNames[entry] = text end
+	return text
+end
+
+-- The search finds item names, the materials recipes use (Copper Bar), and in
+-- All characters, characters too.
 local function matches(row, search)
 	if search == "" or row.sortName:find(search, 1, true) then return true end
+	if materialsText(row.entry):find(search, 1, true) then return true end
 	return ns.db.bestAllCharacters and crafterKey(row):lower():find(search, 1, true) ~= nil
 end
 
@@ -1020,6 +1051,15 @@ local function createList()
 	search:SetPoint("TOPRIGHT", -PAD - 2, -PAD + 2)
 	search:SetAutoFocus(false)
 	search:HookScript("OnTextChanged", BestCraftsList.Refresh)
+	if search.Instructions then search.Instructions:SetText("Item or material") end
+	search:HookScript("OnEnter", function(self)
+		GameTooltip:SetOwner(self, "ANCHOR_TOP")
+		GameTooltip:SetText("Search")
+		GameTooltip:AddLine("Finds recipes by the item they make, or by a material they use, like Copper Bar."
+			.. (ns.db.bestAllCharacters and " In All characters, also by character." or ""), 1, 1, 1, true)
+		GameTooltip:Show()
+	end)
+	search:HookScript("OnLeave", GameTooltip_Hide)
 	list.Search = search
 
 	local filter = CreateFrame("DropdownButton", nil, list, "WowStyle1FilterDropdownTemplate")

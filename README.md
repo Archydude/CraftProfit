@@ -155,7 +155,7 @@ Click the **Best crafts** tab, next to the profession window's own tabs (from an
 
 The list stays open when you switch to another profession: it comes back with that profession's recipes once they show. It closes when you click its tab, open a recipe from it or from a link, or close the profession window.
 
-Click a column header to sort by it; click again to reverse. Recipes without a value for that column stay at the bottom either way. Type in the search box to find a recipe.
+Click a column header to sort by it; click again to reverse. Recipes without a value for that column stay at the bottom either way. Type in the search box to find a recipe by the item it makes, or by a material it uses: **Copper Bar** lists every recipe that takes Copper Bars.
 
 **Pick the columns:** right-click any column header, or open **Filter → Columns**, for a checkbox per column; **Default columns** puts them back. Item, Expected (or Profit) and, in All characters, Crafter always show, and the list only offers columns that can show with your price addons. Hiding the column the list is sorted by sorts it by profit. Your pick is the same for all your characters.
 
