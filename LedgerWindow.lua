@@ -53,6 +53,8 @@ local SHOWS_TYPES = ns.QUALITY_CRAFTING
 local SHOWS_PROCS = ns.QUALITY_CRAFTING
 local NO_CRAFTS = "Nothing here yet. Crafts are recorded from now on, with what the panel forecast for them."
 local NO_BOUGHT = "Nothing here yet. What you buy on the auction house, and materials from vendors, are recorded from now on."
+local NO_MATCH = "Nothing matches the filters."
+local NO_COST = "Crafted while the Craft Profit panel wasn't showing this recipe, so what its materials cost isn't known. It's left out of profit."
 local MATCH_NOTE = "A sale counts toward your oldest unsold craft of that item and rank, so one craft's result is an estimate. Totals are what really sold."
 
 local frame, scrollBox, headerBar, footer, empty, chart, searchBox, exportFrame
@@ -63,6 +65,7 @@ local characterFilter, professionFilter, kindFilter -- nil for all
 local sorts = { crafts = { key = "time", ascending = false }, items = { key = "earned", ascending = false },
 	bought = { key = "spent", ascending = false } }
 local crafts, other, bought -- unpacked while the window is open
+local stale = false -- new records came in: unpack again at the next redraw
 local refreshQueued = false
 
 local function signedMoney(amount)
@@ -121,10 +124,27 @@ local function rankMarkup(entry)
 	return " " .. (icon or ("rank " .. entry.rank))
 end
 
+-- When today started, by your clock.
+local function midnight()
+	local today = date("*t")
+	today.hour, today.min, today.sec = 0, 0, 0
+	return time(today)
+end
+
+-- When the range starts: whole days, today being the last, like the chart's bars.
+local function rangeStart()
+	return midnight() - (ns.db.ledgerRange - 1) * DAY
+end
+
+-- What's being searched for. The Overview has no search box, so nothing there.
+local function searchText()
+	return tab == "overview" and "" or searchBox:GetText():lower()
+end
+
 -- The crafts the filters leave, oldest first.
 local function inView()
-	local since = time() - ns.db.ledgerRange * DAY
-	local search = searchBox:GetText():lower()
+	local since = rangeStart()
+	local search = searchText()
 	local list = {}
 	for _, craft in ipairs(crafts or {}) do
 		if craft.t >= since and (not characterFilter or craft.character == characterFilter)
@@ -139,8 +159,8 @@ end
 
 -- The purchases the time, character and search filters leave. They have no profession.
 local function boughtInView()
-	local since = time() - ns.db.ledgerRange * DAY
-	local search = searchBox:GetText():lower()
+	local since = rangeStart()
+	local search = searchText()
 	local list = {}
 	for _, entry in ipairs(bought or {}) do
 		if entry.t >= since and (not characterFilter or entry.character == characterFilter)
@@ -211,6 +231,19 @@ local function overviewRows(list)
 	return rows
 end
 
+-- The months from before the days kept in full, newest first. Only their totals
+-- are left, so there's nothing to filter them by.
+local function monthRows()
+	local rows = {}
+	for _, totals in ipairs(ns.Ledger.Months()) do
+		local year, month = totals.month:match("^(%d+)-(%d+)$")
+		local label = year and date("%B %Y", time({ year = tonumber(year), month = tonumber(month), day = 1, hour = 12 }))
+		rows[#rows + 1] = { label = label or totals.month, crafts = totals.crafts, items = totals.items, unsold = 0, pending = 0,
+			expected = 0, actual = 0, forecast = 0, earned = totals.profit }
+	end
+	return rows
+end
+
 ---------------------------------------------------------------------------
 -- Columns: the first is the name; the others are key, header, width, text and,
 -- for sorting, sort (what it sorts by; rows' field or function)
@@ -265,13 +298,15 @@ local COLUMNS = {
 			return row.expected ~= 0 and signedMoney(row.expected) or Color("muted", "-") end },
 		{ key = "procs", header = "Procs", width = 76, sort = "procGain",
 			text = function(row) return procsText(row.hasProcs and row.procGain or nil) end },
-		{ key = "earned", header = "Profit so far", width = 110, sort = "earned", text = function(row) return signedMoney(row.earned) end },
+		{ key = "earned", header = "Profit so far", width = 110, sort = "earned", text = function(row)
+			return row.noCost and Color("muted", "-") or signedMoney(row.earned) end },
 	},
 	items = {
 		{ key = "name", header = "Item", sort = function(row) return nameOf(row):lower() end },
 		{ key = "kind", header = "Type", width = 54, sort = "kind", text = function(row) return KIND_SHORT[row.kind] or row.kind end },
 		{ key = "items", header = "Made", width = 38, sort = "items", text = function(row) return count(row.items) end },
 		{ key = "sold", header = "Sold", width = 38, sort = "sold", text = function(row) return count(row.sold) end },
+		{ key = "used", header = "Used", width = 38, sort = "used", text = function(row) return count(row.used) end },
 		{ key = "unitForecast", header = "Forecast each", width = 84, sort = "unitForecast",
 			text = function(row) return signedOrDash(row.unitForecast) end },
 		{ key = "unitCost", header = "Cost each", width = 68, sort = "unitCost",
@@ -360,8 +395,10 @@ local function craftTooltip(craft)
 	if SHOWS_TYPES then addPair("Type", ns.Ledger.KINDS[craft.kind] or craft.kind) end
 	if craft.count > 1 then addPair("Crafts", craft.count) end
 	addPair("Made", craft.qty)
-	addPair("Materials cost", Money(craft.cost))
-	if not SHOWS_PROCS then
+	addPair("Materials cost", craft.noCost and Color("muted", "Not known") or Money(craft.cost))
+	if craft.noCost then
+		-- No forecast either.
+	elseif not SHOWS_PROCS then
 		if craft.expected ~= 0 then addPair("Forecast", signedMoney(craft.expected)) end
 	elseif craft.hasProcs then
 		if craft.expected ~= 0 then addPair("Forecast without procs", signedMoney(craft.expected)) end
@@ -377,12 +414,17 @@ local function craftTooltip(craft)
 			addPair("Sold each", Money(craft.money / craft.sold))
 		end
 		if craft.used > 0 then addPair("Used in your crafts", craft.used) end
+		if craft.usedAtCost > 0 then addPair("Of those, counted at their cost", craft.usedAtCost) end
 		if craft.left > 0 then addPair("Not sold yet", craft.left) end
 	elseif craft.kind ~= "craft" then
-		addPair("Paid", Money(craft.money))
+		if not craft.noCost then addPair("Paid", Money(craft.money)) end
 	end
-	addPair("Profit so far", signedMoney(craft.earned))
+	if not craft.noCost then addPair("Profit so far", signedMoney(craft.earned)) end
 	GameTooltip:AddLine(" ")
+	if craft.noCost then
+		GameTooltip:AddLine(NO_COST, 1, 0.82, 0, true)
+		GameTooltip:AddLine(" ")
+	end
 	GameTooltip:AddLine(MATCH_NOTE, 0.53, 0.53, 0.53, true)
 end
 
@@ -391,6 +433,7 @@ local function itemTooltip(item)
 	if SHOWS_TYPES then addPair("Type", ns.Ledger.KINDS[item.kind] or item.kind) end
 	addPair("Made", item.items)
 	addPair("Sold", item.sold)
+	if item.used > 0 then addPair("Used in your crafts", item.used) end
 	addPair("Not sold yet", item.unsold)
 	addPair("Materials cost", Money(item.cost))
 	if item.pending > 0 then addPair("Unsold value when crafted", Money(item.pending)) end
@@ -526,13 +569,17 @@ end
 
 local function drawChart(list)
 	for _, bar in ipairs(bars) do bar:Hide() end
-	local now = time()
+	-- Whole days by your clock, so a bar is the day its date says. Dates are read
+	-- at noon, which a clock change can't push into the day before or after.
+	local today = midnight()
+	local noon = today + DAY / 2
 	local days = ns.db.ledgerRange
 	local perBar = math.max(math.ceil(days / MAX_BARS), 1)
 	local total = math.ceil(days / perBar)
 	local amounts = {}
 	for _, craft in ipairs(list) do
-		local back = math.floor((now - craft.t) / (DAY * perBar))
+		local daysBack = craft.t >= today and 0 or math.ceil((today - craft.t) / DAY)
+		local back = math.floor(daysBack / perBar)
 		local index = total - math.min(back, total - 1)
 		amounts[index] = (amounts[index] or 0) + craft.earned
 	end
@@ -562,14 +609,14 @@ local function drawChart(list)
 			bar.fill:SetSize(math.min(math.max(slot - 2, 1), BAR_WIDTH), size)
 			bar.fill:SetPoint(amount >= 0 and "BOTTOM" or "TOP", bar, "BOTTOM", 0, zero)
 			if amount >= 0 then bar.fill:SetColorTexture(0.3, 0.72, 0.36, 0.95) else bar.fill:SetColorTexture(0.82, 0.3, 0.28, 0.95) end
-			local last = now - (total - index) * perBar * DAY
+			local last = noon - (total - index) * perBar * DAY
 			bar.label = perBar == 1 and date("%b %d", last)
 				or format("%s - %s", date("%b %d", last - (perBar - 1) * DAY), date("%b %d", last))
 			bar.amount = amount
 			bar:Show()
 		end
 	end
-	chart.first:SetText(date("%b %d", now - (days - 1) * DAY))
+	chart.first:SetText(date("%b %d", noon - (days - 1) * DAY))
 	chart.last:SetText(Color("muted", "Today"))
 end
 
@@ -644,7 +691,9 @@ local function drawTiles(total, spent)
 		Money(total.pending),
 	}
 	local notes = {
-		"Orders when they're done, regular crafts as they sell, each minus its materials.",
+		"Orders when they're done, regular crafts as they sell, each minus its materials."
+			.. (total.unknown > 0 and format("\n\n%s crafts are left out: they were crafted while the Craft Profit panel wasn't showing their recipe, so what their materials cost isn't known.",
+				BreakUpLargeNumbers(total.unknown)) or ""),
 		format("%s items: what sold on the auction house, after its cut, and what orders paid.", BreakUpLargeNumbers(total.sold)),
 		"What the materials in these crafts were worth when you crafted them, whether you bought or gathered them."
 			.. (spent and format("\n\nPurchased in this time: %s. That isn't added on top, or what you buy and then use would count twice.",
@@ -682,6 +731,10 @@ end
 function LedgerWindow.Render()
 	refreshQueued = false
 	if not (frame and frame:IsShown()) then return end
+	if stale then
+		stale = false
+		crafts, other, bought = ns.Ledger.Load()
+	end
 	local list = inView()
 	local total = ns.Ledger.Summarize(list)
 	local purchases = boughtInView()
@@ -693,9 +746,6 @@ function LedgerWindow.Render()
 	drawTiles(total, spent)
 	footer:SetText(Color("muted", format("%s crafts, %s items · Prices: %s", BreakUpLargeNumbers(total.crafts),
 		BreakUpLargeNumbers(total.items), ns.Prices.SourceLabel())))
-	empty:SetText(tab == "bought" and NO_BOUGHT or NO_CRAFTS)
-	empty:SetShown(#(tab == "bought" and (bought or {}) or crafts or {}) == 0)
-
 	local overview = tab == "overview"
 	chart:SetShown(overview)
 	searchBox:SetShown(not overview)
@@ -708,7 +758,14 @@ function LedgerWindow.Render()
 	local rows
 	if overview then
 		drawChart(list)
-		rows = overviewRows(list)
+		rows = #list > 0 and overviewRows(list) or {}
+		if not (characterFilter or professionFilter or kindFilter) then
+			local months = monthRows()
+			if #months > 0 then
+				addHeading(rows, "More than 90 days ago, by month")
+				addAll(rows, months)
+			end
+		end
 	elseif tab == "crafts" then
 		rows = ns.Ledger.Merge(list)
 		sortRows(rows)
@@ -719,6 +776,10 @@ function LedgerWindow.Render()
 		rows = ns.Ledger.BoughtItems(purchases)
 		sortRows(rows)
 	end
+	-- Nothing recorded yet, or nothing the filters leave.
+	local any = #(tab == "bought" and (bought or {}) or crafts or {}) > 0
+	empty:SetText(any and NO_MATCH or (tab == "bought" and NO_BOUGHT or NO_CRAFTS))
+	empty:SetShown(#rows == 0)
 	for index, row in ipairs(rows) do row.stripe = index % 2 == 0 and not row.heading end
 	scrollBox:SetDataProvider(CreateDataProvider(rows), ScrollBoxConstants.RetainScrollPosition)
 	drawHeaders()
@@ -743,10 +804,10 @@ local function refresh()
 	C_Timer.After(REFRESH_DELAY, renderWhenIdle)
 end
 
--- New records while it's open: unpack again.
+-- New records while it's open: unpack again, once for all that come together.
 local function reload()
 	if not (frame and frame:IsShown()) then return end
-	crafts, other, bought = ns.Ledger.Load()
+	stale = true
 	refresh()
 end
 
@@ -760,13 +821,27 @@ local function csvField(text)
 	return text
 end
 
+-- What the tab shows, for a spreadsheet: the purchases on Purchased, the crafts
+-- on the others.
 local function exportText()
-	local lines = { "Date,Character,Profession,Item,Rank,Type,Made,Sold,Unsold,Materials cost (gold),Forecast (gold),Procs (gold),Sold for (gold),Profit so far (gold)" }
 	local function gold(amount) return format("%.2f", amount / 10000) end
+	if tab == "bought" then
+		local lines = { "Date,Character,Item,Rank,From,Purchased,Spent (gold),Price each then (gold)" }
+		for _, entry in ipairs(boughtInView()) do
+			lines[#lines + 1] = table.concat({ date("%Y-%m-%d %H:%M", entry.t), csvField(entry.character or "?"),
+				csvField(entry.name), entry.rank, entry.source == "vendor" and "Vendor" or "Auction house", entry.qty,
+				gold(entry.spent), entry.market > 0 and gold(entry.market) or "" }, ",")
+		end
+		return table.concat(lines, "\n")
+	end
+	local lines = { "Date,Character,Profession,Item,Rank,Type,Made,Sold,Used,Unsold,Materials cost (gold),Forecast (gold),Procs (gold),Sold for (gold),Profit so far (gold)" }
 	for _, craft in ipairs(inView()) do
+		-- No cost on record: no forecast or profit either.
+		local known = not craft.noCost
 		lines[#lines + 1] = table.concat({ date("%Y-%m-%d %H:%M", craft.t), csvField(craft.character or "?"),
 			csvField(craft.profession or "?"), csvField(nameOf(craft)), craft.rank, KIND_SHORT[craft.kind] or craft.kind,
-			craft.qty, craft.sold, craft.left, gold(craft.cost), gold(craft.expected), craft.hasProcs and gold(craft.procGain) or "", gold(craft.money), gold(craft.earned) }, ",")
+			craft.qty, craft.sold, craft.used, craft.left, known and gold(craft.cost) or "", known and gold(craft.expected) or "",
+			known and craft.hasProcs and gold(craft.procGain) or "", gold(craft.money), known and gold(craft.earned) or "" }, ",")
 	end
 	return table.concat(lines, "\n")
 end
@@ -819,15 +894,21 @@ end
 -- The window
 ---------------------------------------------------------------------------
 
+-- The values of `field` among the crafts, sorted; for characters, among the
+-- purchases too, since a character can buy without crafting.
 local function distinct(field)
 	local seen, list = {}, {}
-	for _, craft in ipairs(crafts or {}) do
-		local value = craft[field]
-		if value and value ~= "?" and not seen[value] then
-			seen[value] = true
-			list[#list + 1] = value
+	local function add(records)
+		for _, record in ipairs(records or {}) do
+			local value = record[field]
+			if value and value ~= "?" and not seen[value] then
+				seen[value] = true
+				list[#list + 1] = value
+			end
 		end
 	end
+	add(crafts)
+	if field == "character" then add(bought) end
 	table.sort(list)
 	return list
 end

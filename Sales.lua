@@ -6,9 +6,11 @@ local _, ns = ...
 local Sales = {}
 ns.Sales = Sales
 
--- Sales older than this many days are dropped and not shown.
+-- Sales older than this many days aren't counted for the list.
 Sales.DAYS = 14
--- A sale mail lives this many days, so its daysLeft says when it came.
+-- A sale mail lives this many days, so its daysLeft says when it came. Sales are
+-- kept that long too: a mail read late still reaches the Ledger, and one that's
+-- still in the mailbox isn't taken for a new sale.
 local MAIL_DAYS = 30
 -- Seconds two readings of the same mail may differ by.
 local SAME_MAIL = 300
@@ -16,7 +18,8 @@ local DAY = 86400
 
 -- CraftProfitDB.sales = {
 --   since = when Craft Profit started counting (time()),
---   list = { { name, qty, money, t } ... }, every sale in the last DAYS days,
+--   list = { { name, qty, money, t } ... }, every sale in the last MAIL_DAYS days,
+--   wide = when sales started being kept for MAIL_DAYS, not DAYS (time()),
 -- }
 local saved
 -- How many of each item were sold (name -> qty), so the Best crafts list doesn't
@@ -28,10 +31,17 @@ local totals, totalsUntil
 function Sales.Init()
 	CraftProfitDB.sales = CraftProfitDB.sales or { since = time(), list = {} }
 	saved = CraftProfitDB.sales
+	saved.wide = saved.wide or time()
+end
+
+-- The oldest sale a mail is read for. Mail older than DAYS when sales started
+-- being kept longer may have been counted and dropped already, so it stays out.
+local function oldestRead()
+	return math.max(time() - (MAIL_DAYS + 1) * DAY, saved.wide - Sales.DAYS * DAY)
 end
 
 local function prune()
-	local cutoff = time() - Sales.DAYS * DAY
+	local cutoff = time() - (MAIL_DAYS + 1) * DAY
 	local kept = {}
 	for _, sale in ipairs(saved.list) do
 		if sale.t >= cutoff then kept[#kept + 1] = sale end
@@ -63,7 +73,7 @@ end
 local function record()
 	if not saved then return end
 	prune()
-	local cutoff = time() - Sales.DAYS * DAY
+	local cutoff = oldestRead()
 	local matched = {}
 	for _, sale in ipairs(inboxSales()) do
 		if sale.t >= cutoff then

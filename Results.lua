@@ -293,16 +293,35 @@ local function learnProcs(data, model, result)
 	ns.Procs.AddToSession(expected and expected.total, result.bonus)
 end
 
+-- The craft that was started last, by the profession window or anything else:
+-- { recipeID, orderID }, or nil when it isn't known (a recraft names no recipe).
+local started
+
+local function watchStarts()
+	local function watch(name, note)
+		if C_TradeSkillUI[name] then hooksecurefunc(C_TradeSkillUI, name, note) end
+	end
+	watch("CraftRecipe", function(recipeID, _, _, _, orderID) started = { recipeID = recipeID, orderID = orderID } end)
+	watch("CraftEnchant", function(recipeID) started = { recipeID = recipeID } end)
+	watch("CraftSalvage", function(recipeID) started = { recipeID = recipeID } end)
+	watch("RecraftRecipe", function() started = nil end)
+	watch("RecraftRecipeForOrder", function() started = nil end)
+end
+
 local function onCraftResult(data)
 	if not data then return end
 	local panel = ns.Panel.Frame()
-	local shown = panel and panel:IsShown()
+	-- On screen: the panel still counts as shown while the profession window is closed.
+	local shown = panel and panel:IsVisible()
 	-- A craft from the Patron tab's hammer: the panel isn't showing that
 	-- order, so the list's numbers for it are used, and procs show on the list.
 	local listModel = ns.Craft.TakeCraftModel()
 	local model = listModel or (shown and ns.Panel.current)
+	-- The panel can be on another recipe than the one crafting: a queue keeps going
+	-- while you look at something else. Its numbers aren't this craft's.
+	if model and started and model.recipeID and model.recipeID ~= started.recipeID then model = nil end
 	if not model then
-		ns.Ledger.RecordCraft(data)
+		ns.Ledger.RecordCraft(data, nil, nil, started)
 		return
 	end
 
@@ -361,6 +380,7 @@ function Results.TestProc()
 end
 
 function Results.Init()
+	watchStarts()
 	local events = CreateFrame("Frame")
 	events:RegisterEvent("TRADE_SKILL_ITEM_CRAFTED_RESULT")
 	events:SetScript("OnEvent", function(_, _, data) onCraftResult(data) end)

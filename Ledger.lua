@@ -34,10 +34,12 @@ Ledger.KIND_ORDER = { "craft", "patron", "personal", "guild", "public" }
 --     crafts: time, character, profession, recipeID, itemID, rank, qty, kind,
 --             value of one item then, materials cost, forecast profit with average
 --             procs, profit at craft, forecast profit without procs, what procs really
---             added (older crafts stop at profit at craft)
+--             added (older crafts stop at profit at craft), 1 when the materials
+--             cost isn't known (crafted with the panel on something else)
 --     sales:  time, character, item name, qty, gold after the cut, price of one
 --     posts:  time, character, itemID, rank, qty, price of one, item name
---     used:   time, itemID, qty (your own crafts used up as materials)
+--     used:   time, itemID, qty (your own crafts used up as materials), 1 when the
+--             craft they went into counted them at what they cost to make
 --     bought: time, character, itemID, rank, qty, gold spent, market price of one
 --             then, "auction" or "vendor", item name
 --   months = "2026-10" -> { crafts, items, cost, profit, spent }, for days past KEEP_DAYS,
@@ -107,12 +109,15 @@ end
 local function parseCraft(names, fields)
 	local character, profession = tonumber(fields[2]), tonumber(fields[3])
 	local itemID = tonumber(fields[5])
+	local recipeID, cost = tonumber(fields[4]), tonumber(fields[10])
+	-- Before this was saved, a craft with no recipe had no panel to take a cost from.
+	local noCost = fields[15] == "1" or (fields[15] == nil and recipeID == 0 and itemID > 0 and cost == 0)
 	return {
 		t = tonumber(fields[1]), character = names[character], profession = names[profession],
-		recipeID = tonumber(fields[4]), itemID = itemID > 0 and itemID or nil, rank = tonumber(fields[6]),
-		qty = tonumber(fields[7]), kind = fields[8], unit = tonumber(fields[9]), cost = tonumber(fields[10]),
+		recipeID = recipeID, itemID = itemID > 0 and itemID or nil, rank = tonumber(fields[6]),
+		qty = tonumber(fields[7]), kind = fields[8], unit = tonumber(fields[9]), cost = cost,
 		forecast = tonumber(fields[11]), profit = tonumber(fields[12]),
-		plain = tonumber(fields[13]), bonus = tonumber(fields[14]),
+		plain = tonumber(fields[13]), bonus = tonumber(fields[14]), noCost = noCost or nil,
 	}
 end
 
@@ -142,7 +147,8 @@ function Ledger.Unpack(db)
 				rank = tonumber(fields[4]), qty = tonumber(fields[5]), unit = tonumber(fields[6]), name = fields[7] }
 		end)
 		eachLine(day.used, function(fields)
-			used[#used + 1] = { t = tonumber(fields[1]), itemID = tonumber(fields[2]), qty = tonumber(fields[3]) }
+			used[#used + 1] = { t = tonumber(fields[1]), itemID = tonumber(fields[2]), qty = tonumber(fields[3]),
+				atCost = fields[4] == "1" }
 		end)
 		eachLine(day.bought, function(fields) bought[#bought + 1] = parseBought(names, fields) end)
 	end
@@ -159,13 +165,25 @@ end
 -- Working out what sold
 ---------------------------------------------------------------------------
 
+-- Where to start looking in `list` (oldest first): past the ones at its start with
+-- nothing left, which stay that way. Kept on the list, so a long history isn't
+-- gone through from the top for every sale.
+local function firstLeft(list)
+	local first = list.first or 1
+	while list[first] and list[first].left <= 0 do first = first + 1 end
+	list.first = first
+	return first
+end
+
 -- Takes up to `qty` from the oldest crafts in `list` made by time `t` that still
 -- have some left, of `rank` when it's known. take(craft, amount) does the rest.
 -- Returns how many it couldn't place.
 local function fromOldest(list, t, rank, qty, take)
-	for _, craft in ipairs(list or {}) do
-		if qty <= 0 then break end
-		if craft.left > 0 and craft.t <= t + CRAFT_SLACK and (not rank or rank == 0 or craft.rank == rank) then
+	if not list then return qty end
+	for index = firstLeft(list), #list do
+		local craft = list[index]
+		if qty <= 0 or craft.t > t then break end
+		if craft.left > 0 and (not rank or rank == 0 or craft.rank == rank) then
 			local amount = math.min(craft.left, qty)
 			craft.left = craft.left - amount
 			qty = qty - amount
@@ -178,9 +196,10 @@ end
 -- The post a sale came from: the same item name and price, posted before it, with
 -- some left. Mails only name the item, so this is what says which rank sold.
 local function findPost(posts, sale)
-	for _, post in ipairs(posts) do
-		if post.left > 0 and post.name == sale.name and post.t <= sale.t
-			and math.abs(post.unit - sale.unit) <= PRICE_SLACK then
+	for index = firstLeft(posts), #posts do
+		local post = posts[index]
+		if post.t > sale.t then return end
+		if post.left > 0 and post.name == sale.name and math.abs(post.unit - sale.unit) <= PRICE_SLACK then
 			return post
 		end
 	end
@@ -205,6 +224,7 @@ function Ledger.Analyze(db)
 	end
 	for _, craft in ipairs(crafts) do
 		craft.left, craft.sold, craft.money, craft.used, craft.soldDays = 0, 0, 0, 0, 0
+		craft.usedAtCost = 0
 		if craft.kind == "craft" and craft.itemID then
 			craft.left = craft.qty
 			local list = byItem[craft.itemID]
@@ -240,6 +260,7 @@ function Ledger.Analyze(db)
 		if event.isUsed then
 			fromOldest(byItem[event.itemID], event.t, nil, event.qty, function(craft, amount)
 				craft.used = craft.used + amount
+				if event.atCost then craft.usedAtCost = craft.usedAtCost + amount end
 			end)
 		else
 			local post = findPost(posts, event)
@@ -249,12 +270,14 @@ function Ledger.Analyze(db)
 				list, rank = byItem[post.itemID] or list, post.rank
 			end
 			local each = event.money / event.qty
-			local unplaced = fromOldest(list, event.t, rank, event.qty, function(craft, amount)
+			-- A mail's time is rough, so a sale may seem to come a little before its craft.
+			local by = event.t + CRAFT_SLACK
+			local unplaced = fromOldest(list, by, rank, event.qty, function(craft, amount)
 				craft.sold = craft.sold + amount
 				craft.money = craft.money + each * amount
 				craft.soldDays = craft.soldDays + amount * math.max(event.t - craft.t, 0) / DAY
 			end)
-			unplaced = fromOldest(boughtByName[event.name], event.t, rank, unplaced, function(entry, amount)
+			unplaced = fromOldest(boughtByName[event.name], by, rank, unplaced, function(entry, amount)
 				entry.resold = entry.resold + amount
 				entry.resoldMoney = entry.resoldMoney + each * amount
 			end)
@@ -272,15 +295,26 @@ function Ledger.Analyze(db)
 		if craft.kind == "craft" and craft.itemID then
 			local share = craft.cost / craft.qty
 			local done = craft.sold + craft.used
-			craft.earned = craft.money + (craft.unit - share) * craft.used - share * craft.sold
 			craft.pending = craft.left * craft.unit
-			local priced = craft.unit > 0 and (craft.unit - share) * craft.qty or 0
-			craft.expected = forecast ~= 0 and forecast or priced
-			craft.procGain = bonus * done / craft.qty
-			-- Compared with what the panel said, so only when it was open.
-			if forecast ~= 0 and done > 0 then
-				craft.compareActual = craft.earned - craft.procGain
-				craft.compareForecast = forecast * done / craft.qty
+			if craft.noCost then
+				-- What it sold for is known, what it cost isn't: no profit to show.
+				craft.earned, craft.expected, craft.procGain = 0, 0, 0
+			else
+				-- Used in another craft counts as sold to it. For what it was worth then, when
+				-- that craft's cost counted it at that; when it counted it at what it cost
+				-- to make, the gain is all in that craft's profit and there's none here.
+				local worth = craft.used - craft.usedAtCost
+				craft.earned = craft.money + (craft.unit - share) * worth - share * craft.sold
+				local priced = craft.unit > 0 and (craft.unit - share) * craft.qty or 0
+				craft.expected = forecast ~= 0 and forecast or priced
+				craft.procGain = bonus * done / craft.qty
+				-- Compared with what the panel said, so only when it was open, and only
+				-- what was sold or used for what it was worth.
+				local compared = craft.sold + worth
+				if forecast ~= 0 and compared > 0 then
+					craft.compareActual = craft.earned - craft.procGain
+					craft.compareForecast = forecast * compared / craft.qty
+				end
 			end
 		else
 			craft.earned = craft.profit
@@ -340,14 +374,17 @@ function Ledger.BoughtItems(bought)
 end
 
 -- Totals for a list of crafts: { crafts, items, cost, earned, pending, unsold,
--- sold, money, expected, procs, actual, forecast }. Expected is the profit forecast
--- for all of them, procs what they really added; actual and forecast only count
--- what's done, without procs, so they can be compared.
+-- sold, money, expected, procs, actual, forecast, unknown }. Expected is the profit
+-- forecast for all of them, procs what they really added; actual and forecast only
+-- count what's done, without procs, so they can be compared. Unknown is how many
+-- have no materials cost on record, and so no profit.
 function Ledger.Summarize(crafts)
 	local total = { crafts = 0, items = 0, cost = 0, earned = 0, pending = 0, unsold = 0, sold = 0, money = 0,
-		expected = 0, procs = 0, actual = 0, forecast = 0 }
+		expected = 0, procs = 0, actual = 0, forecast = 0, unknown = 0, used = 0 }
 	for _, craft in ipairs(crafts) do
 		total.crafts = total.crafts + 1
+		total.used = total.used + craft.used
+		if craft.noCost then total.unknown = total.unknown + 1 end
 		total.items = total.items + craft.qty
 		total.cost = total.cost + craft.cost
 		total.earned = total.earned + craft.earned
@@ -378,8 +415,8 @@ end
 function Ledger.Merge(crafts)
 	local merged, list = {}, {}
 	for _, craft in ipairs(crafts) do
-		local key = format("%d:%s:%d:%d:%s:%s", math.floor(craft.t / 60), tostring(craft.itemID), craft.recipeID, craft.rank,
-			tostring(craft.character), craft.kind)
+		local key = format("%d:%s:%d:%d:%s:%s:%s", math.floor(craft.t / 60), tostring(craft.itemID), craft.recipeID, craft.rank,
+			tostring(craft.character), craft.kind, tostring(craft.noCost))
 		local row = merged[key]
 		if not row then
 			row = {}
@@ -390,7 +427,7 @@ function Ledger.Merge(crafts)
 		else
 			row.count = row.count + 1
 			row.unit = row.unit + craft.unit * craft.qty
-			for _, field in ipairs({ "qty", "cost", "forecast", "profit", "left", "sold", "money", "used", "soldDays", "earned", "pending",
+			for _, field in ipairs({ "qty", "cost", "forecast", "profit", "left", "sold", "money", "used", "usedAtCost", "soldDays", "earned", "pending",
 				"expected", "procGain" }) do
 				row[field] = (row[field] or 0) + (craft[field] or 0)
 			end
@@ -426,11 +463,18 @@ function Ledger.Items(crafts)
 		for key, value in pairs(total) do group[key] = value end
 		local soldForecast, soldDays, madeForecast, priced, soldCost, listed, done = 0, 0, 0, 0, 0, 0, 0
 		local procsDone, procsGain = 0, 0
+		-- Only crafts with a cost on record count toward cost, profit and margin.
+		local costed, costedMoney = 0, 0
 		for _, craft in ipairs(group.made) do
 			soldForecast = soldForecast + craft.unit * craft.sold
-			soldCost = soldCost + craft.cost / craft.qty * craft.sold
-			done = done + craft.sold + craft.used
-			if craft.hasProcs then
+			if not craft.noCost then
+				soldCost = soldCost + craft.cost / craft.qty * craft.sold
+				-- What was used at its cost made nothing here, so it isn't in the average.
+				done = done + craft.sold + craft.used - craft.usedAtCost
+				costed = costed + craft.qty
+				costedMoney = costedMoney + craft.money
+			end
+			if craft.hasProcs and not craft.noCost then
 				procsDone = procsDone + craft.sold + craft.used
 				procsGain = procsGain + craft.procGain
 			end
@@ -443,15 +487,15 @@ function Ledger.Items(crafts)
 		end
 		-- What sold is what to compare with, once anything has.
 		if priced > 0 then group.unitPrice = madeForecast / priced end
-		if total.expected ~= 0 then group.unitForecast = total.expected / total.items end
+		if total.expected ~= 0 and costed > 0 then group.unitForecast = total.expected / costed end
 		if done > 0 then group.unitProfit = total.earned / done end
 		if procsDone > 0 then group.unitProcs = procsGain / procsDone end
-		group.unitCost = total.cost / total.items
+		if costed > 0 then group.unitCost = total.cost / costed end
 		if listed > 0 then group.days = soldDays / listed end
 		if total.sold > 0 then
 			group.unitSold = total.money / total.sold
 			group.unitPrice = soldForecast / total.sold
-			if total.money > 0 then group.margin = (total.money - soldCost) / total.money end
+			if costedMoney > 0 then group.margin = (costedMoney - soldCost) / costedMoney end
 		end
 		group.made = nil
 	end
@@ -492,9 +536,17 @@ local function kindOf(model)
 	return "public"
 end
 
--- A craft that just finished: the game's result, the model on screen (nil when the
--- panel was hidden, so there's no forecast) and what Results worked out.
-function Ledger.RecordCraft(data, model, result)
+-- The kind of a craft with no model, from how it was started (see Results.lua).
+local function kindStarted(started)
+	if not (started and started.orderID and C_CraftingOrders) then return "craft" end
+	local order = C_CraftingOrders.GetClaimedOrder()
+	return kindOf({ kind = "order", orderType = order and order.orderType })
+end
+
+-- A craft that just finished: the game's result, the model on screen and what
+-- Results worked out. With the panel hidden or on another recipe there's no model:
+-- no forecast and no materials cost, and `started` says what's known of the craft.
+function Ledger.RecordCraft(data, model, result, started)
 	if not saved then return end
 	local t = time()
 	local link = data.hyperlink ~= "" and data.hyperlink or nil
@@ -509,7 +561,7 @@ function Ledger.RecordCraft(data, model, result)
 	if not link then itemID = nil end
 	-- A shaman's imbue or a rogue's poison reports as an enchant, with no recipe open.
 	if not (itemID or model) then return end
-	local kind = kindOf(model)
+	local kind = model and kindOf(model) or kindStarted(started)
 	local qty = math.max(data.quantity or 1, 1)
 	local unit = result and result.unit
 	if not unit and link and kind == "craft" then
@@ -518,13 +570,14 @@ function Ledger.RecordCraft(data, model, result)
 	end
 	local cost = model and (model.realCost or 0) - (result and result.savedValue or 0) or 0
 	local actual = result and result.actual or 0
-	local recipeID = model and model.recipeID or 0
+	local recipeID = model and model.recipeID or (started and started.recipeID) or 0
 	local profession = recipeID > 0 and C_TradeSkillUI.GetProfessionInfoByRecipeID(recipeID)
 	if itemID then saved.items[itemID] = saved.items[itemID] or nameIn(link) end
 
 	append("crafts", t, indexOf(me()), indexOf(profession and profession.professionName), recipeID, itemID or 0,
 		rankOf(link, data.craftingQuality), qty, kind, whole(unit), whole(cost),
-		whole(model and ns.Model.Shown(model)), whole(actual), whole(model and model.total), whole(result and result.bonus))
+		whole(model and ns.Model.Shown(model)), whole(actual), whole(model and model.total), whole(result and result.bonus),
+		model and 0 or 1)
 
 	-- Your own crafts used as materials aren't waiting to sell.
 	local returned = {}
@@ -535,7 +588,9 @@ function Ledger.RecordCraft(data, model, result)
 	for _, material in ipairs(model and model.materials or {}) do
 		if saved.items[material.itemID] then
 			local spent = material.qty - (returned[material.itemID] or 0)
-			if spent > 0 then append("used", t, material.itemID, spent) end
+			-- With Craft myself, this craft's cost counted it at what it costs to make.
+			local atCost = ns.Chains.Active() and ns.Chains.CraftCost(material.itemID) ~= nil
+			if spent > 0 then append("used", t, material.itemID, spent, atCost and 1 or 0) end
 		end
 	end
 	onChange()
@@ -637,30 +692,60 @@ end
 -- Keeping it small
 ---------------------------------------------------------------------------
 
--- Days past KEEP_DAYS become their month's totals; `now` is today's time.
+-- Days past KEEP_DAYS become their month's totals; `now` is today's time. Profit is
+-- what each craft had made by then: its sales go with it, so it's worked out first.
 function Ledger.RollUp(db, now)
 	local oldest = dayOf(now) - KEEP_DAYS
-	for day, records in pairs(db.days) do
+	local due = false
+	for day in pairs(db.days) do
 		if day < oldest then
-			local month = date("%Y-%m", day * DAY)
-			local totals = db.months[month]
-			if not totals then
-				totals = { crafts = 0, items = 0, cost = 0, profit = 0, spent = 0 }
-				db.months[month] = totals
-			end
-			eachLine(records.bought, function(fields)
-				totals.spent = totals.spent + parseBought(db.names, fields).spent
-			end)
-			eachLine(records.crafts, function(fields)
-				local craft = parseCraft(db.names, fields)
-				totals.crafts = totals.crafts + 1
-				totals.items = totals.items + craft.qty
-				totals.cost = totals.cost + craft.cost
-				totals.profit = totals.profit + craft.profit
-			end)
-			db.days[day] = nil
+			due = true
+			break
 		end
 	end
+	if not due then return end
+
+	local function totalsOf(t)
+		local month = date("%Y-%m", t)
+		local totals = db.months[month]
+		if not totals then
+			totals = { crafts = 0, items = 0, cost = 0, profit = 0, spent = 0 }
+			db.months[month] = totals
+		end
+		return totals
+	end
+	local crafts, _, bought = Ledger.Analyze(db)
+	for _, craft in ipairs(crafts) do
+		if dayOf(craft.t) < oldest then
+			local totals = totalsOf(craft.t)
+			totals.crafts = totals.crafts + 1
+			totals.items = totals.items + craft.qty
+			totals.cost = totals.cost + craft.cost
+			totals.profit = totals.profit + whole(craft.earned)
+		end
+	end
+	for _, entry in ipairs(bought) do
+		if dayOf(entry.t) < oldest then
+			local totals = totalsOf(entry.t)
+			totals.spent = totals.spent + entry.spent
+		end
+	end
+	for day in pairs(db.days) do
+		if day < oldest then db.days[day] = nil end
+	end
+end
+
+-- The months past KEEP_DAYS, newest first: { month ("2026-08"), crafts, items, cost,
+-- profit, spent }.
+function Ledger.Months()
+	local records = demo or saved
+	local list = {}
+	for month, totals in pairs(records and records.months or {}) do
+		list[#list + 1] = { month = month, crafts = totals.crafts, items = totals.items, cost = totals.cost,
+			profit = totals.profit, spent = totals.spent }
+	end
+	table.sort(list, function(a, b) return a.month > b.month end)
+	return list
 end
 
 -- Forgets every record, for all your characters. Sales from before stay out: seeded
