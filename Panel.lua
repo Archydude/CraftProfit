@@ -191,15 +191,42 @@ end
 -- The crafting strategy dropdown, on a row of its own with a label.
 local STRATEGY_WIDTH = 140
 local DROPDOWN_HEIGHT = 24
-local strategyDropdown, strategyUsed
+
+-- The panel's dropdowns, by name, made the first time they're needed, and the
+-- ones this drawing shows (the rest are hidden after it).
+local dropdowns, dropdownsUsed = {}, {}
+
+-- A row with `label` on the left and a dropdown at its right end. `make(dropdown)`
+-- sets up a new one: its menu, what it shows and its tooltip.
+local function addDropdownRow(name, label, make)
+	local dropdown = dropdowns[name]
+	if not dropdown then
+		dropdown = CreateFrame("DropdownButton", nil, frame, "WowStyle1DropdownTemplate")
+		dropdown:SetWidth(STRATEGY_WIDTH)
+		dropdown:SetFrameLevel(frame:GetFrameLevel() + 2)
+		make(dropdown)
+		dropdown:HookScript("OnLeave", GameTooltip_Hide)
+		dropdowns[name] = dropdown
+	end
+	local top = -Layout.PAD_TOP - contentHeight
+	local row = addRow(label)
+	row.left:ClearAllPoints()
+	row.left:SetPoint("LEFT", frame, "TOPLEFT", Layout.PAD_SIDE, top - DROPDOWN_HEIGHT / 2)
+	contentHeight = contentHeight - math.max(Layout.LINE_HEIGHT, math.ceil(row.left:GetStringHeight()) + 3)
+		+ DROPDOWN_HEIGHT + 2
+	dropdown:ClearAllPoints()
+	dropdown:SetPoint("RIGHT", frame, "TOPRIGHT", -Layout.PAD_SIDE + 2, top - DROPDOWN_HEIGHT / 2)
+	dropdown:GenerateMenu()
+	dropdown:Show()
+	dropdownsUsed[name] = true
+end
+
+-- The crafting strategy dropdown, on a row of its own with a label.
 local function addStrategyDropdown()
-	if not strategyDropdown then
-		strategyDropdown = CreateFrame("DropdownButton", nil, frame, "WowStyle1DropdownTemplate")
-		strategyDropdown:SetWidth(STRATEGY_WIDTH)
-		strategyDropdown:SetFrameLevel(frame:GetFrameLevel() + 2)
-		if strategyDropdown.SetSelectionTranslator then strategyDropdown:SetSelectionTranslator(ns.StrategyText) end
-		strategyDropdown:SetupMenu(ns.StrategyMenu)
-		strategyDropdown:HookScript("OnEnter", function(self)
+	addDropdownRow("strategy", "Crafting strategy", function(dropdown)
+		if dropdown.SetSelectionTranslator then dropdown:SetSelectionTranslator(ns.StrategyText) end
+		dropdown:SetupMenu(ns.StrategyMenu)
+		dropdown:HookScript("OnEnter", function(self)
 			local strategy = ns.Strategy()
 			GameTooltip:SetOwner(self, "ANCHOR_LEFT")
 			GameTooltip:SetText("Crafting strategy")
@@ -210,19 +237,35 @@ local function addStrategyDropdown()
 				0.53, 0.53, 0.53, true)
 			GameTooltip:Show()
 		end)
-		strategyDropdown:HookScript("OnLeave", GameTooltip_Hide)
+	end)
+end
+
+-- On a crafting order: Order materials, and with a minimum quality, Reach the
+-- minimum with. The same choices as under the Patron tab's list.
+local function addOrderChoices(model)
+	local function choiceRow(name, label, key, title, choices)
+		addDropdownRow(name, label, function(dropdown)
+			if dropdown.SetSelectionTranslator then dropdown:SetSelectionTranslator(ns.ChoiceText(choices)) end
+			dropdown:SetupMenu(ns.ChoiceMenu(key, title, choices))
+			dropdown:HookScript("OnEnter", function(self)
+				GameTooltip:SetOwner(self, "ANCHOR_LEFT")
+				GameTooltip:SetText(title)
+				for _, choice in ipairs(choices) do
+					GameTooltip:AddLine(" ")
+					GameTooltip:AddLine(ns.ChoiceName(choice), 1, 0.82, 0)
+					GameTooltip:AddLine(choice[3], 1, 1, 1, true)
+				end
+				GameTooltip:AddLine(" ")
+				GameTooltip:AddLine("For every crafting order. Also under the Patron tab's list and in the options.",
+					0.53, 0.53, 0.53, true)
+				GameTooltip:Show()
+			end)
+		end)
 	end
-	local top = -Layout.PAD_TOP - contentHeight
-	local row = addRow("Crafting strategy")
-	row.left:ClearAllPoints()
-	row.left:SetPoint("LEFT", frame, "TOPLEFT", Layout.PAD_SIDE, top - DROPDOWN_HEIGHT / 2)
-	contentHeight = contentHeight - math.max(Layout.LINE_HEIGHT, math.ceil(row.left:GetStringHeight()) + 3)
-		+ DROPDOWN_HEIGHT + 2
-	strategyDropdown:ClearAllPoints()
-	strategyDropdown:SetPoint("RIGHT", frame, "TOPRIGHT", -Layout.PAD_SIDE + 2, top - DROPDOWN_HEIGHT / 2)
-	strategyDropdown:GenerateMenu()
-	strategyDropdown:Show()
-	strategyUsed = true
+	choiceRow("orderMaterials", "Materials", "patronMaterials", ns.PATRON_MATERIALS_TITLE, ns.PATRON_MATERIALS_CHOICES)
+	if (model.minQuality or 0) > 1 then
+		choiceRow("orderReach", "Reach with", "patronReach", ns.PATRON_REACH_TITLE, ns.PATRON_REACH_CHOICES)
+	end
 end
 
 local function addGap()
@@ -749,6 +792,11 @@ local function drawOrder(model)
 	drawIncome(model)
 
 	drawMaterials(model)
+	-- Right above the blue row, which follows them: the order's own choices.
+	if #model.materials > 0 and not model.isRecraft then
+		addGap()
+		addOrderChoices(model)
+	end
 	drawBest(model)
 	if #model.materials == 0 then
 		addGap()
@@ -838,7 +886,8 @@ function Panel.Render()
 		return
 	end
 	rowCount, dividerCount, contentHeight, profitRow, procRow = 0, 0, 0, nil, nil
-	rowButtonUsed, strategyUsed = false, false
+	rowButtonUsed = false
+	wipe(dropdownsUsed)
 	-- Before the rows, which leave room for it.
 	ns.BestCraftsList.UpdateTab()
 
@@ -856,7 +905,9 @@ function Panel.Render()
 	end
 	for i = dividerCount + 1, #dividers do dividers[i]:Hide() end
 	if rowButton and not rowButtonUsed then rowButton:Hide() end
-	if strategyDropdown and not strategyUsed then strategyDropdown:Hide() end
+	for name, dropdown in pairs(dropdowns) do
+		if not dropdownsUsed[name] then dropdown:Hide() end
+	end
 	if model then
 		frame:SetHeight(Layout.PAD_TOP + contentHeight + Layout.PAD_BOTTOM)
 		frame:Show()

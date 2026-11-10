@@ -121,9 +121,10 @@ ns.CONCENTRATION_CHOICES = {
 	{ "none", "Don't use concentration" },
 }
 
--- Patron orders' own choices: which material qualities they use, and how they
--- reach their minimum quality. { key, label, tooltip }.
-ns.PATRON_MATERIALS_TITLE = "Patron materials"
+-- Crafting orders' own choices (every order, the Patron tab's included): which
+-- material qualities they use, and how they reach their minimum quality.
+-- { key, label, tooltip }.
+ns.PATRON_MATERIALS_TITLE = "Order materials"
 ns.PATRON_MATERIALS_CHOICES = {
 	{ "cheapest", "Cheapest (default)", "The cheapest qualities that reach the order's minimum quality, whether you own " ..
 		"them or buy them." },
@@ -137,6 +138,36 @@ ns.PATRON_REACH_CHOICES = {
 	{ "concentration", "Concentration", "Concentration with lower-rank materials first; better materials only when " ..
 		"you're out of concentration, or Spend concentration on is set to Don't use concentration." },
 }
+
+-- A choice's name without "(default)".
+function ns.ChoiceName(choice)
+	return (choice[2]:gsub(" %(default%)$", ""))
+end
+
+-- A dropdown menu for one of those settings: a radio for each choice, with its
+-- explanation as its tooltip. Picking one changes it everywhere it shows.
+function ns.ChoiceMenu(key, title, choices)
+	return function(_, root)
+		root:CreateTitle(title)
+		for _, choice in ipairs(choices) do
+			local radio = root:CreateRadio(choice[2], function(value) return ns.db[key] == value end,
+				function(value) ns.Options.Set(key, value) end, choice[1])
+			radio:SetTooltip(function(tooltip)
+				GameTooltip_SetTitle(tooltip, choice[2])
+				tooltip:AddLine(choice[3], 1, 1, 1, true)
+			end)
+		end
+	end
+end
+
+-- What such a dropdown shows for its choice: the name, after `prefix` if given.
+function ns.ChoiceText(choices, prefix)
+	return function(selection)
+		for _, choice in ipairs(choices) do
+			if choice[1] == selection.data then return (prefix or "") .. ns.ChoiceName(choice) end
+		end
+	end
+end
 
 -- Crafting strategies: which rank and materials the crafting page and the Best
 -- crafts list craft. key, name, short name, and what it does. WoW Forever has no

@@ -1237,39 +1237,21 @@ local function drawButtons()
 	drawNextButton()
 end
 
--- The footer's dropdowns for Patron materials and Reach the minimum with. Each
+-- The footer's dropdowns for Order materials and Reach the minimum with. Each
 -- shows its choice after a short label ("Materials: Cheapest").
 local FOOTER_CHOICES = {
 	{ key = "patronMaterials", label = "Materials", title = ns.PATRON_MATERIALS_TITLE, choices = ns.PATRON_MATERIALS_CHOICES },
 	{ key = "patronReach", label = "Reach", title = ns.PATRON_REACH_TITLE, choices = ns.PATRON_REACH_CHOICES },
 }
 local FOOTER_GAP = 6 -- between the dropdowns, and to Next order
-
--- A choice's name without "(default)".
-local function choiceName(choice)
-	return (choice[2]:gsub(" %(default%)$", ""))
-end
+local choiceName = ns.ChoiceName
 
 local function createChoiceDropdown(setting)
 	local dropdown = CreateFrame("DropdownButton", nil, footer, "WowStyle1DropdownTemplate")
 	if dropdown.SetSelectionTranslator then
-		dropdown:SetSelectionTranslator(function(selection)
-			for _, choice in ipairs(setting.choices) do
-				if choice[1] == selection.data then return setting.label .. ": " .. choiceName(choice) end
-			end
-		end)
+		dropdown:SetSelectionTranslator(ns.ChoiceText(setting.choices, setting.label .. ": "))
 	end
-	dropdown:SetupMenu(function(_, root)
-		root:CreateTitle(setting.title)
-		for _, choice in ipairs(setting.choices) do
-			local radio = root:CreateRadio(choice[2], function(value) return ns.db[setting.key] == value end,
-				function(value) ns.Options.Set(setting.key, value) end, choice[1])
-			radio:SetTooltip(function(tooltip)
-				GameTooltip_SetTitle(tooltip, choice[2])
-				tooltip:AddLine(choice[3], 1, 1, 1, true)
-			end)
-		end
-	end)
+	dropdown:SetupMenu(ns.ChoiceMenu(setting.key, setting.title, setting.choices))
 	-- As wide as its longest choice, so it doesn't jump when you switch.
 	local width = 0
 	for _, choice in ipairs(setting.choices) do

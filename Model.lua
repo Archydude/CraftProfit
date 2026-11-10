@@ -619,6 +619,8 @@ function Model.Order(ctx)
 		commission = order.tipAmount,
 		consortiumCut = order.consortiumCut,
 		receive = order.tipAmount - order.consortiumCut,
+		minQuality = order.minQuality,
+		isRecraft = order.isRecraft,
 		canSimulate = canSimulate,
 		simulating = simulating,
 		notes = notes,

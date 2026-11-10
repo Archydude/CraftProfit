@@ -243,23 +243,27 @@ function Options.Create()
 
 	if quality then
 		startPage("Patron orders")
-		checkbox("patronList", "Show on the Patron tab",
-			"The Patron tab's order list shows each order's profit or loss, its rewards and what materials you're " ..
-			"missing, with buttons to shop for it and to start, craft and complete it. Buttons above the list shop for the profitable " ..
-			"orders or all of them; under it, the concentration they use and the session total.\n\n" ..
-			"Off: Blizzard's own columns (Patron Name, Commission, Reagents).")
-		-- Patron orders' own choices, separate from the crafting strategy.
+		-- Every crafting order's own choices, separate from the crafting strategy.
+		header("Crafting orders")
 		for _, setting in ipairs({
 			{ "patronMaterials", ns.PATRON_MATERIALS_TITLE, ns.PATRON_MATERIALS_CHOICES,
-				"Which material qualities patron orders use, for their profit, Ready and what's missing, the shopping " ..
-				"list and their craft button. The crafting page keeps the crafting strategy." },
+				"Which material qualities crafting orders use (patron, public, guild and personal), for their profit, " ..
+				"Ready and what's missing, the shopping list and the Patron tab's craft button. The crafting page " ..
+				"keeps the crafting strategy." },
 			{ "patronReach", ns.PATRON_REACH_TITLE, ns.PATRON_REACH_CHOICES,
 				"How an order with a minimum quality gets there, when both better materials and concentration would." },
 		}) do
 			local tip = setting[4] .. "\n\n"
 			for _, choice in ipairs(setting[3]) do tip = tip .. choice[2] .. ": " .. choice[3] .. "\n\n" end
-			dropdown(setting[1], setting[2], setting[3], tip .. "Also a dropdown at the bottom of the Patron tab.")
+			dropdown(setting[1], setting[2], setting[3], tip .. "Also on the panel of an open order, and under the " ..
+				"Patron tab's list.")
 		end
+		header("Patron tab")
+		checkbox("patronList", "Show on the Patron tab",
+			"The Patron tab's order list shows each order's profit or loss, its rewards and what materials you're " ..
+			"missing, with buttons to shop for it and to start, craft and complete it. Buttons above the list shop for the profitable " ..
+			"orders or all of them; under it, the concentration they use and the session total.\n\n" ..
+			"Off: Blizzard's own columns (Patron Name, Commission, Reagents).")
 		dropdown("concentrationFor", "Spend concentration on", ns.CONCENTRATION_CHOICES,
 			"On the Patron tab, orders that only reach their minimum quality with concentration share what " ..
 			"you have. They get it in this order until it runs out; the rest show their profit in grey and \"No concentration\".\n\n" ..
