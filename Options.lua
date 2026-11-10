@@ -125,9 +125,11 @@ function Options.Create()
 		{ "auctionator", "Auctionator only" },
 	}, "Where prices come from. Automatic uses TSM and falls back to Auctionator for items TSM has no price for.")
 	dropdown("matSource", "TSM price for materials", ns.TSM_SOURCES,
-		"What you'd pay for materials. Market value smooths out spikes; lowest auction is what you'd pay right now.")
+		"What you'd pay for materials. Market value smooths out spikes; lowest auction is what you'd pay right now. " ..
+		"The lower of the two can show materials cheaper than you can buy them right now.")
 	dropdown("saleSource", "TSM price for crafted items", ns.TSM_SOURCES,
-		"What you'd get for the item you craft.")
+		"What you'd get for the item you craft. The lower of market value and the lowest auction is the careful " ..
+		"choice: you'd have to match a cheaper auction to sell now, and high listings that aren't selling don't count.")
 	checkbox("scanReminder", "Remind me of old prices",
 		"With prices from Auctionator: when its last scan is over a day old, a chat line reminds you when you open " ..
 		"the auction house, and when it's over 3 days old, a notice over the Best crafts list when you open it (once a " ..

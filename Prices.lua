@@ -268,12 +268,12 @@ end
 -- this, see Reminder.FooterText).
 function Prices.SourceLabel()
 	if tsmAvailable() then
-		return "TSM (" .. ns.db.matSource .. ")" .. (ns.SavedPrices.Saving() and ", saving for alts..." or "")
+		return "TSM (" .. ns.TSMSourceText(ns.db.matSource) .. ")" .. (ns.SavedPrices.Saving() and ", saving for alts..." or "")
 	end
 	local age, name, source
 	if savedPrices() then age, name, source = ns.SavedPrices.Age() end
 	if age then
-		local label = string.format("%s's TSM (%s)", name, source)
+		local label = string.format("%s's TSM (%s)", name, ns.TSMSourceText(source))
 		if age < ns.Reminder.OLD_DAYS then label = label .. ", saved " .. Prices.AgeText(age) end
 		return label
 	end

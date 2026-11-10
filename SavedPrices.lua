@@ -323,7 +323,7 @@ local function onItem(tooltip, data)
 	local whose = ns.Color(age >= ns.Reminder.OLD_DAYS and "warning" or "muted",
 		format("(%s, %s)", name, ns.Prices.AgeText(age)))
 	-- Down to the copper, like the other prices on item tooltips.
-	tooltip:AddDoubleLine(format("TSM %s %s", priceType, whose), GetMoneyString(math.floor(price + 0.5), true),
+	tooltip:AddDoubleLine(format("TSM %s %s", ns.TSMSourceText(priceType), whose), GetMoneyString(math.floor(price + 0.5), true),
 		1, 0.82, 0, 1, 1, 1)
 end
 

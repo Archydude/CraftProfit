@@ -245,10 +245,21 @@ for _, class in ipairs({ "Consumable", "Gem", "Reagent", "Tradegoods", "ItemEnha
 	if classID then ns.CRAFTING_CLASSES[classID] = true end
 end
 
+-- The lower of market value and the lowest auction, as a TSM price.
+ns.TSM_LOWER = "min(dbmarket, dbminbuyout)"
+
 -- TSM price types offered in the options.
 ns.TSM_SOURCES = {
 	{ "dbmarket", "Market value (recommended)" },
 	{ "dbminbuyout", "Lowest auction right now" },
+	{ ns.TSM_LOWER, "Lower of market and lowest" }, -- short: the closed dropdown cuts long names
 	{ "dbhistorical", "Historical price" },
 	{ "dbregionmarketavg", "Region market average" },
 }
+
+-- A TSM price as footers and tooltips name it: its own name, shorter for the
+-- lower of two.
+function ns.TSMSourceText(source)
+	if source == ns.TSM_LOWER then return "lower of dbmarket, dbminbuyout" end
+	return source
+end

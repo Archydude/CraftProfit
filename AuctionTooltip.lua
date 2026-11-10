@@ -13,6 +13,7 @@ local DURATIONS = ns.QUALITY_CRAFTING and { "12h", "24h", "48h" } or { "2h", "8h
 local TSM_NAMES = {
 	dbmarket = "Market Value",
 	dbminbuyout = "Lowest Auction",
+	[ns.TSM_LOWER] = "Lower of Market and Lowest",
 	dbhistorical = "Historical Price",
 	dbregionmarketavg = "Region Market Average",
 }

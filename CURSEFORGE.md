@@ -72,11 +72,11 @@ One click adds what you're missing to an **Auctionator** shopping list or a **TS
 
 ## B. Upload File form
 
-**File:** `dist\CraftProfit-3.9.1.zip`
+**File:** `dist\CraftProfit-3.10.0.zip`
 
 **Display name**
 ```
-Craft Profit 3.9.1
+Craft Profit 3.10.0
 ```
 
 **Release type:** `Release`
@@ -85,6 +85,9 @@ Craft Profit 3.9.1
 
 **Changelog** (paste only the newest part; paste older parts too if they never went up)
 ```markdown
+3.10.0
+- **Lower of market and lowest:** a new choice for the TSM prices of materials and crafted items. It takes TSM's market value or the lowest auction, whichever is lower. For crafted items it's the careful choice: to sell now you'd have to match a cheaper auction, and high listings that aren't selling don't count. For materials it can show them cheaper than you can buy them right now.
+
 3.9.1
 - Fixed: hovering some items could show the error "bad argument #1 to 'DoesItemExist'".
 

@@ -275,7 +275,7 @@ Click the gear on the panel (or Craft Profit options in the gear menu under the 
 | Count procs in profits | On by default. The Best crafts list ranks by what crafts make on average with procs. Also in the Best crafts list's Filter menu. Not on WoW Forever. |
 | Show minimap button | On by default. Also `/craftprofit minimap`. |
 | Price addon | Automatic (TSM first, then Auctionator for anything TSM has no price for), TSM only, or Auctionator only. |
-| TSM price for materials / crafted items | Market value (default), lowest auction right now, historical price or region market average. |
+| TSM price for materials / crafted items | Market value (default), lowest auction right now, the lower of those two, historical price or region market average. The lower of the two is the careful choice for crafted items: you'd have to match a cheaper auction to sell now. For materials it can show them cheaper than you can buy them right now. |
 | Remind me of old prices | On by default. With Auctionator prices: a chat reminder at the auction house after a day, and a notice over the Best crafts list after 3 days. With TSM prices saved for alts: the same, to log in on a character with TSM. |
 | Buy vendor items on the auction house | Off by default: materials a vendor sells (thread, flux, vials...) are priced at the vendor, and the shopping list says in chat to buy them there. On: they're priced at their auction house price and go on the shopping list; when the auction house asks more than a vendor, the tooltips of what's missing (the Shopping list button, a material's cart, a Best crafts row) show both prices, and chat says so when the shopping list gets it. |
 | Subtract auction house cut (5%) | On by default. |

@@ -1,5 +1,8 @@
 # Changelog
 
+## 3.10.0
+- **Lower of market and lowest:** a new choice for the TSM prices of materials and crafted items. It takes TSM's market value or the lowest auction, whichever is lower. For crafted items it's the careful choice: to sell now you'd have to match a cheaper auction, and high listings that aren't selling don't count. For materials it can show them cheaper than you can buy them right now.
+
 ## 3.9.1
 - Fixed: hovering some items could show the error "bad argument #1 to 'DoesItemExist'".
 

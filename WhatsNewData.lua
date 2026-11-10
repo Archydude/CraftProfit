@@ -2,10 +2,13 @@
 ArchdudeWhatsNew:Register("CraftProfit", {
 	title = "Craft Profit",
 	icon = "Interface\\Icons\\INV_Hammer_20",
-	version = "3.9.1",
+	version = "3.10.0",
 	seen = "CraftProfitWhatsNew",
 	saved = { "CraftProfitDB", "CraftProfitCharDB" },
 	changes = {
+		{ "3.10.0",
+			"|cffffd100Lower of market and lowest:|r a new choice for the TSM prices of materials and crafted items. It takes TSM's market value or the lowest auction, whichever is lower. For crafted items it's the careful choice: to sell now you'd have to match a cheaper auction, and high listings that aren't selling don't count. For materials it can show them cheaper than you can buy them right now.",
+		},
 		{ "3.9.1",
 			"Fixed: hovering some items could show the error \"bad argument #1 to 'DoesItemExist'\".",
 		},
@@ -53,10 +56,6 @@ ArchdudeWhatsNew:Register("CraftProfit", {
 		},
 		{ "3.3.1",
 			"On WoW Forever, the Ledger no longer shows craft types or procs, which Forever doesn't have: no type filter, By type section, Type or Procs columns. Forecast and Off by stay, so you still see whether you got the price the panel predicted.",
-		},
-		{ "3.3.0",
-			"|cffffd100Sale rate on WoW Forever:|r with TSM, Best crafts shows how much of each item's auctions sell, in place of Sells/day and Listed (both still in each row's tooltip). Forever's region is one server, so it's your own market. Click the header to sort by it.",
-			"Fixed: on WoW Forever, clicking a recipe in Best crafts didn't open it.",
 		},
 	},
 })
