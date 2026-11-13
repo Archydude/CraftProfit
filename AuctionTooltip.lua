@@ -107,7 +107,10 @@ local function onItem(tooltip, data)
 
 	tooltip:AddLine(" ")
 	if vendorBuy then tooltip:AddDoubleLine("Vendor Buy", money(vendorBuy), 1, 0.82, 0, 1, 1, 1) end
-	if vendorSell then tooltip:AddDoubleLine("Vendor Sell", money(vendorSell), 1, 0.82, 0, 1, 1, 1) end
+	if vendorSell then
+		tooltip:AddDoubleLine("Vendor Sell", money(vendorSell), 1, 0.82, 0, 1, 1, 1)
+		if qty > 1 then tooltip:AddDoubleLine("  For" .. stack, money(vendorSell * qty), 0.53, 0.53, 0.53, 1, 1, 1) end
+	end
 	if price then
 		tooltip:AddDoubleLine(sourceName(from), money(price), 1, 0.82, 0, 1, 1, 1)
 		if qty > 1 then tooltip:AddDoubleLine("  For" .. stack, money(price * qty), 0.53, 0.53, 0.53, 1, 1, 1) end

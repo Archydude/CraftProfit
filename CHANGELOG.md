@@ -1,5 +1,8 @@
 # Changelog
 
+## 3.11.3
+- **Vendor Sell** on item tooltips also shows what a vendor pays for the whole stack in your bags.
+
 ## 3.11.2
 - Fixed: hovering a recipe at a vendor showed the TSM price and sale rate of the item it makes, not of the recipe.
 
