@@ -72,11 +72,11 @@ One click adds what you're missing to an **Auctionator** shopping list or a **TS
 
 ## B. Upload File form
 
-**File:** `dist\CraftProfit-3.11.1.zip`
+**File:** `dist\CraftProfit-3.11.2.zip`
 
 **Display name**
 ```
-Craft Profit 3.11.1
+Craft Profit 3.11.2
 ```
 
 **Release type:** `Release`
@@ -85,6 +85,9 @@ Craft Profit 3.11.1
 
 **Changelog** (paste only the newest part; paste older parts too if they never went up)
 ```markdown
+3.11.2
+- Fixed: hovering a recipe at a vendor showed the TSM price and sale rate of the item it makes, not of the recipe.
+
 3.11.1
 - Fixed an error when opening the options during combat ("tried to call the protected function 'OpenSettingsPanel()'"). The options now open as soon as the fight ends.
 

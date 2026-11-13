@@ -2,10 +2,13 @@
 ArchdudeWhatsNew:Register("CraftProfit", {
 	title = "Craft Profit",
 	icon = "Interface\\Icons\\INV_Hammer_20",
-	version = "3.11.1",
+	version = "3.11.2",
 	seen = "CraftProfitWhatsNew",
 	saved = { "CraftProfitDB", "CraftProfitCharDB" },
 	changes = {
+		{ "3.11.2",
+			"Fixed: hovering a recipe at a vendor showed the TSM price and sale rate of the item it makes, not of the recipe.",
+		},
 		{ "3.11.1",
 			"Fixed an error when opening the options during combat (\"tried to call the protected function 'OpenSettingsPanel()'\"). The options now open as soon as the fight ends.",
 		},
@@ -50,12 +53,6 @@ ArchdudeWhatsNew:Register("CraftProfit", {
 		{ "3.5.0",
 			"|cffffd100Chance column on WoW Forever:|r Best crafts shows the chance a craft gives a skill-up at your skill, in the recipe's color. Click its header to put the surest skill-ups first.",
 			"|cffffd100Per skill-up says Free|r for recipes that make gold, instead of a gain that grew the less often a recipe gave a skill-up. That made a profitable green recipe look like the best way to level. Free recipes sort first, surest skill-up first, then the rest from the cheapest.",
-		},
-		{ "3.4.0",
-			"|cffffd100Next order on the Patron tab:|r a button under the list does the next step of the most profitable order you have everything for: start it, craft it, complete it, one click per step. Once the profitable orders are done, it goes on to the ones that lose gold, smallest loss first, for their rewards; turn off |cffffd100Next order: include orders that lose gold|r (gear menu or options) to stop after the profitable ones.",
-			"|cffffd100Patron orders share your materials:|r what you own counts once down the list, most profitable order first, so two orders that need the same materials no longer both say Ready on one stack. The one that comes up short shows what it's missing.",
-			"|cffffd100Pick Best crafts' columns:|r right-click any column header, or open |cffffd100Filter → Columns|r, and choose which columns show.",
-			"|cffffd100Per point column in Best crafts|r (off by default, Retail): what each concentration point earns with a recipe, to see where your concentration is worth the most.",
 		},
 	},
 })

@@ -298,6 +298,8 @@ local function onItem(tooltip, data)
 	if type(itemID) ~= "number" or (issecretvalue and issecretvalue(itemID)) then return end
 	local _, link = TooltipUtil.GetDisplayedItem(tooltip)
 	if link and issecretvalue and issecretvalue(link) then link = nil end
+	-- A recipe on a vendor can hand back the link of the item it makes.
+	if link and C_Item.GetItemInfoInstant(link) ~= itemID then link = nil end
 
 	local price, source, priceType
 	local key = SavedPrices.SaleKey(link, itemID)

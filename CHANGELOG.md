@@ -1,5 +1,8 @@
 # Changelog
 
+## 3.11.2
+- Fixed: hovering a recipe at a vendor showed the TSM price and sale rate of the item it makes, not of the recipe.
+
 ## 3.11.1
 - Fixed an error when opening the options during combat ("tried to call the protected function 'OpenSettingsPanel()'"). The options now open as soon as the fight ends.
 

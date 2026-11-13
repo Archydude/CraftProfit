@@ -85,6 +85,9 @@ local function onItem(tooltip, data)
 	local postable = not unsellable(itemID, location)
 	local _, link = TooltipUtil.GetDisplayedItem(tooltip)
 	if link and issecretvalue and issecretvalue(link) then link = nil end
+	-- A recipe's tooltip also shows the item it makes, and on a vendor the game can
+	-- hand back that item's link instead of the recipe's: price the recipe itself.
+	if link and C_Item.GetItemInfoInstant(link) ~= itemID then link = nil end
 	local qty = location and C_Item.GetStackCount(location) or 1
 	local stack = qty > 1 and format(" (x%d)", qty) or ""
 
