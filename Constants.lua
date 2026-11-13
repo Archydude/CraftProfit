@@ -3,6 +3,8 @@ local _, ns = ...
 
 -- The auction house keeps 5% of every sale.
 ns.AH_CUT = 0.05
+-- The item every caged battle pet is, on the auction house and in your bags.
+ns.PET_CAGE_ITEM = 82800
 
 -- Whether this game has Dragonflight's crafting: material and item qualities
 -- (ranks), multicraft, resourcefulness and concentration. Retail does; WoW
@@ -52,7 +54,7 @@ ns.DEFAULTS = {
 	locked = false,
 	scale = 1,
 	precision = "silver", -- smallest coin shown: "copper" | "silver" | "gold"
-	provider = "auto",    -- "auto" | "tsm" | "auctionator"
+	provider = "auto",    -- "auto" | "tsm" | "auctionator" | "own" (Craft Profit's scan, see Prices.lua)
 	matSource = "dbmarket",
 	saleSource = "dbmarket",
 	vendorOnAH = false,   -- materials vendors sell are bought on the auction house, not at a vendor
@@ -63,10 +65,13 @@ ns.DEFAULTS = {
 	procSound = true,     -- coin sound on procs
 	showSession = true,   -- show the total of this session's crafts
 	shoppingButton = true, -- the Shopping list button, and the shopping buttons on the Patron tab
-	listAddon = "auctionator", -- with both installed, materials go to: "auctionator" | "tsm"
-	listPerCharacter = true,   -- a separate Auctionator list for each character
+	listAddon = "auctionator", -- materials go to: "auctionator" | "tsm" | "own" (see Shopping.ListTarget)
+	listPerCharacter = true,   -- a separate shopping list for each character
 	listPerProfession = true,  -- and/or for each profession
-	checkOff = true,           -- take materials off the Auctionator list as you get them
+	checkOff = true,           -- take materials off the shopping list as you get them
+	auctionWindow = true,      -- Craft Profit's window opens by itself at the auction house (see ShoppingList.lua)
+	auctionTab = "sell",       -- the tab it was last on: "shop" | "sell" | "auctions"
+	sellDuration = 2,          -- how long auctions posted from the Sell tab last, by the game's number for it
 	patronList = true,    -- Craft Profit's columns, buttons and footer on the Patron tab's order list
 	patronSort = false,   -- the Patron tab sorted by profit: "desc" | "asc", or false for Blizzard's sort
 	concentrationFor = "profit", -- patron orders that need concentration get it by: "profit" | "knowledge", or "none" of it
@@ -76,7 +81,8 @@ ns.DEFAULTS = {
 	nextLosing = true,    -- the Patron tab's Next order button goes on to orders that lose gold
 	bestMaterials = false, -- "Use Craft Profit Reagents" on the order form and crafting page: put them in every order or recipe you open
 	craftStrategy = ns.QUALITY_CRAFTING and "highest" or "buy", -- what the crafting page and Best crafts list craft (see ns.STRATEGIES)
-	scanReminder = true,  -- remind you to scan the auction house when Auctionator's prices are old
+	scanReminder = true,  -- remind you to scan the auction house when Auctionator's or Craft Profit's prices are old
+	autoScan = true,      -- Craft Profit's own price scan starts by itself at the auction house (see PriceScan.lua)
 	minimap = true,       -- the minimap button (its position is in minimapIcon, kept by LibDBIcon)
 	countProcs = true,    -- multicraft and resourcefulness count in the Best crafts list
 	rankTooltip = true,   -- best rank you can craft, on crafted items' tooltips
@@ -218,14 +224,16 @@ function ns.StrategyText(selection)
 	end
 end
 
--- Choices for where missing materials go when Auctionator and TSM are both installed.
+-- Choices for where missing materials go: Auctionator's list, a TSM search, or
+-- Craft Profit's own list.
 ns.LIST_ADDON_CHOICES = {
 	{ "auctionator", "Auctionator shopping list" },
 	{ "tsm", "TSM search to copy" },
+	{ "own", "Craft Profit shopping list" },
 }
 
--- The Auctionator shopping list the missing materials button adds to, when the
--- list isn't named after the character or profession.
+-- The shopping list the missing materials button adds to, when the list isn't
+-- named after the character or profession.
 ns.SHOPPING_LIST = "Crafting"
 
 -- Which items' TSM prices are saved for your alts: key, name, and what it saves.

@@ -50,6 +50,13 @@ function Format.Item(itemID, qty)
 	return format("%dx %s%s%s", qty, icon(C_Item.GetItemIconByID(itemID)), name, quality and (" " .. quality) or "")
 end
 
+-- As Format.Item, for anything that can be auctioned: a caged battle pet goes by
+-- its link, since its item is only the cage.
+function Format.Sellable(itemID, link, qty)
+	if itemID == ns.PET_CAGE_ITEM and link then return format("%dx %s", qty, link) end
+	return Format.Item(itemID, qty)
+end
+
 -- "30x [icon] Artisan's Moxie".
 function Format.Currency(currencyInfo, qty)
 	return format("%dx %s%s", qty, icon(currencyInfo.iconFileID), currencyInfo.name or "?")

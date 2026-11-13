@@ -370,8 +370,8 @@ local function shoppingTooltip(model, target)
 end
 
 -- The button for the shopping list or the TSM search. It shows even when one
--- craft is covered, since its menu buys for several. Hidden with nothing to send
--- the materials to.
+-- craft is covered, since its menu buys for several. Hidden when shopping is
+-- turned off in the options.
 local function drawShoppingButton(model)
 	if not model.shoppable then return end
 	local target = ns.Shopping.ListTarget()
@@ -379,10 +379,10 @@ local function drawShoppingButton(model)
 	local missing = ns.Shopping.Total(model.missing)
 	addGap()
 	local text
-	if target == "auctionator" then
-		text = missing > 0 and format("Shopping list (%d missing)", missing) or "Shopping list"
-	else
+	if target == "tsm" then
 		text = missing > 0 and format("Copy TSM search (%d missing)", missing) or "Copy TSM search"
+	else
+		text = missing > 0 and format("Shopping list (%d missing)", missing) or "Shopping list"
 	end
 	local onClick = function(_, button)
 		ns.Shopping.Click(model, button, IsShiftKeyDown(), IsControlKeyDown())
@@ -431,7 +431,7 @@ local function drawMaterials(model)
 	local shownCheaper = {}
 	for _, material in ipairs(model.materials) do
 		local cart = materialCart(model, material)
-		-- Short of it, with nowhere to send it (no Auctionator or TSM): the word instead.
+		-- Short of it, with shopping turned off in the options: the word instead.
 		local tag = (material.simulated and ("  " .. Color("simulated", "simulated")))
 			or (not cart and missingOf(model, material) > 0 and ("  " .. Color("missing", "missing")))
 			or ""

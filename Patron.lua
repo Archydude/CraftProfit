@@ -196,7 +196,7 @@ local added = {}
 
 local function remember(rows)
 	-- A TSM search adds nothing to the list, so there's nothing to take back off.
-	if ns.Shopping.ListTarget() ~= "auctionator" then return end
+	if not ns.Shopping.CanClear() then return end
 	for _, row in ipairs(rows) do
 		local list = added[row.order.orderID] or {}
 		for _, material in ipairs(row.model.missing) do
@@ -1097,7 +1097,7 @@ local function profitableTooltip(self)
 		"Adds what you're missing for every order") .. " that makes a profit and whose minimum quality you can reach, at the cheapest qualities that "
 		.. "reach it. Orders left without enough concentration are skipped.", 1, 1, 1, true)
 	if not usingTSM() then
-		GameTooltip:AddLine(format("Goes to Auctionator's \"%s\" shopping list.", ns.Shopping.ListName()), 0.53, 0.53, 0.53, true)
+		GameTooltip:AddLine(format("Goes to %s.", ns.Shopping.ListPhrase()), 0.53, 0.53, 0.53, true)
 	end
 	GameTooltip:AddLine(" ")
 	GameTooltip:AddLine(format("%s: %s", ordersText(#rows),
@@ -1113,7 +1113,7 @@ local function allTooltip(self)
 	GameTooltip:AddLine((usingTSM() and "Adds to the TSM search every order" or
 		"Adds what you're missing for every order") .. " whose minimum quality you can reach.", 1, 1, 1, true)
 	if not usingTSM() then
-		GameTooltip:AddLine(format("Goes to Auctionator's \"%s\" shopping list.", ns.Shopping.ListName()), 0.53, 0.53, 0.53, true)
+		GameTooltip:AddLine(format("Goes to %s.", ns.Shopping.ListPhrase()), 0.53, 0.53, 0.53, true)
 	end
 	GameTooltip:AddLine(" ")
 	GameTooltip:AddLine(format("%s: %s", ordersText(#reachable),
@@ -1313,6 +1313,7 @@ local function openGearMenu(owner)
 		ns.Shopping.AddShopWithChoice(root)
 		if ns.Shopping.CanClear() then
 			root:CreateDivider()
+			if ns.Shopping.ListTarget() == "own" then root:CreateButton("Show shopping list", ns.ShoppingList.Show) end
 			root:CreateButton("Clear shopping list", function() ns.Shopping.Clear() end)
 		elseif usingTSM() and #tsmSearchRows() > 0 then
 			root:CreateDivider()

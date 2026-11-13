@@ -34,6 +34,12 @@ Skillups.lua
 AuctionTooltip.lua
 Simulation.lua
 Shopping.lua
+ShoppingList.lua
+AuctionSearch.lua
+PriceScan.lua
+PricesTab.lua
+Sell.lua
+Auctions.lua
 Model.lua
 Panel.lua
 Best.lua

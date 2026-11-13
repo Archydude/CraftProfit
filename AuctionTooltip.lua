@@ -71,6 +71,7 @@ end
 -- What the price line calls the price: "TSM Market Value" or "Auctionator".
 local function sourceName(from)
 	if from == "auctionator" then return "Auctionator" end
+	if from == "own" then return "Craft Profit scan" end
 	return "TSM " .. (TSM_NAMES[ns.db.saleSource] or ns.db.saleSource)
 end
 

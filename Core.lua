@@ -37,7 +37,9 @@ local function loadSettings()
 	end
 	db.session = db.session or { total = 0, crafts = 0 }
 	db.tsmOrders = db.tsmOrders or {} -- the Patron tab's running TSM search (see Patron.lua)
-	db.listItems = db.listItems or {} -- what Craft Profit put on each shopping list (see Shopping.lua)
+	db.listItems = db.listItems or {} -- what Craft Profit put on each Auctionator shopping list (see Shopping.lua)
+	db.ownLists = db.ownLists or {} -- Craft Profit's own shopping lists (see Shopping.lua)
+	db.sellHidden = db.sellHidden or {} -- items you hid from the Sell tab's list: itemID -> true (see Sell.lua)
 	db.bestHidden = db.bestHidden or {} -- kinds of item the Best crafts list hides: group key -> true
 	-- Best crafts columns you turned on or off (key -> true/false); the rest show as they do by default.
 	db.bestColumns = db.bestColumns or {}
@@ -131,6 +133,32 @@ SlashCmdList.CRAFTPROFIT = function(msg)
 	end
 	if command == "ledger" then
 		ns.LedgerWindow.Toggle()
+		return
+	end
+	if command == "shop" or command == "sell" or command == "auctions" or command == "prices" then
+		-- The auction house window, on its Shopping list, Sell, My auctions or Prices tab.
+		ns.ShoppingList.Toggle(command)
+		return
+	end
+	if command == "scan" then
+		-- Craft Profit's own price scan, at the auction house.
+		local started, problem = ns.PriceScan.Start()
+		ns.Shopping.Say(started and "Scanning the auction house for prices..." or problem)
+		return
+	end
+	if command == "testscan" then
+		-- Testing: where Craft Profit's own price scan stands.
+		ns.PriceScan.Explain()
+		return
+	end
+	if command == "testauctions" then
+		-- Testing: what the game says about your auctions, for the My auctions tab.
+		ns.Auctions.Explain()
+		return
+	end
+	if command == "testshop" then
+		-- Testing: why the last shopping list click searched the auction house by name.
+		ns.ShoppingList.Explain()
 		return
 	end
 	if command == "testledger" then
