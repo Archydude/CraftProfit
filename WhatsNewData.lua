@@ -2,10 +2,13 @@
 ArchdudeWhatsNew:Register("CraftProfit", {
 	title = "Craft Profit",
 	icon = "Interface\\Icons\\INV_Hammer_20",
-	version = "3.11.0",
+	version = "3.11.1",
 	seen = "CraftProfitWhatsNew",
 	saved = { "CraftProfitDB", "CraftProfitCharDB" },
 	changes = {
+		{ "3.11.1",
+			"Fixed an error when opening the options during combat (\"tried to call the protected function 'OpenSettingsPanel()'\"). The options now open as soon as the fight ends.",
+		},
 		{ "3.11.0",
 			"|cffffd100Sale rate on item tooltips:|r with TSM, a |cffffd100TSM Sale Rate|r line shows the share of the item's auctions that sell. On WoW Forever your region is one server, so it's your own market. Turn it off with |cffffd100Show sale rate|r on the Tooltips options page.",
 		},
@@ -53,9 +56,6 @@ ArchdudeWhatsNew:Register("CraftProfit", {
 			"|cffffd100Patron orders share your materials:|r what you own counts once down the list, most profitable order first, so two orders that need the same materials no longer both say Ready on one stack. The one that comes up short shows what it's missing.",
 			"|cffffd100Pick Best crafts' columns:|r right-click any column header, or open |cffffd100Filter → Columns|r, and choose which columns show.",
 			"|cffffd100Per point column in Best crafts|r (off by default, Retail): what each concentration point earns with a recipe, to see where your concentration is worth the most.",
-		},
-		{ "3.3.2",
-			"Fixed: on WoW Forever, |cffffd100Save TSM prices for alts|r saved only your recipes' items and said TSM's item list wasn't there. It now finds TSM's list, so |cffffd100All crafting items|r and |cffffd100Everything TSM has|r save what they say.",
 		},
 	},
 })

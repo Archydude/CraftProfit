@@ -1,5 +1,8 @@
 # Changelog
 
+## 3.11.1
+- Fixed an error when opening the options during combat ("tried to call the protected function 'OpenSettingsPanel()'"). The options now open as soon as the fight ends.
+
 ## 3.11.0
 - **Sale rate on item tooltips:** with TSM, a **TSM Sale Rate** line shows the share of the item's auctions that sell. On WoW Forever your region is one server, so it's your own market. Turn it off with **Show sale rate** on the Tooltips options page.
 

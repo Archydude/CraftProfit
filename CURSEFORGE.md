@@ -72,11 +72,11 @@ One click adds what you're missing to an **Auctionator** shopping list or a **TS
 
 ## B. Upload File form
 
-**File:** `dist\CraftProfit-3.11.0.zip`
+**File:** `dist\CraftProfit-3.11.1.zip`
 
 **Display name**
 ```
-Craft Profit 3.11.0
+Craft Profit 3.11.1
 ```
 
 **Release type:** `Release`
@@ -85,6 +85,9 @@ Craft Profit 3.11.0
 
 **Changelog** (paste only the newest part; paste older parts too if they never went up)
 ```markdown
+3.11.1
+- Fixed an error when opening the options during combat ("tried to call the protected function 'OpenSettingsPanel()'"). The options now open as soon as the fight ends.
+
 3.11.0
 - **Sale rate on item tooltips:** with TSM, a **TSM Sale Rate** line shows the share of the item's auctions that sell. On WoW Forever your region is one server, so it's your own market. Turn it off with **Show sale rate** on the Tooltips options page.
 
