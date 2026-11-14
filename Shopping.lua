@@ -37,15 +37,14 @@ end
 
 -- Where lists of missing materials go: "auctionator" (its shopping list), "tsm"
 -- (a search to copy into TSM's Shopping tab) or "own" (Craft Profit's own list),
--- or nil when shopping is turned off. The "Shop with" choice decides; a choice
--- whose addon isn't loaded goes to the one that is, and with neither, to "own".
+-- or nil when shopping is turned off. The "Shop with" choice decides. The TSM
+-- search is only ever used when it was chosen: a choice whose addon isn't loaded
+-- goes to Auctionator's list when that's loaded, and to "own" when it isn't.
 function Shopping.ListTarget()
 	if not ns.db.shoppingButton then return end
-	if ns.db.listAddon == "own" then return "own" end
-	local auctionator, tsm = auctionatorAPI() ~= nil, tsmLoaded()
-	if auctionator and tsm then return ns.db.listAddon == "tsm" and "tsm" or "auctionator" end
-	if auctionator then return "auctionator" end
-	if tsm then return "tsm" end
+	local choice = ns.db.listAddon
+	if choice == "tsm" and tsmLoaded() then return "tsm" end
+	if choice ~= "own" and auctionatorAPI() then return "auctionator" end
 	return "own"
 end
 

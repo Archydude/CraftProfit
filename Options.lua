@@ -247,11 +247,12 @@ function Options.Create()
 		(quality and "ranks and " or "") .. "amounts you're missing.\n\n" ..
 		"Craft Profit's own list: the same menu adds them to a list of its own. Its window opens beside the " ..
 		"auction house, where a click on a material shows it with the amount you still need. " ..
-		"It's used when neither Auctionator nor TSM is installed.")
+		"It's used when Auctionator isn't installed, unless you pick the TSM search under Shop with.")
 	dropdown("listAddon", "Shop with", ns.LIST_ADDON_CHOICES,
 		"Where missing materials go: Auctionator's shopping list, a TSM search to copy, or Craft Profit's " ..
 		"own shopping list.\n\n" ..
-		"A choice whose addon isn't installed uses the one that is, and with neither, Craft Profit's own list.\n\n" ..
+		"A choice whose addon isn't installed uses Auctionator's list when that's installed, and Craft " ..
+		"Profit's own list when it isn't. The TSM search is only used when you pick it.\n\n" ..
 		"You can also switch it at the bottom of the Shopping list menus.")
 	checkbox("listPerCharacter", "One list per character",
 		format("Each character gets its own list, named after it, like \"%s\".\n\n" ..
