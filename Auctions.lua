@@ -49,6 +49,10 @@ local checks = {}
 local cancelling = {}
 -- Something to tell you in place of the status line (the auction house is busy...).
 local note
+-- While a cancel is handed to the game, and whether the game refused it.
+local calling, refused = false, false
+-- Auctions the game said came down this visit: id -> true.
+local gone = {}
 
 local function exact(copper)
 	return GetMoneyString(copper, true)
@@ -78,7 +82,7 @@ end
 -- Cancelling
 ---------------------------------------------------------------------------
 
-local draw
+local draw, ask
 
 -- Takes one auction down. Called from a click, which is what the game asks for.
 -- An auction someone bid on costs gold to cancel, so that one asks first.
@@ -101,13 +105,27 @@ local function cancel(auction, confirmed)
 	end
 	note = nil
 	cancelling[auction.id] = true
+	-- The game can refuse a click it doesn't count as yours, and says so while the
+	-- call runs (see ADDON_ACTION_BLOCKED below).
+	calling, refused = true, false
 	C_AuctionHouse.CancelAuction(auction.id)
+	calling = false
+	if refused then
+		cancelling[auction.id] = nil
+		note = "The game didn't take that click. Its own Auctions tab can cancel it."
+		draw()
+		return
+	end
 	draw()
 	local id = auction.id
 	C_Timer.After(CANCEL_WAIT, function()
 		if cancelling[id] then
+			-- The game never said this one came down: your auctions are read again to see.
 			cancelling[id] = nil
-			if panel:IsVisible() then draw() end
+			if panel:IsVisible() then
+				draw()
+				if Search.IsOpen() then ask() end
+			end
 		end
 	end)
 end
@@ -278,21 +296,33 @@ local function rebuild()
 			qty = info.quantity or 1, price = info.buyoutAmount, bid = info.bidAmount,
 			sold = info.status == Enum.AuctionStatus.Sold, seconds = info.timeLeftSeconds,
 			key = keyText(itemKey), name = C_Item.GetItemNameByID(itemKey.itemID) or "" }
-		auctions[#auctions + 1] = auction
-		if not auction.sold and auction.price and not checks[auction.key] then
-			local key, check = auction.key, {}
-			checks[key] = check
-			Search.Request(OWNER, itemKey, false, function(results) onChecked(key, check, results) end)
+		-- One the game said is down can still be on its list for a moment: left out.
+		if not gone[auction.id] then
+			auctions[#auctions + 1] = auction
+			if not auction.sold and auction.price and not checks[auction.key] then
+				local key, check = auction.key, {}
+				checks[key] = check
+				Search.Request(OWNER, itemKey, false, function(results) onChecked(key, check, results) end)
+			end
 		end
 	end
 	draw()
 end
 
 -- Asks the auction house for your auctions again.
-local function ask()
+ask = function()
 	Search.Owned(OWNER, function()
 		if panel:IsVisible() then rebuild() end
 	end)
+end
+
+-- Shows the game's own Auctions tab beside this one, as the Sell tab shows the
+-- game's sell page. Guarded: it drives Blizzard's window, which an update can change.
+local function showNative()
+	local auctionHouse = AuctionHouseFrame
+	if auctionHouse and auctionHouse:IsVisible() and auctionHouse.SetDisplayMode and AuctionHouseFrameDisplayMode.Auctions then
+		pcall(auctionHouse.SetDisplayMode, auctionHouse, AuctionHouseFrameDisplayMode.Auctions)
+	end
 end
 
 local function refresh()
@@ -301,6 +331,7 @@ local function refresh()
 	away:SetShown(not open)
 	if open then
 		note = nil
+		showNative()
 		ask()
 		draw()
 	end
@@ -395,23 +426,37 @@ events:RegisterEvent("AUCTION_HOUSE_SHOW")
 events:RegisterEvent("AUCTION_HOUSE_CLOSED")
 events:RegisterEvent("OWNED_AUCTIONS_UPDATED")
 events:RegisterEvent("AUCTION_CANCELED")
+events:RegisterEvent("ADDON_ACTION_BLOCKED")
+events:RegisterEvent("ADDON_ACTION_FORBIDDEN")
 events:SetScript("OnEvent", function(_, event, auctionID)
+	if event == "ADDON_ACTION_BLOCKED" or event == "ADDON_ACTION_FORBIDDEN" then
+		-- The game refused something. While a cancel's own call runs, that's the cancel.
+		if calling then refused = true end
+		return
+	end
 	if event == "AUCTION_HOUSE_CLOSED" then
 		-- What was read and asked is as old as this visit to the auction house.
-		auctions, checks, cancelling, loaded = {}, {}, {}, false
+		auctions, checks, cancelling, gone, loaded = {}, {}, {}, {}, false
 		StaticPopup_Hide("CRAFTPROFIT_CANCEL_AUCTION")
 	end
 	if not panel then return end
 	if event == "AUCTION_CANCELED" then
-		-- It's down: off the list, without asking for everything again.
-		cancelling[auctionID] = nil
+		-- It's down: off the list at once when the game says which one it was. It
+		-- doesn't always, so your auctions are read again too.
+		if auctionID then
+			cancelling[auctionID] = nil
+			gone[auctionID] = true
+		end
 		for index, auction in ipairs(auctions) do
 			if auction.id == auctionID then
 				table.remove(auctions, index)
 				break
 			end
 		end
-		if panel:IsVisible() then draw() end
+		if panel:IsVisible() then
+			draw()
+			if Search.IsOpen() then ask() end
+		end
 	elseif not panel:IsVisible() then
 		return
 	elseif event == "OWNED_AUCTIONS_UPDATED" then

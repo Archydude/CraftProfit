@@ -36,10 +36,17 @@ function Format.RarityColored(itemID, text)
 	return hex and ("|c" .. hex .. text .. "|r") or text
 end
 
+-- An item's name, or nil while the game hasn't loaded it. Both of the game's ways
+-- to read it are tried, as either can have it first.
+function Format.ItemName(itemID)
+	local name = C_Item.GetItemNameByID(itemID) or C_Item.GetItemInfo(itemID)
+	return name
+end
+
 -- "3x [icon] Name [quality]", the name in its rarity's color. Asks the game to
 -- load names it hasn't seen yet; the panel redraws when they arrive.
 function Format.Item(itemID, qty)
-	local name = C_Item.GetItemNameByID(itemID)
+	local name = Format.ItemName(itemID)
 	if name then
 		name = Format.RarityColored(itemID, name)
 	else

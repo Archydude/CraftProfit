@@ -273,8 +273,10 @@ function Options.Create()
 		"Craft Profit's own window opens beside the auction house. It has four tabs:\n\n" ..
 		"Shopping list: what you still have to buy. A click on a material shows it at the auction house.\n\n" ..
 		"Sell: what's in your bags that can be auctioned, with what each is listed for. Set the price, the " ..
-		"amount and how long it lasts, and post it.\n\n" ..
-		"My auctions: your auctions, which of them are undercut, and a button that cancels those.\n\n" ..
+		"amount and how long it lasts, and post it. The game's own sell page is filled in with the same " ..
+		"auction, and a price, amount or duration you change there is changed here too.\n\n" ..
+		"My auctions: your auctions, which of them are undercut, and a button that cancels those. The " ..
+		"game's own Auctions tab opens beside it.\n\n" ..
 		"Prices: when the auction house was last scanned for prices, and the button that scans it.\n\n" ..
 		"It opens by itself when Craft Profit's shopping list has something on it, or when Auctionator " ..
 		"isn't installed.\n\n" ..

@@ -151,6 +151,11 @@ SlashCmdList.CRAFTPROFIT = function(msg)
 		ns.PriceScan.Explain()
 		return
 	end
+	if command == "testsell" then
+		-- Testing: why the Sell tab couldn't fill in the game's own sell page.
+		ns.Sell.Explain()
+		return
+	end
 	if command == "testauctions" then
 		-- Testing: what the game says about your auctions, for the My auctions tab.
 		ns.Auctions.Explain()

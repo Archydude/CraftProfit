@@ -30,6 +30,9 @@ local DOCK_GAP = 4       -- between the auction house and the window
 local INFO_WAIT = 1.5
 -- How soon the list is drawn again after item names arrive, in seconds.
 local NAMES_WAIT = 0.2
+-- While a name on the list is still loading, the list looks again this often (in
+-- seconds), this many times: the game doesn't always say when a name has arrived.
+local NAME_RETRY, NAME_TRIES = 1, 60
 
 local EMPTY_TEXT = "Nothing on your shopping list.\n\nAdd what you're missing with the Shopping list button under "
 	.. "your materials, or from a row of the Best crafts list."
@@ -42,6 +45,9 @@ local tab, panels = "shop", {}
 local atAuctionHouse, openedByAuctionHouse, docked = false, false, false
 -- The chat hint on how to open the window: once a session.
 local hinted = false
+-- Looking again for names that are still loading: whether a look is due, how many
+-- there have been since the names were last all there, and an item still without one.
+local nameLookDue, nameLooks, unnamed = false, 0, nil
 
 ---------------------------------------------------------------------------
 -- Searching the auction house
@@ -120,6 +126,8 @@ end
 function ShoppingList.Explain()
 	ns.Shopping.Say(lastProblem and ("Testing: the last auction house search went by name: " .. lastProblem)
 		or "Testing: no shopping list click has had to search by name.")
+	ns.Shopping.Say(unnamed and format("Testing: item %d still has no name after %d looks.", unnamed, nameLooks)
+		or "Testing: every name on the shopping list has loaded.")
 end
 
 ---------------------------------------------------------------------------
@@ -221,9 +229,11 @@ end
 function ShoppingList.Refresh()
 	if not (frame and frame:IsShown()) or tab ~= "shop" then return end
 	local rows, total, unpriced = {}, 0, 0
+	unnamed = nil
 	for _, list in ipairs(ns.Shopping.OwnLists()) do
 		rows[#rows + 1] = { header = true, name = list.name }
 		for _, item in ipairs(list.items) do
+			if not ns.Format.ItemName(item.itemID) then unnamed = item.itemID end
 			local price = ns.Prices.Buy(item.itemID)
 			local cost = price and price * item.qty
 			if cost then total = total + cost else unpriced = unpriced + 1 end
@@ -238,6 +248,17 @@ function ShoppingList.Refresh()
 		if unpriced > 0 then text = text .. Color("muted", format("  (%d with no price)", unpriced)) end
 	end
 	footer:SetText(text)
+	-- A name is still loading: look again soon, whether or not the game says it arrived.
+	if not unnamed then
+		nameLooks = 0
+	elseif not nameLookDue and nameLooks < NAME_TRIES then
+		nameLookDue = true
+		nameLooks = nameLooks + 1
+		C_Timer.After(NAME_RETRY, function()
+			nameLookDue = false
+			ShoppingList.Refresh()
+		end)
+	end
 end
 
 -- Shows one tab's frame, making it the first time. Away from the auction house
@@ -334,6 +355,7 @@ local function create()
 	frame:SetScript("OnHide", function(self)
 		self:UnregisterEvent("GET_ITEM_INFO_RECEIVED")
 		openedByAuctionHouse = false
+		nameLooks = 0
 		scrollBox:SetDataProvider(CreateDataProvider({}))
 		GameTooltip:Hide()
 	end)

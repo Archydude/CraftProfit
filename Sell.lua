@@ -1,7 +1,11 @@
 -- Craft Profit: the Sell tab of its auction house window (see ShoppingList.lua).
 -- It lists what's in your bags that can be auctioned, your own crafts first. Pick
 -- one to see what it's listed for, set the price, amount and how long it lasts,
--- and post it. Every auction is posted by your own click on Post.
+-- and post it. Every auction is posted by your own click on Post. The game's own
+-- sell page is filled in with the same item, price, amount and duration, so its
+-- Create Auction button posts the same auction, and what you change there is
+-- changed here. While that page shows the item, it shows the listings too, so
+-- this tab leaves its own listings out and gives the room to your bags.
 local _, ns = ...
 
 local Sell = {}
@@ -19,6 +23,10 @@ local INSET_PAD = 4      -- list frame to the rows
 local SCROLLBAR_ROOM = 22
 local ROW_HEIGHT, BAG_ROWS = 22, 8
 local LISTING_HEIGHT, LISTING_ROWS = 20, 4
+-- How tall the bag list's frame is, and what it gains while this tab's own
+-- listings are left out: the gap, the picked item's line and the listings' frame.
+local BAG_HEIGHT = BAG_ROWS * ROW_HEIGHT + 2 * INSET_PAD
+local LISTING_ROOM = 8 + 22 + LISTING_ROWS * LISTING_HEIGHT + 2 * INSET_PAD
 local LINE = 28          -- from one line of the form to the next
 local LABEL_WIDTH = 66   -- "Price", "Amount", "Lasts"
 local COIN = 14          -- coin icons beside the price boxes
@@ -35,6 +43,9 @@ local PICK_TEXT = "Pick something from the list to sell it."
 
 local panel, body, away, emptyText
 local bagBox, listingBox, pickedText, sourceText
+-- The frame around the bag list, and everything that shows the picked item's
+-- listings (its line, the list, its frame and scroll bar).
+local bagInset, listingParts
 local goldBox, silverBox, copperBox, eachText, amountBox, ofText
 local durationButtons = {}
 local totalsText, noteText, postButton, skipButton
@@ -61,6 +72,20 @@ local showHidden = false
 -- Items your saved Best crafts scans say you craft: itemID -> true.
 local crafts
 local scanTries = 0
+-- The key of the item this tab put on the game's own sell page, while it's there.
+local nativeKey
+-- Why the game's own sell page couldn't be filled in last, for /craftprofit testsell.
+local nativeProblem
+-- Whether this tab is writing to the game's sell page, or reading from it: one
+-- never answers the other.
+local pushing, pulling = false, false
+-- The game's sell pages this tab already follows: page -> true.
+local followed = {}
+-- Whether this tab's own listings are showing (nil until the first layout).
+local listingsShown
+-- While Post hands the auction to the game, and whether the game refused it. What
+-- the last refusal looked like is kept for /craftprofit testsell.
+local calling, refused, lastRefusal = false, false, nil
 
 -- Copper as exact gold, silver and copper: a price to match can't be rounded.
 local function exact(copper)
@@ -162,12 +187,175 @@ local function updateTotals()
 	postButton:SetEnabled(not problem and price > 0 and not posting)
 end
 
+---------------------------------------------------------------------------
+-- The game's own sell page
+---------------------------------------------------------------------------
+-- This drives Blizzard's own auction house window, which a game update can
+-- change, so every step into it goes through `guarded`: when one fails, the
+-- game's page just isn't filled in and this tab works as before.
+
+-- The game's sell page for that kind of item, and its window, while the window
+-- is the one on screen.
+local function nativePage(entry)
+	local auctionHouse = AuctionHouseFrame
+	if not (auctionHouse and auctionHouse:IsVisible() and auctionHouse.SetPostItem) then return end
+	return entry.commodity and auctionHouse.CommoditiesSellFrame or auctionHouse.ItemSellFrame, auctionHouse
+end
+
+-- Whether the game's sell page holds that line's item: something else you put
+-- there yourself is never written over.
+local function holds(page, entry)
+	local held = page:GetItem()
+	if not held then return false end
+	local bag, slot = held:GetBagAndSlot()
+	return bag == entry.bag and slot == entry.slot
+end
+
+-- Whether the game's sell page is showing the picked item, and so its listings.
+local function nativeShows()
+	if not (selected and nativeKey == selected.key) then return false end
+	local ok, shows = pcall(function()
+		local page = nativePage(selected)
+		return page ~= nil and page:IsVisible() and holds(page, selected)
+	end)
+	return ok and shows == true
+end
+
+-- This tab's own listings only show while the game's page isn't showing the
+-- same ones. Without them the bag list takes their room.
+local function layout()
+	if not bagInset then return end
+	local own = selected ~= nil and not nativeShows()
+	if own == listingsShown then return end
+	listingsShown = own
+	bagInset:SetHeight(BAG_HEIGHT + (own and 0 or LISTING_ROOM))
+	for _, part in ipairs(listingParts) do part:SetShown(own) end
+end
+
+local pullNative
+
+-- Follows one of the game's sell pages from now on: what changes on it, and
+-- when it shows or hides. Hooks, so the game's own code runs untouched.
+local function follow(page)
+	if followed[page] then return end
+	followed[page] = true
+	hooksecurefunc(page, "UpdatePostState", function(self)
+		local ok, problem = pcall(pullNative, self)
+		if not ok then
+			pulling = false
+			nativeProblem = tostring(problem)
+		end
+		layout()
+	end)
+	page:HookScript("OnShow", layout)
+	page:HookScript("OnHide", layout)
+end
+
+-- Puts the item on the game's sell page, as a right-click on it in your bags does.
+local function putNative(entry)
+	nativeKey = nil
+	local page, auctionHouse = nativePage(entry)
+	if not page then return end
+	follow(page)
+	pushing = true
+	auctionHouse:SetPostItem(locationOf(entry))
+	pushing = false
+	if holds(page, entry) then nativeKey = entry.key end
+end
+
+-- Copies this tab's price, amount and duration to the game's sell page, while
+-- it still holds the item this tab put there.
+local function fillNative()
+	if not (selected and nativeKey == selected.key) then return end
+	local page = nativePage(selected)
+	if not (page and holds(page, selected)) then return end
+	if pulling then return end
+	pushing = true
+	if page:GetDuration() ~= ns.db.sellDuration then
+		page.Duration:SetDuration(ns.db.sellDuration)
+		page.Duration.Dropdown:GenerateMenu()
+	end
+	page.QuantityInput:SetQuantity(amountBox:GetNumber())
+	page.PriceInput:SetAmount(getPrice())
+	page:UpdatePostState()
+	pushing = false
+end
+
+-- Takes this tab's item off the game's sell page again.
+local function clearNative()
+	if not nativeKey then return end
+	nativeKey = nil
+	local auctionHouse = AuctionHouseFrame
+	if auctionHouse and auctionHouse:IsVisible() and auctionHouse.ClearPostItem then auctionHouse:ClearPostItem() end
+end
+
+-- The game's sell page lost the picked item (it empties itself after its own
+-- Create Auction): it goes back on while you still have some.
+local function restoreNative()
+	if not (selected and nativeKey == selected.key) then return end
+	local page = nativePage(selected)
+	if page and not page:GetItem() then
+		putNative(selected)
+		fillNative()
+	end
+end
+
+-- Back on this tab with something picked: the game's window goes back to its
+-- sell page for it, if it was looking at something else.
+local function showPicked()
+	if not (selected and nativeKey == selected.key) then return end
+	local page, auctionHouse = nativePage(selected)
+	if not page or page:IsVisible() then return end
+	if holds(page, selected) then
+		auctionHouse:SetDisplayMode(selected.commodity and AuctionHouseFrameDisplayMode.CommoditiesSell
+			or AuctionHouseFrameDisplayMode.ItemSell)
+	elseif not page:GetItem() then
+		putNative(selected)
+		fillNative()
+	end
+end
+
+local function guarded(step, ...)
+	local ok, problem = pcall(step, ...)
+	pushing = false
+	if not ok then nativeProblem = tostring(problem) end
+end
+
+-- Testing: why the game's own sell page couldn't be filled in.
+function Sell.Explain()
+	ns.Shopping.Say(nativeProblem and ("Testing: the game's sell page couldn't be filled in: " .. nativeProblem)
+		or "Testing: filling in the game's sell page hasn't failed.")
+	ns.Shopping.Say(lastRefusal and ("Testing: the game refused the last Post click (" .. lastRefusal .. ").")
+		or "Testing: the game hasn't refused a Post click.")
+end
+
 local function drawDurations()
 	for index, button in ipairs(durationButtons) do
 		local chosen = index == ns.db.sellDuration
 		button:SetNormalFontObject(chosen and "GameFontHighlight" or "GameFontNormal")
 		if chosen then button:LockHighlight() else button:UnlockHighlight() end
 	end
+end
+
+-- The game's sell page changed (a listing was clicked there, or something was
+-- typed): its price, amount and duration become this tab's, so both always post
+-- the same auction.
+pullNative = function(page)
+	if pushing or pulling or not nativeShows() then return end
+	if page ~= nativePage(selected) then return end
+	local price, qty, duration = page.PriceInput:GetAmount(), page.QuantityInput:GetQuantity(), page:GetDuration()
+	pulling = true
+	if price ~= getPrice() then
+		priceTouched = true -- your choice over there: the lowest listing doesn't replace it
+		setPrice(price)
+	end
+	if qty >= 1 and qty ~= amountBox:GetNumber() then amountBox:SetText(tostring(qty)) end
+	if durationButtons[duration] and duration ~= ns.db.sellDuration then
+		ns.db.sellDuration = duration
+		drawDurations()
+	end
+	pulling = false
+	updateTotals()
 end
 
 ---------------------------------------------------------------------------
@@ -287,6 +475,8 @@ local function choose(entry, said)
 		drawPicked()
 		drawBags()
 		updateTotals()
+		guarded(clearNative)
+		layout()
 		return
 	end
 	local location = locationOf(entry)
@@ -313,6 +503,9 @@ local function choose(entry, said)
 	drawPicked()
 	drawBags()
 	updateTotals()
+	guarded(putNative, entry)
+	guarded(fillNative)
+	layout()
 end
 
 -- The line after `key` in the list, or the one before it at the end.
@@ -491,6 +684,8 @@ local function scan()
 			drawPicked()
 			drawBags()
 			updateTotals()
+			guarded(restoreNative)
+			layout()
 		else
 			local said = posting and posting.key == selected.key and postedText(posting) or nil
 			choose(after and byKey[after.key] or nil, said)
@@ -544,14 +739,26 @@ local function post()
 		location = locationOf(entry), duration = ns.db.sellDuration, qty = amountBox:GetNumber(), price = getPrice() }
 	if this.qty < 1 or this.qty > available or this.price <= 0 then return end
 	posting = this
-	postButton:Disable()
 	-- The game answers true when it wants the auction confirmed first; it then asks
-	-- for that itself (see the post warning below).
+	-- for that itself (see the post warning below). Nothing else happens between the
+	-- click and this call: the game can refuse a click it doesn't count as yours, and
+	-- says so while the call runs (see ADDON_ACTION_BLOCKED below).
+	calling, refused = true, false
 	if this.commodity then
 		C_AuctionHouse.PostCommodity(this.location, this.duration, this.qty, this.price)
 	else
 		C_AuctionHouse.PostItem(this.location, this.duration, this.qty, nil, this.price)
 	end
+	calling = false
+	if refused then
+		local native = nativeKey == this.key
+		lastRefusal = format("in combat: %s, on the game's sell page: %s", tostring(InCombatLockdown()), tostring(native))
+		searchNote = native and "The game didn't take that click. Create Auction on its own sell page posts the same auction."
+			or "The game didn't take that click. Try Post again."
+		stopPosting()
+		return
+	end
+	updateTotals() -- Post greys out until the auction is up
 	watch(this)
 end
 
@@ -613,6 +820,8 @@ local function refresh()
 		scan()
 		-- A price check that was dropped when the tab was left is asked again.
 		if selected and not listings then choose(selected) end
+		guarded(showPicked)
+		layout()
 	end
 end
 
@@ -654,7 +863,7 @@ local function scrollList(parent, y, rowHeight, rows, draw, width)
 	view:SetElementExtent(rowHeight)
 	view:SetElementInitializer("Button", draw)
 	ScrollUtil.InitScrollBoxListWithScrollBar(box, bar, view)
-	return box, inset
+	return box, inset, bar
 end
 
 -- Makes the tab's frame inside the window. Called once, the first time the tab
@@ -672,7 +881,6 @@ function Sell.Create(parent, width)
 	body:SetAllPoints()
 
 	local y = -TOP
-	local bagInset
 	bagBox, bagInset = scrollList(body, y, ROW_HEIGHT, BAG_ROWS, drawBag, width)
 	emptyText = body:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
 	emptyText:SetPoint("CENTER", bagInset, "CENTER")
@@ -688,12 +896,15 @@ function Sell.Create(parent, width)
 	pickedText:SetPoint("RIGHT", sourceText, "LEFT", -8, 0)
 	y = y - 22
 
-	listingBox = scrollList(body, y, LISTING_HEIGHT, LISTING_ROWS, drawListing, width)
+	local listingInset, listingBar
+	listingBox, listingInset, listingBar = scrollList(body, y, LISTING_HEIGHT, LISTING_ROWS, drawListing, width)
+	listingParts = { pickedText, sourceText, listingBox, listingInset, listingBar }
 	y = y - (LISTING_ROWS * LISTING_HEIGHT + 2 * INSET_PAD) - 10
 
 	local function changed(_, userInput)
 		if userInput then priceTouched = true end
 		updateTotals()
+		if not pulling then guarded(fillNative) end
 	end
 	label(body, "Price", y)
 	goldBox = numberBox(body, 70, 7)
@@ -742,6 +953,7 @@ function Sell.Create(parent, width)
 			ns.db.sellDuration = index
 			drawDurations()
 			updateTotals()
+			guarded(fillNative)
 		end)
 		durationButtons[index] = button
 	end
@@ -777,6 +989,7 @@ function Sell.Create(parent, width)
 
 	if not DURATIONS[ns.db.sellDuration] then ns.db.sellDuration = 2 end
 	drawDurations()
+	layout()
 	panel:SetScript("OnShow", refresh)
 	panel:SetScript("OnHide", function()
 		Search.Drop(OWNER)
@@ -796,11 +1009,19 @@ events:RegisterEvent("AUCTION_MULTISELL_UPDATE")
 events:RegisterEvent("AUCTION_MULTISELL_FAILURE")
 events:RegisterEvent("BAG_UPDATE_DELAYED")
 events:RegisterEvent("PLAYER_MONEY")
+events:RegisterEvent("ADDON_ACTION_BLOCKED")
+events:RegisterEvent("ADDON_ACTION_FORBIDDEN")
 events:SetScript("OnEvent", function(_, event, numPosted, total)
+	if event == "ADDON_ACTION_BLOCKED" or event == "ADDON_ACTION_FORBIDDEN" then
+		-- The game refused something. While Post's own call runs, that's the post.
+		if calling then refused = true end
+		return
+	end
 	if event == "AUCTION_HOUSE_CLOSED" then
 		-- Nothing picked or half posted outlives the auction house.
-		selected, pick, listings, posting = nil, nil, nil, nil
+		selected, pick, listings, posting, nativeKey = nil, nil, nil, nil, nil
 		StaticPopup_Hide("CRAFTPROFIT_POST_WARNING")
+		layout()
 	end
 	if event == "AUCTION_HOUSE_AUCTION_CREATED" then
 		-- Several of one item (not a stack) go up one at a time: the last one ends it.
