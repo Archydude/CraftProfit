@@ -141,7 +141,16 @@ function Options.Create()
 		{ "auto", "Automatic (TSM first)" },
 		{ "tsm", "TradeSkillMaster only" },
 		{ "auctionator", "Auctionator only" },
-	}, "Where prices come from. Automatic uses TSM and falls back to Auctionator for items TSM has no price for.")
+		{ "own", "Craft Profit's scan only" },
+	}, "Where prices come from. Automatic uses TSM, falls back to Auctionator for items TSM has no price for, " ..
+		"and to Craft Profit's own scan of the auction house for what neither prices. With neither installed, " ..
+		"Craft Profit's scan prices everything.\n\n" ..
+		"The scan runs from the Prices tab of Craft Profit's window at the auction house (/craftprofit prices).")
+	checkbox("autoScan", "Scan when I open the auction house",
+		"Craft Profit's own price scan starts by itself when you open the auction house.\n\n" ..
+		"Only while your prices come from that scan (not from TSM or Auctionator), and at most once an hour. " ..
+		"Chat says when it starts and when it's done.\n\n" ..
+		"Off: you start it with Scan now on the Prices tab, or /craftprofit scan.")
 	dropdown("matSource", "TSM price for materials", ns.TSM_SOURCES,
 		"What you'd pay for materials. Market value smooths out spikes; lowest auction is what you'd pay right now. " ..
 		"The lower of the two can show materials cheaper than you can buy them right now.")
@@ -149,7 +158,7 @@ function Options.Create()
 		"What you'd get for the item you craft. The lower of market value and the lowest auction is the careful " ..
 		"choice: you'd have to match a cheaper auction to sell now, and high listings that aren't selling don't count.")
 	checkbox("scanReminder", "Remind me of old prices",
-		"With prices from Auctionator: when its last scan is over a day old, a chat line reminds you when you open " ..
+		"With prices from Auctionator or Craft Profit's scan: when the last scan is over a day old, a chat line reminds you when you open " ..
 		"the auction house, and when it's over 3 days old, a notice over the Best crafts list when you open it (once a " ..
 		"session). The panel's and the list's footers always say how old the scan is, in red once it's a day old.\n\n" ..
 		"With TSM prices saved by another character: the same reminders, to log in on a character with TSM.")
@@ -236,26 +245,50 @@ function Options.Create()
 		"to an Auctionator shopping list.\n\n" ..
 		"TSM: the same menu gives you a search to copy into TSM's Shopping tab, for exactly the " ..
 		(quality and "ranks and " or "") .. "amounts you're missing.\n\n" ..
-		"With neither Auctionator nor TSM installed, it's hidden.")
+		"Craft Profit's own list: the same menu adds them to a list of its own. Its window opens beside the " ..
+		"auction house, where a click on a material shows it with the amount you still need. " ..
+		"It's used when Auctionator isn't installed, unless you pick the TSM search under Shop with.")
 	dropdown("listAddon", "Shop with", ns.LIST_ADDON_CHOICES,
-		"When Auctionator and TSM are both installed: add missing materials to Auctionator's shopping list, " ..
-		"or get a TSM search to copy. With only one of them, that one is used.\n\n" ..
+		"Where missing materials go: Auctionator's shopping list, a TSM search to copy, or Craft Profit's " ..
+		"own shopping list.\n\n" ..
+		"A choice whose addon isn't installed uses Auctionator's list when that's installed, and Craft " ..
+		"Profit's own list when it isn't. The TSM search is only used when you pick it.\n\n" ..
 		"You can also switch it at the bottom of the Shopping list menus.")
 	checkbox("listPerCharacter", "One list per character",
-		format("Each character gets its own Auctionator list, named after it, like \"%s\".\n\n" ..
+		format("Each character gets its own list, named after it, like \"%s\".\n\n" ..
 			"Can be combined with one list per profession: \"%s - Blacksmithing\".",
 			UnitName("player") or "Name", UnitName("player") or "Name"))
 	checkbox("listPerProfession", "One list per profession",
-		format("Each profession gets its own Auctionator list, like \"Blacksmithing\".\n\n" ..
+		format("Each profession gets its own list, like \"Blacksmithing\".\n\n" ..
 			"Can be combined with one list per character. With neither, the list is \"%s\".", ns.SHOPPING_LIST))
 	checkbox("checkOff", "Check off what you get",
-		"Materials come off the Auctionator shopping list as you get them: bought, looted, from the mailbox " ..
-		"or crafted. Chat says what came off, and when the list is done.\n\n" ..
+		"Materials come off the shopping list, Auctionator's or Craft Profit's own, as you get them: bought, " ..
+		"looted, from the mailbox or crafted. Chat says what came off, and when the list is done.\n\n" ..
 		"Only what Craft Profit put on the list. Moving things between your bags and banks doesn't count.")
-	button("Auctionator shopping list", "Clear", function() ns.Shopping.Clear() end,
+	button("Shopping list", "Clear", function() ns.Shopping.Clear() end,
 		"Empties the shopping list. Ctrl-click the Shopping list button does the same.\n\n" ..
 		"With one list per profession, this clears the list of the profession window that's open, " ..
 		"or with none open, the lists of all this character's professions.")
+	header("Auction house window")
+	checkbox("auctionWindow", "Open at the auction house",
+		"Craft Profit's own window opens beside the auction house. There it has four tabs:\n\n" ..
+		"Shopping list: what you still have to buy. A click on a material shows it at the auction house.\n\n" ..
+		"Sell: what's in your bags that can be auctioned, your favorites first. Pick one, set the price, the " ..
+		"amount and how long it lasts, and post it. The game's own sell page shows what it's listed for and " ..
+		"is filled in with the same auction; a price, amount or duration you change there is changed here too.\n\n" ..
+		"My auctions: your auctions, which of them are undercut, and a button that cancels those. The " ..
+		"game's own Auctions tab opens beside it.\n\n" ..
+		"Prices: when the auction house was last scanned for prices, and the button that scans it.\n\n" ..
+		"It opens by itself beside the game's own auction house window, when Craft Profit's shopping list " ..
+		"has something on it or Auctionator isn't installed. It doesn't open over another addon's " ..
+		"auction house window.\n\n" ..
+		"Away from the auction house it's only the shopping list.\n\n" ..
+		"Off: it only opens from the minimap button's menu, the Shopping list menus, or /craftprofit shop. " ..
+		"At the auction house, /craftprofit sell, auctions and prices open its other tabs.")
+	dropdown("sellDefault", "Default posting time", ns.SELL_DEFAULT_CHOICES,
+		"How long an auction lasts when you pick an item on the Sell tab. You can still change it there for " ..
+		"the item you're posting.\n\n" ..
+		"The last one you used: it stays on whatever you chose last.")
 
 	---------------------------------------------------------------------------
 	-- Patron orders

@@ -1,6 +1,7 @@
 -- Craft Profit: minimap button (LibDBIcon, so minimap button collectors pick it
 -- up) and addon compartment entry. Click to open your profession window on the
--- Best crafts list, right-click for a menu, hover for this session's total.
+-- Best crafts list, right-click for a menu (with Craft Profit's shopping list
+-- when you use it), hover for this session's total.
 local _, ns = ...
 
 local Button = {}
@@ -89,6 +90,10 @@ local function openMenu()
 			root:CreateButton(format("|T%s:16|t %s: Best crafts", profession.icon, profession.name),
 				function() openBestCrafts(profession.skillLine) end)
 		end
+		-- Craft Profit's own shopping list, when that's what you shop with or it has something on it.
+		if ns.Shopping.ListTarget() == "own" or ns.Shopping.OwnHasItems() then
+			root:CreateButton("Shopping list", function() ns.ShoppingList.Show("shop") end)
+		end
 		root:CreateButton("Ledger", ns.LedgerWindow.Show)
 		local strategies = root:CreateButton("Crafting strategy")
 		for _, strategy in ipairs(ns.STRATEGIES) do
@@ -119,7 +124,7 @@ local function fillTooltip(tooltip)
 	tooltip:AddLine(" ")
 	local profession = lastProfession()
 	tooltip:AddLine(profession and format("Click: %s's Best crafts", profession.name) or "Click: options", 0.6, 0.6, 0.6)
-	tooltip:AddLine("Right-click: professions, Ledger, crafting strategy, options", 0.6, 0.6, 0.6)
+	tooltip:AddLine("Right-click: professions, shopping list, Ledger, crafting strategy, options", 0.6, 0.6, 0.6)
 end
 
 ---------------------------------------------------------------------------

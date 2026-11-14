@@ -36,10 +36,17 @@ function Format.RarityColored(itemID, text)
 	return hex and ("|c" .. hex .. text .. "|r") or text
 end
 
+-- An item's name, or nil while the game hasn't loaded it. Both of the game's ways
+-- to read it are tried, as either can have it first.
+function Format.ItemName(itemID)
+	local name = C_Item.GetItemNameByID(itemID) or C_Item.GetItemInfo(itemID)
+	return name
+end
+
 -- "3x [icon] Name [quality]", the name in its rarity's color. Asks the game to
 -- load names it hasn't seen yet; the panel redraws when they arrive.
 function Format.Item(itemID, qty)
-	local name = C_Item.GetItemNameByID(itemID)
+	local name = Format.ItemName(itemID)
 	if name then
 		name = Format.RarityColored(itemID, name)
 	else
@@ -48,6 +55,13 @@ function Format.Item(itemID, qty)
 	end
 	local quality = ns.Blizzard.ReagentQualityMarkup(itemID)
 	return format("%dx %s%s%s", qty, icon(C_Item.GetItemIconByID(itemID)), name, quality and (" " .. quality) or "")
+end
+
+-- As Format.Item, for anything that can be auctioned: a caged battle pet goes by
+-- its link, since its item is only the cage.
+function Format.Sellable(itemID, link, qty)
+	if itemID == ns.PET_CAGE_ITEM and link then return format("%dx %s", qty, link) end
+	return Format.Item(itemID, qty)
 end
 
 -- "30x [icon] Artisan's Moxie".

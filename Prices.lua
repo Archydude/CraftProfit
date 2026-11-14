@@ -1,23 +1,34 @@
--- Craft Profit: prices from TradeSkillMaster or Auctionator, or TSM prices
--- another character saved when TSM isn't loaded here (see SavedPrices.lua).
+-- Craft Profit: prices from TradeSkillMaster or Auctionator, TSM prices another
+-- character saved when TSM isn't loaded here (see SavedPrices.lua), or Craft
+-- Profit's own scan of the auction house (see PriceScan.lua).
 local ADDON_NAME, ns = ...
 
 local Prices = {}
 ns.Prices = Prices
 
+-- Whether the Price addon option lets TSM's prices in.
+local function wantsTSM()
+	return ns.db.provider == "auto" or ns.db.provider == "tsm"
+end
+
 local function tsmAvailable()
-	return ns.db.provider ~= "auctionator" and TSM_API and TSM_API.GetCustomPriceValue
+	return wantsTSM() and TSM_API and TSM_API.GetCustomPriceValue
 end
 
 -- Whether TSM's prices come from another character's save: TSM isn't loaded here.
 local function savedPrices()
-	return ns.db.provider ~= "auctionator" and not (TSM_API and TSM_API.GetCustomPriceValue)
-		and ns.SavedPrices.InUse()
+	return wantsTSM() and not (TSM_API and TSM_API.GetCustomPriceValue) and ns.SavedPrices.InUse()
 end
 
 local function auctionatorAPI()
-	if ns.db.provider == "tsm" then return end
+	if ns.db.provider ~= "auto" and ns.db.provider ~= "auctionator" then return end
 	return Auctionator and Auctionator.API and Auctionator.API.v1
+end
+
+-- Craft Profit's own scan: the last one asked with Automatic, so it prices what
+-- nobody else does, and the only one when it's the Price addon picked.
+local function ownScan()
+	if ns.db.provider == "auto" or ns.db.provider == "own" then return ns.PriceScan end
 end
 
 -- Other addons' APIs can change or throw on items they don't know, so every
@@ -37,10 +48,11 @@ end
 -- nobody knows). On WoW Forever, common reagents (thread, flux, vials...) are
 -- known before a price addon has seen a vendor sell them (Data\Forever.lua).
 function Prices.Vendor(itemID)
-	local api = auctionatorAPI()
+	local api, own = auctionatorAPI(), ownScan()
 	return (tsmAvailable() and tsmValue("vendorbuy", "i:" .. itemID))
 		or (savedPrices() and ns.SavedPrices.Vendor(itemID))
 		or (api and auctionatorValue(api.GetVendorPriceByItemID, itemID))
+		or (own and own.Vendor(itemID))
 		or (ns.VENDOR_PRICES and ns.VENDOR_PRICES[itemID])
 end
 
@@ -57,10 +69,12 @@ end
 
 -- What a material costs on the auction house, in copper (nil if nobody knows).
 local function auctionPrice(itemID)
-	local api = auctionatorAPI()
+	local api, own = auctionatorAPI(), ownScan()
 	return (tsmAvailable() and tsmValue(ns.db.matSource, "i:" .. itemID))
 		or (savedPrices() and ns.SavedPrices.Material(itemID))
 		or (api and auctionatorValue(api.GetAuctionPriceByItemID, itemID))
+		or (own and own.Material(itemID))
+		or nil
 end
 
 -- Whether materials a vendor sells are bought from a vendor: unless "Buy vendor
@@ -91,8 +105,8 @@ function Prices.VendorCheaper(itemID)
 end
 
 -- What a crafted item sells for, in copper, and where that price came from:
--- "tsm", "saved" (TSM prices saved for alts) or "auctionator". Uses the full
--- link so quality and item level count.
+-- "tsm", "saved" (TSM prices saved for alts), "auctionator" or "own" (Craft
+-- Profit's scan). Uses the full link so quality and item level count.
 function Prices.SaleFrom(link, itemID)
 	if tsmAvailable() then
 		local ok, itemString = pcall(TSM_API.ToItemString, link)
@@ -108,6 +122,9 @@ function Prices.SaleFrom(link, itemID)
 			or (itemID and auctionatorValue(api.GetAuctionPriceByItemID, itemID))
 		if value then return value, "auctionator" end
 	end
+	local own = ownScan()
+	local value = own and own.Sale(link, itemID)
+	if value then return value, "own" end
 end
 
 -- What a crafted item sells for, in copper (see Prices.SaleFrom).
@@ -142,6 +159,7 @@ end
 -- Auctionator's own price history, which isn't part of its API, so every step
 -- is guarded and a change on its side just means no count.
 function Prices.Listed(link)
+	if Prices.Scanner() == "own" then return ns.PriceScan.Listed(link) end
 	local db = Auctionator and Auctionator.Database
 	local utilities = db and Auctionator.Utilities
 	if not (db and db.GetPriceHistory and utilities and Auctionator.Constants) then return end
@@ -165,6 +183,14 @@ end
 function Prices.HasTSM()
 	return (TSM_API ~= nil and TSM_API.GetCustomPriceValue ~= nil)
 		or (ns.SavedPrices.InUse() and ns.SavedPrices.Age() ~= nil)
+end
+
+-- Whose scan of the auction house the prices here are as old as: "auctionator",
+-- "own" (Craft Profit's), or nil with TSM's prices, which need none.
+function Prices.Scanner()
+	if tsmAvailable() or Prices.SavedAge() then return end
+	if auctionatorAPI() then return "auctionator" end
+	if ownScan() then return "own" end
 end
 
 -- How many days ago the saved TSM prices used here were saved, and the name of
@@ -218,14 +244,16 @@ local function auctionAge(fnName, arg)
 	return type(age) == "number" and age or false
 end
 
--- How many days ago Auctionator last scanned the auction house, with its full scan
--- or its automatic one (0 is within the last day), or false when it never has.
--- Nil when prices don't come from Auctionator (TSM keeps its own up to date, and
--- saved TSM prices have their own age, see Prices.SavedAge).
+-- How many days ago the auction house was last scanned, by Auctionator (its full
+-- scan or its automatic one) or by Craft Profit (0 is within the last day), or
+-- false when it never was. Nil when prices come from neither (TSM keeps its own
+-- up to date, and saved TSM prices have their own age, see Prices.SavedAge).
 -- Auctionator keeps those times in its own saved state, not its API, so a change
 -- on its side just means no answer.
 function Prices.ScanAge()
-	if tsmAvailable() or Prices.SavedAge() or not auctionatorAPI() then return end
+	local scanner = Prices.Scanner()
+	if scanner == "own" then return ns.PriceScan.Age() end
+	if scanner ~= "auctionator" then return end
 	local state = Auctionator.SavedState
 	if type(state) ~= "table" then return end
 	local last = 0
@@ -247,11 +275,13 @@ function Prices.MaterialAge(itemID)
 	if Prices.BuysAtVendor(itemID) then return end
 	-- Crafted with Craft myself: its own price isn't used.
 	if ns.Chains.Active() and ns.Chains.RecipeFor(itemID) then return end
+	if Prices.Scanner() == "own" then return ns.PriceScan.MaterialAge(itemID) end
 	return auctionAge("GetAuctionAgeByItemID", itemID)
 end
 
 -- A crafted item's price age (see auctionAge).
 function Prices.SaleAge(link)
+	if Prices.Scanner() == "own" then return ns.PriceScan.SaleAge(link) end
 	return auctionAge("GetAuctionAgeByItemLink", link)
 end
 
@@ -278,7 +308,9 @@ function Prices.SourceLabel()
 		return label
 	end
 	if auctionatorAPI() then return "Auctionator" end
+	if ownScan() then
+		return ns.PriceScan.HasPrices() and "Craft Profit's scan" or "none yet - scan at the auction house"
+	end
 	if ns.db.provider == "tsm" then return "TSM is not loaded" end
-	if ns.db.provider == "auctionator" then return "Auctionator is not loaded" end
-	return "none - install TSM or Auctionator"
+	return "Auctionator is not loaded"
 end

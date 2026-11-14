@@ -1,5 +1,6 @@
 -- Craft Profit: the shopping list button. Adds what you're short of, for one or
--- more crafts, to an Auctionator shopping list, or gives you a TSM search for it.
+-- more crafts, to an Auctionator shopping list or to Craft Profit's own (its
+-- window is ShoppingList.lua), or gives you a TSM search for it.
 local ADDON_NAME, ns = ...
 
 local Shopping = {}
@@ -34,26 +35,25 @@ local function tsmLoaded()
 	return TSM_API and TSM_API.GetCustomPriceValue and true or false
 end
 
--- Whether both Auctionator and TSM are loaded, so there's a choice between them.
-function Shopping.HasBoth()
-	return auctionatorAPI() ~= nil and tsmLoaded()
-end
-
 -- Where lists of missing materials go: "auctionator" (its shopping list), "tsm"
--- (a search to copy into TSM's Shopping tab), or nil when that's turned off or
--- neither is loaded. With both, the "Shop with" choice decides.
+-- (a search to copy into TSM's Shopping tab) or "own" (Craft Profit's own list),
+-- or nil when shopping is turned off. The "Shop with" choice decides. The TSM
+-- search is only ever used when it was chosen: a choice whose addon isn't loaded
+-- goes to Auctionator's list when that's loaded, and to "own" when it isn't.
 function Shopping.ListTarget()
 	if not ns.db.shoppingButton then return end
-	local auctionator, tsm = auctionatorAPI() ~= nil, tsmLoaded()
-	if auctionator and tsm then return ns.db.listAddon == "tsm" and "tsm" or "auctionator" end
-	if auctionator then return "auctionator" end
-	if tsm then return "tsm" end
+	local choice = ns.db.listAddon
+	if choice == "tsm" and tsmLoaded() then return "tsm" end
+	if choice ~= "own" and auctionatorAPI() then return "auctionator" end
+	return "own"
 end
 
--- "Shop with" radios at the bottom of a menu, when both addons are loaded. The
--- menu redraws for the new choice.
+-- "Shop with" radios at the bottom of a menu: the addons that are loaded and
+-- Craft Profit's own list. Left out with neither addon, when there's no choice.
+-- The menu redraws for the new choice.
 function Shopping.AddShopWithChoice(root)
-	if not Shopping.HasBoth() then return end
+	local offered = { auctionator = auctionatorAPI() ~= nil, tsm = tsmLoaded(), own = true }
+	if not (offered.auctionator or offered.tsm) then return end
 	root:CreateDivider()
 	root:CreateTitle("Shop with")
 	local function isChosen(key) return Shopping.ListTarget() == key end
@@ -64,12 +64,12 @@ function Shopping.AddShopWithChoice(root)
 		return MenuResponse and MenuResponse.Refresh
 	end
 	for _, choice in ipairs(ns.LIST_ADDON_CHOICES) do
-		root:CreateRadio(choice[2], isChosen, choose, choice[1])
+		if offered[choice[1]] then root:CreateRadio(choice[2], isChosen, choose, choice[1]) end
 	end
 end
 
 ---------------------------------------------------------------------------
--- Auctionator shopping list
+-- Shopping lists
 ---------------------------------------------------------------------------
 
 -- The profession whose window is open ("Blacksmithing"), or nil.
@@ -92,6 +92,14 @@ function Shopping.ListName(profession, character)
 	return table.concat(parts, " - ")
 end
 
+-- How chat and tooltips name a list: Auctionator's "Snir - Blacksmithing"
+-- shopping list, or the "Snir - Blacksmithing" shopping list for Craft Profit's
+-- own. `listName` defaults to the current list.
+function Shopping.ListPhrase(listName)
+	return format(Shopping.ListTarget() == "auctionator" and "Auctionator's \"%s\" shopping list"
+		or "the \"%s\" shopping list", listName or Shopping.ListName())
+end
+
 -- The lists Clear empties: `listName` when given; else the current one, or with
 -- one list per profession and no profession window open, the lists of all this
 -- character's professions.
@@ -107,6 +115,10 @@ local function listsToClear(listName)
 	if #names == 0 then names[1] = Shopping.ListName() end
 	return names
 end
+
+---------------------------------------------------------------------------
+-- Auctionator shopping list
+---------------------------------------------------------------------------
 
 -- One list line per material and quality, so adding the same one again adds up
 -- the amount.
@@ -214,8 +226,9 @@ end
 -- them changes nothing.
 --
 -- ns.db.listItems[listName][itemID] = { name, tier }: the lines Craft Profit put on
--- each list, saved, since a list outlives the session. Lines you add yourself in
--- Auctionator are left alone, and an entry goes once its line is gone.
+-- each Auctionator list, saved, since a list outlives the session. Lines you add
+-- yourself in Auctionator are left alone, and an entry goes once its line is gone.
+-- Craft Profit's own lists (below) are checked off the same way.
 
 -- How many of each listed item you had when last counted (itemID -> count), this
 -- session. Only a rise since then is checked off: what you use up just lowers it.
@@ -239,6 +252,97 @@ end
 
 local function forgetList(listName)
 	ns.db.listItems[listName] = nil
+end
+
+---------------------------------------------------------------------------
+-- Craft Profit's own shopping list
+---------------------------------------------------------------------------
+-- ns.db.ownLists[listName][itemID] = how many are still to buy. Saved for all your
+-- characters, under the same names as the Auctionator lists. A list that empties
+-- is dropped. ShoppingList.lua is its window.
+
+local function ownChanged()
+	ns.ShoppingList.Refresh()
+end
+
+-- An item's link for the chat messages, or its name while the link hasn't loaded.
+local function itemLink(itemID)
+	local name, link = C_Item.GetItemInfo(itemID)
+	return link or name or format("item %d", itemID)
+end
+
+-- Adds { { itemID, qty } ... } to one of Craft Profit's own lists.
+local function addToOwn(listName, items)
+	local list = ns.db.ownLists[listName] or {}
+	ns.db.ownLists[listName] = list
+	for _, item in ipairs(items) do
+		list[item.itemID] = (list[item.itemID] or 0) + item.qty
+		-- Counted fresh, so only what you get from now on is checked off.
+		lastCount[item.itemID] = ns.Model.Owned(item.itemID)
+	end
+	ownChanged()
+end
+
+-- Takes { { itemID, qty } ... } off one of Craft Profit's own lists, lowering
+-- amounts and dropping lines that reach zero. Returns what came off ({ { itemID,
+-- qty, link, gone } }, gone when its whole line went) and how many lines are left.
+local function removeFromOwn(listName, items)
+	local list = ns.db.ownLists[listName]
+	local removed, left = {}, 0
+	if not list then return removed, left end
+	local byID = {} -- an item named twice in `items` comes off as one
+	for _, item in ipairs(items) do
+		local have = list[item.itemID]
+		if have then
+			local take = math.min(have, item.qty)
+			list[item.itemID] = have > take and have - take or nil
+			local entry = byID[item.itemID]
+			if not entry then
+				entry = { itemID = item.itemID, qty = 0, link = itemLink(item.itemID) }
+				byID[item.itemID] = entry
+				removed[#removed + 1] = entry
+			end
+			entry.qty, entry.gone = entry.qty + take, have <= take
+		end
+	end
+	for _ in pairs(list) do left = left + 1 end
+	if left == 0 then ns.db.ownLists[listName] = nil end
+	if #removed > 0 then ownChanged() end
+	return removed, left
+end
+
+-- Empties these own lists, and says so in chat.
+local function clearOwn(names)
+	local cleared = {}
+	for _, name in ipairs(names) do
+		if ns.db.ownLists[name] then
+			ns.db.ownLists[name] = nil
+			cleared[#cleared + 1] = format("\"%s\"", name)
+		end
+	end
+	if #cleared > 0 then
+		ownChanged()
+		say(format("Cleared the %s shopping list%s.", table.concat(cleared, ", "), #cleared > 1 and "s" or ""))
+	else
+		say(#names > 1 and "Your Craft Profit shopping lists are already empty."
+			or format("The \"%s\" shopping list is already empty.", names[1]))
+	end
+end
+
+-- Empties one of Craft Profit's own lists: the Clear button beside its name.
+function Shopping.ClearOwn(listName)
+	clearOwn({ listName })
+end
+
+-- Takes a whole line off one of Craft Profit's own lists: a right-click on it.
+function Shopping.RemoveOwn(listName, itemID)
+	local list = ns.db.ownLists[listName]
+	if list and list[itemID] then removeFromOwn(listName, { { itemID = itemID, qty = list[itemID] } }) end
+end
+
+-- Whether any of Craft Profit's own lists has something on it.
+function Shopping.OwnHasItems()
+	return next(ns.db.ownLists) ~= nil
 end
 
 -- Every list this character's materials can go to: one per profession and/or the
@@ -287,30 +391,73 @@ local function checkOffList(api, listName, tracked, gained)
 		left == 0 and " That's everything on it." or ""))
 end
 
--- Checks off what you got since the last count. `settling`: only take the counts.
+-- The same for one of Craft Profit's own lists.
+local function checkOffOwn(listName, gained)
+	local items = {}
+	for itemID in pairs(ns.db.ownLists[listName] or {}) do
+		if (gained[itemID] or 0) > 0 then items[#items + 1] = { itemID = itemID, qty = gained[itemID] } end
+	end
+	if #items == 0 then return end
+	local removed, left = removeFromOwn(listName, items)
+	for _, item in ipairs(removed) do gained[item.itemID] = gained[item.itemID] - item.qty end
+	say(format("Checked off the \"%s\" shopping list: %s.%s", listName, itemList(removed),
+		left == 0 and " That's everything on it." or ""))
+end
+
+-- Checks off what you got since the last count, on this character's lists:
+-- Craft Profit's own, and Auctionator's when it's loaded. `settling`: only take
+-- the counts.
 local function checkOff(settling)
-	local api = auctionatorAPI()
-	if not (ns.db and ns.db.checkOff and api) then
+	if not (ns.db and ns.db.checkOff) then
 		lastCount = {} -- start over when it's turned back on
 		return
 	end
+	local api = auctionatorAPI()
 	settling = settling or GetTime() < settledAt
 	local lists, gained, anyGained = myLists(), {}, false
+	local function count(itemID)
+		if gained[itemID] ~= nil then return end
+		local now, before = ns.Model.Owned(itemID), lastCount[itemID]
+		lastCount[itemID] = now
+		gained[itemID] = (not settling and before and now > before) and now - before or 0
+		anyGained = anyGained or gained[itemID] > 0
+	end
 	for _, listName in ipairs(lists) do
-		for itemID in pairs(ns.db.listItems[listName] or {}) do
-			if gained[itemID] == nil then
-				local now, before = ns.Model.Owned(itemID), lastCount[itemID]
-				lastCount[itemID] = now
-				gained[itemID] = (not settling and before and now > before) and now - before or 0
-				anyGained = anyGained or gained[itemID] > 0
-			end
-		end
+		for itemID in pairs(ns.db.ownLists[listName] or {}) do count(itemID) end
+		for itemID in pairs(api and ns.db.listItems[listName] or {}) do count(itemID) end
 	end
 	if not anyGained then return end
 	for _, listName in ipairs(lists) do
-		local tracked = ns.db.listItems[listName]
+		checkOffOwn(listName, gained)
+		local tracked = api and ns.db.listItems[listName]
 		if tracked then checkOffList(api, listName, tracked, gained) end
 	end
+end
+
+-- Craft Profit's own lists that have something on them, this character's first:
+-- { { name, mine, items = { { itemID, qty } ... } } ... }, the items by name.
+function Shopping.OwnLists()
+	local mine = {}
+	for _, name in ipairs(myLists()) do mine[name] = true end
+	local function byName(a, b)
+		local nameA, nameB = C_Item.GetItemNameByID(a.itemID) or "", C_Item.GetItemNameByID(b.itemID) or ""
+		if nameA ~= nameB then return nameA < nameB end
+		return a.itemID < b.itemID
+	end
+	local lists = {}
+	for name, amounts in pairs(ns.db.ownLists) do
+		local list = { name = name, mine = mine[name] or false, items = {} }
+		for itemID, qty in pairs(amounts) do list.items[#list.items + 1] = { itemID = itemID, qty = qty } end
+		if #list.items > 0 then
+			table.sort(list.items, byName)
+			lists[#lists + 1] = list
+		end
+	end
+	table.sort(lists, function(a, b)
+		if a.mine ~= b.mine then return a.mine end
+		return a.name < b.name
+	end)
+	return lists
 end
 
 ---------------------------------------------------------------------------
@@ -500,6 +647,20 @@ local function sendToAuctionator(api, missing, forText, listName)
 	end)
 end
 
+-- The same, to Craft Profit's own list.
+local function sendToOwn(missing, forText, listName)
+	-- Picked now: the window may close before the items load.
+	listName = listName or Shopping.ListName()
+	sortMissing(missing, function(auction, vendor, bound)
+		if #auction > 0 then
+			addToOwn(listName, auction)
+			say(format("Added to the \"%s\" shopping list, for %s: %s.", listName, forText, itemList(auction)))
+			ns.ShoppingList.Added()
+		end
+		sayUnbuyable(vendor, bound, auction)
+	end)
+end
+
 -- The popup with a TSM search to copy. It can't be edited, so a stray key
 -- doesn't break it.
 StaticPopupDialogs.CRAFTPROFIT_TSM_SEARCH = {
@@ -543,9 +704,11 @@ local function copyTSMSearch(missing, forText)
 	end)
 end
 
--- Empties the shopping list (see listsToClear). Auctionator's API can't delete a
--- list, so an empty one is left behind; the next add fills it again.
+-- Empties the shopping list (see listsToClear): Craft Profit's own when that's
+-- where materials go, else Auctionator's. Auctionator's API can't delete a list,
+-- so an empty one is left behind; the next add fills it again.
 function Shopping.Clear(listName)
+	if Shopping.ListTarget() == "own" then return clearOwn(listsToClear(listName)) end
 	local api = auctionatorAPI()
 	if not api then
 		say(ns.Color("warning", "Auctionator is not loaded."))
@@ -598,10 +761,12 @@ function Shopping.Total(missing)
 	return total
 end
 
--- Whether Ctrl-click on the button clears the shopping list: when the button
--- uses Auctionator at all.
+-- Whether materials go to a list that keeps them, Auctionator's or Craft
+-- Profit's own, and not to a TSM search: a list can be cleared (Ctrl-click on the
+-- button), and what was added can be taken back off.
 function Shopping.CanClear()
-	return Shopping.ListTarget() == "auctionator"
+	local target = Shopping.ListTarget()
+	return target == "auctionator" or target == "own"
 end
 
 Shopping.Say = say
@@ -619,14 +784,26 @@ function Shopping.AddMissing(missing, forText, listName)
 		copyTSMSearch(missing, forText)
 	elseif target == "auctionator" then
 		sendToAuctionator(auctionatorAPI(), missing, forText, listName)
+	elseif target == "own" then
+		sendToOwn(missing, forText, listName)
 	else
-		say(ns.Color("warning", "Install Auctionator or TSM to shop for materials."))
+		say(ns.Color("warning", "The shopping list is turned off in the options."))
 	end
 end
 
 -- Takes materials ({ { itemID, qty } ... }) back off the shopping list.
 -- `forText` says what they were for in chat.
 function Shopping.RemoveMissing(missing, forText)
+	if Shopping.ListTarget() == "own" then
+		local listName = Shopping.ListName()
+		local removed = removeFromOwn(listName, missing)
+		if #removed == 0 then
+			say(format("Nothing on the shopping list for %s.", forText))
+		else
+			say(format("Removed from the \"%s\" shopping list, for %s: %s.", listName, forText, itemList(removed)))
+		end
+		return
+	end
 	local api = auctionatorAPI()
 	if not api then
 		say(ns.Color("warning", "Auctionator is not loaded."))
@@ -726,6 +903,7 @@ function Shopping.AddCraftCounts(root, model)
 
 	if not tsm then
 		root:CreateDivider()
+		if Shopping.ListTarget() == "own" then root:CreateButton("Show shopping list", ns.ShoppingList.Show) end
 		root:CreateButton("Clear shopping list", function() Shopping.Clear(model.listName) end)
 	end
 	Shopping.AddShopWithChoice(root)
@@ -737,15 +915,15 @@ local function openMenu(owner, model)
 end
 
 -- What a click on the panel's button does: adds what's missing for one craft.
--- Shift-click opens the menu of craft counts, Ctrl-click clears the shopping
--- list. `owner` is the button, for the menu to open from. `model.listName` is the
--- list, when it isn't the current one.
-function Shopping.Click(model, owner, shift, ctrl)
+-- Right-click (`menu`) opens the menu of craft counts, Ctrl-click (`ctrl`) clears
+-- the shopping list. `owner` is the button, for the menu to open from.
+-- `model.listName` is the list, when it isn't the current one.
+function Shopping.Click(model, owner, menu, ctrl)
 	if ctrl and Shopping.CanClear() then
 		Shopping.Clear(model.listName)
 	elseif not Shopping.ListTarget() then
 		return
-	elseif shift then
+	elseif menu then
 		openMenu(owner, model)
 	else
 		addForCrafts(model, 1)
