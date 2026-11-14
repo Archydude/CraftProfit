@@ -40,6 +40,8 @@ local function loadSettings()
 	db.listItems = db.listItems or {} -- what Craft Profit put on each Auctionator shopping list (see Shopping.lua)
 	db.ownLists = db.ownLists or {} -- Craft Profit's own shopping lists (see Shopping.lua)
 	db.sellHidden = db.sellHidden or {} -- items you hid from the Sell tab's list: itemID -> true (see Sell.lua)
+	db.sellFavorites = db.sellFavorites or {} -- your favorites on that list: itemID -> true
+	db.sellFolded = db.sellFolded or {} -- sections of that list you folded away: section name -> true
 	db.bestHidden = db.bestHidden or {} -- kinds of item the Best crafts list hides: group key -> true
 	-- Best crafts columns you turned on or off (key -> true/false); the rest show as they do by default.
 	db.bestColumns = db.bestColumns or {}

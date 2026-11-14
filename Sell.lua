@@ -1,5 +1,7 @@
 -- Craft Profit: the Sell tab of its auction house window (see ShoppingList.lua).
--- It lists what's in your bags that can be auctioned, your own crafts first. Pick
+-- It lists what's in your bags that can be auctioned: your favorites, your own
+-- crafts, then the rest by the game's kind of item. A section's name folds it
+-- away, and a right-click on an item makes it a favorite or hides it. Pick
 -- one to see what it's listed for, set the price, amount and how long it lasts,
 -- and post it. Every auction is posted by your own click on Post. The game's own
 -- sell page is filled in with the same item, price, amount and duration, so its
@@ -21,12 +23,20 @@ local PAD = 14           -- window edge to the text
 local TOP = 28           -- under the title bar
 local INSET_PAD = 4      -- list frame to the rows
 local SCROLLBAR_ROOM = 22
-local ROW_HEIGHT, BAG_ROWS = 22, 8
+local SEARCH_HEIGHT = 20 -- the search box over the bag list,
+local SEARCH_ROOM = 26   -- and the room it takes with the gap under it
+local ROW_HEIGHT, BAG_ROWS = 24, 6
+local ICON_SIZE = 20     -- a bag line's item icon
+local FOLD_SIZE = 14     -- the plus or minus before a section's name
+local COUNT_WIDTH = 48   -- the column of amounts at a bag line's right end
+local LIST_GAP = 10      -- under the bag list's frame
 local LISTING_HEIGHT, LISTING_ROWS = 20, 4
 -- How tall the bag list's frame is, and what it gains while this tab's own
 -- listings are left out: the gap, the picked item's line and the listings' frame.
 local BAG_HEIGHT = BAG_ROWS * ROW_HEIGHT + 2 * INSET_PAD
-local LISTING_ROOM = 8 + 22 + LISTING_ROWS * LISTING_HEIGHT + 2 * INSET_PAD
+local LISTING_ROOM = LIST_GAP + 22 + LISTING_ROWS * LISTING_HEIGHT + 2 * INSET_PAD
+-- The frame with that room added, cut to whole lines so the last one is never clipped.
+local FULL_HEIGHT = math.floor((BAG_HEIGHT + LISTING_ROOM - 2 * INSET_PAD) / ROW_HEIGHT) * ROW_HEIGHT + 2 * INSET_PAD
 local LINE = 28          -- from one line of the form to the next
 local LABEL_WIDTH = 66   -- "Price", "Amount", "Lasts"
 local COIN = 14          -- coin icons beside the price boxes
@@ -39,6 +49,12 @@ local DURATIONS = ns.AUCTION_DURATIONS
 
 local AWAY_TEXT = "Open the auction house to sell from here."
 local EMPTY_TEXT = "Nothing in your bags can be auctioned."
+local NO_MATCH_TEXT = "Nothing in your bags matches that."
+-- The list's first two sections, and the one for an item whose kind the game doesn't say.
+-- The rest are named after the game's kinds of item (Consumable, Tradeskill...).
+local FAVORITES, CRAFTS, OTHER = "Favorites", "Your crafts", "Other"
+-- A section name's sign: folded away, or open.
+local FOLDED_ICON, OPEN_ICON = "Interface\\Buttons\\UI-PlusButton-Up", "Interface\\Buttons\\UI-MinusButton-Up"
 local PICK_TEXT = "Pick something from the list to sell it."
 
 local panel, body, away, emptyText
@@ -69,6 +85,9 @@ local priceTouched = false
 local posting
 -- Whether the items you hid are listed too.
 local showHidden = false
+-- The search box over the bag list, and what's typed in it, in lower case ("" for nothing).
+local searchBox
+local filter = ""
 -- Items your saved Best crafts scans say you craft: itemID -> true.
 local crafts
 local scanTries = 0
@@ -228,7 +247,7 @@ local function layout()
 	local own = selected ~= nil and not nativeShows()
 	if own == listingsShown then return end
 	listingsShown = own
-	bagInset:SetHeight(BAG_HEIGHT + (own and 0 or LISTING_ROOM))
+	bagInset:SetHeight(own and BAG_HEIGHT or FULL_HEIGHT)
 	for _, part in ipairs(listingParts) do part:SetShown(own) end
 end
 
@@ -515,17 +534,78 @@ local function choose(entry, said)
 	layout()
 end
 
--- The line after `key` in the list, or the one before it at the end.
-local function neighbor(key)
-	local shown, hidden = {}, {}
+-- A name without the icons it can carry: an item's link has its quality icon
+-- inside the brackets, after the name.
+local function withoutIcons(name)
+	return strtrim((name:gsub("|A.-|a", ""):gsub("|T.-|t", "")))
+end
+
+-- An item's name as plain text ("" while the game has none). A caged pet's is in
+-- its link, as its item is only the cage; so is any item's the game hasn't loaded.
+local function plainName(entry)
+	local name = entry.itemID ~= ns.PET_CAGE_ITEM and ns.Format.ItemName(entry.itemID) or entry.link:match("%[(.-)%]")
+	return name and withoutIcons(name) or ""
+end
+
+-- Whether the line is one the search box asks for: any part of its name, in any case.
+local function matches(entry)
+	return filter == "" or plainName(entry):lower():find(filter, 1, true) ~= nil
+end
+
+-- The section a line is in: a favorite is only there, not also under its kind.
+local function sectionOf(entry)
+	if ns.db.sellFavorites[entry.itemID] then return FAVORITES end
+	if entry.craft then return CRAFTS end
+	return entry.kind or OTHER
+end
+
+-- The list as it's shown: its sections in order ({ name, entries }, the lines by
+-- name), and the hidden items. Favorites, your crafts, then the kinds by name.
+-- What the search box doesn't ask for is left out of both.
+local function sections()
+	local byName, list, hidden = {}, {}, {}
 	for _, entry in ipairs(entries) do
-		if not ns.db.sellHidden[entry.itemID] then
-			shown[#shown + 1] = entry
-		elseif showHidden then
+		if not matches(entry) then
+			-- searched away
+		elseif ns.db.sellHidden[entry.itemID] then
 			hidden[#hidden + 1] = entry
+		else
+			local name = sectionOf(entry)
+			local section = byName[name]
+			if not section then
+				section = { name = name, entries = {} }
+				byName[name] = section
+				list[#list + 1] = section
+			end
+			section.entries[#section.entries + 1] = entry
 		end
 	end
-	for _, entry in ipairs(hidden) do shown[#shown + 1] = entry end
+	local first = { [FAVORITES] = 1, [CRAFTS] = 2 }
+	table.sort(list, function(a, b)
+		local orderA, orderB = first[a.name] or 3, first[b.name] or 3
+		if orderA ~= orderB then return orderA < orderB end
+		return a.name < b.name
+	end)
+	return list, hidden
+end
+
+-- Whether a section is folded away. A search shows what it finds anyway.
+local function folded(name)
+	return filter == "" and ns.db.sellFolded[name] == true
+end
+
+-- The line after `key` in the list as it's shown, or the one before it at the end.
+local function neighbor(key)
+	local list, hidden = sections()
+	local shown = {}
+	for _, section in ipairs(list) do
+		if not folded(section.name) then
+			for _, entry in ipairs(section.entries) do shown[#shown + 1] = entry end
+		end
+	end
+	if showHidden then
+		for _, entry in ipairs(hidden) do shown[#shown + 1] = entry end
+	end
 	for index, entry in ipairs(shown) do
 		if entry.key == key then return shown[index + 1] or shown[index - 1] end
 	end
@@ -540,8 +620,30 @@ local function bagTooltip(row)
 	GameTooltip:AddLine(" ")
 	GameTooltip:AddLine(Color("simulated", "Click: pick it to sell"))
 	GameTooltip:AddLine(Color("simulated", ns.db.sellHidden[entry.itemID] and "Right-click: bring it back to the list"
-		or "Right-click: hide it from this list"))
+		or "Right-click: make it a favorite, or hide it"))
 	GameTooltip:Show()
+end
+
+-- A right-click on an item: favorite it, or hide it from the list.
+local function bagMenu(row, entry)
+	GameTooltip:Hide()
+	local itemID = entry.itemID
+	MenuUtil.CreateContextMenu(row, function(_, root)
+		if not ns.db.sellHidden[itemID] then
+			root:CreateButton(ns.db.sellFavorites[itemID] and "Remove from favorites" or "Add to favorites", function()
+				ns.db.sellFavorites[itemID] = not ns.db.sellFavorites[itemID] or nil
+				drawBags()
+			end)
+		end
+		root:CreateButton(ns.db.sellHidden[itemID] and "Bring back to the list" or "Hide from this list", function()
+			ns.db.sellHidden[itemID] = not ns.db.sellHidden[itemID] or nil
+			if selected and selected.key == entry.key and ns.db.sellHidden[itemID] then
+				choose(nil)
+			else
+				drawBags()
+			end
+		end)
+	end)
 end
 
 local function bagClick(row, mouseButton)
@@ -552,16 +654,18 @@ local function bagClick(row, mouseButton)
 		drawBags()
 		return
 	end
+	if data.header then
+		-- A section's name folds it away or opens it again. A search shows everything it finds.
+		if filter == "" then
+			ns.db.sellFolded[data.header] = not ns.db.sellFolded[data.header] or nil
+			drawBags()
+		end
+		return
+	end
 	local entry = data.entry
 	if not entry then return end
 	if mouseButton == "RightButton" then
-		GameTooltip:Hide()
-		ns.db.sellHidden[entry.itemID] = not ns.db.sellHidden[entry.itemID] or nil
-		if selected and selected.key == entry.key and ns.db.sellHidden[entry.itemID] then
-			choose(nil)
-		else
-			drawBags()
-		end
+		bagMenu(row, entry)
 	elseif IsModifiedClick() then
 		HandleModifiedItemClick(entry.link)
 	else
@@ -569,78 +673,136 @@ local function bagClick(row, mouseButton)
 	end
 end
 
-local function drawBag(row, data)
-	if not row.text then
-		row:RegisterForClicks("LeftButtonUp", "RightButtonUp")
-		row.highlight = row:CreateTexture(nil, "HIGHLIGHT")
-		row.highlight:SetAllPoints()
-		row.highlight:SetColorTexture(1, 1, 1, 0.08)
-		row.picked = row:CreateTexture(nil, "BACKGROUND")
-		row.picked:SetAllPoints()
-		row.picked:SetColorTexture(1, 0.82, 0, 0.18)
-		row.text = row:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
-		row.text:SetPoint("LEFT", 6, 0)
-		row.text:SetPoint("RIGHT", -6, 0)
-		row.text:SetJustifyH("LEFT")
-		row.text:SetWordWrap(false)
-		row:SetScript("OnClick", bagClick)
-		row:SetScript("OnEnter", bagTooltip)
-		row:SetScript("OnLeave", GameTooltip_Hide)
+-- A bag line's parts: the item's icon, its name, and the amount in a column of
+-- its own at the right, so names and amounts each line up down the list.
+local function createBagRow(row)
+	row:RegisterForClicks("LeftButtonUp", "RightButtonUp")
+	row.stripe = row:CreateTexture(nil, "BACKGROUND")
+	row.stripe:SetAllPoints()
+	row.stripe:SetColorTexture(1, 1, 1, 0.035)
+	row.picked = row:CreateTexture(nil, "BACKGROUND", nil, 1)
+	row.picked:SetAllPoints()
+	row.picked:SetColorTexture(1, 0.82, 0, 0.2)
+	row.highlight = row:CreateTexture(nil, "HIGHLIGHT")
+	row.highlight:SetAllPoints()
+	row.highlight:SetColorTexture(1, 1, 1, 0.08)
+	-- Under a section's name.
+	row.rule = row:CreateTexture(nil, "ARTWORK")
+	row.rule:SetHeight(1)
+	row.rule:SetPoint("BOTTOMLEFT", 4, 3)
+	row.rule:SetPoint("BOTTOMRIGHT", -4, 3)
+	row.rule:SetColorTexture(1, 0.82, 0, 0.3)
+	row.icon = row:CreateTexture(nil, "ARTWORK")
+	row.icon:SetSize(ICON_SIZE, ICON_SIZE)
+	row.icon:SetPoint("LEFT", 6, 0)
+	row.icon:SetTexCoord(0.08, 0.92, 0.08, 0.92) -- without the icon's own border
+	row.count = row:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
+	row.count:SetPoint("RIGHT", -8, 0)
+	row.count:SetWidth(COUNT_WIDTH)
+	row.count:SetJustifyH("RIGHT")
+	row.text = row:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
+	row.text:SetJustifyH("LEFT")
+	row.text:SetWordWrap(false)
+	row:SetScript("OnClick", bagClick)
+	row:SetScript("OnEnter", bagTooltip)
+	row:SetScript("OnLeave", GameTooltip_Hide)
+end
+
+-- The item's name in its rarity's color with its quality after it, or plain for
+-- a hidden item. A caged pet goes by its link: its item is only the cage.
+local function bagName(entry, plain)
+	local name = plainName(entry)
+	if name == "" then name = "Loading..." end
+	if entry.itemID == ns.PET_CAGE_ITEM then
+		if not plain then name = entry.link end -- its rarity is the link's color
+	elseif not plain then
+		name = ns.Format.RarityColored(entry.itemID, name)
 	end
+	-- The quality icon goes on once: the game's for a material, or else the one in the link.
+	local quality = ns.Blizzard.ReagentQualityMarkup(entry.itemID) or entry.link:match("%[.-(|A.-|a)%]")
+	return name .. (quality and (" " .. quality) or "")
+end
+
+local function drawBag(row, data)
+	if not row.text then createBagRow(row) end
 	row.data = data
 	local entry = data.entry
-	row.highlight:SetShown(not data.header)
 	row.picked:SetShown(entry ~= nil and selected ~= nil and selected.key == entry.key)
+	row.stripe:SetShown(data.stripe == true)
+	row.rule:SetShown(data.header ~= nil)
+	-- An item's line and a section's name both have a sign, a text and a number.
+	local columns = entry ~= nil or data.header ~= nil
+	row.icon:SetShown(columns)
+	row.count:SetShown(columns)
+	row.text:ClearAllPoints()
+	if columns then
+		row.text:SetPoint("LEFT", row.icon, "RIGHT", 6, 0)
+		row.text:SetPoint("RIGHT", row.count, "LEFT", -6, 0)
+	else
+		row.text:SetPoint("LEFT", 6, 0)
+		row.text:SetPoint("RIGHT", -6, 0)
+	end
 	if data.header then
 		row.text:SetFontObject("GameFontNormal")
 		row.text:SetText(data.header)
+		row.icon:SetTexture(data.folded and FOLDED_ICON or OPEN_ICON)
+		row.icon:SetTexCoord(0, 1, 0, 1)
+		row.icon:SetSize(FOLD_SIZE, FOLD_SIZE)
+		row.icon:SetDesaturated(false)
+		row.icon:SetAlpha(1)
+		row.count:SetText(Color("muted", tostring(data.count)))
 	elseif data.toggle then
 		row.text:SetFontObject("GameFontHighlight")
 		row.text:SetText(Color("muted", showHidden and "Don't list the hidden items"
 			or format("%d hidden. Click to list them.", data.count)))
 	else
 		row.text:SetFontObject("GameFontHighlight")
-		local text = ns.Format.Sellable(entry.itemID, entry.link, entry.count)
-		row.text:SetText(data.hidden and Color("muted", text:gsub("|c%x%x%x%x%x%x%x%x", ""):gsub("|r", "")) or text)
+		row.icon:SetTexture(entry.icon or C_Item.GetItemIconByID(entry.itemID))
+		row.icon:SetTexCoord(0.08, 0.92, 0.08, 0.92) -- without the icon's own border
+		row.icon:SetSize(ICON_SIZE, ICON_SIZE)
+		row.icon:SetDesaturated(data.hidden == true)
+		row.icon:SetAlpha(data.hidden and 0.6 or 1)
+		local count = BreakUpLargeNumbers(entry.count)
+		if data.hidden then
+			row.text:SetText(Color("muted", bagName(entry, true)))
+			row.count:SetText(Color("muted", count))
+		else
+			row.text:SetText(bagName(entry))
+			row.count:SetText(count)
+		end
 	end
 	if GameTooltip:IsOwned(row) then
 		if entry then bagTooltip(row) else GameTooltip:Hide() end
 	end
 end
 
--- Your crafts, then everything else, then the hidden items if they're listed.
+-- Each section under its name (with how many lines it has, and none of them when
+-- it's folded away), then the hidden items if they're listed.
 drawBags = function()
-	local mine, others, hidden = {}, {}, {}
-	for _, entry in ipairs(entries) do
-		if ns.db.sellHidden[entry.itemID] then
-			hidden[#hidden + 1] = entry
-		elseif entry.craft then
-			mine[#mine + 1] = entry
-		else
-			others[#others + 1] = entry
+	local list, hidden = sections()
+	local rows, found = {}, #hidden
+	-- Every other line of a section is striped, starting again under each section's name.
+	local function add(lines, isHidden)
+		for index, entry in ipairs(lines) do
+			rows[#rows + 1] = { entry = entry, hidden = isHidden, stripe = index % 2 == 0 }
 		end
 	end
-	local rows = {}
-	if #mine > 0 then
-		rows[#rows + 1] = { header = "Your crafts" }
-		for _, entry in ipairs(mine) do rows[#rows + 1] = { entry = entry } end
-	end
-	if #others > 0 then
-		if #mine > 0 then rows[#rows + 1] = { header = "Everything else in your bags" } end
-		for _, entry in ipairs(others) do rows[#rows + 1] = { entry = entry } end
+	for _, section in ipairs(list) do
+		found = found + #section.entries
+		local isFolded = folded(section.name)
+		rows[#rows + 1] = { header = section.name, folded = isFolded, count = #section.entries }
+		if not isFolded then add(section.entries) end
 	end
 	if #hidden > 0 then
 		rows[#rows + 1] = { toggle = true, count = #hidden }
-		if showHidden then
-			for _, entry in ipairs(hidden) do rows[#rows + 1] = { entry = entry, hidden = true } end
-		end
+		if showHidden then add(hidden, true) end
 	end
 	bagBox:SetDataProvider(CreateDataProvider(rows), ScrollBoxConstants.RetainScrollPosition)
-	emptyText:SetShown(#entries == 0)
+	emptyText:SetText(#entries == 0 and EMPTY_TEXT or NO_MATCH_TEXT)
+	emptyText:SetShown(found == 0)
 end
 
-local function byCraftThenName(a, b)
-	if a.craft ~= b.craft then return a.craft end
+local function byName(a, b)
 	if a.name ~= b.name then return a.name < b.name end
 	return a.key < b.key
 end
@@ -671,7 +833,8 @@ local function scan()
 						local entry = byKey[key]
 						if not entry then
 							entry = { key = key, itemID = info.itemID, link = info.hyperlink, commodity = commodity,
-								bag = bag, slot = slot, count = 0, craft = crafts[info.itemID] or false,
+								bag = bag, slot = slot, count = 0, craft = crafts[info.itemID] or false, icon = info.iconFileID,
+								kind = select(2, C_Item.GetItemInfoInstant(info.itemID)),
 								name = C_Item.GetItemNameByID(info.itemID) or "" }
 							byKey[key] = entry
 							entries[#entries + 1] = entry
@@ -682,7 +845,7 @@ local function scan()
 			end
 		end
 	end
-	table.sort(entries, byCraftThenName)
+	table.sort(entries, byName)
 	if selected then
 		local same = byKey[selected.key]
 		if same then
@@ -873,26 +1036,34 @@ local function scrollList(parent, y, rowHeight, rows, draw, width)
 	return box, inset, bar
 end
 
--- Makes the tab's frame inside the window. Called once, the first time the tab
--- is opened.
-function Sell.Create(parent, width)
-	usesCopper = C_AuctionHouse.SupportsCopperValues ~= nil and C_AuctionHouse.SupportsCopperValues() == true
-	panel = CreateFrame("Frame", nil, parent)
-	panel:SetAllPoints()
-	panel:Hide()
-	away = panel:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
-	away:SetPoint("CENTER")
-	away:SetWidth(width - 80)
-	away:SetText(AWAY_TEXT)
-	body = CreateFrame("Frame", nil, panel)
-	body:SetAllPoints()
+-- The tab is made by three functions, not one: Lua lets a function use at most
+-- 60 of this file's variables, and one function making all of it goes past that
+-- (the file then doesn't load at all). Keep each of them well under it.
 
-	local y = -TOP
+-- The search box, the bag list and the picked item's listings, from `y` down.
+-- Returns where the form starts.
+local function createLists(width, y)
+	-- The search box: the bag list follows what's typed, a letter at a time.
+	searchBox = CreateFrame("EditBox", nil, body, "SearchBoxTemplate")
+	searchBox:SetPoint("TOPLEFT", EDGE + 6, y)
+	searchBox:SetPoint("RIGHT", -EDGE - 2, 0)
+	searchBox:SetHeight(SEARCH_HEIGHT)
+	searchBox:SetAutoFocus(false)
+	searchBox:SetMaxLetters(40)
+	searchBox:SetFontObject("GameFontHighlight")
+	if searchBox.Instructions then searchBox.Instructions:SetFontObject("GameFontDisable") end
+	searchBox:HookScript("OnTextChanged", function(self)
+		local typed = strtrim(self:GetText()):lower()
+		if typed == filter then return end
+		filter = typed
+		drawBags()
+	end)
+	y = y - SEARCH_ROOM
 	bagBox, bagInset = scrollList(body, y, ROW_HEIGHT, BAG_ROWS, drawBag, width)
 	emptyText = body:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
 	emptyText:SetPoint("CENTER", bagInset, "CENTER")
 	emptyText:SetText(EMPTY_TEXT)
-	y = y - (BAG_ROWS * ROW_HEIGHT + 2 * INSET_PAD) - 8
+	y = y - BAG_HEIGHT - LIST_GAP
 
 	pickedText = body:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
 	pickedText:SetPoint("TOPLEFT", PAD, y)
@@ -906,8 +1077,12 @@ function Sell.Create(parent, width)
 	local listingInset, listingBar
 	listingBox, listingInset, listingBar = scrollList(body, y, LISTING_HEIGHT, LISTING_ROWS, drawListing, width)
 	listingParts = { pickedText, sourceText, listingBox, listingInset, listingBar }
-	y = y - (LISTING_ROWS * LISTING_HEIGHT + 2 * INSET_PAD) - 10
+	return y - (LISTING_ROWS * LISTING_HEIGHT + 2 * INSET_PAD) - 10
+end
 
+-- The price, amount and duration, with the totals and the note under them, from
+-- `y` down.
+local function createForm(y)
 	local function changed(_, userInput)
 		if userInput then priceTouched = true end
 		updateTotals()
@@ -979,7 +1154,10 @@ function Sell.Create(parent, width)
 	noteText:SetJustifyH("LEFT")
 	noteText:SetJustifyV("TOP")
 	noteText:SetHeight(30)
+end
 
+-- Post and Skip, along the bottom.
+local function createButtons()
 	skipButton = CreateFrame("Button", nil, body, "UIPanelButtonTemplate")
 	skipButton:SetText("Skip")
 	skipButton:SetSize(80, 24)
@@ -993,6 +1171,23 @@ function Sell.Create(parent, width)
 	postButton:SetPoint("BOTTOMLEFT", PAD, 10)
 	postButton:SetPoint("RIGHT", skipButton, "LEFT", -8, 0)
 	postButton:SetScript("OnClick", post)
+end
+
+-- Makes the tab's frame inside the window. Called once, the first time the tab
+-- is opened.
+function Sell.Create(parent, width)
+	usesCopper = C_AuctionHouse.SupportsCopperValues ~= nil and C_AuctionHouse.SupportsCopperValues() == true
+	panel = CreateFrame("Frame", nil, parent)
+	panel:SetAllPoints()
+	panel:Hide()
+	away = panel:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
+	away:SetPoint("CENTER")
+	away:SetWidth(width - 80)
+	away:SetText(AWAY_TEXT)
+	body = CreateFrame("Frame", nil, panel)
+	body:SetAllPoints()
+	createForm(createLists(width, -TOP))
+	createButtons()
 
 	if not DURATIONS[ns.db.sellDuration] then ns.db.sellDuration = 2 end
 	drawDurations()
@@ -1027,6 +1222,8 @@ events:SetScript("OnEvent", function(_, event, numPosted, total)
 	if event == "AUCTION_HOUSE_CLOSED" then
 		-- Nothing picked or half posted outlives the auction house.
 		selected, pick, listings, posting, nativeKey = nil, nil, nil, nil, nil
+		-- A search is as old as this visit to the auction house.
+		if searchBox then searchBox:SetText("") end
 		StaticPopup_Hide("CRAFTPROFIT_POST_WARNING")
 		layout()
 	end
