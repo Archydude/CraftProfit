@@ -13,7 +13,7 @@ Craft Profit
 
 **Summary**
 ```
-Profit or loss on every craft, and which recipes are worth making. Priced with TSM or Auctionator, on Retail and WoW Forever.
+Profit or loss on every craft, which recipes are worth making, and its own auction house window. Works alone or with TSM and Auctionator, on Retail and WoW Forever.
 ```
 
 **Main category:** `Professions`
@@ -29,38 +29,39 @@ Profit or loss on every craft, and which recipes are worth making. Priced with T
 ```markdown
 ## Is this craft worth it?
 
-Craft Profit answers in gold: **profit or loss?** A panel next to your profession window prices every craft and crafting order, a **Best crafts** tab shows what's worth crafting, and the **Ledger** shows how it really went. On **Retail** and **WoW Forever**.
+Craft Profit answers in gold: **profit or loss?** A panel next to your profession window prices every craft and crafting order, a **Best crafts** tab shows what's worth crafting, the **Ledger** shows how it really went, and its own **auction house window** handles shopping, selling and your auctions. On **Retail** and **WoW Forever**.
 
 - **Expected profit** on every craft, procs included
 - **Best crafts**: every recipe ranked by profit, across all your characters
 - **Ledger**: your crafts, sales, orders and purchases against the forecast
+- **Auction house window**: shopping list, selling, cancelling undercut auctions
+- **No price addon needed**: its own price scan, or TSM and Auctionator prices
 - **Patron orders** priced and crafted right in Blizzard's Patron tab
-- **TSM prices for alts** that keep TSM turned off
-- **WoW Forever**: cost per skill-up, and crafting your own materials
 
 ### Crafts and orders
 The panel leads with the answer: the sale price at the rank you'll get, minus the 5% cut and your materials. On orders: the commission, minus the materials **you** supply, plus sellable rewards.
 
 ### What should I craft?
-**Best crafts** lists every recipe you know, most profitable first. Search by item or **material**, and pick its columns, like gold per **concentration point**. **All characters** puts every character's professions in one list.
+**Best crafts** lists every recipe you know, most profitable first. Search by item or **material**. **All characters** puts every character's professions in one list.
 
 ### Did it pay off?
 The **Ledger** is your crafting history: what each item cost, sold for, went into your own crafts and really made.
 
+### At the auction house
+Craft Profit's window opens beside the auction house. **Shopping list**: a click on a material shows it with the amount to buy. **Sell**: pick an item from your bags and the lowest price is filled in. **My auctions**: see which are undercut and cancel them, one click each.
+
 ### Patron orders
-Blizzard's Patron tab shows each order's **expected profit**, **rewards** and missing **materials**. **Next order** works through them, most profitable first, one click per step. Choose whether orders use **what you own** or **concentration** first.
+Blizzard's Patron tab shows each order's **expected profit**, **rewards** and missing **materials**. **Next order** works through them, one click per step.
 
 ### WoW Forever
-Best crafts also shows what a **skill point** costs with each recipe at your skill, and the **chance** of one, so you can level the cheapest way. With TSM, Best crafts and the panel show how much of each item **sells**. **Craft myself** prices materials you can make at what crafting them costs, and shops for those.
+Best crafts shows what a **skill point** costs with each recipe, and the **chance** of one. **Craft myself** prices materials you can make at what crafting them costs.
 
 ### Item tooltips
-What vendors charge and pay, the auction price, TSM's **sale rate** and the **AH deposit**, so you know whether an item is worth posting.
-
-### Shopping list
-One click adds what you're missing to an **Auctionator** shopping list or a **TSM** search.
+Vendor prices, the auction price, TSM's **sale rate** and the **AH deposit**.
 
 ### Good to know
-- Needs **TradeSkillMaster** or **Auctionator** for prices. **Both together give the best experience**.
+- With no price addon, Craft Profit scans the auction house itself. It uses **TradeSkillMaster** and **Auctionator** prices when they're installed.
+- **TSM prices for alts** that keep TSM turned off.
 - Click the minimap button, or type **/craftprofit** for options.
 
 **Feedback and bug reports are welcome** in the comments.
@@ -72,11 +73,11 @@ One click adds what you're missing to an **Auctionator** shopping list or a **TS
 
 ## B. Upload File form
 
-**File:** `dist\CraftProfit-3.11.3.zip`
+**File:** `dist\CraftProfit-4.0.0.zip`
 
 **Display name**
 ```
-Craft Profit 3.11.3
+Craft Profit 4.0.0
 ```
 
 **Release type:** `Release`
@@ -85,6 +86,15 @@ Craft Profit 3.11.3
 
 **Changelog** (paste only the newest part; paste older parts too if they never went up)
 ```markdown
+4.0.0
+- **No price addon needed:** Craft Profit can now scan the auction house for prices itself. With neither TSM nor Auctionator installed, the scan starts by itself when you open the auction house, at most once an hour, and chat says when it starts and when it's done. With TSM or Auctionator, their prices still come first, and a scan you start yourself fills in items they have no price for. Start one with **Scan now** on the new Prices tab or `/craftprofit scan`. New options: **Scan when I open the auction house**, and **Craft Profit's scan only** under **Price addon**.
+- **Auction house window:** Craft Profit's own window opens beside the game's auction house window, with four tabs: **Shopping list**, **Sell**, **My auctions** and **Prices**. A button with Craft Profit's logo on the side of the auction house window opens and closes it. It opens by itself when your Craft Profit shopping list has something on it, or when Auctionator isn't installed; turn that off with **Open at the auction house** in the options.
+- **Craft Profit's own shopping list:** a third choice under **Shop with**, and where the Shopping list button adds materials when Auctionator isn't installed. The Shopping list tab shows what you still have to buy and what it costs. Click a material to show it at the auction house with the amount to buy, right-click to take it off. Materials come off the list as you get them. Away from the auction house, open it from the minimap button's menu or with `/craftprofit shop`.
+- **Sell tab:** everything in your bags that can be auctioned: your favorites, your own crafts, then the rest by kind of item. Pick an item and the price starts at the lowest listing (it's left empty when a vendor pays more than that) and the amount at all you have. **Post** puts the auction up and moves on to the next item. The game's own sell page is filled in with the same auction, and a price, amount or duration you change there changes in the tab too. Search the list by name, right-click an item to make it a favorite or hide it, click a section's name to fold it away, and drag it to change the order. **Default posting time** in the options sets how long auctions last.
+- **My auctions tab:** your auctions with the lowest price anyone else asks, and which of them are undercut. **Cancel** takes one down, and **Cancel next undercut** works through the undercut ones, one for each click.
+- Changed: the Shopping list button's menu now opens with a **right-click**. It was Shift-click.
+- Changed: with TSM and no Auctionator, the Shopping list button now adds to Craft Profit's own shopping list. To get the TSM search back, pick **TSM search to copy** under **Shop with**. The button also shows now when neither addon is installed.
+
 3.11.3
 - **Vendor Sell** on item tooltips also shows what a vendor pays for the whole stack in your bags.
 

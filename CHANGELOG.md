@@ -1,5 +1,14 @@
 # Changelog
 
+## 4.0.0
+- **No price addon needed:** Craft Profit can now scan the auction house for prices itself. With neither TSM nor Auctionator installed, the scan starts by itself when you open the auction house, at most once an hour, and chat says when it starts and when it's done. With TSM or Auctionator, their prices still come first, and a scan you start yourself fills in items they have no price for. Start one with **Scan now** on the new Prices tab or `/craftprofit scan`. New options: **Scan when I open the auction house**, and **Craft Profit's scan only** under **Price addon**.
+- **Auction house window:** Craft Profit's own window opens beside the game's auction house window, with four tabs: **Shopping list**, **Sell**, **My auctions** and **Prices**. A button with Craft Profit's logo on the side of the auction house window opens and closes it. It opens by itself when your Craft Profit shopping list has something on it, or when Auctionator isn't installed; turn that off with **Open at the auction house** in the options.
+- **Craft Profit's own shopping list:** a third choice under **Shop with**, and where the Shopping list button adds materials when Auctionator isn't installed. The Shopping list tab shows what you still have to buy and what it costs. Click a material to show it at the auction house with the amount to buy, right-click to take it off. Materials come off the list as you get them. Away from the auction house, open it from the minimap button's menu or with `/craftprofit shop`.
+- **Sell tab:** everything in your bags that can be auctioned: your favorites, your own crafts, then the rest by kind of item. Pick an item and the price starts at the lowest listing (it's left empty when a vendor pays more than that) and the amount at all you have. **Post** puts the auction up and moves on to the next item. The game's own sell page is filled in with the same auction, and a price, amount or duration you change there changes in the tab too. Search the list by name, right-click an item to make it a favorite or hide it, click a section's name to fold it away, and drag it to change the order. **Default posting time** in the options sets how long auctions last.
+- **My auctions tab:** your auctions with the lowest price anyone else asks, and which of them are undercut. **Cancel** takes one down, and **Cancel next undercut** works through the undercut ones, one for each click.
+- Changed: the Shopping list button's menu now opens with a **right-click**. It was Shift-click.
+- Changed: with TSM and no Auctionator, the Shopping list button now adds to Craft Profit's own shopping list. To get the TSM search back, pick **TSM search to copy** under **Shop with**. The button also shows now when neither addon is installed.
+
 ## 3.11.3
 - **Vendor Sell** on item tooltips also shows what a vendor pays for the whole stack in your bags.
 

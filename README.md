@@ -15,7 +15,9 @@ Craft Profit tells you, in gold, whether a craft or a crafting order makes or lo
 
 - **Ledger:** your crafting history in its own window: what you crafted, what sold, your orders and what you bought, and how each item did against its forecast.
 
-- **Shopping list:** adds what you're short of, for one or more crafts or for every patron order at once, to an Auctionator shopping list, or as a TSM search to copy. The Auctionator list checks materials off as you get them.
+- **Shopping list:** adds what you're short of, for one or more crafts or for every patron order at once, to Craft Profit's own shopping list, an Auctionator shopping list, or a TSM search to copy. Craft Profit's list and the Auctionator list check materials off as you get them.
+
+- **Auction house window:** Craft Profit's own window beside the auction house: your shopping list, selling from your bags, your auctions with the undercut ones marked, and a price scan of its own.
 
 - **Session total:** under Profit/Loss, what all your crafts made since you logged in on this character (a `/reload` keeps it), including orders crafted from the Patron tab, where it also shows under the order list. Crafts whose item has no sale price, like enchants and treatises, count as a loss of what their materials cost, less what resourcefulness gives back. Click it to reset it to zero. After 5 crafts it also shows your **luck**: how much more (or less) your procs made than expected, like **Luck +14%**.
 
@@ -25,9 +27,9 @@ Craft Profit tells you, in gold, whether a craft or a crafting order makes or lo
 
 - **Best rank on tooltips:** an item you can craft shows the highest rank you can make it at with top-quality materials, anywhere you see its tooltip.
 
-Nothing runs until you open your profession window, apart from noting your auction sales when you open your mailbox and, if you turn it on, saving TSM prices for your alts when you log in. Procs are counted as an average, always shown next to the profit without them.
+Nothing runs until you open your profession window, apart from Craft Profit's window at the auction house (and its price scan there, when neither TSM nor Auctionator gives you prices), noting your auction sales when you open your mailbox, noting what vendors sell when you visit one and, if you turn it on, saving TSM prices for your alts when you log in. Procs are counted as an average, always shown next to the profit without them.
 
-Requires **TradeSkillMaster** or **Auctionator** for prices. Both together give the best experience: TSM adds how fast items sell, Auctionator adds how many are listed and the shopping list that checks itself off. Built for WoW Midnight 12.1, and works on **WoW Forever** too, with a few things of its own there (see [WoW Forever](#wow-forever)).
+Works by itself: with no price addon, Craft Profit scans the auction house for prices (see [Auction house window](#auction-house-window)). It uses **TradeSkillMaster** and **Auctionator** prices when they're installed, and TSM adds how fast items sell. Built for WoW Midnight 12.1, and works on **WoW Forever** too, with a few things of its own there (see [WoW Forever](#wow-forever)).
 
 ## Install
 Copy the `CraftProfit` folder to `World of Warcraft\_retail_\Interface\AddOns\` and restart the game.
@@ -82,7 +84,7 @@ Under your materials there's a **Shopping list** button. It shows a count when y
 
 **Click** it to add what you're missing for one craft. **Right-click** it to open a menu:
 
-- **For 1 / 5 / 10 crafts:** adds what you're missing for that many crafts, with the amount and quality, to an Auctionator shopping list (see Separate lists below). Each line shows how many items it would add. Open the list in Auctionator's Shopping tab at the auction house.
+- **For 1 / 5 / 10 crafts:** adds what you're missing for that many crafts, with the amount and quality, to your shopping list (see Separate lists below). Each line shows how many items it would add. With Auctionator, that's an Auctionator shopping list, in its Shopping tab at the auction house. Without it, it's Craft Profit's own list, in its window at the auction house.
 - **Other amount...:** type any number of crafts. The last number you typed stays in the menu until you log out or `/reload`.
 - **Clear shopping list.**
 
@@ -92,13 +94,13 @@ Shortcut: **Ctrl-click** clears the list, without the menu.
 
 **Checked off as you get them:** materials come off the list as they arrive: bought at the auction house, looted, taken from the mailbox or crafted. (Auction house items that aren't commodities come by mail, so they're checked off once you take them out.) Chat says what came off, and when the list is done. Only what Craft Profit added is checked off: lines you add yourself in Auctionator stay. Moving things between your bags, bank and warband bank doesn't count. Turn off **Check off what you get** in the options to keep the list until you clear it.
 
-**Just one material:** click the cart next to a material you're short of, or **Shift-click** the material, to add only what you're missing of it, for one craft. Pick a quality first by clicking it, and that quality is what gets added. With TSM, you get a search for just that material.
+**Just one material:** click the cart next to a material you're short of, or **Shift-click** the material, to add only what you're missing of it, for one craft. Pick a quality first by clicking it, and that quality is what gets added. With the TSM search, you get a search for just that material.
 
 **Separate lists:** each character and profession gets its own list, like **Thrall - Blacksmithing**. Turn off **one shopping list per character** or **per profession** in the options to share lists instead; with both off, the list is called **Crafting**. Lists from before 1.19.0, named **Craft Profit - ...**, are moved to the new names the next time you log in, along with what's on them.
 
-**TSM without Auctionator:** the button says **Copy TSM search** instead, with the same menu. Pick an amount and a box shows a search, already selected: press Ctrl+C and paste it into the search box on TSM's Shopping tab. It searches for exactly the ranks you're missing and stops at the amounts you need. With neither Auctionator nor TSM, the button is hidden.
+**Where the list goes:** with Auctionator installed, to an Auctionator shopping list. Without it, to Craft Profit's own shopping list, which shows in its window at the auction house (see [Auction house window](#auction-house-window)). Pick another with **Shop with** at the bottom of the menu, in the gear menu at the bottom of the Patron tab, or in the options: **Auctionator shopping list**, **TSM search to copy** or **Craft Profit shopping list**.
 
-**Both installed?** Pick **Shop with: Auctionator shopping list** (default) or **TSM search to copy** at the bottom of the menu, in the gear menu at the bottom of the Patron tab, or in the options.
+**TSM search to copy:** when you pick it, the button says **Copy TSM search** instead, with the same menu. Pick an amount and a box shows a search, already selected: press Ctrl+C and paste it into the search box on TSM's Shopping tab. It searches for exactly the ranks you're missing and stops at the amounts you need.
 
 You can hide the Shopping list button and the Patron tab's shopping buttons in the options. The options also have a **Clear** button for the list.
 
@@ -118,9 +120,9 @@ Above the list, next to the order tabs:
 - **Add profitable** adds what you're missing for every order that makes a profit and whose minimum quality you can reach.
 - **Add all** adds what you're missing for every order at once, except the ones whose minimum quality you can't reach even with the best materials and concentration.
 
-Either way, materials you own count once across all the orders, and what the patrons provide is never added. With only TSM, they're **Copy profitable** and **Copy all**. Hover them to see how many orders and materials they cover.
+Either way, materials you own count once across all the orders, and what the patrons provide is never added. With the TSM search, they're **Copy profitable** and **Copy all**. Hover them to see how many orders and materials they cover.
 
-**With only TSM:** there's no shopping list, so the Patron tab builds one TSM search instead. Each cart click adds that order to it, and **Copy profitable** and **Copy all** add theirs; every time, a box shows the whole search, already selected: press Ctrl+C and paste it into the search box on TSM's Shopping tab. Amounts add up across the orders, and what you own counts once. **Shift-click** a cart to take its order back out. Carts of the orders in the search are lit. The search follows what you're still missing, so materials you've bought since drop out, and so do orders you complete. Under the list, **TSM search: 3 patron orders** shows the search again when you click it; **Clear TSM search** in the gear menu empties it, and it starts empty each time you log in.
+**With the TSM search:** there's no shopping list, so the Patron tab builds one TSM search instead. Each cart click adds that order to it, and **Copy profitable** and **Copy all** add theirs; every time, a box shows the whole search, already selected: press Ctrl+C and paste it into the search box on TSM's Shopping tab. Amounts add up across the orders, and what you own counts once. **Shift-click** a cart to take its order back out. Carts of the orders in the search are lit. The search follows what you're still missing, so materials you've bought since drop out, and so do orders you complete. Under the list, **TSM search: 3 patron orders** shows the search again when you click it; **Clear TSM search** in the gear menu empties it, and it starts empty each time you log in.
 
 Under the list: how much concentration the orders use, this session's total (click to reset it), the **Materials** and **Reach** dropdowns (below), the **Next order** button, and a gear with the list's choices: which orders get your concentration first, Optimize concentration, Next order: include orders that lose gold, Shop with, Clear shopping list and the options.
 
@@ -224,9 +226,55 @@ Craft Profit works on WoW Forever: the panel, Best crafts, the shopping list and
 - **Vendor reagents** (thread, flux, vials, dyes, salt, spices and more) cost their vendor price even before your price addon has seen a vendor sell them.
 - Amounts show the two biggest coins, like **1s 4c** or **4g 12s**.
 
+## Auction house window
+Craft Profit has its own window at the auction house. It opens beside the game's auction house window, and a button with Craft Profit's logo on that window's right edge opens and closes it. It has four tabs: **Shopping list**, **Sell**, **My auctions** and **Prices**.
+
+It opens by itself when your Craft Profit shopping list has something on it, or when Auctionator isn't installed. Turn that off with **Open at the auction house** in the options; the side button still opens it. It doesn't open by itself over another addon's auction house window.
+
+Away from the auction house the window is only the shopping list. Open it from the minimap button's menu, the Shopping list menus, or with `/craftprofit shop`.
+
+### Shopping list tab
+What's on Craft Profit's own shopping lists: each list under its name, every material with the amount still to buy and what that costs, and the total at the bottom.
+
+- **Click** a material to show it at the auction house. For a stackable material, the amount you still need is filled in.
+- **Right-click** a material to take it off the list. **Clear** next to a list's name empties that list.
+- Materials come off as you get them, for the lists of the character you're on.
+
+### Sell tab
+Everything in your bags that can be auctioned, with how many you have.
+
+- **Sections:** your **Favorites** first, then **Your crafts** (items your Best crafts lists know you make), then a section for each kind of item. Each section's name shows how many lines it has. Click a name to fold the section away, and drag it up or down to change the order.
+- **Search:** type part of a name in the box above the list.
+- **Right-click** an item to add it to your favorites or hide it from the list. A line at the bottom says how many are hidden; click it to list them, and right-click one to bring it back.
+- **Click** an item to pick it. The price starts at the lowest listing, and the amount at all you have. When a vendor pays more than the lowest listing, the price is left empty and the tab says so. Gear is priced from listings of its own item level.
+- **Lasts:** how long the auction runs. **Default posting time** in the options sets what every newly picked item starts on.
+- The line under them shows the deposit and what you get after the 5% cut.
+- **Post** puts the auction up and moves on to the next item in the list. **Skip** moves on without posting.
+
+The game's own sell page is filled in with the same item, price, amount and duration, so its Create Auction button posts the same auction, and its list shows what the item is listed for. A price, amount or duration you change there, like clicking a listing to match it, changes in the tab too.
+
+### My auctions tab
+Your auctions, the undercut ones first: each with your price, the lowest price anyone else asks, and the time left. Each one says **Undercut**, **Lowest**, **Sold**, or **Bid only** for an auction without a buyout.
+
+- **Cancel** takes that auction down. It comes back in the mail, without its deposit. Cancelling an auction someone has bid on costs gold, so that one asks first.
+- **Cancel next undercut** cancels one undercut auction for each click, since the game takes one cancel per click. Auctions someone has bid on are left to their own Cancel button.
+- **Check again** reads your auctions and everyone's prices again.
+
+Opening the tab switches the game's window to its own Auctions tab.
+
+### Prices tab
+Where your prices come from, when the auction house was last scanned and how many items the scan found.
+
+- **Scan now** reads the lowest price of everything on the auction house and how many are up. It can take a few minutes on a busy auction house, and you can keep buying and selling while it runs. **Stop** ends it early and keeps what it read.
+- Craft Profit prices your materials and crafts with its scan when neither TSM nor Auctionator does, for items those two have no price for, or always when you pick **Craft Profit's scan only** under **Price addon** in the options.
+- With neither TSM nor Auctionator, a scan starts by itself when you open the auction house, at most once an hour. Turn that off with **Scan when I open the auction house**, on the tab or in the options.
+- What vendors sell is learned as you visit them.
+
+At the auction house, `/craftprofit sell`, `/craftprofit auctions` and `/craftprofit prices` open the window on that tab, and `/craftprofit scan` starts a scan.
+
 ## Minimap button
 - **Click:** opens the profession window of the profession you opened last, on its Best crafts list. Click again to close the list.
-- **Right-click:** a menu to open any of your professions' Best crafts, switch the crafting strategy, or open the options.
+- **Right-click:** a menu to open any of your professions' Best crafts, Craft Profit's shopping list (when you use it), the Ledger, switch the crafting strategy, or open the options.
 - **Hover:** this session's total and your luck.
 - Drag it around the minimap. It's also in the minimap's addon menu, and works with minimap button collectors.
 - Hide it with **Show minimap button** in the options, or type `/craftprofit minimap` (type it again to bring it back).
@@ -275,9 +323,10 @@ Click the gear on the panel (or Craft Profit options in the gear menu under the 
 | Crafting strategy | What the crafting page crafts: Highest rank, cheapest materials (default), Use what I own, or Cheapest materials. On WoW Forever: Buy missing (default) or Craft myself. Also at the bottom of the Best crafts list. |
 | Count procs in profits | On by default. The Best crafts list ranks by what crafts make on average with procs. Also in the Best crafts list's Filter menu. Not on WoW Forever. |
 | Show minimap button | On by default. Also `/craftprofit minimap`. |
-| Price addon | Automatic (TSM first, then Auctionator for anything TSM has no price for), TSM only, or Auctionator only. |
+| Price addon | Automatic (TSM first, then Auctionator for anything TSM has no price for, then Craft Profit's own scan), TSM only, Auctionator only, or Craft Profit's scan only. |
+| Scan when I open the auction house | On by default. Craft Profit's own price scan starts by itself at the auction house, at most once an hour, and only while your prices come from that scan. Also on the Prices tab. |
 | TSM price for materials / crafted items | Market value (default), lowest auction right now, the lower of those two, historical price or region market average. The lower of the two is the careful choice for crafted items: you'd have to match a cheaper auction to sell now. For materials it can show them cheaper than you can buy them right now. |
-| Remind me of old prices | On by default. With Auctionator prices: a chat reminder at the auction house after a day, and a notice over the Best crafts list after 3 days. With TSM prices saved for alts: the same, to log in on a character with TSM. |
+| Remind me of old prices | On by default. With prices from Auctionator or Craft Profit's own scan: a chat reminder at the auction house after a day, and a notice over the Best crafts list after 3 days. With TSM prices saved for alts: the same, to log in on a character with TSM. |
 | Buy vendor items on the auction house | Off by default: materials a vendor sells (thread, flux, vials...) are priced at the vendor, and the shopping list says in chat to buy them there. On: they're priced at their auction house price and go on the shopping list; when the auction house asks more than a vendor, the tooltips of what's missing (the Shopping list button, a material's cart, a Best crafts row) show both prices, and chat says so when the shopping list gets it. |
 | Subtract auction house cut (5%) | On by default. |
 | Save TSM prices for alts | Off by default. Characters with TSM keep its prices for your characters that don't load it (see [TSM prices for alts](#tsm-prices-for-alts)). Turning it off deletes the saved prices. |
@@ -301,11 +350,13 @@ Click the gear on the panel (or Craft Profit options in the gear menu under the 
 
 | Option | What it does |
 |---|---|
-| Show Shopping list button | The Shopping list button under your materials, and on the Patron tab Add profitable, Add all and the cart buttons. On by default; hidden anyway without Auctionator or TSM. |
-| Shop with | With Auctionator and TSM both installed: Auctionator shopping list (default) or TSM search to copy. Also at the bottom of the Shopping list menu and in the gear menu under the Patron tab's list. |
+| Show Shopping list button | The Shopping list button under your materials, and on the Patron tab Add profitable, Add all and the cart buttons. On by default. |
+| Shop with | Auctionator shopping list (default), TSM search to copy, or Craft Profit shopping list. Without Auctionator, the default goes to Craft Profit's own list. Also at the bottom of the Shopping list menu and in the gear menu under the Patron tab's list. |
 | One list per character / per profession | On by default. Either or both split the shopping list, e.g. Thrall - Blacksmithing. With both off, it's called Crafting. |
-| Check off what you get | On by default. Materials come off the Auctionator shopping list as you get them: bought, looted, from the mailbox or crafted. |
-| Auctionator shopping list: Clear | Empties the shopping list. With one list per profession and no profession window open, it empties all this character's profession lists. |
+| Check off what you get | On by default. Materials come off the shopping list as you get them: bought, looted, from the mailbox or crafted. |
+| Open at the auction house | On by default. Craft Profit's window opens by itself beside the auction house when its shopping list has something on it, or when Auctionator isn't installed (see [Auction house window](#auction-house-window)). |
+| Default posting time | How long an auction lasts when you pick an item on the Sell tab: the last one you used (default), or always the same one. |
+| Shopping list: Clear | Empties the shopping list. With one list per profession and no profession window open, it empties all this character's profession lists. |
 
 **Patron orders** (not on WoW Forever)
 
@@ -331,5 +382,6 @@ Click the gear on the panel (or Craft Profit options in the gear menu under the 
 
 ## Notes
 - With Auctionator, prices come from your own auction house scans. Once Auctionator's last scan is over a day old, the panel's and the Best crafts list's footers say so in red ("last scan 2 days ago"), and opening the auction house reminds you in chat to run a full scan. Over 3 days old, opening the Best crafts list shows a notice in the middle of the list, once a session. Turn the reminders off with **Remind me of old prices** in the options. With TSM, the TSM desktop app keeps them up to date for you. With Auctionator, the panel's notes say how old its oldest price is (**seen today**, or **oldest 4 days ago**, in red and in sight at the bottom of the panel once it's 3 days or more), and each material's tooltip says when Auctionator last saw it. Visit the auction house to refresh them.
-- A big Blizzard update to the profession window may need a Craft Profit update too.
+- With Craft Profit's own price scan, the footers show the scan's age the same way. The chat reminder only comes when you've turned off **Scan when I open the auction house**, since otherwise a new scan is about to start.
+- A big Blizzard update to the profession window or the auction house may need a Craft Profit update too.
 - After an update, a What's New window shows what changed since the version you had. Tick **Don't show this after updates** to stop it opening, for all the addons that use it. Type `/whatsnew` to see the latest changes, or to turn it back on.
