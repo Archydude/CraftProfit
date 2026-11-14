@@ -193,7 +193,8 @@ local function updateTotals()
 	elseif qty > available then
 		problem = format("You only have %d to sell.", available)
 	elseif price <= 0 then
-		problem = listings and "Enter a price." or nil
+		-- Why none was filled in comes first (none for sale, under vendor price...).
+		problem = listings and (searchNote or "Enter a price.") or nil
 	elseif deposit > GetMoney() then
 		problem = "You can't pay the deposit."
 	end
@@ -218,8 +219,8 @@ end
 -- The game's sell page for that kind of item, and its window, while the window
 -- is the one on screen.
 local function nativePage(entry)
-	local auctionHouse = AuctionHouseFrame
-	if not (auctionHouse and auctionHouse:IsVisible() and auctionHouse.SetPostItem) then return end
+	local auctionHouse = Search.GameWindow()
+	if not (auctionHouse and auctionHouse.SetPostItem) then return end
 	return entry.commodity and auctionHouse.CommoditiesSellFrame or auctionHouse.ItemSellFrame, auctionHouse
 end
 
@@ -253,20 +254,26 @@ local function layout()
 	for _, part in ipairs(listingParts) do part:SetShown(own) end
 end
 
-local pullNative
+local pullNative, syncNative
+-- The game's sell page changed and hasn't been looked at yet, and whether that
+-- change was the page setting itself up again (its item put back on it, which
+-- resets its price and amount) and not something you did.
+local syncDue, nativeReset = false, false
 
 -- Follows one of the game's sell pages from now on: what changes on it, and
--- when it shows or hides. Hooks, so the game's own code runs untouched.
+-- when it shows or hides. Hooks, so the game's own code runs untouched. A change
+-- is looked at a moment later: the page resets its fields before it says its
+-- item was set, and only then is it clear which of the two it was.
 local function follow(page)
 	if followed[page] then return end
 	followed[page] = true
-	hooksecurefunc(page, "UpdatePostState", function(self)
-		local ok, problem = pcall(pullNative, self)
-		if not ok then
-			pulling = false
-			nativeProblem = tostring(problem)
-		end
-		layout()
+	hooksecurefunc(page, "UpdatePostState", function()
+		if pushing or syncDue then return end
+		syncDue = true
+		C_Timer.After(0, syncNative)
+	end)
+	hooksecurefunc(page, "SetItem", function()
+		if not pushing then nativeReset = true end
 	end)
 	page:HookScript("OnShow", layout)
 	page:HookScript("OnHide", layout)
@@ -377,6 +384,25 @@ pullNative = function(page)
 	end
 	pulling = false
 	updateTotals()
+end
+
+-- A moment after the game's sell page changed. When the page set itself up
+-- again, this tab's price and amount go back on it; otherwise the change was
+-- yours, and it becomes this tab's.
+syncNative = function()
+	syncDue = false
+	local reset = nativeReset
+	nativeReset = false
+	if reset then
+		guarded(fillNative)
+	elseif selected then
+		local ok, problem = pcall(function() pullNative((nativePage(selected))) end)
+		if not ok then
+			pulling = false
+			nativeProblem = tostring(problem)
+		end
+	end
+	layout()
 end
 
 ---------------------------------------------------------------------------
@@ -527,7 +553,7 @@ local function choose(entry, said)
 	local key = entry.key
 	Search.Request(OWNER, itemKey, pick.equipment, function(results)
 		if selected and selected.key == key then onListings(results) end
-	end)
+	end, entry.commodity)
 	drawPicked()
 	drawBags()
 	updateTotals()
@@ -1288,7 +1314,12 @@ function Sell.Create(parent, width)
 	createForm(createLists(width, -TOP))
 	createButtons()
 
-	if not DURATIONS[ns.db.sellDuration] then ns.db.sellDuration = 2 end
+	-- Never chosen here: the game's own choice, so filling in the game's sell page
+	-- doesn't change what you set there.
+	if not DURATIONS[ns.db.sellDuration] then
+		local own = tonumber(GetCVar("auctionHouseDurationDropdown"))
+		ns.db.sellDuration = DURATIONS[own] and own or 2
+	end
 	drawDurations()
 	layout()
 	panel:SetScript("OnShow", refresh)

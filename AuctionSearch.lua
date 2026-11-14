@@ -86,6 +86,18 @@ local function finish(job, results)
 	pump()
 end
 
+-- The order to ask for an item's listings in: the one the game's own window asks
+-- in. The two share what comes back, so another order would scramble its list.
+-- A stackable item's listings come cheapest first without being asked.
+local function sortsFor(job)
+	local commodity = job.commodity
+	if commodity == nil then
+		local info = C_AuctionHouse.GetItemKeyInfo(job.itemKey)
+		commodity = info and info.isCommodity
+	end
+	return commodity and {} or priceSorts()
+end
+
 local function send(job)
 	if job.browse == "start" then
 		-- Everything on the auction house: an empty search with no filters.
@@ -95,9 +107,9 @@ local function send(job)
 	elseif job.owned then
 		C_AuctionHouse.QueryOwnedAuctions(ownedSorts())
 	elseif job.sell then
-		C_AuctionHouse.SendSellSearchQuery(job.itemKey, priceSorts(), true)
+		C_AuctionHouse.SendSellSearchQuery(job.itemKey, sortsFor(job), job.separate)
 	else
-		C_AuctionHouse.SendSearchQuery(job.itemKey, priceSorts(), true)
+		C_AuctionHouse.SendSearchQuery(job.itemKey, sortsFor(job), job.separate)
 	end
 end
 
@@ -139,8 +151,12 @@ end
 -- Asks what an item is listed for. `sell` asks the way the game's own sell page
 -- does (gear of every item level). `callback` gets { commodity, rows }, or nil
 -- when the auction house didn't answer. `owner` names who asked, for Search.Drop.
-function Search.Request(owner, itemKey, sell, callback)
-	add({ owner = owner, itemKey = itemKey, sell = sell, callback = callback })
+-- `commodity` says whether it's stackable, when the asker knows (else the game is
+-- asked), and `separate` asks for your own auctions apart from the rest, as the
+-- game's Auctions tab does and its sell page doesn't.
+function Search.Request(owner, itemKey, sell, callback, commodity, separate)
+	add({ owner = owner, itemKey = itemKey, sell = sell, callback = callback, commodity = commodity,
+		separate = separate == true })
 end
 
 -- Asks for your auctions again. `callback` gets true once the game has them
@@ -180,6 +196,17 @@ function Search.IsOpen()
 	return open
 end
 
+-- A window scaled below this isn't one you can see.
+local SEEN_SCALE = 0.1
+
+-- The game's own auction house window, while it's the one on screen. Another
+-- addon's auction house window (TSM's) leaves the game's open, but shrunk to
+-- nothing and moved off the screen, so "shown" alone doesn't say.
+function Search.GameWindow()
+	local window = AuctionHouseFrame
+	if window and window:IsVisible() and window:GetScale() > SEEN_SCALE then return window end
+end
+
 local events = CreateFrame("Frame")
 events:RegisterEvent("AUCTION_HOUSE_SHOW")
 events:RegisterEvent("AUCTION_HOUSE_CLOSED")
@@ -211,6 +238,20 @@ events:SetScript("OnEvent", function(_, event, arg)
 		if active and active.browse then
 			Search.lastProblem = "the auction house couldn't list everything"
 			finish(active, nil)
+		end
+	elseif event == "COMMODITY_SEARCH_RESULTS_UPDATED" and not (active and not active.browse and not active.owned
+		and active.itemKey.itemID == arg) then
+		-- Someone else asked about this stackable item (the game's own window does,
+		-- for the item on its sell page): the questions about it that are still
+		-- waiting their turn here are answered by the same listings.
+		for index = #queue, 1, -1 do
+			local job = queue[index]
+			if job.itemKey and not job.owned and not job.browse and job.itemKey.itemID == arg then
+				table.remove(queue, index)
+				if job.callback then
+					xpcall(job.callback, geterrorhandler(), { commodity = true, rows = readCommodity(arg) })
+				end
+			end
 		end
 	elseif not active or active.browse then
 		return

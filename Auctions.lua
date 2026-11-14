@@ -302,7 +302,8 @@ local function rebuild()
 			if not auction.sold and auction.price and not checks[auction.key] then
 				local key, check = auction.key, {}
 				checks[key] = check
-				Search.Request(OWNER, itemKey, false, function(results) onChecked(key, check, results) end)
+				-- Your own auctions apart from the rest, as the game's Auctions tab asks.
+			Search.Request(OWNER, itemKey, false, function(results) onChecked(key, check, results) end, nil, true)
 			end
 		end
 	end
@@ -319,8 +320,8 @@ end
 -- Shows the game's own Auctions tab beside this one, as the Sell tab shows the
 -- game's sell page. Guarded: it drives Blizzard's window, which an update can change.
 local function showNative()
-	local auctionHouse = AuctionHouseFrame
-	if auctionHouse and auctionHouse:IsVisible() and auctionHouse.SetDisplayMode and AuctionHouseFrameDisplayMode.Auctions then
+	local auctionHouse = Search.GameWindow()
+	if auctionHouse and auctionHouse.SetDisplayMode and AuctionHouseFrameDisplayMode.Auctions then
 		pcall(auctionHouse.SetDisplayMode, auctionHouse, AuctionHouseFrameDisplayMode.Auctions)
 	end
 end

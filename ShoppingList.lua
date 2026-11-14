@@ -1,7 +1,8 @@
 -- Craft Profit: its auction house window, and the Shopping list tab in it (the
 -- list itself is in Shopping.lua). The Sell and My auctions tabs are in Sell.lua
 -- and Auctions.lua. The window opens beside the auction house, and from the
--- minimap button's menu, the Shopping list menus or /craftprofit shop. Away from
+-- minimap button's menu, the Shopping list menus or /craftprofit shop, and a side
+-- button on the auction house window opens and closes it there. Away from
 -- the auction house it's only the shopping list: the other tabs need the auction
 -- house, so they and /craftprofit sell, auctions and prices wait for it. A click on a
 -- material shows it at the auction house, with the amount still to buy filled in.
@@ -26,7 +27,14 @@ local INSET_BOTTOM = 32  -- room for the total
 local INSET_PAD = 4      -- list frame to the rows
 local SCROLLBAR_ROOM = 22
 local ROW_HEIGHT = 24
-local DOCK_GAP = 4       -- between the auction house and the window
+local DOCK_GAP = 4       -- between the auction house (or its side buttons) and the window
+-- The side button on the auction house window: its icon (the addon's logo), where
+-- the first side button sits on the window's right edge (other addons put theirs
+-- there too), and the gap under the one above.
+local SIDE_ICON = "Interface\\AddOns\\CraftProfit\\Media\\logo"
+local SIDE_X, SIDE_Y = -2, -52
+local SIDE_GAP = 2
+local SIDE_RECHECK = 0.5 -- seconds after the auction house opens: other addons' side buttons are up by then
 -- How long a click waits for the game to load a material's auction details
 -- before it searches by name instead, in seconds.
 local INFO_WAIT = 1.5
@@ -47,6 +55,8 @@ local tab, panels = "shop", {}
 local atAuctionHouse, openedByAuctionHouse, docked = false, false, false
 -- The chat hint on how to open the window: once a session.
 local hinted = false
+-- The side button on the game's auction house window, once that window has opened.
+local sideTab
 -- Looking again for names that are still loading: whether a look is due, how many
 -- there have been since the names were last all there, and an item still without one.
 local nameLookDue, nameLooks, unnamed = false, 0, nil
@@ -64,8 +74,8 @@ local lastProblem
 
 -- Blizzard's auction house window, when it's the one on screen.
 local function auctionFrame()
-	local auctionHouse = AuctionHouseFrame
-	if auctionHouse and auctionHouse:IsVisible() and auctionHouse.SelectBrowseResult then return auctionHouse end
+	local auctionHouse = ns.AuctionSearch.GameWindow()
+	if auctionHouse and auctionHouse.SelectBrowseResult then return auctionHouse end
 end
 
 -- Opens the item's own page, as a click on it in the search results would. The
@@ -212,19 +222,114 @@ end
 -- The window
 ---------------------------------------------------------------------------
 
--- Beside the auction house while it's open, else in the middle of the screen
--- until you drag it. Only moved when that changes, so a dragged window stays.
+-- Beside the auction house while it's open, past its side buttons, else in the
+-- middle of the screen until you drag it. Only moved when that changes, so a
+-- dragged window stays.
 local function place()
 	local auctionHouse = atAuctionHouse and auctionFrame()
 	if auctionHouse and not docked then
 		docked = true
 		frame:ClearAllPoints()
-		frame:SetPoint("TOPLEFT", auctionHouse, "TOPRIGHT", DOCK_GAP, 0)
+		local side = sideTab and sideTab:IsShown() and (sideTab:GetWidth() + SIDE_X) or 0
+		frame:SetPoint("TOPLEFT", auctionHouse, "TOPRIGHT", side + DOCK_GAP, 0)
 	elseif docked and not auctionHouse then
 		docked = false
 		frame:ClearAllPoints()
 		frame:SetPoint("CENTER")
 	end
+end
+
+---------------------------------------------------------------------------
+-- The side button on the auction house window
+---------------------------------------------------------------------------
+-- Other addons (All The Things) put their side buttons in the same place, and
+-- share a frame for it, AuctionHouseFrameTabSideBar: its Tabs lists the buttons
+-- top to bottom, and selTab is the one whose window is open. Craft Profit's joins
+-- it when it's there, so the buttons stack and only one window is open at a time.
+-- It's another addon's arrangement, so every step into it is guarded.
+
+-- The shared frame and this button's place in its list, when another addon made it.
+local function sideBar()
+	local bar = AuctionHouseFrameTabSideBar
+	if type(bar) == "table" and type(bar.Tabs) == "table" then return bar, tIndexOf(bar.Tabs, sideTab) end
+end
+
+-- The button is lit while the window is open. With the shared frame, the other
+-- addon's window closes when this one opens, as this one does for it.
+local function syncSideTab()
+	if not sideTab then return end
+	local open = frame ~= nil and frame:IsShown() and atAuctionHouse
+	sideTab:SetChecked(open)
+	pcall(function()
+		local bar, mine = sideBar()
+		if not (bar and mine) then return end
+		if open then
+			local other = bar.Tabs[bar.selTab or 0]
+			if other and other ~= sideTab then other:GetScript("OnMouseUp")(other) end
+			bar.selTab = mine
+		elseif bar.selTab == mine then
+			bar.selTab = 0
+		end
+	end)
+end
+
+local function sideTooltip(self)
+	GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+	GameTooltip:SetText("Craft Profit")
+	GameTooltip:AddLine("Your shopping list, selling, your auctions and the price scan.", 1, 1, 1, true)
+	GameTooltip:Show()
+end
+
+local function createSideTab(auctionHouse)
+	sideTab = CreateFrame("Frame", nil, auctionHouse, "LargeSideTabButtonTemplate")
+	sideTab.Icon:SetTexture(SIDE_ICON)
+	sideTab:SetFillToInterior(true)
+	sideTab:SetChecked(false)
+	sideTab:SetCustomOnMouseUpHandler(function(_, button, upInside)
+		-- Another addon's side button asks this way for the window to close, for its own to open.
+		if button == nil then
+			if frame then frame:Hide() end
+			return
+		end
+		if button ~= "LeftButton" or upInside == false then return end
+		if frame and frame:IsShown() then
+			frame:Hide()
+		else
+			openedByAuctionHouse = true
+			ShoppingList.Show(ns.db.auctionTab)
+		end
+	end)
+	sideTab:SetScript("OnEnter", sideTooltip)
+	sideTab:SetScript("OnLeave", GameTooltip_Hide)
+end
+
+-- Makes the button the first time, and puts it under the other addons' buttons,
+-- or in the first place when there are none.
+local function placeSideTab()
+	local auctionHouse = AuctionHouseFrame
+	if not (auctionHouse and atAuctionHouse) then return end
+	if not sideTab then
+		if not pcall(createSideTab, auctionHouse) or not sideTab then return end
+	end
+	local parent, above = auctionHouse, nil
+	pcall(function()
+		local bar, mine = sideBar()
+		if not bar then return end
+		if not mine then
+			bar.Tabs[#bar.Tabs + 1] = sideTab
+			mine = #bar.Tabs
+		end
+		parent, above = bar, bar.Tabs[mine - 1]
+	end)
+	sideTab:SetParent(parent)
+	sideTab:ClearAllPoints()
+	if above then
+		sideTab:SetPoint("TOPLEFT", above, "BOTTOMLEFT", 0, -SIDE_GAP)
+	else
+		sideTab:SetPoint("TOPLEFT", parent, "TOPRIGHT", SIDE_X, SIDE_Y)
+	end
+	sideTab:Show()
+	syncSideTab()
 end
 
 -- Draws every list that has something on it, and the total.
@@ -358,13 +463,17 @@ local function create()
 			ShoppingList.Refresh()
 		end)
 	end)
-	frame:SetScript("OnShow", function(self) self:RegisterEvent("GET_ITEM_INFO_RECEIVED") end)
+	frame:SetScript("OnShow", function(self)
+		self:RegisterEvent("GET_ITEM_INFO_RECEIVED")
+		syncSideTab()
+	end)
 	frame:SetScript("OnHide", function(self)
 		self:UnregisterEvent("GET_ITEM_INFO_RECEIVED")
 		openedByAuctionHouse = false
 		nameLooks = 0
 		scrollBox:SetDataProvider(CreateDataProvider({}))
 		GameTooltip:Hide()
+		syncSideTab()
 	end)
 end
 
@@ -416,10 +525,12 @@ events:SetScript("OnEvent", function(_, event, itemID)
 		-- A moment later: the auction house window itself is opening on this event.
 		C_Timer.After(0, function()
 			if not atAuctionHouse then return end
+			placeSideTab() -- before the window, which docks past it
 			if frame and frame:IsShown() then
 				place()
 				setTab(tab) -- the other tabs are back
-			elseif ns.db.auctionWindow then
+			elseif ns.db.auctionWindow and auctionFrame() then
+				-- Only beside the game's own window: it doesn't open over another addon's.
 				-- With something to buy, the shopping list. With nothing, the window still
 				-- opens for selling, unless Auctionator is there to do that.
 				if ns.Shopping.ListTarget() == "own" and ns.Shopping.OwnHasItems() then
@@ -431,8 +542,11 @@ events:SetScript("OnEvent", function(_, event, itemID)
 				end
 			end
 		end)
+		-- Again a moment later: another addon may only now have put its side button up.
+		C_Timer.After(SIDE_RECHECK, placeSideTab)
 	elseif event == "AUCTION_HOUSE_CLOSED" then
 		atAuctionHouse, pending = false, nil
+		syncSideTab()
 		if frame and frame:IsShown() then
 			if openedByAuctionHouse then
 				frame:Hide()
