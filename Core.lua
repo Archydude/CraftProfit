@@ -42,6 +42,7 @@ local function loadSettings()
 	db.sellHidden = db.sellHidden or {} -- items you hid from the Sell tab's list: itemID -> true (see Sell.lua)
 	db.sellFavorites = db.sellFavorites or {} -- your favorites on that list: itemID -> true
 	db.sellFolded = db.sellFolded or {} -- sections of that list you folded away: section name -> true
+	db.sellOrder = db.sellOrder or {} -- the order you dragged its sections into: section names (empty until you drag one)
 	db.bestHidden = db.bestHidden or {} -- kinds of item the Best crafts list hides: group key -> true
 	-- Best crafts columns you turned on or off (key -> true/false); the rest show as they do by default.
 	db.bestColumns = db.bestColumns or {}

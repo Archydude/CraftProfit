@@ -1,7 +1,8 @@
 -- Craft Profit: the Sell tab of its auction house window (see ShoppingList.lua).
 -- It lists what's in your bags that can be auctioned: your favorites, your own
 -- crafts, then the rest by the game's kind of item. A section's name folds it
--- away, and a right-click on an item makes it a favorite or hides it. Pick
+-- away, dragging it moves the section up or down, and a right-click on an item
+-- makes it a favorite or hides it. Pick
 -- one to see what it's listed for, set the price, amount and how long it lasts,
 -- and post it. Every auction is posted by your own click on Post. The game's own
 -- sell page is filled in with the same item, price, amount and duration, so its
@@ -25,7 +26,7 @@ local INSET_PAD = 4      -- list frame to the rows
 local SCROLLBAR_ROOM = 22
 local SEARCH_HEIGHT = 20 -- the search box over the bag list,
 local SEARCH_ROOM = 26   -- and the room it takes with the gap under it
-local ROW_HEIGHT, BAG_ROWS = 24, 6
+local ROW_HEIGHT, BAG_ROWS = 24, 8
 local ICON_SIZE = 20     -- a bag line's item icon
 local FOLD_SIZE = 14     -- the plus or minus before a section's name
 local COUNT_WIDTH = 48   -- the column of amounts at a bag line's right end
@@ -37,7 +38,8 @@ local BAG_HEIGHT = BAG_ROWS * ROW_HEIGHT + 2 * INSET_PAD
 local LISTING_ROOM = LIST_GAP + 22 + LISTING_ROWS * LISTING_HEIGHT + 2 * INSET_PAD
 -- The frame with that room added, cut to whole lines so the last one is never clipped.
 local FULL_HEIGHT = math.floor((BAG_HEIGHT + LISTING_ROOM - 2 * INSET_PAD) / ROW_HEIGHT) * ROW_HEIGHT + 2 * INSET_PAD
-local LINE = 28          -- from one line of the form to the next
+local LINE = 26          -- from one line of the form to the next
+local NOTE_LINE = 16     -- the totals, and the message under them: one line of text each
 local LABEL_WIDTH = 66   -- "Price", "Amount", "Lasts"
 local COIN = 14          -- coin icons beside the price boxes
 -- How long Post waits for the auction house to say the auction is up, in seconds.
@@ -180,7 +182,7 @@ local function updateTotals()
 	local deposit = qty >= 1 and depositFor(selected, qty) or 0
 	local text = "Deposit: " .. exact(deposit)
 	if price > 0 and qty >= 1 then
-		text = text .. format("\nYou get: %s after the %d%% cut", exact(math.floor(price * qty * (1 - ns.AH_CUT))),
+		text = text .. format("     You get: %s (%d%% cut)", exact(math.floor(price * qty * (1 - ns.AH_CUT))),
 			ns.AH_CUT * 100)
 	end
 	totalsText:SetText(text)
@@ -432,7 +434,7 @@ local function onListings(results)
 	listings = results and results.rows or {}
 	drawListings()
 	if not results then
-		searchNote = "The auction house didn't answer. Pick the item again to try once more."
+		searchNote = "The auction house didn't answer. Pick the item again."
 	elseif #listings == 0 then
 		searchNote = "None for sale right now."
 	else
@@ -449,7 +451,7 @@ local function onListings(results)
 		elseif not priceTouched then
 			local vendor = vendorPays(selected.link)
 			if vendor and vendor > 0 and best.price < vendor then
-				searchNote = "The lowest price is less than a vendor pays, so no price was filled in."
+				searchNote = "The lowest price is under vendor price: none filled in."
 			else
 				setPrice(best.price)
 			end
@@ -560,8 +562,10 @@ local function sectionOf(entry)
 end
 
 -- The list as it's shown: its sections in order ({ name, entries }, the lines by
--- name), and the hidden items. Favorites, your crafts, then the kinds by name.
--- What the search box doesn't ask for is left out of both.
+-- name), and the hidden items. The sections are in the order you dragged them
+-- into; until you do, and for a section that's new since, it's favorites, your
+-- crafts, then the kinds by name. What the search box doesn't ask for is left
+-- out of both.
 local function sections()
 	local byName, list, hidden = {}, {}, {}
 	for _, entry in ipairs(entries) do
@@ -580,10 +584,13 @@ local function sections()
 			section.entries[#section.entries + 1] = entry
 		end
 	end
-	local first = { [FAVORITES] = 1, [CRAFTS] = 2 }
+	local order, first = ns.db.sellOrder, { [FAVORITES] = 1, [CRAFTS] = 2 }
+	local function place(name)
+		return tIndexOf(order, name) or (#order + (first[name] or 3))
+	end
 	table.sort(list, function(a, b)
-		local orderA, orderB = first[a.name] or 3, first[b.name] or 3
-		if orderA ~= orderB then return orderA < orderB end
+		local placeA, placeB = place(a.name), place(b.name)
+		if placeA ~= placeB then return placeA < placeB end
 		return a.name < b.name
 	end)
 	return list, hidden
@@ -592,6 +599,72 @@ end
 -- Whether a section is folded away. A search shows what it finds anyway.
 local function folded(name)
 	return filter == "" and ns.db.sellFolded[name] == true
+end
+
+---------------------------------------------------------------------------
+-- Dragging a section to another place
+---------------------------------------------------------------------------
+
+-- The section whose name is being dragged, while the mouse button is down.
+local dragging
+local dragWatch = CreateFrame("Frame")
+
+-- The section the mouse is over: its name's line or any of its items.
+local function sectionUnderMouse()
+	local found
+	bagBox:ForEachFrame(function(row)
+		if row.data and row.data.section and row:IsMouseOver() then found = row.data.section end
+	end)
+	return found
+end
+
+-- While dragging: the section it would land on is lit.
+local function markDrop()
+	local target = dragging and sectionUnderMouse()
+	if target == dragging then target = nil end
+	bagBox:ForEachFrame(function(row)
+		if row.drop then row.drop:SetShown(target ~= nil and row.data ~= nil and row.data.section == target) end
+	end)
+end
+
+-- Puts one section where another is: above it when it came from below, under
+-- it when it came from above. The order is first written down as it is now.
+local function moveSection(moved, target)
+	local order = ns.db.sellOrder
+	if #order == 0 then order[1], order[2] = FAVORITES, CRAFTS end
+	for _, section in ipairs((sections())) do
+		if not tContains(order, section.name) then order[#order + 1] = section.name end
+	end
+	local from, to = tIndexOf(order, moved), tIndexOf(order, target)
+	if not (from and to) then return end
+	table.remove(order, from)
+	table.insert(order, to, moved)
+end
+
+local function startDrag(row)
+	dragging = row.data.header
+	GameTooltip:SetOwner(row, "ANCHOR_CURSOR")
+	GameTooltip:SetText("Move " .. dragging, 1, 1, 1)
+	GameTooltip:AddLine(Color("simulated", "Drop it on the section it goes next to"))
+	GameTooltip:Show()
+	dragWatch:SetScript("OnUpdate", markDrop)
+end
+
+-- The mouse button is up: the section moves, if it's over another one.
+local function stopDrag()
+	if not dragging then return end
+	local moved, target = dragging, sectionUnderMouse()
+	dragging = nil
+	dragWatch:SetScript("OnUpdate", nil)
+	GameTooltip:Hide()
+	if target and target ~= moved then moveSection(moved, target) end
+	drawBags()
+end
+
+-- The tab went away mid-drag: nothing moves.
+local function cancelDrag()
+	dragging = nil
+	dragWatch:SetScript("OnUpdate", nil)
 end
 
 -- The line after `key` in the list as it's shown, or the one before it at the end.
@@ -612,7 +685,16 @@ local function neighbor(key)
 end
 
 local function bagTooltip(row)
+	if dragging then return end -- the tooltip is saying what's being moved
 	local data = row.data
+	if data and data.header then
+		GameTooltip:SetOwner(row, "ANCHOR_RIGHT")
+		GameTooltip:SetText(data.header, 1, 1, 1)
+		GameTooltip:AddLine(Color("simulated", data.folded and "Click: open it" or "Click: fold it away"))
+		GameTooltip:AddLine(Color("simulated", "Drag: move it up or down the list"))
+		GameTooltip:Show()
+		return
+	end
 	local entry = data and data.entry
 	if not entry then return end
 	GameTooltip:SetOwner(row, "ANCHOR_RIGHT")
@@ -686,6 +768,11 @@ local function createBagRow(row)
 	row.highlight = row:CreateTexture(nil, "HIGHLIGHT")
 	row.highlight:SetAllPoints()
 	row.highlight:SetColorTexture(1, 1, 1, 0.08)
+	-- On the section a dragged one would land on.
+	row.drop = row:CreateTexture(nil, "BACKGROUND", nil, 2)
+	row.drop:SetAllPoints()
+	row.drop:SetColorTexture(0.3, 0.6, 1, 0.25)
+	row.drop:Hide()
 	-- Under a section's name.
 	row.rule = row:CreateTexture(nil, "ARTWORK")
 	row.rule:SetHeight(1)
@@ -705,7 +792,14 @@ local function createBagRow(row)
 	row.text:SetWordWrap(false)
 	row:SetScript("OnClick", bagClick)
 	row:SetScript("OnEnter", bagTooltip)
-	row:SetScript("OnLeave", GameTooltip_Hide)
+	row:SetScript("OnLeave", function()
+		if not dragging then GameTooltip:Hide() end
+	end)
+	-- Only a section's name is dragged (see drawBag).
+	row:SetScript("OnDragStart", function(self)
+		if self.data and self.data.header then startDrag(self) end
+	end)
+	row:SetScript("OnDragStop", stopDrag)
 end
 
 -- The item's name in its rarity's color with its quality after it, or plain for
@@ -730,6 +824,9 @@ local function drawBag(row, data)
 	row.picked:SetShown(entry ~= nil and selected ~= nil and selected.key == entry.key)
 	row.stripe:SetShown(data.stripe == true)
 	row.rule:SetShown(data.header ~= nil)
+	row.drop:Hide()
+	-- A section's name can be dragged; an item's line can't, so a click on it is never taken for a drag.
+	if data.header then row:RegisterForDrag("LeftButton") else row:RegisterForDrag() end
 	-- An item's line and a section's name both have a sign, a text and a number.
 	local columns = entry ~= nil or data.header ~= nil
 	row.icon:SetShown(columns)
@@ -771,8 +868,8 @@ local function drawBag(row, data)
 			row.count:SetText(count)
 		end
 	end
-	if GameTooltip:IsOwned(row) then
-		if entry then bagTooltip(row) else GameTooltip:Hide() end
+	if GameTooltip:IsOwned(row) and not dragging then
+		if entry or data.header then bagTooltip(row) else GameTooltip:Hide() end
 	end
 end
 
@@ -782,16 +879,16 @@ drawBags = function()
 	local list, hidden = sections()
 	local rows, found = {}, #hidden
 	-- Every other line of a section is striped, starting again under each section's name.
-	local function add(lines, isHidden)
+	local function add(lines, isHidden, sectionName)
 		for index, entry in ipairs(lines) do
-			rows[#rows + 1] = { entry = entry, hidden = isHidden, stripe = index % 2 == 0 }
+			rows[#rows + 1] = { entry = entry, hidden = isHidden, stripe = index % 2 == 0, section = sectionName }
 		end
 	end
 	for _, section in ipairs(list) do
 		found = found + #section.entries
 		local isFolded = folded(section.name)
-		rows[#rows + 1] = { header = section.name, folded = isFolded, count = #section.entries }
-		if not isFolded then add(section.entries) end
+		rows[#rows + 1] = { header = section.name, folded = isFolded, count = #section.entries, section = section.name }
+		if not isFolded then add(section.entries, nil, section.name) end
 	end
 	if #hidden > 0 then
 		rows[#rows + 1] = { toggle = true, count = #hidden }
@@ -923,7 +1020,7 @@ local function post()
 	if refused then
 		local native = nativeKey == this.key
 		lastRefusal = format("in combat: %s, on the game's sell page: %s", tostring(InCombatLockdown()), tostring(native))
-		searchNote = native and "The game didn't take that click. Create Auction on its own sell page posts the same auction."
+		searchNote = native and "The game didn't take that click. Use Create Auction instead."
 			or "The game didn't take that click. Try Post again."
 		stopPosting()
 		return
@@ -1146,14 +1243,16 @@ local function createForm(y)
 	totalsText:SetPoint("RIGHT", -PAD, 0)
 	totalsText:SetJustifyH("LEFT")
 	totalsText:SetJustifyV("TOP")
-	totalsText:SetHeight(32) -- two lines: the deposit, then what you get
-	y = y - 36
+	totalsText:SetWordWrap(false)
+	totalsText:SetHeight(NOTE_LINE) -- one line: the deposit, then what you get
+	y = y - NOTE_LINE - 2
 	noteText = body:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
 	noteText:SetPoint("TOPLEFT", PAD, y)
 	noteText:SetPoint("RIGHT", -PAD, 0)
 	noteText:SetJustifyH("LEFT")
 	noteText:SetJustifyV("TOP")
-	noteText:SetHeight(30)
+	noteText:SetWordWrap(false) -- every message is written to fit one line
+	noteText:SetHeight(NOTE_LINE)
 end
 
 -- Post and Skip, along the bottom.
@@ -1195,6 +1294,7 @@ function Sell.Create(parent, width)
 	panel:SetScript("OnShow", refresh)
 	panel:SetScript("OnHide", function()
 		Search.Drop(OWNER)
+		cancelDrag()
 		GameTooltip:Hide()
 	end)
 	return panel
