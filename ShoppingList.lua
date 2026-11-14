@@ -34,6 +34,7 @@ local DOCK_GAP = 4       -- between the auction house (or its side buttons) and 
 local SIDE_ICON = "Interface\\AddOns\\CraftProfit\\Media\\logo"
 local SIDE_X, SIDE_Y = -2, -52
 local SIDE_GAP = 2
+local SIDE_ICON_SIZE = 24 -- on Retail, where the icon doesn't fill the button
 local SIDE_RECHECK = 0.5 -- seconds after the auction house opens: other addons' side buttons are up by then
 -- How long a click waits for the game to load a material's auction details
 -- before it searches by name instead, in seconds.
@@ -55,8 +56,9 @@ local tab, panels = "shop", {}
 local atAuctionHouse, openedByAuctionHouse, docked = false, false, false
 -- The chat hint on how to open the window: once a session.
 local hinted = false
--- The side button on the game's auction house window, once that window has opened.
-local sideTab
+-- The side button on the game's auction house window, once that window has
+-- opened, and why making it failed, if it did (it isn't tried again).
+local sideTab, sideFailed
 -- Looking again for names that are still loading: whether a look is due, how many
 -- there have been since the names were last all there, and an item still without one.
 local nameLookDue, nameLooks, unnamed = false, 0, nil
@@ -138,6 +140,7 @@ end
 function ShoppingList.Explain()
 	ns.Shopping.Say(lastProblem and ("Testing: the last auction house search went by name: " .. lastProblem)
 		or "Testing: no shopping list click has had to search by name.")
+	if sideFailed then ns.Shopping.Say("Testing: the auction house side button couldn't be made: " .. sideFailed) end
 	ns.Shopping.Say(unnamed and format("Testing: item %d still has no name after %d looks.", unnamed, nameLooks)
 		or "Testing: every name on the shopping list has loaded.")
 end
@@ -254,12 +257,25 @@ local function sideBar()
 	if type(bar) == "table" and type(bar.Tabs) == "table" then return bar, tIndexOf(bar.Tabs, sideTab) end
 end
 
+-- Lights the button or not, and puts the logo back on it. Retail's side buttons
+-- blank their icon and its size whenever they're lit or unlit; WoW Forever's
+-- keep it, and can make it fill the button.
+local function lightSideTab(tab, lit)
+	tab:SetChecked(lit)
+	tab.Icon:SetTexture(SIDE_ICON)
+	if tab.SetFillToInterior then
+		tab:SetFillToInterior(true)
+	else
+		tab.Icon:SetSize(SIDE_ICON_SIZE, SIDE_ICON_SIZE)
+	end
+end
+
 -- The button is lit while the window is open. With the shared frame, the other
 -- addon's window closes when this one opens, as this one does for it.
 local function syncSideTab()
 	if not sideTab then return end
 	local open = frame ~= nil and frame:IsShown() and atAuctionHouse
-	sideTab:SetChecked(open)
+	lightSideTab(sideTab, open)
 	pcall(function()
 		local bar, mine = sideBar()
 		if not (bar and mine) then return end
@@ -280,12 +296,15 @@ local function sideTooltip(self)
 	GameTooltip:Show()
 end
 
+-- Makes the button. It only becomes the side button once all of it is made, so
+-- a step that fails (the game's side buttons differ between its versions) leaves
+-- no half-made button on screen.
 local function createSideTab(auctionHouse)
-	sideTab = CreateFrame("Frame", nil, auctionHouse, "LargeSideTabButtonTemplate")
-	sideTab.Icon:SetTexture(SIDE_ICON)
-	sideTab:SetFillToInterior(true)
-	sideTab:SetChecked(false)
-	sideTab:SetCustomOnMouseUpHandler(function(_, button, upInside)
+	local tab = CreateFrame("Frame", nil, auctionHouse, "LargeSideTabButtonTemplate")
+	tab:Hide()
+	tab.tooltipText = "Craft Profit" -- what the game's own tooltip for it reads
+	lightSideTab(tab, false)
+	tab:SetCustomOnMouseUpHandler(function(_, button, upInside)
 		-- Another addon's side button asks this way for the window to close, for its own to open.
 		if button == nil then
 			if frame then frame:Hide() end
@@ -299,8 +318,9 @@ local function createSideTab(auctionHouse)
 			ShoppingList.Show(ns.db.auctionTab)
 		end
 	end)
-	sideTab:SetScript("OnEnter", sideTooltip)
-	sideTab:SetScript("OnLeave", GameTooltip_Hide)
+	tab:SetScript("OnEnter", sideTooltip)
+	tab:SetScript("OnLeave", GameTooltip_Hide)
+	sideTab = tab
 end
 
 -- Makes the button the first time, and puts it under the other addons' buttons,
@@ -309,7 +329,12 @@ local function placeSideTab()
 	local auctionHouse = AuctionHouseFrame
 	if not (auctionHouse and atAuctionHouse) then return end
 	if not sideTab then
-		if not pcall(createSideTab, auctionHouse) or not sideTab then return end
+		if sideFailed then return end
+		local ok, problem = pcall(createSideTab, auctionHouse)
+		if not ok or not sideTab then
+			sideFailed = tostring(problem)
+			return
+		end
 	end
 	local parent, above = auctionHouse, nil
 	pcall(function()
