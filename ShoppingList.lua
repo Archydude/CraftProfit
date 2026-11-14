@@ -1,7 +1,9 @@
 -- Craft Profit: its auction house window, and the Shopping list tab in it (the
 -- list itself is in Shopping.lua). The Sell and My auctions tabs are in Sell.lua
 -- and Auctions.lua. The window opens beside the auction house, and from the
--- Shopping list menus or /craftprofit shop, sell, auctions and prices. A click on a
+-- minimap button's menu, the Shopping list menus or /craftprofit shop. Away from
+-- the auction house it's only the shopping list: the other tabs need the auction
+-- house, so they and /craftprofit sell, auctions and prices wait for it. A click on a
 -- material shows it at the auction house, with the amount still to buy filled in.
 local _, ns = ...
 
@@ -265,7 +267,8 @@ end
 -- Sell and My auctions say to open it.
 local function setTab(key)
 	tab = key
-	ns.db.auctionTab = key
+	-- Away from the auction house it's always the shopping list, which isn't a choice to remember.
+	if atAuctionHouse then ns.db.auctionTab = key end
 	if not panels[key] then
 		panels[key] = ns[TAB_MODULES[key]].Create(frame, WIDTH, HEIGHT)
 	end
@@ -274,7 +277,11 @@ local function setTab(key)
 	frame:SetTitle(TAB_LABELS[key])
 	PanelTemplates_SetTab(frame, tIndexOf(TAB_KEYS, key))
 	-- The selected tab's label uses another font, so every tab measures again.
-	for _, button in ipairs(frame.Tabs) do PanelTemplates_TabResize(button, TAB_PADDING) end
+	for _, button in ipairs(frame.Tabs) do
+		PanelTemplates_TabResize(button, TAB_PADDING)
+		-- The other tabs all need the auction house, so there's nothing to switch to away from it.
+		button:SetShown(atAuctionHouse)
+	end
 	ShoppingList.Refresh()
 end
 
@@ -361,10 +368,11 @@ local function create()
 	end)
 end
 
--- Opens the window on a tab: "shop" (when none is named), "sell" or "auctions".
+-- Opens the window on a tab: "shop" (when none is named), "sell", "auctions" or
+-- "prices". Away from the auction house it's always the shopping list.
 function ShoppingList.Show(key)
 	-- A menu passes its own things here, so only a tab's name counts.
-	key = TAB_LABELS[key] and key or "shop"
+	key = (atAuctionHouse and TAB_LABELS[key]) and key or "shop"
 	if not frame then create() end
 	place()
 	frame:Show()
@@ -374,6 +382,10 @@ end
 -- Opens the window on that tab, or closes it when that tab is already showing.
 function ShoppingList.Toggle(key)
 	key = TAB_LABELS[key] and key or "shop"
+	if key ~= "shop" and not atAuctionHouse then
+		ns.Shopping.Say(format("Open the auction house to use the %s tab.", TAB_LABELS[key]))
+		return
+	end
 	if frame and frame:IsShown() and tab == key then frame:Hide() else ShoppingList.Show(key) end
 end
 
@@ -406,6 +418,7 @@ events:SetScript("OnEvent", function(_, event, itemID)
 			if not atAuctionHouse then return end
 			if frame and frame:IsShown() then
 				place()
+				setTab(tab) -- the other tabs are back
 			elseif ns.db.auctionWindow then
 				-- With something to buy, the shopping list. With nothing, the window still
 				-- opens for selling, unless Auctionator is there to do that.
@@ -421,7 +434,13 @@ events:SetScript("OnEvent", function(_, event, itemID)
 	elseif event == "AUCTION_HOUSE_CLOSED" then
 		atAuctionHouse, pending = false, nil
 		if frame and frame:IsShown() then
-			if openedByAuctionHouse then frame:Hide() else place() end
+			if openedByAuctionHouse then
+				frame:Hide()
+			else
+				-- You opened it yourself: it stays, as only the shopping list.
+				place()
+				setTab("shop")
+			end
 		end
 	elseif pending and pending.itemID == itemID then
 		local waiting = pending

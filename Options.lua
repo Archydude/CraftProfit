@@ -270,7 +270,7 @@ function Options.Create()
 		"or with none open, the lists of all this character's professions.")
 	header("Auction house window")
 	checkbox("auctionWindow", "Open at the auction house",
-		"Craft Profit's own window opens beside the auction house. It has four tabs:\n\n" ..
+		"Craft Profit's own window opens beside the auction house. There it has four tabs:\n\n" ..
 		"Shopping list: what you still have to buy. A click on a material shows it at the auction house.\n\n" ..
 		"Sell: what's in your bags that can be auctioned, with what each is listed for. Set the price, the " ..
 		"amount and how long it lasts, and post it. The game's own sell page is filled in with the same " ..
@@ -280,15 +280,13 @@ function Options.Create()
 		"Prices: when the auction house was last scanned for prices, and the button that scans it.\n\n" ..
 		"It opens by itself when Craft Profit's shopping list has something on it, or when Auctionator " ..
 		"isn't installed.\n\n" ..
-		"Off: it only opens from the button below, the Shopping list menus, or /craftprofit shop, sell, " ..
-		"auctions and prices.")
+		"Away from the auction house it's only the shopping list.\n\n" ..
+		"Off: it only opens from the minimap button's menu, the Shopping list menus, or /craftprofit shop. " ..
+		"At the auction house, /craftprofit sell, auctions and prices open its other tabs.")
 	dropdown("sellDefault", "Default posting time", ns.SELL_DEFAULT_CHOICES,
 		"How long an auction lasts when you pick an item on the Sell tab. You can still change it there for " ..
 		"the item you're posting.\n\n" ..
 		"The last one you used: it stays on whatever you chose last.")
-	button("Craft Profit's window", "Show", function() ns.ShoppingList.Show(ns.db.auctionTab) end,
-		"Opens the window on the tab you last used. /craftprofit shop, sell, auctions and prices each open " ..
-		"it on their own tab. Selling, your auctions and scanning need the auction house open.")
 
 	---------------------------------------------------------------------------
 	-- Patron orders
