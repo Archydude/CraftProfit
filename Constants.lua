@@ -12,6 +12,15 @@ ns.PET_CAGE_ITEM = 82800
 -- out of sight there.
 ns.QUALITY_CRAFTING = select(4, GetBuildInfo()) >= 100000
 
+-- How long an auction can last, by the game's number for it: Retail's, or WoW Forever's.
+ns.AUCTION_DURATIONS = ns.QUALITY_CRAFTING and { "12 hours", "24 hours", "48 hours" } or { "2 hours", "8 hours", "24 hours" }
+-- Choices for how long the Sell tab starts a newly picked item on: the last one
+-- you used, or always the same one (the game's number for it, as text).
+ns.SELL_DEFAULT_CHOICES = { { "last", "The last one you used" } }
+for index, text in ipairs(ns.AUCTION_DURATIONS) do
+	ns.SELL_DEFAULT_CHOICES[#ns.SELL_DEFAULT_CHOICES + 1] = { tostring(index), text }
+end
+
 -- Panel layout, in pixels before the panel's own scale.
 ns.Layout = {
 	WIDTH = 380,
@@ -72,6 +81,7 @@ ns.DEFAULTS = {
 	auctionWindow = true,      -- Craft Profit's window opens by itself at the auction house (see ShoppingList.lua)
 	auctionTab = "sell",       -- the tab it was last on: "shop" | "sell" | "auctions"
 	sellDuration = 2,          -- how long auctions posted from the Sell tab last, by the game's number for it
+	sellDefault = "last",      -- what a newly picked item starts on: "last" | "1" | "2" | "3" (see ns.SELL_DEFAULT_CHOICES)
 	patronList = true,    -- Craft Profit's columns, buttons and footer on the Patron tab's order list
 	patronSort = false,   -- the Patron tab sorted by profit: "desc" | "asc", or false for Blizzard's sort
 	concentrationFor = "profit", -- patron orders that need concentration get it by: "profit" | "knowledge", or "none" of it

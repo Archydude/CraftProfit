@@ -282,6 +282,10 @@ function Options.Create()
 		"isn't installed.\n\n" ..
 		"Off: it only opens from the button below, the Shopping list menus, or /craftprofit shop, sell, " ..
 		"auctions and prices.")
+	dropdown("sellDefault", "Default posting time", ns.SELL_DEFAULT_CHOICES,
+		"How long an auction lasts when you pick an item on the Sell tab. You can still change it there for " ..
+		"the item you're posting.\n\n" ..
+		"The last one you used: it stays on whatever you chose last.")
 	button("Craft Profit's window", "Show", function() ns.ShoppingList.Show(ns.db.auctionTab) end,
 		"Opens the window on the tab you last used. /craftprofit shop, sell, auctions and prices each open " ..
 		"it on their own tab. Selling, your auctions and scanning need the auction house open.")

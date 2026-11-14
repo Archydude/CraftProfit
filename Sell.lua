@@ -34,8 +34,8 @@ local COIN = 14          -- coin icons beside the price boxes
 local POST_WAIT = 8
 -- Bag items the game hasn't loaded yet are looked at again this often, this many times.
 local SCAN_WAIT, SCAN_TRIES = 0.5, 6
--- How long an auction lasts, by the game's number for it: Retail's, or WoW Forever's.
-local DURATIONS = ns.QUALITY_CRAFTING and { "12 hours", "24 hours", "48 hours" } or { "2 hours", "8 hours", "24 hours" }
+-- How long an auction lasts, by the game's number for it.
+local DURATIONS = ns.AUCTION_DURATIONS
 
 local AWAY_TEXT = "Open the auction house to sell from here."
 local EMPTY_TEXT = "Nothing in your bags can be auctioned."
@@ -465,7 +465,14 @@ end
 -- auction house is asked what it's listed for.
 local function choose(entry, said)
 	Search.Drop(OWNER)
+	local before = selected and selected.key
 	selected, pick, listings, priceTouched = entry, nil, nil, false
+	-- A newly picked item starts on your default posting time, when you set one.
+	local default = tonumber(ns.db.sellDefault)
+	if entry and entry.key ~= before and default and DURATIONS[default] then
+		ns.db.sellDuration = default
+		drawDurations()
+	end
 	setPrice(nil)
 	drawListings()
 	if not entry then
