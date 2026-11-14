@@ -362,7 +362,7 @@ local function shoppingTooltip(model, target)
 		tip:AddLine(" ")
 		tip:AddLine(Color("simulated", target == "tsm" and "Click: copy a TSM search for 1 craft"
 			or "Click: add what's missing for 1 craft to the shopping list"))
-		tip:AddLine(Color("simulated", "Shift-click: pick how many crafts"))
+		tip:AddLine(Color("simulated", "Right-click: pick how many crafts"))
 		if ns.Shopping.CanClear() then
 			tip:AddLine(Color("simulated", format("Ctrl-click: clear the \"%s\" shopping list", ns.Shopping.ListName())))
 		end
@@ -384,8 +384,10 @@ local function drawShoppingButton(model)
 	else
 		text = missing > 0 and format("Shopping list (%d missing)", missing) or "Shopping list"
 	end
-	local onClick = function(_, button)
-		ns.Shopping.Click(model, button, IsShiftKeyDown(), IsControlKeyDown())
+	local onClick = function(mouseButton, button)
+		-- Right-click opens the menu; Ctrl-click (left) clears the list.
+		local menu = mouseButton == "RightButton"
+		ns.Shopping.Click(model, button, menu, not menu and IsControlKeyDown())
 	end
 	addButton(text, onClick, shoppingTooltip(model, target))
 end

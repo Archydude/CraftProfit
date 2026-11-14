@@ -916,15 +916,15 @@ local function openMenu(owner, model)
 end
 
 -- What a click on the panel's button does: adds what's missing for one craft.
--- Shift-click opens the menu of craft counts, Ctrl-click clears the shopping
--- list. `owner` is the button, for the menu to open from. `model.listName` is the
--- list, when it isn't the current one.
-function Shopping.Click(model, owner, shift, ctrl)
+-- Right-click (`menu`) opens the menu of craft counts, Ctrl-click (`ctrl`) clears
+-- the shopping list. `owner` is the button, for the menu to open from.
+-- `model.listName` is the list, when it isn't the current one.
+function Shopping.Click(model, owner, menu, ctrl)
 	if ctrl and Shopping.CanClear() then
 		Shopping.Clear(model.listName)
 	elseif not Shopping.ListTarget() then
 		return
-	elseif shift then
+	elseif menu then
 		openMenu(owner, model)
 	else
 		addForCrafts(model, 1)

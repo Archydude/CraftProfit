@@ -80,7 +80,7 @@ It picks the materials for the blue row and **Use Craft Profit Reagents** (below
 ### Shopping list
 Under your materials there's a **Shopping list** button. It shows a count when you're short of materials for one craft; hover it to see what's missing.
 
-**Click** it to add what you're missing for one craft. **Shift-click** it to open a menu:
+**Click** it to add what you're missing for one craft. **Right-click** it to open a menu:
 
 - **For 1 / 5 / 10 crafts:** adds what you're missing for that many crafts, with the amount and quality, to an Auctionator shopping list (see Separate lists below). Each line shows how many items it would add. Open the list in Auctionator's Shopping tab at the auction house.
 - **Other amount...:** type any number of crafts. The last number you typed stays in the menu until you log out or `/reload`.
