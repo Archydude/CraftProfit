@@ -48,7 +48,7 @@ The panel leads with the answer: the sale price at the rank you'll get, minus th
 The **Ledger** is your crafting history: what each item cost, sold for, went into your own crafts and really made.
 
 ### At the auction house
-Craft Profit's window opens beside the auction house. **Shopping list**: a click on a material shows it with the amount to buy. **Sell**: pick an item from your bags and the lowest price is filled in. **My auctions**: see which are undercut and cancel them, one click each.
+Craft Profit's window opens beside the auction house. **Shopping list**: a click on a material shows it with the amount to buy. **Sell**: pick an item, in the tab or with a right-click in your bags, and the lowest price is filled in. **My auctions**: see which are undercut and cancel them, one click each.
 
 ### Patron orders
 Blizzard's Patron tab shows each order's **expected profit**, **rewards** and missing **materials**. **Next order** works through them, one click per step.
@@ -73,11 +73,11 @@ Vendor prices, the auction price, TSM's **sale rate** and the **AH deposit**.
 
 ## B. Upload File form
 
-**File:** `dist\CraftProfit-4.0.0.zip`
+**File:** `dist\CraftProfit-4.0.1.zip`
 
 **Display name**
 ```
-Craft Profit 4.0.0
+Craft Profit 4.0.1
 ```
 
 **Release type:** `Release`
@@ -86,6 +86,11 @@ Craft Profit 4.0.0
 
 **Changelog** (paste only the newest part; paste older parts too if they never went up)
 ```markdown
+4.0.1
+- **Sell from your bags:** right-click an item in your bags at the auction house, or drag it onto the game's sell page, and the Sell tab picks it too, with its price and amount filled in. It works while the Sell tab is showing.
+- The Sell list scrolls to the item that's picked.
+- Fixed: ammunition on the Sell tab got no price, with the message "None of your item level for sale right now."
+
 4.0.0
 - **No price addon needed:** Craft Profit can now scan the auction house for prices itself. With neither TSM nor Auctionator installed, the scan starts by itself when you open the auction house, at most once an hour, and chat says when it starts and when it's done. With TSM or Auctionator, their prices still come first, and a scan you start yourself fills in items they have no price for. Start one with **Scan now** on the new Prices tab or `/craftprofit scan`. New options: **Scan when I open the auction house**, and **Craft Profit's scan only** under **Price addon**.
 - **Auction house window:** Craft Profit's own window opens beside the game's auction house window, with four tabs: **Shopping list**, **Sell**, **My auctions** and **Prices**. A button with Craft Profit's logo on the side of the auction house window opens and closes it. It opens by itself when your Craft Profit shopping list has something on it, or when Auctionator isn't installed; turn that off with **Open at the auction house** in the options.

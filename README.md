@@ -246,7 +246,7 @@ Everything in your bags that can be auctioned, with how many you have.
 - **Sections:** your **Favorites** first, then **Your crafts** (items your Best crafts lists know you make), then a section for each kind of item. Each section's name shows how many lines it has. Click a name to fold the section away, and drag it up or down to change the order.
 - **Search:** type part of a name in the box above the list.
 - **Right-click** an item to add it to your favorites or hide it from the list. A line at the bottom says how many are hidden; click it to list them, and right-click one to bring it back.
-- **Click** an item to pick it. The price starts at the lowest listing, and the amount at all you have. When a vendor pays more than the lowest listing, the price is left empty and the tab says so. Gear is priced from listings of its own item level.
+- **Click** an item to pick it, or right-click it in your bags (or drag it onto the game's sell page) while the Sell tab is showing. The list scrolls to it. The price starts at the lowest listing, and the amount at all you have. When a vendor pays more than the lowest listing, the price is left empty and the tab says so. Gear is priced from listings of its own item level.
 - **Lasts:** how long the auction runs. **Default posting time** in the options sets what every newly picked item starts on.
 - The line under them shows the deposit and what you get after the 5% cut.
 - **Post** puts the auction up and moves on to the next item in the list. **Skip** moves on without posting.

@@ -7,7 +7,8 @@
 -- and post it. Every auction is posted by your own click on Post. The game's own
 -- sell page is filled in with the same item, price, amount and duration, so its
 -- Create Auction button posts the same auction, and what you change there is
--- changed here. While that page shows the item, it shows the listings too, so
+-- changed here. An item you put on that page yourself (a right-click on it in
+-- your bags) is picked here too. While that page shows the item, it shows the listings too, so
 -- this tab leaves its own listings out and gives the room to your bags.
 local _, ns = ...
 
@@ -224,13 +225,35 @@ local function nativePage(entry)
 	return entry.commodity and auctionHouse.CommoditiesSellFrame or auctionHouse.ItemSellFrame, auctionHouse
 end
 
+-- Which of the list's lines the item on one of the game's sell pages is, as
+-- that line's key, or nil when the page is empty. Any stack of a stackable item
+-- is the same line, and so is any copy of another item.
+local function heldKey(page)
+	local held = page:GetItem()
+	if not (held and held:IsValid()) then return end
+	local bag, slot = held:GetBagAndSlot()
+	local info = bag and C_Container.GetContainerItemInfo(bag, slot)
+	if not (info and info.itemID and info.hyperlink) then return end
+	local commodity = C_AuctionHouse.GetItemCommodityStatus(held) == Enum.ItemCommodityStatus.Commodity
+	return commodity and tostring(info.itemID) or info.hyperlink
+end
+
 -- Whether the game's sell page holds that line's item: something else you put
 -- there yourself is never written over.
 local function holds(page, entry)
-	local held = page:GetItem()
-	if not held then return false end
-	local bag, slot = held:GetBagAndSlot()
-	return bag == entry.bag and slot == entry.slot
+	return heldKey(page) == entry.key
+end
+
+-- The line the game's sell page is showing right now, as its key, or nil.
+local function shownKey()
+	local auctionHouse = Search.GameWindow()
+	if not auctionHouse then return end
+	for _, page in ipairs({ auctionHouse.CommoditiesSellFrame, auctionHouse.ItemSellFrame }) do
+		if page and page:IsVisible() then
+			local key = heldKey(page)
+			if key then return key end
+		end
+	end
 end
 
 -- Whether the game's sell page is showing the picked item, and so its listings.
@@ -254,7 +277,7 @@ local function layout()
 	for _, part in ipairs(listingParts) do part:SetShown(own) end
 end
 
-local pullNative, syncNative
+local pullNative, syncNative, adopt
 -- The game's sell page changed and hasn't been looked at yet, and whether that
 -- change was the page setting itself up again (its item put back on it, which
 -- resets its price and amount) and not something you did.
@@ -285,9 +308,12 @@ local function putNative(entry)
 	local page, auctionHouse = nativePage(entry)
 	if not page then return end
 	follow(page)
-	pushing = true
-	auctionHouse:SetPostItem(locationOf(entry))
-	pushing = false
+	-- Already there (you put it there from your bags): it isn't set up a second time.
+	if not holds(page, entry) then
+		pushing = true
+		auctionHouse:SetPostItem(locationOf(entry))
+		pushing = false
+	end
 	if holds(page, entry) then nativeKey = entry.key end
 end
 
@@ -393,8 +419,17 @@ syncNative = function()
 	syncDue = false
 	local reset = nativeReset
 	nativeReset = false
+	-- Only while this tab is the one you're looking at: otherwise the game's page is yours alone.
+	if not (panel and panel:IsVisible()) then return end
 	if reset then
-		guarded(fillNative)
+		-- With another item on it than the one picked here, you put it there (a
+		-- right-click in your bags, or dragged onto the page): this tab picks it too.
+		local ok, key = pcall(shownKey)
+		if ok and key and not posting and not (selected and selected.key == key) then
+			adopt(key)
+		else
+			guarded(fillNative)
+		end
 	elseif selected then
 		local ok, problem = pcall(function() pullNative((nativePage(selected))) end)
 		if not ok then
@@ -508,6 +543,18 @@ local function drawPicked()
 	ofText:SetText(Color("muted", format("of %d", available)))
 end
 
+-- Brings the picked line into view, moving the list only as far as it has to.
+-- Guarded: the list is the game's own scrolling list.
+local function scrollToPicked()
+	if not selected then return end
+	local key = selected.key
+	pcall(function()
+		bagBox:ScrollToElementDataByPredicate(function(data)
+			return data.entry ~= nil and data.entry.key == key
+		end, ScrollBoxConstants.AlignNearest or ScrollBoxConstants.AlignCenter)
+	end)
+end
+
 -- Picks a line to sell (nil for none): the amount is all you have, and the
 -- auction house is asked what it's listed for.
 local function choose(entry, said)
@@ -537,11 +584,13 @@ local function choose(entry, said)
 	available = math.max(C_AuctionHouse.GetAvailablePostCount(location) or 0, 1)
 	amountBox:SetText(tostring(available))
 	local itemKey = C_AuctionHouse.GetItemKeyFromItem(location)
-	-- Whether it's gear: the auction house says, once it has loaded the item.
+	-- Whether it's gear: the auction house says, once it has loaded the item. A
+	-- stackable item never is, even one you equip (ammunition): its auctions have
+	-- no item level to compare.
 	local info = C_AuctionHouse.GetItemKeyInfo(itemKey)
 	local equipment
 	if info then equipment = info.isEquipment else equipment = C_Item.IsEquippableItem(entry.link) end
-	pick = { key = entry.key, equipment = equipment or false }
+	pick = { key = entry.key, equipment = not entry.commodity and equipment or false }
 	if pick.equipment then
 		-- Gear is compared with every item level of it, as the game's own sell page
 		-- does, and priced from the ones of its own level (any level for green items).
@@ -560,6 +609,7 @@ local function choose(entry, said)
 	guarded(putNative, entry)
 	guarded(fillNative)
 	layout()
+	scrollToPicked()
 end
 
 -- A name without the icons it can carry: an item's link has its quality icon
@@ -1103,14 +1153,47 @@ end
 -- The tab
 ---------------------------------------------------------------------------
 
+-- Picks the line of an item that was put on the game's sell page. The bags are
+-- read again first when the list doesn't have it yet.
+adopt = function(key)
+	if not byKey[key] then scan() end
+	local entry = byKey[key]
+	if not entry then return end
+	-- You picked it from your bags, so it shows in the list whatever was hiding it:
+	-- a search it doesn't match, its section folded away, or the hidden items not listed.
+	if not matches(entry) then searchBox:SetText("") end
+	if ns.db.sellHidden[entry.itemID] then
+		showHidden = true
+	else
+		ns.db.sellFolded[sectionOf(entry)] = nil
+	end
+	choose(entry)
+end
+
+-- Follows both of the game's sell pages from the start, so an item put on one
+-- from your bags is noticed before anything was picked here.
+local function followPages()
+	local auctionHouse = Search.GameWindow()
+	if not auctionHouse then return end
+	for _, page in ipairs({ auctionHouse.CommoditiesSellFrame, auctionHouse.ItemSellFrame }) do
+		if page then follow(page) end
+	end
+end
+
 local function refresh()
 	local open = Search.IsOpen()
 	body:SetShown(open)
 	away:SetShown(not open)
 	if open then
 		crafts, scanTries = nil, 0
+		guarded(followPages)
 		if not selected then choose(nil) end
 		scan()
+		-- Nothing picked here, but an item is already on the game's sell page: that one.
+		if not selected then
+			local ok, key = pcall(shownKey)
+			if ok and key then adopt(key) end
+		end
 		-- A price check that was dropped when the tab was left is asked again.
 		if selected and not listings then choose(selected) end
 		guarded(showPicked)
