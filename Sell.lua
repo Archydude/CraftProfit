@@ -8,8 +8,8 @@
 -- sell page is filled in with the same item, price, amount and duration, so its
 -- Create Auction button posts the same auction, and what you change there is
 -- changed here. An item you put on that page yourself (a right-click on it in
--- your bags) is picked here too. While that page shows the item, it shows the listings too, so
--- this tab leaves its own listings out and gives the room to your bags.
+-- your bags) is picked here too. What the item is listed for only shows on that
+-- page: this tab has no list of its own for it.
 local _, ns = ...
 
 local Sell = {}
@@ -27,7 +27,7 @@ local INSET_PAD = 4      -- list frame to the rows
 local SCROLLBAR_ROOM = 22
 local SEARCH_HEIGHT = 20 -- the search box over the bag list,
 local SEARCH_ROOM = 26   -- and the room it takes with the gap under it
-local ROW_HEIGHT, BAG_ROWS = 24, 8
+local ROW_HEIGHT, BAG_ROWS = 24, 13
 local ICON_SIZE = 20     -- a bag line's item icon
 local FOLD_SIZE = 14     -- the plus or minus before a section's name
 local PRICE_WIDTH = 76   -- the column of prices before it
@@ -35,13 +35,7 @@ local RATE_WIDTH = 62    -- TSM's sale rate between them, as wide as its "Sale r
 local HEADER_ROOM = 18   -- the columns' names over the bag list
 local COUNT_WIDTH = 48  -- the column of amounts at a bag line's right end
 local LIST_GAP = 10      -- under the bag list's frame
-local LISTING_HEIGHT, LISTING_ROWS = 20, 4
--- How tall the bag list's frame is, and what it gains while this tab's own
--- listings are left out: the gap, the picked item's line and the listings' frame.
 local BAG_HEIGHT = BAG_ROWS * ROW_HEIGHT + 2 * INSET_PAD
-local LISTING_ROOM = LIST_GAP + 22 + LISTING_ROWS * LISTING_HEIGHT + 2 * INSET_PAD
--- The frame with that room added, cut to whole lines so the last one is never clipped.
-local FULL_HEIGHT = math.floor((BAG_HEIGHT + LISTING_ROOM - 2 * INSET_PAD) / ROW_HEIGHT) * ROW_HEIGHT + 2 * INSET_PAD
 local LINE = 26          -- from one line of the form to the next
 local NOTE_LINE = 16     -- the totals, and the message under them: one line of text each
 local LABEL_WIDTH = 66   -- "Price", "Amount", "Lasts"
@@ -64,10 +58,7 @@ local FOLDED_ICON, OPEN_ICON = "Interface\\Buttons\\UI-PlusButton-Up", "Interfac
 local PICK_TEXT = "Pick something from the list to sell it."
 
 local panel, body, away, emptyText
-local bagBox, listingBox, pickedText, sourceText
--- The frame around the bag list, and everything that shows the picked item's
--- listings (its line, the list, its frame and scroll bar).
-local bagInset, listingParts
+local bagBox, bagInset
 local goldBox, silverBox, copperBox, eachText, amountBox, ofText
 local durationButtons = {}
 local totalsText, noteText, postButton, skipButton
@@ -106,8 +97,6 @@ local nativeProblem
 local pushing, pulling = false, false
 -- The game's sell pages this tab already follows: page -> true.
 local followed = {}
--- Whether this tab's own listings are showing (nil until the first layout).
-local listingsShown
 -- While Post hands the auction to the game, and whether the game refused it. What
 -- the last refusal looked like is kept for /craftprofit testsell.
 local calling, refused, lastRefusal = false, false, nil
@@ -259,7 +248,7 @@ local function shownKey()
 	end
 end
 
--- Whether the game's sell page is showing the picked item, and so its listings.
+-- Whether the game's sell page is showing the picked item.
 local function nativeShows()
 	if not (selected and nativeKey == selected.key) then return false end
 	local ok, shows = pcall(function()
@@ -267,17 +256,6 @@ local function nativeShows()
 		return page ~= nil and page:IsVisible() and holds(page, selected)
 	end)
 	return ok and shows == true
-end
-
--- This tab's own listings only show while the game's page isn't showing the
--- same ones. Without them the bag list takes their room.
-local function layout()
-	if not bagInset then return end
-	local own = selected ~= nil and not nativeShows()
-	if own == listingsShown then return end
-	listingsShown = own
-	bagInset:SetHeight(own and BAG_HEIGHT or FULL_HEIGHT)
-	for _, part in ipairs(listingParts) do part:SetShown(own) end
 end
 
 local pullNative, syncNative, adopt
@@ -289,8 +267,7 @@ local syncDue, nativeReset = false, false
 -- back there isn't something new you're selling.
 local seenKey
 
--- Follows one of the game's sell pages from now on: what changes on it, and
--- when it shows or hides. Hooks, so the game's own code runs untouched. A change
+-- Follows one of the game's sell pages from now on: what changes on it. Hooks, so the game's own code runs untouched. A change
 -- is looked at a moment later: the page resets its fields before it says its
 -- item was set, and only then is it clear which of the two it was.
 local function follow(page)
@@ -304,8 +281,6 @@ local function follow(page)
 	hooksecurefunc(page, "SetItem", function()
 		if not pushing then nativeReset = true end
 	end)
-	page:HookScript("OnShow", layout)
-	page:HookScript("OnHide", layout)
 end
 
 -- Puts the item on the game's sell page, as a right-click on it in your bags does.
@@ -439,7 +414,6 @@ syncNative = function()
 		if changed and not posting and ns.UsesOwn("ahSell") and ns.ShoppingList.IsShown() then
 			ns.ShoppingList.Show("sell")
 			if panel and panel:IsVisible() and not (selected and selected.key == key) then adopt(key) end
-			layout()
 		end
 		return
 	end
@@ -458,63 +432,16 @@ syncNative = function()
 			nativeProblem = tostring(problem)
 		end
 	end
-	layout()
 end
 
 ---------------------------------------------------------------------------
 -- What the picked item is listed for
 ---------------------------------------------------------------------------
 
-local function listingClick(row)
-	local data = row.data
-	if not data then return end
-	priceTouched = true
-	setPrice(data.price)
-	updateTotals()
-end
-
-local function listingTooltip(row)
-	GameTooltip:SetOwner(row, "ANCHOR_RIGHT")
-	GameTooltip:AddLine("Click: use this price", 1, 1, 1)
-	GameTooltip:Show()
-end
-
-local function drawListing(row, data)
-	if not row.text then
-		row.highlight = row:CreateTexture(nil, "HIGHLIGHT")
-		row.highlight:SetAllPoints()
-		row.highlight:SetColorTexture(1, 1, 1, 0.08)
-		row.text = row:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
-		row.text:SetPoint("LEFT", 6, 0)
-		row.detail = row:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
-		row.detail:SetPoint("RIGHT", -6, 0)
-		row:SetScript("OnClick", listingClick)
-		row:SetScript("OnEnter", listingTooltip)
-		row:SetScript("OnLeave", GameTooltip_Hide)
-	end
-	row.data = data
-	row.text:SetText(exact(data.price))
-	local detail
-	if pick and pick.equipment then
-		detail = format("item level %d", data.itemLevel or 0)
-	elseif selected and selected.commodity then
-		detail = format("%s for sale", BreakUpLargeNumbers(data.qty))
-	else
-		detail = data.qty > 1 and format("%d for sale", data.qty) or ""
-	end
-	if data.mine then detail = (detail ~= "" and (detail .. ", ") or "") .. Color("good", "yours") end
-	row.detail:SetText(Color("muted", detail))
-end
-
-local function drawListings()
-	listingBox:SetDataProvider(CreateDataProvider(listings or {}))
-end
-
 -- The auction house answered (or didn't) for the picked item: its listings, and
 -- the lowest one as the price, unless you typed one or a vendor pays more.
 local function onListings(results)
 	listings = results and results.rows or {}
-	drawListings()
 	if not results then
 		searchNote = "The auction house didn't answer. Pick the item again."
 	elseif #listings == 0 then
@@ -550,16 +477,10 @@ local drawBags
 
 local function drawPicked()
 	if not selected then
-		pickedText:SetText("")
-		sourceText:SetText("")
 		eachText:SetText("")
 		ofText:SetText("")
 		return
 	end
-	pickedText:SetText(ns.Format.Sellable(selected.itemID, selected.link, selected.count))
-	local price, source = ns.Prices.SaleFrom(selected.link, selected.itemID)
-	local names = { auctionator = "Auctionator", own = "Last scan" }
-	sourceText:SetText(price and Color("muted", format("%s: %s", names[source] or "TSM", ns.Format.Money(price))) or "")
 	eachText:SetText(Color("muted", (selected.commodity and available > 1) and "each" or ""))
 	ofText:SetText(Color("muted", format("of %d", available)))
 end
@@ -589,7 +510,6 @@ local function choose(entry, said)
 		drawDurations()
 	end
 	setPrice(nil)
-	drawListings()
 	if not entry then
 		available = 0
 		amountBox:SetText("")
@@ -598,7 +518,6 @@ local function choose(entry, said)
 		drawBags()
 		updateTotals()
 		guarded(clearNative)
-		layout()
 		return
 	end
 	local location = locationOf(entry)
@@ -629,7 +548,6 @@ local function choose(entry, said)
 	updateTotals()
 	guarded(putNative, entry)
 	guarded(fillNative)
-	layout()
 	scrollToPicked()
 end
 
@@ -1070,7 +988,6 @@ local function scan()
 			drawBags()
 			updateTotals()
 			guarded(restoreNative)
-			layout()
 		else
 			local said = posting and posting.key == selected.key and postedText(posting) or nil
 			choose(after and byKey[after.key] or nil, said)
@@ -1245,7 +1162,6 @@ local function refresh()
 		-- A price check that was dropped when the tab was left is asked again.
 		if selected and not listings then choose(selected) end
 		guarded(showPicked)
-		layout()
 	end
 end
 
@@ -1294,7 +1210,7 @@ end
 -- 60 of this file's variables, and one function making all of it goes past that
 -- (the file then doesn't load at all). Keep each of them well under it.
 
--- The search box, the bag list and the picked item's listings, from `y` down.
+-- The search box and the bag list, from `y` down.
 -- Returns where the form starts.
 local function createLists(width, y)
 	-- The search box: the bag list follows what's typed, a letter at a time.
@@ -1333,21 +1249,7 @@ local function createLists(width, y)
 	emptyText = body:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
 	emptyText:SetPoint("CENTER", bagInset, "CENTER")
 	emptyText:SetText(EMPTY_TEXT)
-	y = y - BAG_HEIGHT - LIST_GAP
-
-	pickedText = body:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
-	pickedText:SetPoint("TOPLEFT", PAD, y)
-	pickedText:SetJustifyH("LEFT")
-	pickedText:SetWordWrap(false)
-	sourceText = body:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
-	sourceText:SetPoint("TOPRIGHT", -PAD, y)
-	pickedText:SetPoint("RIGHT", sourceText, "LEFT", -8, 0)
-	y = y - 22
-
-	local listingInset, listingBar
-	listingBox, listingInset, listingBar = scrollList(body, y, LISTING_HEIGHT, LISTING_ROWS, drawListing, width)
-	listingParts = { pickedText, sourceText, listingBox, listingInset, listingBar }
-	return y - (LISTING_ROWS * LISTING_HEIGHT + 2 * INSET_PAD) - 10
+	return y - BAG_HEIGHT - LIST_GAP
 end
 
 -- The price, amount and duration, with the totals and the note under them, from
@@ -1468,7 +1370,6 @@ function Sell.Create(parent, width)
 		ns.db.sellDuration = DURATIONS[own] and own or 2
 	end
 	drawDurations()
-	layout()
 	panel:SetScript("OnShow", refresh)
 	panel:SetScript("OnHide", function()
 		Search.Drop(OWNER)
@@ -1503,7 +1404,6 @@ events:SetScript("OnEvent", function(_, event, numPosted, total)
 		-- A search is as old as this visit to the auction house.
 		if searchBox then searchBox:SetText("") end
 		StaticPopup_Hide("CRAFTPROFIT_POST_WARNING")
-		layout()
 	end
 	if event == "AUCTION_HOUSE_AUCTION_CREATED" then
 		-- Several of one item (not a stack) go up one at a time: the last one ends it.
