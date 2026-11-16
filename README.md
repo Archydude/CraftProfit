@@ -241,7 +241,7 @@ What's on Craft Profit's own shopping lists: each list under its name, every mat
 - Materials come off as you get them, for the lists of the character you're on.
 
 ### Sell tab
-Everything in your bags that can be auctioned, with how many you have.
+Everything in your bags that can be auctioned, with what one sells for and how many you have. The price is your price addon's (or Craft Profit's own scan's), and shows **-** when there's none.
 
 - **Sections:** your **Favorites** first, then **Your crafts** (items your Best crafts lists know you make), then a section for each kind of item. Each section's name shows how many lines it has. Click a name to fold the section away, and drag it up or down to change the order.
 - **Search:** type part of a name in the box above the list.

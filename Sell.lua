@@ -30,7 +30,8 @@ local SEARCH_ROOM = 26   -- and the room it takes with the gap under it
 local ROW_HEIGHT, BAG_ROWS = 24, 8
 local ICON_SIZE = 20     -- a bag line's item icon
 local FOLD_SIZE = 14     -- the plus or minus before a section's name
-local COUNT_WIDTH = 48   -- the column of amounts at a bag line's right end
+local PRICE_WIDTH = 76   -- the column of prices before it
+local COUNT_WIDTH = 48  -- the column of amounts at a bag line's right end
 local LIST_GAP = 10      -- under the bag list's frame
 local LISTING_HEIGHT, LISTING_ROWS = 20, 4
 -- How tall the bag list's frame is, and what it gains while this tab's own
@@ -881,6 +882,10 @@ local function createBagRow(row)
 	row.count:SetPoint("RIGHT", -8, 0)
 	row.count:SetWidth(COUNT_WIDTH)
 	row.count:SetJustifyH("RIGHT")
+	row.price = row:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
+	row.price:SetPoint("RIGHT", row.count, "LEFT", -6, 0)
+	row.price:SetWidth(PRICE_WIDTH)
+	row.price:SetJustifyH("RIGHT")
 	row.text = row:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
 	row.text:SetJustifyH("LEFT")
 	row.text:SetWordWrap(false)
@@ -925,10 +930,11 @@ local function drawBag(row, data)
 	local columns = entry ~= nil or data.header ~= nil
 	row.icon:SetShown(columns)
 	row.count:SetShown(columns)
+	row.price:SetShown(entry ~= nil) -- only an item has one
 	row.text:ClearAllPoints()
 	if columns then
 		row.text:SetPoint("LEFT", row.icon, "RIGHT", 6, 0)
-		row.text:SetPoint("RIGHT", row.count, "LEFT", -6, 0)
+		row.text:SetPoint("RIGHT", entry and row.price or row.count, "LEFT", -6, 0)
 	else
 		row.text:SetPoint("LEFT", 6, 0)
 		row.text:SetPoint("RIGHT", -6, 0)
@@ -954,6 +960,8 @@ local function drawBag(row, data)
 		row.icon:SetDesaturated(data.hidden == true)
 		row.icon:SetAlpha(data.hidden and 0.6 or 1)
 		local count = BreakUpLargeNumbers(entry.count)
+		-- What one sells for, from your price addon: the same price the picked item shows below.
+		local price = ns.Prices.Sale(entry.link, entry.itemID)
 		if data.hidden then
 			row.text:SetText(Color("muted", bagName(entry, true)))
 			row.count:SetText(Color("muted", count))
@@ -961,6 +969,8 @@ local function drawBag(row, data)
 			row.text:SetText(bagName(entry))
 			row.count:SetText(count)
 		end
+		row.price:SetText(price and ns.Format.Money(price) or Color("muted", "-"))
+		row.price:SetAlpha(data.hidden and 0.6 or 1)
 	end
 	if GameTooltip:IsOwned(row) and not dragging then
 		if entry or data.header then bagTooltip(row) else GameTooltip:Hide() end
