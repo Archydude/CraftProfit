@@ -29,26 +29,26 @@ Profit or loss on every craft, which recipes are worth making, and its own aucti
 ```markdown
 ## Is this craft worth it?
 
-Craft Profit answers in gold: **profit or loss?** A panel next to your profession window prices every craft and crafting order, a **Best crafts** tab shows what's worth crafting, the **Ledger** shows how it really went, and its own **auction house window** handles shopping, selling and your auctions. On **Retail** and **WoW Forever**.
+Craft Profit answers in gold: **profit or loss?** A panel next to your profession window prices every craft and crafting order. On **Retail** and **WoW Forever**.
 
 - **Expected profit** on every craft, procs included
 - **Best crafts**: every recipe ranked by profit, across all your characters
 - **Ledger**: your crafts, sales, orders and purchases against the forecast
 - **Auction house window**: shopping list, selling, cancelling undercut auctions
-- **No price addon needed**: its own price scan, or TSM and Auctionator prices
+- **No price addon needed**: its own price scan, or **TradeSkillMaster** and **Auctionator** prices
 - **Patron orders** priced and crafted right in Blizzard's Patron tab
 
 ### Crafts and orders
 The panel leads with the answer: the sale price at the rank you'll get, minus the 5% cut and your materials. On orders: the commission, minus the materials **you** supply, plus sellable rewards.
 
 ### What should I craft?
-**Best crafts** lists every recipe you know, most profitable first. Search by item or **material**. **All characters** puts every character's professions in one list.
+**Best crafts** lists every recipe you know, most profitable first. Sort by any column, and by a second with a Shift-click. Search by item or **material**. **All characters** puts every character's professions in one list.
 
 ### Did it pay off?
 The **Ledger** is your crafting history: what each item cost, sold for, went into your own crafts and really made.
 
 ### At the auction house
-Craft Profit's window opens beside the auction house. **Shopping list**: a click on a material shows it with the amount to buy. **Sell**: pick an item, in the tab or with a right-click in your bags, and the lowest price is filled in. **My auctions**: see which are undercut and cancel them, one click each.
+Craft Profit's window opens beside the auction house. **Shopping list**: a click on a material shows it with the amount to buy. **Sell**: your bags with a price on every item. Pick one, in the tab or with a right-click in your bags, and the lowest price is filled in. **My auctions**: see which are undercut and cancel them, one click each.
 
 ### Patron orders
 Blizzard's Patron tab shows each order's **expected profit**, **rewards** and missing **materials**. **Next order** works through them, one click per step.
@@ -60,7 +60,6 @@ Best crafts shows what a **skill point** costs with each recipe, and the **chanc
 Vendor prices, the auction price, TSM's **sale rate** and the **AH deposit**.
 
 ### Good to know
-- With no price addon, Craft Profit scans the auction house itself. It uses **TradeSkillMaster** and **Auctionator** prices when they're installed.
 - **TSM prices for alts** that keep TSM turned off.
 - Click the minimap button, or type **/craftprofit** for options.
 
@@ -73,11 +72,11 @@ Vendor prices, the auction price, TSM's **sale rate** and the **AH deposit**.
 
 ## B. Upload File form
 
-**File:** `dist\CraftProfit-4.0.1.zip`
+**File:** `dist\CraftProfit-4.1.0.zip`
 
 **Display name**
 ```
-Craft Profit 4.0.1
+Craft Profit 4.1.0
 ```
 
 **Release type:** `Release`
@@ -86,6 +85,11 @@ Craft Profit 4.0.1
 
 **Changelog** (paste only the newest part; paste older parts too if they never went up)
 ```markdown
+4.1.0
+- **Sort Best crafts by two columns:** click a header to sort by it, then Shift-click another to sort by that one second, for recipes that are equal on the first. The first header turns gold and the second light blue. Shift-click a header that's already sorting to reverse just that column. A plain click goes back to one column.
+- **Prices in the Sell list:** every item in the Sell tab's list shows what one sells for, from your price addon or Craft Profit's own scan.
+- **Selling from your bags opens the Sell tab:** right-click an item in your bags at the auction house, or drag it onto the game's sell page, and Craft Profit's window switches to the Sell tab with that item picked. Before, this only worked while the Sell tab was showing.
+
 4.0.1
 - **Sell from your bags:** right-click an item in your bags at the auction house, or drag it onto the game's sell page, and the Sell tab picks it too, with its price and amount filled in. It works while the Sell tab is showing.
 - The Sell list scrolls to the item that's picked.

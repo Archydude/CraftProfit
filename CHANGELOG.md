@@ -1,5 +1,10 @@
 # Changelog
 
+## 4.1.0
+- **Sort Best crafts by two columns:** click a header to sort by it, then Shift-click another to sort by that one second, for recipes that are equal on the first. The first header turns gold and the second light blue. Shift-click a header that's already sorting to reverse just that column. A plain click goes back to one column.
+- **Prices in the Sell list:** every item in the Sell tab's list shows what one sells for, from your price addon or Craft Profit's own scan.
+- **Selling from your bags opens the Sell tab:** right-click an item in your bags at the auction house, or drag it onto the game's sell page, and Craft Profit's window switches to the Sell tab with that item picked. Before, this only worked while the Sell tab was showing.
+
 ## 4.0.1
 - **Sell from your bags:** right-click an item in your bags at the auction house, or drag it onto the game's sell page, and the Sell tab picks it too, with its price and amount filled in. It works while the Sell tab is showing.
 - The Sell list scrolls to the item that's picked.

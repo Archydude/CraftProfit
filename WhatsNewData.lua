@@ -2,10 +2,15 @@
 ArchdudeWhatsNew:Register("CraftProfit", {
 	title = "Craft Profit",
 	icon = "Interface\\Icons\\INV_Hammer_20",
-	version = "4.0.1",
+	version = "4.1.0",
 	seen = "CraftProfitWhatsNew",
 	saved = { "CraftProfitDB", "CraftProfitCharDB" },
 	changes = {
+		{ "4.1.0",
+			"|cffffd100Sort Best crafts by two columns:|r click a header to sort by it, then Shift-click another to sort by that one second, for recipes that are equal on the first. The first header turns gold and the second light blue. Shift-click a header that's already sorting to reverse just that column. A plain click goes back to one column.",
+			"|cffffd100Prices in the Sell list:|r every item in the Sell tab's list shows what one sells for, from your price addon or Craft Profit's own scan.",
+			"|cffffd100Selling from your bags opens the Sell tab:|r right-click an item in your bags at the auction house, or drag it onto the game's sell page, and Craft Profit's window switches to the Sell tab with that item picked. Before, this only worked while the Sell tab was showing.",
+		},
 		{ "4.0.1",
 			"|cffffd100Sell from your bags:|r right-click an item in your bags at the auction house, or drag it onto the game's sell page, and the Sell tab picks it too, with its price and amount filled in. It works while the Sell tab is showing.",
 			"The Sell list scrolls to the item that's picked.",
@@ -51,9 +56,6 @@ ArchdudeWhatsNew:Register("CraftProfit", {
 			"The Ledger's chart and time ranges go by calendar day, so a bar's date is the day you crafted.",
 			"The Ledger says |cffffd100Nothing matches the filters|r when they leave nothing. |cffffd100Export|r on the Purchased tab exports your purchases, and the character filter lists characters that only bought.",
 			"The Ledger stays smooth while it's open during a long queue of crafts or while you empty a full mailbox.",
-		},
-		{ "3.8.0",
-			"|cffffd100Search Best crafts by material:|r the search box also finds recipes by a material they use, so |cffffd100Copper Bar|r lists every recipe that takes Copper Bars. It works in All characters too.",
 		},
 	},
 })
