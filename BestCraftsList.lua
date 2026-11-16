@@ -165,7 +165,6 @@ local SORT_ARROW_ATLAS = "auctionhouse-ui-sortarrow"
 local SORT_ARROW_FILE = "Interface\\Buttons\\UI-SortArrow"
 local SORT_ARROW_SIZE = 10
 local MAX_SORTS = 2        -- how many columns the list sorts by at once
-local SORT_ORDER_GAP = 1  -- the arrow to the column's place in a sort by several columns
 
 local list, listTab, ledgerButton, scrollBox, status, title, strategyDropdown, charactersButton
 local headers = {}
@@ -673,31 +672,26 @@ end
 -- Headers, footer and drawing
 ---------------------------------------------------------------------------
 
--- One column header at `place` ({ x, width }), gold with an arrow while it sorts:
--- down for most first, up for least first, beside the label. `sort` is its entry
--- in the sort chain and `order` its place there, shown past the arrow when the
--- list sorts by more than one column (`chained`).
-local function drawHeader(key, header, place, sort, order, chained)
+-- One column header at `place` ({ x, width }), with an arrow beside the label
+-- while it sorts: down for most first, up for least first. `sort` is its entry in
+-- the sort chain. The first column there turns gold (`first`) and the second
+-- light blue. There's no room for numbers.
+local function drawHeader(key, header, place, sort, first)
 	header:ClearAllPoints()
 	header:SetPoint("BOTTOMLEFT", scrollBox, "TOPLEFT", place.x, 2)
 	header:SetSize(place.width, HEADER_HEIGHT)
 	local label = key == "profit" and ns.db.countProcs and "Expected" or header.label
-	header.text:SetText(sort and Color("heading", label) or label)
-	local arrow, number = header.arrow, header.order
+	header.text:SetText(sort and Color(first and "heading" or "secondSort", label) or label)
+	local arrow = header.arrow
 	arrow:SetShown(sort ~= nil)
-	number:SetShown(sort ~= nil and chained)
 	if not sort then return end
 	if sort.ascending then arrow:SetTexCoord(0, 1, 1, 0) else arrow:SetTexCoord(0, 1, 0, 1) end
-	number:SetText(Color("heading", order))
 	arrow:ClearAllPoints()
-	number:ClearAllPoints()
 	local textWidth = header.text:GetStringWidth()
 	if key == "name" then
 		arrow:SetPoint("LEFT", header, "LEFT", textWidth + 3, 0)
-		number:SetPoint("LEFT", arrow, "RIGHT", SORT_ORDER_GAP, 0)
 	else
 		arrow:SetPoint("RIGHT", header, "RIGHT", -textWidth - 3, 0)
-		number:SetPoint("RIGHT", arrow, "LEFT", -SORT_ORDER_GAP, 0)
 	end
 end
 
@@ -709,7 +703,7 @@ local function updateHeaders()
 	for key, header in pairs(headers) do
 		local place = layout[key]
 		header:SetShown(place ~= nil)
-		if place then drawHeader(key, header, place, chain[orderOf[key]], orderOf[key], #chain > 1) end
+		if place then drawHeader(key, header, place, chain[orderOf[key]], orderOf[key] == 1) end
 	end
 end
 
@@ -842,7 +836,6 @@ local function createHeader(key, label)
 	else
 		header.arrow:SetTexture(SORT_ARROW_FILE)
 	end
-	header.order = header:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
 	header:SetScript("OnClick", function(self, mouseButton)
 		if mouseButton == "RightButton" then return openColumnsMenu(self) end
 		setSort(key, IsShiftKeyDown())

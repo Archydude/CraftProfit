@@ -45,6 +45,7 @@ ns.Colors = {
 	heading = "ffffd100",   -- the game's gold
 	missing = "ffffaa33",
 	good = "ff88ff88",
+	secondSort = "ff66ccff", -- the header of the column a list sorts by second
 }
 
 function ns.Color(key, text)
