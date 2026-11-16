@@ -164,6 +164,8 @@ local COOLDOWN_ICON = "|TInterface\\Icons\\INV_Misc_PocketWatch_01:14|t"
 local SORT_ARROW_ATLAS = "auctionhouse-ui-sortarrow"
 local SORT_ARROW_FILE = "Interface\\Buttons\\UI-SortArrow"
 local SORT_ARROW_SIZE = 10
+local MAX_SORTS = 2        -- how many columns the list sorts by at once
+local SORT_ORDER_GAP = 1  -- the arrow to the column's place in a sort by several columns
 
 local list, listTab, ledgerButton, scrollBox, status, title, strategyDropdown, charactersButton
 local headers = {}
@@ -271,38 +273,54 @@ end
 -- The column the list sorts by. A sort by the demand column that's hidden
 -- (You sold with TSM, Sells/day without) goes by the one that shows. A saved sort
 -- by a column that's gone, or hidden in this view, goes by profit.
-local function sortKey()
-	local key = ns.db.bestSort
-	if key == "sold" or key == "perDay" then return ns.Prices.HasTSM() and "perDay" or "sold" end
-	if key ~= "name" and not SORT_VALUES[key] then return "profit" end
+-- A saved sort key as the list can sort by it now, or nil when its column is
+-- gone or hidden in this view.
+local function usableKey(key)
+	if key == "sold" or key == "perDay" then key = ns.Prices.HasTSM() and "perDay" or "sold" end
+	if key ~= "name" and not SORT_VALUES[key] then return end
 	for _, column in ipairs(COLUMNS) do
-		if column.sort == key and not columnShown(column) then return "profit" end
+		if column.sort == key and not columnShown(column) then return end
 	end
 	return key
 end
 
+local function sortKey()
+	return usableKey(ns.db.bestSort) or "profit"
+end
+
+-- Every column the list sorts by, in order: the one you clicked, then the ones
+-- you shift-clicked ({ key, ascending } each). Leaves out the ones that can't
+-- sort now.
+local function sortChain()
+	local chain = { { key = sortKey(), ascending = ns.db.bestSortAscending } }
+	local seen = { [chain[1].key] = true }
+	for _, more in ipairs(ns.db.bestSortMore) do
+		local key = usableKey(more.key)
+		if key and not seen[key] and #chain < MAX_SORTS then
+			seen[key] = true
+			chain[#chain + 1] = { key = key, ascending = more.ascending }
+		end
+	end
+	return chain
+end
+
 local function isPinned(row) return ns.db.bestPinned[row.entry.recipeID] == true end
 
--- Pinned rows first. Then sorted by the chosen column; rows without a value for
--- it go last either way. Ties go by profit, then name.
+-- Pinned rows first. Then sorted by the chosen columns, the first one that tells
+-- two rows apart deciding; rows without a value for a column go last on it either
+-- way. Ties go by profit, then name.
 local function sortRows(rows)
-	local key, ascending = sortKey(), ns.db.bestSortAscending
-	local valueOf = SORT_VALUES[key]
 	local function nameOf(row) return row.sortName end
+	local chain = sortChain()
+	for _, sort in ipairs(chain) do sort.valueOf = SORT_VALUES[sort.key] or nameOf end
 	table.sort(rows, function(a, b)
 		local aPinned, bPinned = isPinned(a), isPinned(b)
 		if aPinned ~= bPinned then return aPinned end
-		if key == "name" then
-			local an, bn = nameOf(a), nameOf(b)
-			if an ~= bn then
-				if ascending then return an < bn end
-				return an > bn
-			end
-		else
-			local av, bv = valueOf(a), valueOf(b)
+		for _, sort in ipairs(chain) do
+			local av, bv = sort.valueOf(a), sort.valueOf(b)
 			if (av == nil) ~= (bv == nil) then return av ~= nil end
 			if av ~= bv and av ~= nil then
-				if ascending then return av < bv end
+				if sort.ascending then return av < bv end
 				return av > bv
 			end
 		end
@@ -656,33 +674,42 @@ end
 ---------------------------------------------------------------------------
 
 -- One column header at `place` ({ x, width }), gold with an arrow while it sorts:
--- down for most first, up for least first, beside the label.
-local function drawHeader(key, header, place)
+-- down for most first, up for least first, beside the label. `sort` is its entry
+-- in the sort chain and `order` its place there, shown past the arrow when the
+-- list sorts by more than one column (`chained`).
+local function drawHeader(key, header, place, sort, order, chained)
 	header:ClearAllPoints()
 	header:SetPoint("BOTTOMLEFT", scrollBox, "TOPLEFT", place.x, 2)
 	header:SetSize(place.width, HEADER_HEIGHT)
-	local sorted = sortKey() == key
 	local label = key == "profit" and ns.db.countProcs and "Expected" or header.label
-	header.text:SetText(sorted and Color("heading", label) or label)
-	local arrow = header.arrow
-	arrow:SetShown(sorted)
-	if not sorted then return end
-	if ns.db.bestSortAscending then arrow:SetTexCoord(0, 1, 1, 0) else arrow:SetTexCoord(0, 1, 0, 1) end
+	header.text:SetText(sort and Color("heading", label) or label)
+	local arrow, number = header.arrow, header.order
+	arrow:SetShown(sort ~= nil)
+	number:SetShown(sort ~= nil and chained)
+	if not sort then return end
+	if sort.ascending then arrow:SetTexCoord(0, 1, 1, 0) else arrow:SetTexCoord(0, 1, 0, 1) end
+	number:SetText(Color("heading", order))
 	arrow:ClearAllPoints()
+	number:ClearAllPoints()
 	local textWidth = header.text:GetStringWidth()
 	if key == "name" then
 		arrow:SetPoint("LEFT", header, "LEFT", textWidth + 3, 0)
+		number:SetPoint("LEFT", arrow, "RIGHT", SORT_ORDER_GAP, 0)
 	else
 		arrow:SetPoint("RIGHT", header, "RIGHT", -textWidth - 3, 0)
+		number:SetPoint("RIGHT", arrow, "LEFT", -SORT_ORDER_GAP, 0)
 	end
 end
 
 local function updateHeaders()
 	local layout = columnLayout(scrollBox:GetWidth())
+	local chain = sortChain()
+	local orderOf = {}
+	for order, sort in ipairs(chain) do orderOf[sort.key] = order end
 	for key, header in pairs(headers) do
 		local place = layout[key]
 		header:SetShown(place ~= nil)
-		if place then drawHeader(key, header, place) end
+		if place then drawHeader(key, header, place, chain[orderOf[key]], orderOf[key], #chain > 1) end
 	end
 end
 
@@ -727,12 +754,41 @@ function BestCraftsList.Refresh()
 	C_Timer.After(REFRESH_DELAY, renderWhenIdle)
 end
 
-local function setSort(key)
-	if sortKey() == key then
+-- Names and crafters A to Z, skill-ups cheapest first, the rest most first.
+local function startsAscending(key)
+	return key == "name" or key == "crafter" or key == "skillup"
+end
+
+-- A click sorts by that column alone, or reverses it. A shift-click (`chain`)
+-- keeps the sort and adds the column after it, or reverses just that column when
+-- the list already sorts by it.
+local function setSort(key, chain)
+	if not chain then
+		if sortKey() == key then
+			ns.db.bestSortAscending = not ns.db.bestSortAscending
+		else
+			ns.db.bestSort, ns.db.bestSortAscending = key, startsAscending(key)
+		end
+		wipe(ns.db.bestSortMore)
+	elseif sortKey() == key then
 		ns.db.bestSortAscending = not ns.db.bestSortAscending
 	else
-		-- Names and crafters A to Z, skill-ups cheapest first, the rest most first.
-		ns.db.bestSort, ns.db.bestSortAscending = key, key == "name" or key == "crafter" or key == "skillup"
+		-- Saved again as it sorts now, without the columns that are gone.
+		local sorts, found = sortChain(), false
+		ns.db.bestSort = sorts[1].key
+		wipe(ns.db.bestSortMore)
+		for i = 2, #sorts do
+			local sort = sorts[i]
+			if sort.key == key then
+				sort.ascending, found = not sort.ascending, true
+			end
+			ns.db.bestSortMore[#ns.db.bestSortMore + 1] = { key = sort.key, ascending = sort.ascending }
+		end
+		if not found then
+			-- With the list full, it takes the last column's place.
+			if #ns.db.bestSortMore >= MAX_SORTS - 1 then table.remove(ns.db.bestSortMore) end
+			ns.db.bestSortMore[#ns.db.bestSortMore + 1] = { key = key, ascending = startsAscending(key) }
+		end
 	end
 	BestCraftsList.Render()
 end
@@ -786,15 +842,17 @@ local function createHeader(key, label)
 	else
 		header.arrow:SetTexture(SORT_ARROW_FILE)
 	end
+	header.order = header:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
 	header:SetScript("OnClick", function(self, mouseButton)
 		if mouseButton == "RightButton" then return openColumnsMenu(self) end
-		setSort(key)
+		setSort(key, IsShiftKeyDown())
 	end)
 	header:SetScript("OnEnter", function(self)
 		GameTooltip:SetOwner(self, "ANCHOR_TOP")
 		GameTooltip:SetText(label)
 		GameTooltip:AddLine(HEADER_TIPS[key], 1, 1, 1, true)
 		if key ~= "name" then GameTooltip:AddLine(Color("simulated", "Click to sort; click again to reverse.")) end
+		GameTooltip:AddLine(Color("simulated", "Shift-click: sort by this second"))
 		GameTooltip:AddLine(Color("simulated", "Right-click: pick the columns"))
 		GameTooltip:Show()
 	end)
