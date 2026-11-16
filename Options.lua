@@ -120,7 +120,9 @@ function Options.Create()
 	end
 
 	local function button(name, text, onClick, tooltip)
-		pageLayout:AddInitializer(CreateSettingsButtonInitializer(name, text, onClick, tooltip, true))
+		-- No search tags (the last argument): tags written from addon code taint the
+		-- game's options search, and its Discord button then errors (IsUserOAuthed).
+		pageLayout:AddInitializer(CreateSettingsButtonInitializer(name, text, onClick, tooltip, false))
 	end
 
 	---------------------------------------------------------------------------
