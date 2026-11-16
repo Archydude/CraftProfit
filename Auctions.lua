@@ -1,6 +1,7 @@
 -- Craft Profit: the My auctions tab of its auction house window (see
 -- ShoppingList.lua). It lists your auctions with the lowest price anyone else
--- asks, says which ones are undercut, and cancels them: one auction for each
+-- asks, says which ones are undercut or have others' auctions listed before them
+-- at the same price, and cancels them: one auction for each
 -- click, as the game only takes a cancel from a click.
 local _, ns = ...
 
@@ -27,10 +28,11 @@ local AWAY_TEXT = "Open the auction house to see your auctions."
 local EMPTY_TEXT = "You have no auctions up."
 
 -- How each auction stands, in the list's order, with its label.
-local STATES = { "undercut", "checking", "unknown", "bidOnly", "lowest", "sold" }
+local STATES = { "undercut", "notFirst", "checking", "unknown", "bidOnly", "lowest", "sold" }
 local STATE_ORDER = tInvert(STATES)
 local STATE_TEXT = {
 	undercut = Color("loss", "Undercut"),
+	notFirst = Color("missing", "Not first"),
 	checking = Color("muted", "Checking..."),
 	unknown = Color("muted", "Not checked"),
 	bidOnly = Color("muted", "Bid only"),
@@ -43,7 +45,7 @@ local panel, body, away, emptyText, listBox, statusText, nextButton
 local auctions = {}
 -- Whether the auction house has said what your auctions are since it opened.
 local loaded = false
--- What each item is listed for by others: item key text -> { done, failed, lowest }.
+-- What each item is listed for by others: item key text -> { done, failed, lowest, rows }.
 local checks = {}
 -- Auctions being cancelled, until the auction house says they're down: id -> true.
 local cancelling = {}
@@ -63,13 +65,39 @@ local function keyText(itemKey)
 		itemKey.battlePetSpeciesID or 0 }, ":")
 end
 
+-- How many of an item others have listed before your auction: everything cheaper,
+-- and at your price what the auction house lists above yours. The second value
+-- is true when there are more than that: the listings read stop before yours.
+local function aheadOf(auction, check)
+	local rows = check.rows
+	if not (rows and auction.price) then return 0 end
+	local cheaper, ahead = 0, 0
+	for _, row in ipairs(rows) do
+		if row.price > auction.price then return ahead end
+		-- Yours: this very auction, or for stackable items your amount at that price.
+		if row.auctionID == auction.id or (row.mine and not row.auctionID and row.price == auction.price) then
+			return ahead
+		end
+		if not row.mine then
+			ahead = ahead + (row.qty or 1)
+			if row.price < auction.price then cheaper = ahead end
+		end
+	end
+	-- Yours isn't among the listings read. When those end at your price or under
+	-- it, all of them come before yours, and more may.
+	local last = rows[#rows]
+	if last and last.price <= auction.price then return ahead, true end
+	return cheaper
+end
+
 local function stateOf(auction)
 	if auction.sold then return "sold" end
 	if not auction.price then return "bidOnly" end
 	local check = checks[auction.key]
 	if not (check and check.done) then return "checking" end
 	if check.failed then return "unknown" end
-	return (check.lowest and check.lowest < auction.price) and "undercut" or "lowest"
+	if check.lowest and check.lowest < auction.price then return "undercut" end
+	return aheadOf(auction, check) > 0 and "notFirst" or "lowest"
 end
 
 local function timeText(seconds)
@@ -215,7 +243,16 @@ local function drawRow(row, auction)
 		prices = "Yours " .. exact(auction.price)
 		local check = checks[auction.key]
 		if not auction.sold and check and check.done and not check.failed then
-			prices = prices .. (check.lowest and ("  ·  lowest other " .. exact(check.lowest)) or "  ·  no others")
+			local ahead, more = aheadOf(auction, check)
+			if state == "notFirst" then
+				-- Nobody asks less, but others at your price are listed before yours.
+				prices = prices .. format("  ·  %s%s before yours at this price", BreakUpLargeNumbers(ahead), more and "+" or "")
+			else
+				prices = prices .. (check.lowest and ("  ·  lowest other " .. exact(check.lowest)) or "  ·  no others")
+				if ahead > 0 then
+					prices = prices .. format("  ·  %s%s before yours", BreakUpLargeNumbers(ahead), more and "+" or "")
+				end
+			end
 		end
 	else
 		prices = auction.bid and ("Bid " .. exact(auction.bid)) or ""
@@ -244,10 +281,16 @@ draw = function()
 	table.sort(auctions, byStateThenName)
 	listBox:SetDataProvider(CreateDataProvider(auctions), ScrollBoxConstants.RetainScrollPosition)
 	emptyText:SetShown(loaded and #auctions == 0)
-	local undercut, checking, up = 0, 0, 0
+	local undercut, checking, up, notFirst = 0, 0, 0, 0
 	for _, auction in ipairs(auctions) do
 		local state = stateOf(auction)
-		if state == "undercut" then undercut = undercut + 1 elseif state == "checking" then checking = checking + 1 end
+		if state == "undercut" then
+			undercut = undercut + 1
+		elseif state == "checking" then
+			checking = checking + 1
+		elseif state == "notFirst" then
+			notFirst = notFirst + 1
+		end
 		if not auction.sold then up = up + 1 end
 	end
 	local text
@@ -261,6 +304,7 @@ draw = function()
 		text = format("%d up", up)
 		if checking > 0 then text = text .. format("  ·  checking %d", checking) end
 		text = text .. format("  ·  %d undercut", undercut)
+		if notFirst > 0 then text = text .. format("  ·  %d not first", notFirst) end
 	end
 	statusText:SetText(text)
 	nextButton:SetText(undercut > 0 and format("Cancel next undercut (%d)", undercut) or "Cancel next undercut")
@@ -275,6 +319,7 @@ local function onChecked(key, check, results)
 	if not results then
 		check.failed = true
 	else
+		check.rows = results.rows
 		for _, row in ipairs(results.rows) do
 			if not row.mine then
 				check.lowest = row.price

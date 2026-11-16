@@ -263,7 +263,9 @@ Everything in your bags that can be auctioned, with what one sells for and how m
 The game's own sell page is filled in with the same item, price, amount and duration, so its Create Auction button posts the same auction, and its list shows what the item is listed for. A price, amount or duration you change there, like clicking a listing to match it, changes in the tab too.
 
 ### My auctions tab
-Your auctions, the undercut ones first: each with your price, the lowest price anyone else asks, and the time left. Each one says **Undercut**, **Lowest**, **Sold**, or **Bid only** for an auction without a buyout.
+Your auctions, the undercut ones first: each with your price, the lowest price anyone else asks, and the time left. Each one says **Undercut**, **Not first**, **Lowest**, **Sold**, or **Bid only** for an auction without a buyout.
+
+**Not first** means nobody asks less than you, but others at your price are listed before yours; the line says how many, like **5 before yours at this price**. An undercut auction also says how many come before it. A **+** after the number means there are more than that. **Cancel next undercut** leaves Not first auctions alone.
 
 - **Cancel** takes that auction down. It comes back in the mail, without its deposit. Cancelling an auction someone has bid on costs gold, so that one asks first.
 - **Cancel next undercut** cancels one undercut auction for each click, since the game takes one cancel per click. Auctions someone has bid on are left to their own Cancel button.

@@ -35,15 +35,20 @@ local function ownedSorts()
 	}
 end
 
-local function byPrice(a, b) return a.price < b.price end
+-- Cheapest first, and at one price as the auction house lists them: that order
+-- says whose auction comes before whose.
+local function byPrice(a, b)
+	if a.price ~= b.price then return a.price < b.price end
+	return a.order < b.order
+end
 
--- A stackable item's listings, cheapest first: { price (each), qty, mine }.
+-- A stackable item's listings, cheapest first: { price (each), qty, mine, order }.
 local function readCommodity(itemID)
 	local rows = {}
 	for index = 1, math.min(C_AuctionHouse.GetNumCommoditySearchResults(itemID), MAX_ROWS) do
 		local info = C_AuctionHouse.GetCommoditySearchResultInfo(itemID, index)
 		if info then
-			rows[#rows + 1] = { price = info.unitPrice, qty = info.quantity,
+			rows[#rows + 1] = { price = info.unitPrice, qty = info.quantity, order = index,
 				mine = info.containsOwnerItem or info.containsAccountItem or false }
 		end
 	end
@@ -52,13 +57,14 @@ local function readCommodity(itemID)
 end
 
 -- Any other item's listings with a buyout, cheapest first:
--- { price, qty, mine, itemLevel }.
+-- { price, qty, mine, itemLevel, auctionID, order }.
 local function readItem(itemKey)
 	local rows = {}
 	for index = 1, math.min(C_AuctionHouse.GetNumItemSearchResults(itemKey), MAX_ROWS) do
 		local info = C_AuctionHouse.GetItemSearchResultInfo(itemKey, index)
 		if info and info.buyoutAmount then
 			rows[#rows + 1] = { price = info.buyoutAmount, qty = info.quantity, itemLevel = info.itemKey.itemLevel,
+				auctionID = info.auctionID, order = index,
 				mine = info.containsOwnerItem or info.containsAccountItem or false }
 		end
 	end
