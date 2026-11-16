@@ -1,6 +1,6 @@
 -- Craft Profit: the options window (Esc > Options > AddOns > Craft Profit). The
 -- main page has what to craft and where prices come from; the rest sit on pages
--- under its "+": Panel, Shopping list, Patron orders and Tooltips. WoW Forever
+-- under its "+": Panel, Shopping list, Auction house, Patron orders and Tooltips. WoW Forever
 -- has no ranks, procs, concentration or crafting orders, so the options for
 -- those (and the Patron orders page) aren't there.
 local _, ns = ...
@@ -44,6 +44,7 @@ local function onChanged()
 	ns.BestCrafts.Reprice(true)
 	ns.BestCraftsList.Refresh()
 	ns.Minimap.Update()
+	ns.ShoppingList.OptionsChanged()
 end
 
 -- Settings that change which TSM prices are saved for your alts: a change saves them again.
@@ -61,6 +62,19 @@ function Options.Create()
 	local quality = ns.QUALITY_CRAFTING -- false on WoW Forever
 	-- The page settings go on: the main page, then each page under its "+".
 	local page, pageLayout = category, layout
+	-- "At the auction house, use": the setting that sets every part of the auction
+	-- house at once (made on its page below), and whether it's doing so right now.
+	local allSetting, settingAll = nil, false
+	local AH_PART = {}
+	for _, part in ipairs(ns.AH_PARTS) do AH_PART[part] = true end
+	-- What that setting reads: the one all the parts agree on, or "custom".
+	local function allParts()
+		local first = db[ns.AH_PARTS[1]]
+		for _, part in ipairs(ns.AH_PARTS) do
+			if db[part] ~= first then return "custom" end
+		end
+		return (first == "own" or first == "auctionator") and first or "custom"
+	end
 
 	local function startPage(name)
 		page, pageLayout = Settings.RegisterVerticalLayoutSubcategory(category, name)
@@ -74,6 +88,12 @@ function Options.Create()
 		local s = Settings.RegisterAddOnSetting(page, "CRAFTPROFIT_" .. key:upper(), key, db, varType, name, ns.DEFAULTS[key])
 		s:SetValueChangedCallback(function(...)
 			onChanged(...)
+			-- A part of the auction house changed on its own: the choice for all of them reads it again.
+			if AH_PART[key] and allSetting and not settingAll then
+				settingAll = true
+				allSetting:SetValue(allParts(), true)
+				settingAll = false
+			end
 			if key == "saveTSMPrices" and not db.saveTSMPrices then
 				ns.SavedPrices.Forget()
 			elseif RESAVE[key] then
@@ -88,10 +108,12 @@ function Options.Create()
 		Settings.CreateCheckbox(page, setting(key, Settings.VarType.Boolean, name), tooltip)
 	end
 
+	-- `choices`: a list of { value, label }, or a function that returns one.
 	local function dropdown(key, name, choices, tooltip)
 		local function getOptions()
 			local container = Settings.CreateControlTextContainer()
-			for _, choice in ipairs(choices) do container:Add(choice[1], choice[2]) end
+			local list = type(choices) == "function" and choices() or choices
+			for _, choice in ipairs(list) do container:Add(choice[1], choice[2]) end
 			return container:GetData()
 		end
 		Settings.CreateDropdown(page, setting(key, Settings.VarType.String, name), getOptions, tooltip)
@@ -247,13 +269,7 @@ function Options.Create()
 		(quality and "ranks and " or "") .. "amounts you're missing.\n\n" ..
 		"Craft Profit's own list: the same menu adds them to a list of its own. Its window opens beside the " ..
 		"auction house, where a click on a material shows it with the amount you still need. " ..
-		"It's used when Auctionator isn't installed, unless you pick the TSM search under Shop with.")
-	dropdown("listAddon", "Shop with", ns.LIST_ADDON_CHOICES,
-		"Where missing materials go: Auctionator's shopping list, a TSM search to copy, or Craft Profit's " ..
-		"own shopping list.\n\n" ..
-		"A choice whose addon isn't installed uses Auctionator's list when that's installed, and Craft " ..
-		"Profit's own list when it isn't. The TSM search is only used when you pick it.\n\n" ..
-		"You can also switch it at the bottom of the Shopping list menus.")
+		"It's used when Auctionator isn't installed, unless you pick the TSM search under " .. ns.LIST_ADDON_LABEL .. ".")
 	checkbox("listPerCharacter", "One list per character",
 		format("Each character gets its own list, named after it, like \"%s\".\n\n" ..
 			"Can be combined with one list per profession: \"%s - Blacksmithing\".",
@@ -269,6 +285,76 @@ function Options.Create()
 		"Empties the shopping list. Ctrl-click the Shopping list button does the same.\n\n" ..
 		"With one list per profession, this clears the list of the profession window that's open, " ..
 		"or with none open, the lists of all this character's professions.")
+	---------------------------------------------------------------------------
+	-- Auction house
+	---------------------------------------------------------------------------
+
+	startPage("Auction house")
+	-- Without Auctionator there's nothing to choose between: Craft Profit does
+	-- everything, so only "Shop with" is left, and only when TSM is there to pick.
+	local hasAuctionator = Auctionator ~= nil
+	-- The Settings calls differ between game versions, and the parts below work without this one.
+	if hasAuctionator then pcall(function()
+		local master = Settings.RegisterProxySetting(page, "CRAFTPROFIT_AHALL", Settings.VarType.String, ns.AH_LABEL,
+			ns.DEFAULTS.listAddon, allParts, function(value)
+				if settingAll or value == "custom" then return end
+				settingAll = true
+				for _, part in ipairs(ns.AH_PARTS) do settings[part]:SetValue(value) end
+				settingAll = false
+			end)
+		Settings.CreateDropdown(page, master, function()
+			local container = Settings.CreateControlTextContainer()
+			for _, choice in ipairs(ns.AH_CHOICES) do container:Add(choice[1], choice[2]) end
+			if allParts() == "custom" then container:Add("custom", "Custom") end
+			return container:GetData()
+		end, "Auctionator or Craft Profit for everything at the auction house: shopping, selling, canceling " ..
+			"and prices. Picking one sets all four choices below.\n\n" ..
+			"Custom: the choices below aren't all the same.\n\n" ..
+			"Craft Profit's window only has the tabs for what Craft Profit does. With Auctionator for everything, " ..
+			"the window and its button on the auction house are gone.\n\n" ..
+			"Auctionator's own tabs stay on the auction house whatever you pick.")
+		allSetting = master
+	end) end
+	if hasAuctionator or ns.Prices.HasTSM() then
+		dropdown("listAddon", ns.LIST_ADDON_LABEL, function()
+			local list = {}
+			for _, choice in ipairs(ns.LIST_ADDON_CHOICES) do
+				local key, offered = choice[1], true
+				if key == "auctionator" then
+					offered = hasAuctionator
+				elseif key == "tsm" then
+					offered = ns.Prices.HasTSM()
+				elseif not hasAuctionator and db.listAddon ~= "tsm" then
+					-- Without Auctionator, a saved "Auctionator" means Craft Profit's list:
+					-- this row keeps the saved value, so it comes back with Auctionator.
+					key = db.listAddon
+				end
+				if offered then list[#list + 1] = { key, choice[2] } end
+			end
+			return list
+		end,
+			(hasAuctionator and "Auctionator: missing materials go to Auctionator's shopping list.\n\n" or "") ..
+			"Craft Profit: they go to Craft Profit's own shopping list, on the Shopping list tab of its window.\n\n" ..
+			(ns.Prices.HasTSM() and "TSM search to copy: they become a search to paste into TSM's Shopping tab.\n\n" or "") ..
+			"You can also switch it at the bottom of the Shopping list menus.")
+	end
+	if hasAuctionator then
+		dropdown("ahSell", "Sell with", ns.AH_CHOICES,
+			"Craft Profit: its window has the Sell tab and opens by itself at the auction house. An item you put up " ..
+			"for sale from your bags is picked there.\n\n" ..
+			"Auctionator: no Sell tab, and Craft Profit leaves selling alone.")
+		dropdown("ahCancel", "Cancel with", ns.AH_CHOICES,
+			"Craft Profit: its window has the My auctions tab, with your undercut auctions and the button that " ..
+			"cancels them.\n\n" ..
+			"Auctionator: no My auctions tab.")
+		dropdown("ahPrice", "Price with", ns.AH_CHOICES,
+			"Craft Profit: its window has the Prices tab, and with Scan when I open the auction house on, its price " ..
+			"scan starts by itself. It doesn't while your prices come from TSM.\n\n" ..
+			"Auctionator: no Prices tab, and Craft Profit's scan doesn't start by itself. /craftprofit scan still " ..
+			"starts one.\n\n" ..
+			"It's also whose price is used when both have one. The other prices what the first doesn't.\n\n" ..
+			"TSM's prices still come before both. Price addon on the main page can limit prices to one addon.")
+	end
 	header("Auction house window")
 	checkbox("auctionWindow", "Open at the auction house",
 		"Craft Profit's own window opens beside the auction house. There it has four tabs:\n\n" ..
@@ -279,8 +365,11 @@ function Options.Create()
 		"My auctions: your auctions, which of them are undercut, and a button that cancels those. The " ..
 		"game's own Auctions tab opens beside it.\n\n" ..
 		"Prices: when the auction house was last scanned for prices, and the button that scans it.\n\n" ..
-		"It opens by itself beside the game's own auction house window, when Craft Profit's shopping list " ..
-		"has something on it or Auctionator isn't installed. It doesn't open over another addon's " ..
+		(hasAuctionator and "It only has the tabs for what Craft Profit does (see the choices above).\n\n" ..
+			"It opens by itself beside the game's own auction house window, when Sell with is Craft Profit or " ..
+			"Craft Profit's shopping list has something on it. "
+			or "It opens by itself beside the game's own auction house window. ") ..
+		"It doesn't open over another addon's " ..
 		"auction house window.\n\n" ..
 		"Away from the auction house it's only the shopping list.\n\n" ..
 		"Off: it only opens from the minimap button's menu, the Shopping list menus, or /craftprofit shop. " ..

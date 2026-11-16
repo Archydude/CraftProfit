@@ -98,7 +98,7 @@ Shortcut: **Ctrl-click** clears the list, without the menu.
 
 **Separate lists:** each character and profession gets its own list, like **Thrall - Blacksmithing**. Turn off **one shopping list per character** or **per profession** in the options to share lists instead; with both off, the list is called **Crafting**. Lists from before 1.19.0, named **Craft Profit - ...**, are moved to the new names the next time you log in, along with what's on them.
 
-**Where the list goes:** with Auctionator installed, to an Auctionator shopping list. Without it, to Craft Profit's own shopping list, which shows in its window at the auction house (see [Auction house window](#auction-house-window)). Pick another with **Shop with** at the bottom of the menu, in the gear menu at the bottom of the Patron tab, or in the options: **Auctionator shopping list**, **TSM search to copy** or **Craft Profit shopping list**.
+**Where the list goes:** with Auctionator installed, to an Auctionator shopping list. Without it, to Craft Profit's own shopping list, which shows in its window at the auction house (see [Auction house window](#auction-house-window)). Pick another with **Shop with** at the bottom of the menu, in the gear menu at the bottom of the Patron tab, or in the options: **Auctionator**, **TSM search to copy** or **Craft Profit**.
 
 **TSM search to copy:** when you pick it, the button says **Copy TSM search** instead, with the same menu. Pick an amount and a box shows a search, already selected: press Ctrl+C and paste it into the search box on TSM's Shopping tab. It searches for exactly the ranks you're missing and stops at the amounts you need.
 
@@ -227,9 +227,18 @@ Craft Profit works on WoW Forever: the panel, Best crafts, the shopping list and
 - Amounts show the two biggest coins, like **1s 4c** or **4g 12s**.
 
 ## Auction house window
-Craft Profit has its own window at the auction house. It opens beside the game's auction house window, and a button with Craft Profit's logo on that window's right edge opens and closes it. It has four tabs: **Shopping list**, **Sell**, **My auctions** and **Prices**.
+Craft Profit has its own window at the auction house. It opens beside the game's auction house window, and a button with Craft Profit's logo on that window's right edge opens and closes it. It has up to four tabs: **Shopping list**, **Sell**, **My auctions** and **Prices**.
 
-It opens by itself when your Craft Profit shopping list has something on it, or when Auctionator isn't installed. Turn that off with **Open at the auction house** in the options; the side button still opens it. It doesn't open by itself over another addon's auction house window.
+**Auctionator or Craft Profit:** with Auctionator installed, you choose which of the two you use at the auction house. **At the auction house, use** on the options' Auction house page sets it for everything at once, and four choices under it set each part on its own:
+
+- **Shop with:** where missing materials go: Auctionator's shopping list, Craft Profit's own, or a search to paste into TSM.
+- **Sell with:** Craft Profit shows the Sell tab, and its window opens by itself at the auction house.
+- **Cancel with:** Craft Profit shows the My auctions tab.
+- **Price with:** Craft Profit shows the Prices tab, and its price scan can start by itself (not while your prices come from TSM). It's also whose price is used when both have one. The other prices what the first doesn't, and TSM's prices still come before both.
+
+The window only has the tabs for what Craft Profit does. With Auctionator for everything, the window and its side button are gone. The first choice reads **Custom** while the four aren't all the same. Auctionator's own tabs stay on the auction house whatever you pick. Without Auctionator installed, Craft Profit does all of it and these choices aren't shown; only **Shop with** stays, when TSM is installed.
+
+It opens by itself when **Sell with** is Craft Profit, or when Craft Profit's shopping list has something on it. Turn the opening off with **Open at the auction house** in the options; the side button still opens it. It doesn't open by itself over another addon's auction house window.
 
 Away from the auction house the window is only the shopping list. Open it from the minimap button's menu, the Shopping list menus, or with `/craftprofit shop`.
 
@@ -351,12 +360,21 @@ Click the gear on the panel (or Craft Profit options in the gear menu under the 
 | Option | What it does |
 |---|---|
 | Show Shopping list button | The Shopping list button under your materials, and on the Patron tab Add profitable, Add all and the cart buttons. On by default. |
-| Shop with | Auctionator shopping list (default), TSM search to copy, or Craft Profit shopping list. Without Auctionator, the default goes to Craft Profit's own list. Also at the bottom of the Shopping list menu and in the gear menu under the Patron tab's list. |
 | One list per character / per profession | On by default. Either or both split the shopping list, e.g. Thrall - Blacksmithing. With both off, it's called Crafting. |
 | Check off what you get | On by default. Materials come off the shopping list as you get them: bought, looted, from the mailbox or crafted. |
-| Open at the auction house | On by default. Craft Profit's window opens by itself beside the auction house when its shopping list has something on it, or when Auctionator isn't installed (see [Auction house window](#auction-house-window)). |
-| Default posting time | How long an auction lasts when you pick an item on the Sell tab: the last one you used (default), or always the same one. |
 | Shopping list: Clear | Empties the shopping list. With one list per profession and no profession window open, it empties all this character's profession lists. |
+
+**Auction house**
+
+| Option | What it does |
+|---|---|
+| At the auction house, use | Auctionator (default) or Craft Profit for everything at the auction house. It sets the four choices below, and reads Custom while they differ. Without Auctionator installed, Craft Profit does all of it and these choices aren't shown (see [Auction house window](#auction-house-window)). |
+| Shop with | Auctionator, TSM search to copy, or Craft Profit: where missing materials go. Also at the bottom of the Shopping list menu and in the gear menu under the Patron tab's list. |
+| Sell with | Craft Profit shows the Sell tab and opens the window by itself at the auction house. |
+| Cancel with | Craft Profit shows the My auctions tab. |
+| Price with | Craft Profit shows the Prices tab, and its scan can start by itself. Also whose price is used when both have one, after TSM's. |
+| Open at the auction house | On by default. Craft Profit's window opens by itself beside the auction house when Sell with is Craft Profit, or its shopping list has something on it. |
+| Default posting time | How long an auction lasts when you pick an item on the Sell tab: the last one you used (default), or always the same one. |
 
 **Patron orders** (not on WoW Forever)
 

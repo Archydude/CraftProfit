@@ -434,7 +434,7 @@ syncNative = function()
 	if not (panel and panel:IsVisible()) then
 		-- The window is on another tab and you put an item up for sale: this tab
 		-- opens with it. Otherwise, away from this tab, the game's page is yours alone.
-		if changed and not posting and ns.ShoppingList.IsShown() then
+		if changed and not posting and ns.UsesOwn("ahSell") and ns.ShoppingList.IsShown() then
 			ns.ShoppingList.Show("sell")
 			if panel and panel:IsVisible() and not (selected and selected.key == key) then adopt(key) end
 			layout()

@@ -32,6 +32,12 @@ local function loadSettings()
 	db.useVendor = nil
 	-- The Ledger's "All time" was gone before it was ever released.
 	if db.ledgerRange == 0 then db.ledgerRange = 90 end
+	-- Up to 4.1 only where missing materials go was a choice. With Craft Profit
+	-- picked for that, it does the rest of the auction house too.
+	if db.ahSell == nil and db.listAddon == "own" then
+		db.ahSell, db.ahCancel, db.ahPrice = "own", "own", "own"
+	end
+	db.ahScan = nil -- a choice of its own before release, now part of ahPrice
 	for key, value in pairs(ns.DEFAULTS) do
 		if db[key] == nil then db[key] = value end
 	end

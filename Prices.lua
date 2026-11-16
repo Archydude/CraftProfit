@@ -67,14 +67,23 @@ function Prices.Material(itemID)
 	return Prices.Buy(itemID)
 end
 
+-- With both Auctionator's prices and Craft Profit's scan in use, whether the
+-- scan's come first: the "Price with" choice. Either way the other one prices
+-- what the first doesn't.
+local function ownFirst()
+	return ns.db.ahPrice == "own"
+end
+
 -- What a material costs on the auction house, in copper (nil if nobody knows).
 local function auctionPrice(itemID)
 	local api, own = auctionatorAPI(), ownScan()
-	return (tsmAvailable() and tsmValue(ns.db.matSource, "i:" .. itemID))
+	local value = (tsmAvailable() and tsmValue(ns.db.matSource, "i:" .. itemID))
 		or (savedPrices() and ns.SavedPrices.Material(itemID))
-		or (api and auctionatorValue(api.GetAuctionPriceByItemID, itemID))
-		or (own and own.Material(itemID))
-		or nil
+	if value then return value end
+	if ownFirst() then
+		return (own and own.Material(itemID)) or (api and auctionatorValue(api.GetAuctionPriceByItemID, itemID)) or nil
+	end
+	return (api and auctionatorValue(api.GetAuctionPriceByItemID, itemID)) or (own and own.Material(itemID)) or nil
 end
 
 -- Whether materials a vendor sells are bought from a vendor: unless "Buy vendor
@@ -116,14 +125,16 @@ function Prices.SaleFrom(link, itemID)
 		local value = ns.SavedPrices.Sale(link, itemID)
 		if value then return value, "saved" end
 	end
-	local api = auctionatorAPI()
+	local api, own = auctionatorAPI(), ownScan()
+	-- Craft Profit's scan before Auctionator's prices when that's the choice.
+	local value = own and ownFirst() and own.Sale(link, itemID)
+	if value then return value, "own" end
 	if api then
-		local value = auctionatorValue(api.GetAuctionPriceByItemLink, link)
+		value = auctionatorValue(api.GetAuctionPriceByItemLink, link)
 			or (itemID and auctionatorValue(api.GetAuctionPriceByItemID, itemID))
 		if value then return value, "auctionator" end
 	end
-	local own = ownScan()
-	local value = own and own.Sale(link, itemID)
+	value = own and own.Sale(link, itemID)
 	if value then return value, "own" end
 end
 
@@ -189,8 +200,18 @@ end
 -- "own" (Craft Profit's), or nil with TSM's prices, which need none.
 function Prices.Scanner()
 	if tsmAvailable() or Prices.SavedAge() then return end
-	if auctionatorAPI() then return "auctionator" end
-	if ownScan() then return "own" end
+	local api, own = auctionatorAPI(), ownScan()
+	-- With both, the one whose prices come first, once Craft Profit has scanned.
+	if api and not (own and ownFirst() and own.HasPrices()) then return "auctionator" end
+	if own then return "own" end
+end
+
+-- Whether Craft Profit's scan may start by itself: its prices are in use, TSM's
+-- aren't (they need no scan), and scanning is Craft Profit's part, or its scan is
+-- the only price addon picked.
+function Prices.ScansItself()
+	if tsmAvailable() or Prices.SavedAge() or not ownScan() then return false end
+	return ns.db.provider == "own" or ns.UsesOwn("ahPrice")
 end
 
 -- How many days ago the saved TSM prices used here were saved, and the name of

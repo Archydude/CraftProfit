@@ -21,6 +21,7 @@ local TAB_LABELS = { shop = "Shopping list", sell = "Sell", auctions = "My aucti
 -- Where each tab but the shopping list is made (ns.Sell.Create...).
 local TAB_MODULES = { sell = "Sell", auctions = "Auctions", prices = "PricesTab" }
 local TAB_PADDING = 16   -- room beside a tab's label, so it's never cut short
+local TAB_GAP = 3        -- between two tabs, as the game's own
 local SIDE = 10          -- window edge to the list's frame
 local INSET_TOP = 26     -- under the title bar
 local INSET_BOTTOM = 32  -- room for the total
@@ -243,6 +244,35 @@ local function place()
 end
 
 ---------------------------------------------------------------------------
+-- Which tabs are there
+---------------------------------------------------------------------------
+
+-- Whether a tab is there at the auction house: the ones for the parts of it that
+-- Craft Profit does (see ns.UsesOwn). A shopping list of Craft Profit's that
+-- still has something on it doesn't keep its tab: away from the auction house
+-- the minimap button's menu still opens it.
+local TAB_PARTS = { sell = "ahSell", auctions = "ahCancel" }
+local function tabShown(key)
+	if key == "shop" then
+		return (ns.Shopping.ListTarget() or (ns.UsesOwn("listAddon") and "own")) == "own"
+	elseif key == "prices" then
+		-- Also when Craft Profit's scan is the only price addon picked.
+		return ns.UsesOwn("ahPrice") or ns.db.provider == "own"
+	end
+	return ns.UsesOwn(TAB_PARTS[key])
+end
+
+-- The first tab that's there, or nil when Auctionator does everything.
+local function firstTab()
+	for _, key in ipairs(TAB_KEYS) do
+		if tabShown(key) then return key end
+	end
+end
+
+-- Which setting a tab that isn't there waits for, as the options name it.
+local TAB_OPTIONS = { shop = "Shop with", sell = "Sell with", auctions = "Cancel with", prices = "Price with" }
+
+---------------------------------------------------------------------------
 -- The side button on the auction house window
 ---------------------------------------------------------------------------
 -- Other addons (All The Things) put their side buttons in the same place, and
@@ -328,6 +358,11 @@ end
 local function placeSideTab()
 	local auctionHouse = AuctionHouseFrame
 	if not (auctionHouse and atAuctionHouse) then return end
+	-- With Auctionator doing everything there's no window for it to open.
+	if not firstTab() then
+		if sideTab then sideTab:Hide() end
+		return
+	end
 	if not sideTab then
 		if sideFailed then return end
 		local ok, problem = pcall(createSideTab, auctionHouse)
@@ -394,13 +429,22 @@ function ShoppingList.Refresh()
 end
 
 -- Shows one tab's frame, making it the first time. Away from the auction house
--- Sell and My auctions say to open it.
+-- Sell and My auctions say to open it. At the auction house a tab that isn't
+-- there gives way to the first one that is, and with none the window closes.
 local function setTab(key)
+	if atAuctionHouse and not tabShown(key) then
+		key = firstTab()
+		if not key then
+			frame:Hide()
+			return
+		end
+	end
 	tab = key
 	-- Away from the auction house it's always the shopping list, which isn't a choice to remember.
 	if atAuctionHouse then
 		ns.db.auctionTab = key
-		ns.Sell.Follow() -- on any tab: putting an item up for sale switches to Sell
+		-- On any tab: putting an item up for sale switches to Sell.
+		if tabShown("sell") then ns.Sell.Follow() end
 	end
 	if not panels[key] then
 		panels[key] = ns[TAB_MODULES[key]].Create(frame, WIDTH, HEIGHT)
@@ -410,10 +454,22 @@ local function setTab(key)
 	frame:SetTitle(TAB_LABELS[key])
 	PanelTemplates_SetTab(frame, tIndexOf(TAB_KEYS, key))
 	-- The selected tab's label uses another font, so every tab measures again.
-	for _, button in ipairs(frame.Tabs) do
+	local last
+	for index, button in ipairs(frame.Tabs) do
 		PanelTemplates_TabResize(button, TAB_PADDING)
 		-- The other tabs all need the auction house, so there's nothing to switch to away from it.
-		button:SetShown(atAuctionHouse)
+		local shown = atAuctionHouse and tabShown(TAB_KEYS[index])
+		button:SetShown(shown)
+		-- The ones that are there sit side by side, as the game spaces its own.
+		button:ClearAllPoints()
+		if shown then
+			if last then
+				button:SetPoint("TOPLEFT", last, "TOPRIGHT", TAB_GAP, 0)
+			else
+				button:SetPoint("TOPLEFT", frame, "BOTTOMLEFT", 12, 2)
+			end
+			last = button
+		end
 	end
 	ShoppingList.Refresh()
 end
@@ -430,7 +486,7 @@ local function createTabs()
 		PanelTemplates_TabResize(button, TAB_PADDING)
 	end
 	frame.Tabs[1]:SetPoint("TOPLEFT", frame, "BOTTOMLEFT", 12, 2)
-	PanelTemplates_SetNumTabs(frame, #TAB_KEYS)
+	PanelTemplates_SetNumTabs(frame, #TAB_KEYS) -- setTab places them again, without the ones that aren't there
 end
 
 local function create()
@@ -510,6 +566,11 @@ end
 function ShoppingList.Show(key)
 	-- A menu passes its own things here, so only a tab's name counts.
 	key = (atAuctionHouse and TAB_LABELS[key]) and key or "shop"
+	if atAuctionHouse and not firstTab() then
+		ns.Shopping.Say(format("Craft Profit's auction house window is off: %s is set to Auctionator in the options.",
+			ns.AH_LABEL))
+		return
+	end
 	if not frame then create() end
 	place()
 	frame:Show()
@@ -520,11 +581,24 @@ function ShoppingList.IsShown()
 	return frame ~= nil and frame:IsShown()
 end
 
+-- An option changed: the tabs and the side button follow what Craft Profit does
+-- at the auction house now.
+function ShoppingList.OptionsChanged()
+	if not atAuctionHouse then return end
+	placeSideTab()
+	if frame and frame:IsShown() then setTab(tab) end
+end
+
 -- Opens the window on that tab, or closes it when that tab is already showing.
 function ShoppingList.Toggle(key)
 	key = TAB_LABELS[key] and key or "shop"
 	if key ~= "shop" and not atAuctionHouse then
 		ns.Shopping.Say(format("Open the auction house to use the %s tab.", TAB_LABELS[key]))
+		return
+	end
+	if atAuctionHouse and not tabShown(key) then
+		ns.Shopping.Say(format("The %s tab is off: %s is set to Auctionator in the options.", TAB_LABELS[key],
+			TAB_OPTIONS[key]))
 		return
 	end
 	if frame and frame:IsShown() and tab == key then frame:Hide() else ShoppingList.Show(key) end
@@ -564,13 +638,15 @@ events:SetScript("OnEvent", function(_, event, itemID)
 			elseif ns.db.auctionWindow and auctionFrame() then
 				-- Only beside the game's own window: it doesn't open over another addon's.
 				-- With something to buy, the shopping list. With nothing, the window still
-				-- opens for selling, unless Auctionator is there to do that.
+				-- opens for selling when that's Craft Profit's part, on the tab you last
+				-- used if it's still there.
 				if ns.Shopping.ListTarget() == "own" and ns.Shopping.OwnHasItems() then
 					openedByAuctionHouse = true
 					ShoppingList.Show("shop")
-				elseif not Auctionator then
+				elseif tabShown("sell") then
+					local saved = ns.db.auctionTab
 					openedByAuctionHouse = true
-					ShoppingList.Show(ns.db.auctionTab ~= "shop" and ns.db.auctionTab or "sell")
+					ShoppingList.Show(saved ~= "shop" and tabShown(saved) and saved or "sell")
 				end
 			end
 		end)

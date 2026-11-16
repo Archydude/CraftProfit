@@ -37,7 +37,8 @@ end
 
 -- Where lists of missing materials go: "auctionator" (its shopping list), "tsm"
 -- (a search to copy into TSM's Shopping tab) or "own" (Craft Profit's own list),
--- or nil when shopping is turned off. The "Shop with" choice decides. The TSM
+-- or nil when shopping is turned off. The "Shop with" choice decides (one
+-- of the parts of the auction house, see ns.AH_PARTS). The TSM
 -- search is only ever used when it was chosen: a choice whose addon isn't loaded
 -- goes to Auctionator's list when that's loaded, and to "own" when it isn't.
 function Shopping.ListTarget()
@@ -55,7 +56,7 @@ function Shopping.AddShopWithChoice(root)
 	local offered = { auctionator = auctionatorAPI() ~= nil, tsm = tsmLoaded(), own = true }
 	if not (offered.auctionator or offered.tsm) then return end
 	root:CreateDivider()
-	root:CreateTitle("Shop with")
+	root:CreateTitle(ns.LIST_ADDON_LABEL)
 	local function isChosen(key) return Shopping.ListTarget() == key end
 	local function choose(key)
 		ns.db.listAddon = key

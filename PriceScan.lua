@@ -324,10 +324,10 @@ function PriceScan.Watch(listener)
 	listeners[#listeners + 1] = listener
 end
 
--- Whether the scan that starts by itself is due: the option is on, prices come
--- from Craft Profit's own scan, and the last one is old enough.
+-- Whether the scan that starts by itself is due: the option is on, scanning is
+-- Craft Profit's to do (see Prices.ScansItself), and the last one is old enough.
 local function autoDue()
-	if not ns.db.autoScan or ns.Prices.Scanner() ~= "own" then return false end
+	if not ns.db.autoScan or not ns.Prices.ScansItself() then return false end
 	local seconds = PriceScan.Seconds()
 	return not seconds or seconds >= AUTO_EVERY
 end

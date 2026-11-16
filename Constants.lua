@@ -79,7 +79,11 @@ ns.DEFAULTS = {
 	listPerCharacter = true,   -- a separate shopping list for each character
 	listPerProfession = true,  -- and/or for each profession
 	checkOff = true,           -- take materials off the shopping list as you get them
-	auctionWindow = true,      -- Craft Profit's window opens by itself at the auction house (see ShoppingList.lua)
+	-- Which of the two does the rest of the auction house: "auctionator" | "own" (see ns.UsesOwn)
+	ahSell = "auctionator",    -- selling: "own" shows the Sell tab
+	ahCancel = "auctionator",  -- canceling: "own" shows the My auctions tab
+	ahPrice = "auctionator",   -- prices: whose come first with both (after TSM's); "own" shows the Prices tab and lets the scan start by itself
+	auctionWindow = true,    -- Craft Profit's window opens by itself at the auction house (see ShoppingList.lua)
 	auctionTab = "sell",       -- the tab it was last on at the auction house: "shop" | "sell" | "auctions" | "prices"
 	sellDuration = 0,          -- how long auctions posted from the Sell tab last, by the game's number for it (0: not chosen yet, so the game's own choice)
 	sellDefault = "last",      -- what a newly picked item starts on: "last" | "1" | "2" | "3" (see ns.SELL_DEFAULT_CHOICES)
@@ -235,12 +239,31 @@ function ns.StrategyText(selection)
 	end
 end
 
+-- What you use at the auction house, Auctionator or Craft Profit, is one choice
+-- for each part of it: these settings, in the options' order. The first (where
+-- missing materials go) can also be a TSM search. AH_LABEL is the option that
+-- sets them all at once.
+ns.AH_LABEL = "At the auction house, use"
+ns.AH_PARTS = { "listAddon", "ahSell", "ahCancel", "ahPrice" }
+ns.AH_CHOICES = {
+	{ "auctionator", "Auctionator" },
+	{ "own", "Craft Profit" },
+}
+
+-- Whether Craft Profit does that part of the auction house itself: it's the one
+-- picked, or Auctionator isn't installed to do it.
+function ns.UsesOwn(part)
+	return ns.db[part] == "own" or not Auctionator
+end
+
 -- Choices for where missing materials go: Auctionator's list, a TSM search, or
--- Craft Profit's own list.
+-- Craft Profit's own list. The option's name is also the title over these choices
+-- in the Shopping list menus.
+ns.LIST_ADDON_LABEL = "Shop with"
 ns.LIST_ADDON_CHOICES = {
-	{ "auctionator", "Auctionator shopping list" },
+	{ "auctionator", "Auctionator" },
 	{ "tsm", "TSM search to copy" },
-	{ "own", "Craft Profit shopping list" },
+	{ "own", "Craft Profit" },
 }
 
 -- The shopping list the missing materials button adds to, when the list isn't
