@@ -48,7 +48,7 @@ The panel leads with the answer: the sale price at the rank you'll get, minus th
 The **Ledger** is your crafting history: what each item cost, sold for, went into your own crafts and really made.
 
 ### At the auction house
-Craft Profit's window opens beside the auction house. **Shopping list**: a click on a material shows it with the amount to buy. **Sell**: your bags with a price on every item. Pick one, in the tab or with a right-click in your bags, and the lowest price is filled in. **My auctions**: see which are undercut and cancel them, one click each.
+Craft Profit's window opens beside the auction house. **Shopping list**: a click on a material shows it with the amount to buy. **Sell**: your bags with a price on every item. Pick one and the lowest price is filled in. **My auctions**: see which are undercut and cancel them, one click each. With Auctionator installed, choose which of the two shops, sells, cancels and prices.
 
 ### Patron orders
 Blizzard's Patron tab shows each order's **expected profit**, **rewards** and missing **materials**. **Next order** works through them, one click per step.
@@ -72,11 +72,11 @@ Vendor prices, the auction price, TSM's **sale rate** and the **AH deposit**.
 
 ## B. Upload File form
 
-**File:** `dist\CraftProfit-4.1.0.zip`
+**File:** `dist\CraftProfit-4.2.0.zip`
 
 **Display name**
 ```
-Craft Profit 4.1.0
+Craft Profit 4.2.0
 ```
 
 **Release type:** `Release`
@@ -85,6 +85,12 @@ Craft Profit 4.1.0
 
 **Changelog** (paste only the newest part; paste older parts too if they never went up)
 ```markdown
+4.2.0
+- **Auctionator or Craft Profit at the auction house:** with Auctionator installed, you choose which of the two you use there, on the new **Auction house** options page. **At the auction house, use** sets it for everything at once. Under it, **Shop with**, **Sell with**, **Cancel with** and **Price with** set each part on its own, and the first one reads **Custom** while they differ. Craft Profit's window only has the tabs for the parts set to Craft Profit.
+- Changed: with Auctionator installed, everything starts on Auctionator, so Craft Profit's window and its button on the auction house are gone until you pick Craft Profit under **At the auction house, use**. If you already had Craft Profit under **Shop with**, everything starts on Craft Profit. Without Auctionator nothing changes: Craft Profit does all of it.
+- Changed: **Shop with**, **Open at the auction house** and **Default posting time** moved from the Shopping list options page to the Auction house page.
+- Fixed: typing in the search box of the game's options could show the error "AddOn 'CraftProfit' tried to call the protected function 'IsUserOAuthed()'". Craft Profit's option buttons, like **Clear**, are no longer found by that search; its checkboxes and dropdowns still are.
+
 4.1.0
 - **Sort Best crafts by two columns:** click a header to sort by it, then Shift-click another to sort by that one second, for recipes that are equal on the first. The first header turns gold and the second light blue. Shift-click a header that's already sorting to reverse just that column. A plain click goes back to one column.
 - **Prices in the Sell list:** every item in the Sell tab's list shows what one sells for, from your price addon or Craft Profit's own scan.
