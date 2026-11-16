@@ -282,6 +282,9 @@ local pullNative, syncNative, adopt
 -- change was the page setting itself up again (its item put back on it, which
 -- resets its price and amount) and not something you did.
 local syncDue, nativeReset = false, false
+-- The item last seen on the game's sell page, as its line's key: the same one put
+-- back there isn't something new you're selling.
+local seenKey
 
 -- Follows one of the game's sell pages from now on: what changes on it, and
 -- when it shows or hides. Hooks, so the game's own code runs untouched. A change
@@ -314,7 +317,7 @@ local function putNative(entry)
 		auctionHouse:SetPostItem(locationOf(entry))
 		pushing = false
 	end
-	if holds(page, entry) then nativeKey = entry.key end
+	if holds(page, entry) then nativeKey, seenKey = entry.key, entry.key end
 end
 
 -- Copies this tab's price, amount and duration to the game's sell page, while
@@ -419,13 +422,28 @@ syncNative = function()
 	syncDue = false
 	local reset = nativeReset
 	nativeReset = false
-	-- Only while this tab is the one you're looking at: otherwise the game's page is yours alone.
-	if not (panel and panel:IsVisible()) then return end
+	-- What the page was just given, and whether that's another item than it had.
+	local key, changed
+	if reset then
+		local ok, held = pcall(shownKey)
+		key = ok and held or nil
+		changed = key ~= nil and key ~= seenKey
+		seenKey = key
+	end
+	if not (panel and panel:IsVisible()) then
+		-- The window is on another tab and you put an item up for sale: this tab
+		-- opens with it. Otherwise, away from this tab, the game's page is yours alone.
+		if changed and not posting and ns.ShoppingList.IsShown() then
+			ns.ShoppingList.Show("sell")
+			if panel and panel:IsVisible() and not (selected and selected.key == key) then adopt(key) end
+			layout()
+		end
+		return
+	end
 	if reset then
 		-- With another item on it than the one picked here, you put it there (a
 		-- right-click in your bags, or dragged onto the page): this tab picks it too.
-		local ok, key = pcall(shownKey)
-		if ok and key and not posting and not (selected and selected.key == key) then
+		if key and not posting and not (selected and selected.key == key) then
 			adopt(key)
 		else
 			guarded(fillNative)
@@ -1180,6 +1198,12 @@ local function followPages()
 	end
 end
 
+-- Called when the window opens or changes tab at the auction house, so an item
+-- you put up for sale is noticed on any tab, before this one was ever opened.
+function Sell.Follow()
+	guarded(followPages)
+end
+
 local function refresh()
 	local open = Search.IsOpen()
 	body:SetShown(open)
@@ -1435,7 +1459,7 @@ events:SetScript("OnEvent", function(_, event, numPosted, total)
 	end
 	if event == "AUCTION_HOUSE_CLOSED" then
 		-- Nothing picked or half posted outlives the auction house.
-		selected, pick, listings, posting, nativeKey = nil, nil, nil, nil, nil
+		selected, pick, listings, posting, nativeKey, seenKey = nil, nil, nil, nil, nil, nil
 		-- A search is as old as this visit to the auction house.
 		if searchBox then searchBox:SetText("") end
 		StaticPopup_Hide("CRAFTPROFIT_POST_WARNING")

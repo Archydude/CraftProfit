@@ -398,7 +398,10 @@ end
 local function setTab(key)
 	tab = key
 	-- Away from the auction house it's always the shopping list, which isn't a choice to remember.
-	if atAuctionHouse then ns.db.auctionTab = key end
+	if atAuctionHouse then
+		ns.db.auctionTab = key
+		ns.Sell.Follow() -- on any tab: putting an item up for sale switches to Sell
+	end
 	if not panels[key] then
 		panels[key] = ns[TAB_MODULES[key]].Create(frame, WIDTH, HEIGHT)
 	end
@@ -511,6 +514,10 @@ function ShoppingList.Show(key)
 	place()
 	frame:Show()
 	setTab(key)
+end
+
+function ShoppingList.IsShown()
+	return frame ~= nil and frame:IsShown()
 end
 
 -- Opens the window on that tab, or closes it when that tab is already showing.
