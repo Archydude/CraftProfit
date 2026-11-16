@@ -14,7 +14,7 @@ ns.ShoppingList = ShoppingList
 local format = string.format
 local Color = ns.Color
 
-local WIDTH, HEIGHT = 400, 540
+local WIDTH, HEIGHT = 468, 558
 -- The tabs, in order, and the window's title on each.
 local TAB_KEYS = { "shop", "sell", "auctions", "prices" }
 local TAB_LABELS = { shop = "Shopping list", sell = "Sell", auctions = "My auctions", prices = "Prices" }

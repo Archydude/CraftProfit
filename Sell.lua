@@ -31,6 +31,8 @@ local ROW_HEIGHT, BAG_ROWS = 24, 8
 local ICON_SIZE = 20     -- a bag line's item icon
 local FOLD_SIZE = 14     -- the plus or minus before a section's name
 local PRICE_WIDTH = 76   -- the column of prices before it
+local RATE_WIDTH = 62    -- TSM's sale rate between them, as wide as its "Sale rate" header; only with TSM
+local HEADER_ROOM = 18   -- the columns' names over the bag list
 local COUNT_WIDTH = 48  -- the column of amounts at a bag line's right end
 local LIST_GAP = 10      -- under the bag list's frame
 local LISTING_HEIGHT, LISTING_ROWS = 20, 4
@@ -882,8 +884,11 @@ local function createBagRow(row)
 	row.count:SetPoint("RIGHT", -8, 0)
 	row.count:SetWidth(COUNT_WIDTH)
 	row.count:SetJustifyH("RIGHT")
+	row.rate = row:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
+	row.rate:SetPoint("RIGHT", row.count, "LEFT", -6, 0)
+	row.rate:SetWidth(RATE_WIDTH)
+	row.rate:SetJustifyH("RIGHT")
 	row.price = row:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
-	row.price:SetPoint("RIGHT", row.count, "LEFT", -6, 0)
 	row.price:SetWidth(PRICE_WIDTH)
 	row.price:SetJustifyH("RIGHT")
 	row.text = row:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
@@ -931,6 +936,11 @@ local function drawBag(row, data)
 	row.icon:SetShown(columns)
 	row.count:SetShown(columns)
 	row.price:SetShown(entry ~= nil) -- only an item has one
+	-- TSM's sale rate has its column only with TSM; without it the price sits by the amount.
+	local rated = TSM_API ~= nil and TSM_API.GetCustomPriceValue ~= nil
+	row.rate:SetShown(entry ~= nil and rated)
+	row.price:ClearAllPoints()
+	row.price:SetPoint("RIGHT", rated and row.rate or row.count, "LEFT", -6, 0)
 	row.text:ClearAllPoints()
 	if columns then
 		row.text:SetPoint("LEFT", row.icon, "RIGHT", 6, 0)
@@ -971,6 +981,10 @@ local function drawBag(row, data)
 		end
 		row.price:SetText(price and ns.Format.Money(price) or Color("muted", "-"))
 		row.price:SetAlpha(data.hidden and 0.6 or 1)
+		-- The share of the item's auctions that sell, from TSM.
+		local rate = rated and ns.Prices.SaleRate(entry.link) or nil
+		row.rate:SetText(rate and format("%.0f%%", rate * 100) or Color("muted", "-"))
+		row.rate:SetAlpha(data.hidden and 0.6 or 1)
 	end
 	if GameTooltip:IsOwned(row) and not dragging then
 		if entry or data.header then bagTooltip(row) else GameTooltip:Hide() end
@@ -1298,8 +1312,24 @@ local function createLists(width, y)
 		filter = typed
 		drawBags()
 	end)
-	y = y - SEARCH_ROOM
+	y = y - SEARCH_ROOM - HEADER_ROOM
 	bagBox, bagInset = scrollList(body, y, ROW_HEIGHT, BAG_ROWS, drawBag, width)
+	-- The columns' names, over the columns of a bag line (see createBagRow).
+	local function header(text, justify, x)
+		local name = body:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+		name:SetPoint(justify == "LEFT" and "BOTTOMLEFT" or "BOTTOMRIGHT", bagInset,
+			justify == "LEFT" and "TOPLEFT" or "TOPRIGHT", x, 3)
+		name:SetText(text)
+	end
+	local right = -(SCROLLBAR_ROOM + 8) -- a line's right edge, then its amount
+	header("Item", "LEFT", INSET_PAD + 6)
+	header("Amount", "RIGHT", right)
+	right = right - COUNT_WIDTH - 6
+	if TSM_API ~= nil and TSM_API.GetCustomPriceValue ~= nil then
+		header("Sale rate", "RIGHT", right)
+		right = right - RATE_WIDTH - 6
+	end
+	header("Price", "RIGHT", right)
 	emptyText = body:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
 	emptyText:SetPoint("CENTER", bagInset, "CENTER")
 	emptyText:SetText(EMPTY_TEXT)
