@@ -904,11 +904,11 @@ local function drawConcentration(model)
 	end
 end
 
--- How well the item sells, from TSM, as Best crafts shows it: on WoW Forever the
--- share of its auctions that sell, elsewhere how many sell a day in your region.
+-- How well the item sells, from TSM: the share of its auctions that sell. On an
+-- alt with saved TSM prices, which don't carry that, how many sell a day in your region.
 local function drawDemand(output)
 	if not output.link then return end
-	if ns.Prices.ShowsSaleRate() then
+	if ns.Prices.HasSaleRate() then
 		local rate = ns.Prices.SaleRate(output.link)
 		addRow("Sale rate " .. Color("muted", "(TSM)"), rate and ns.Format.SaleRate(rate) or Color("muted", "-"))
 	elseif ns.Prices.HasTSM() then
