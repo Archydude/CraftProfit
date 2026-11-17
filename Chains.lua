@@ -13,7 +13,8 @@ ns.Chains = Chains
 -- chains are two or three deep; this stops a loop of recipes making each other.
 local MAX_DEPTH = 6
 
--- itemID -> the recipe of this character's that makes it: { name, made = how
+-- itemID -> the recipe of this character's that makes it: { name, recipeID,
+-- professionID = the profession it belongs to, made = how
 -- many one craft makes on average, madeAtLeast, materials = { { itemID, qty } ... } }.
 -- Built when first needed, and again after a scan is saved.
 local byItem
@@ -45,7 +46,8 @@ local function build()
 			local schematic = entry.schematic
 			local made = ((schematic.quantityMin or 1) + (schematic.quantityMax or 1)) / 2
 			if #materials > 0 and made > 0 then
-				byItem[output.itemID] = { name = entry.name, made = made,
+				byItem[output.itemID] = { name = entry.name, recipeID = entry.recipeID,
+					professionID = entry.professionID, made = made,
 					madeAtLeast = math.max(schematic.quantityMin or 1, 1), materials = materials }
 			end
 		end

@@ -479,6 +479,16 @@ local function isCrafted(material)
 	return ns.Chains.Active() and ns.Chains.RecipeFor(material.itemID) ~= nil
 end
 
+-- Shows the recipe that makes a material you craft yourself, in its profession's window.
+local function openCrafted(material)
+	local recipe = ns.Chains.RecipeFor(material.itemID)
+	if not (recipe and recipe.recipeID) then return end
+	GameTooltip:Hide()
+	if not ns.Blizzard.OpenRecipe(recipe.recipeID, recipe.professionID) then
+		ns.Shopping.Say(format("Couldn't open the profession that makes %s right now.", recipe.name or "it"))
+	end
+end
+
 -- `canCycle`: the material comes in qualities you can click through.
 local function materialTooltip(model, material, canCycle)
 	return function(tip)
@@ -502,6 +512,8 @@ local function materialTooltip(model, material, canCycle)
 		if canCycle then
 			tip:AddLine(Color("simulated", "Click: try the next quality"))
 			tip:AddLine(Color("simulated", "Right-click: back to what's in the form"))
+		elseif isCrafted(material) then
+			tip:AddLine(Color("simulated", "Click: open its recipe"))
 		end
 		if missing > 0 and ns.Shopping.ListTarget() then
 			tip:AddLine(Color("simulated", format(ns.Shopping.ListTarget() == "tsm"
@@ -600,22 +612,22 @@ local function drawMaterials(model)
 		-- Craft myself: priced at what crafting it costs.
 		local crafted = isCrafted(material)
 		if crafted then tag = tag .. "  " .. craftedIcon() end
-		-- Click cycles qualities; Shift-click shops for just this material.
+		-- Click cycles qualities, or opens the recipe of a material you craft
+		-- yourself; Shift-click shops for just this material.
 		local onClick, tooltip
 		local canCycle = model.canSimulate and ns.Simulation.CanChange(material)
 		local canShop = ns.Shopping.ListTarget() and missingOf(model, material) > 0
-		if canCycle or canShop then
+		if canCycle or canShop or crafted then
 			onClick = function(mouseButton)
 				if IsShiftKeyDown() then
-					if ns.Shopping.ListTarget() then shopMaterial(model, material) end
+					if canShop then shopMaterial(model, material) end
 				elseif canCycle then
 					ns.Simulation.Cycle(material, mouseButton)
+				elseif crafted and mouseButton == "LeftButton" then
+					openCrafted(material)
 				end
 			end
 			tooltip = materialTooltip(model, material, canCycle)
-		elseif crafted then
-			-- Nothing to click, but the hammer is explained on hover.
-			onClick, tooltip = nop, materialTooltip(model, material, false)
 		end
 		local amount = material.price and Money(material.price * material.qty) or Color("warning", "no price")
 		local top = contentHeight

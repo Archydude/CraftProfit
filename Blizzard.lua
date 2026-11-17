@@ -640,6 +640,33 @@ function Blizzard.ShowRecipe(recipeID)
 	C_TradeSkillUI.OpenRecipe(recipeID)
 end
 
+-- How often, and how many times, a profession that was just opened is looked at
+-- before its recipe is shown: its window takes a moment to be ready.
+local RECIPE_RETRY, RECIPE_TRIES = 0.2, 10
+
+-- Shows one of your recipes, opening its profession first when the window shows
+-- another one (smelting, for an Engineering material). `professionID` is the
+-- recipe's base profession, when it's known. False when that profession couldn't
+-- be opened.
+function Blizzard.OpenRecipe(recipeID, professionID)
+	if not professionID or Blizzard.ShownBaseProfession() == professionID then
+		Blizzard.ShowRecipe(recipeID)
+		return true
+	end
+	if not C_TradeSkillUI.OpenTradeSkill(professionID) then return false end
+	local tries = 0
+	local function try()
+		tries = tries + 1
+		if Blizzard.ShownBaseProfession() == professionID and Blizzard.ShowsRecipeList() then
+			Blizzard.ShowRecipe(recipeID)
+		elseif tries < RECIPE_TRIES then
+			C_Timer.After(RECIPE_RETRY, try)
+		end
+	end
+	C_Timer.After(0, try)
+	return true
+end
+
 -- Calls onSelect() when the crafting page shows another recipe, and onLayout()
 -- when it switches between the full and the small view, shows or hides.
 function Blizzard.WatchCraftingPage(onSelect, onLayout)
