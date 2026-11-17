@@ -57,14 +57,10 @@ function Prices.Vendor(itemID)
 end
 
 -- What a material costs you, in copper (nil if nobody knows): what it costs to
--- buy, or with Craft myself (WoW Forever), what crafting it costs when you know
--- its recipe (see Chains.lua).
+-- buy, or what crafting it costs when the crafting strategy crafts it (WoW
+-- Forever's Craft myself and Cheapest way, see Chains.lua).
 function Prices.Material(itemID)
-	if ns.Chains.Active() then
-		local cost = ns.Chains.CraftCost(itemID)
-		if cost then return cost end
-	end
-	return Prices.Buy(itemID)
+	return ns.Chains.Cost(itemID) or Prices.Buy(itemID)
 end
 
 -- With both Auctionator's prices and Craft Profit's scan in use, whether the
@@ -302,8 +298,8 @@ end
 -- A material's price age (see auctionAge). Vendor prices don't age.
 function Prices.MaterialAge(itemID)
 	if Prices.BuysAtVendor(itemID) then return end
-	-- Crafted with Craft myself: its own price isn't used.
-	if ns.Chains.Active() and ns.Chains.RecipeFor(itemID) then return end
+	-- Crafted (Craft myself, Cheapest way): its own price isn't used.
+	if ns.Chains.Crafted(itemID) then return end
 	if Prices.Scanner() == "own" then return ns.PriceScan.MaterialAge(itemID) end
 	return auctionAge("GetAuctionAgeByItemID", itemID)
 end

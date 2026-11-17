@@ -588,8 +588,9 @@ function Ledger.RecordCraft(data, model, result, started)
 	for _, material in ipairs(model and model.materials or {}) do
 		if saved.items[material.itemID] then
 			local spent = material.qty - (returned[material.itemID] or 0)
-			-- With Craft myself, this craft's cost counted it at what it costs to make.
-			local atCost = ns.Chains.Active() and ns.Chains.CraftCost(material.itemID) ~= nil
+			-- Crafted (Craft myself, Cheapest way): this craft's cost counted it at
+			-- what it costs to make.
+			local atCost = ns.Chains.Cost(material.itemID) ~= nil
 			if spent > 0 then append("used", t, material.itemID, spent, atCost and 1 or 0) end
 		end
 	end

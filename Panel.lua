@@ -498,10 +498,10 @@ local function craftedIcon()
 	return CRAFTED_ICON
 end
 
--- Whether a material is one you craft yourself (Craft myself), so it's priced at
--- what crafting it costs.
+-- Whether a material is one you craft yourself (Craft myself, Cheapest way), so
+-- it's priced at what crafting it costs.
 local function isCrafted(material)
-	return ns.Chains.Active() and ns.Chains.RecipeFor(material.itemID) ~= nil
+	return ns.Chains.Crafted(material.itemID) ~= nil
 end
 
 -- Shows the recipe that makes a material you craft yourself, in its profession's window.

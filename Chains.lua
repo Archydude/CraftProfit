@@ -1,7 +1,8 @@
 -- Craft Profit: the "Craft myself" crafting strategy, on WoW Forever. A material
 -- one of this character's recipes makes costs what crafting it costs: its own
 -- materials, priced the same way, down to the ones that have to be bought. The
--- shopping list buys those instead of the material. A profession's recipes count
+-- shopping list buys those instead of the material. "Cheapest way" does that
+-- only for the materials that cost less to craft than to buy. A profession's recipes count
 -- once its Best crafts list has been opened (they come from its saved scan, see
 -- Scans.lua), so Engineering can use Mining's smelting.
 local _, ns = ...
@@ -23,9 +24,10 @@ local byItem
 -- needs its own item (or one that leads back to it) is bought there instead.
 local working = {}
 
--- Whether the crafting strategy is Craft myself (only on WoW Forever).
+-- Whether the crafting strategy crafts materials: Craft myself, or Cheapest way
+-- (only on WoW Forever).
 function Chains.Active()
-	return not ns.QUALITY_CRAFTING and ns.db.craftStrategy == "craft"
+	return not ns.QUALITY_CRAFTING and (ns.db.craftStrategy == "craft" or ns.db.craftStrategy == "mix")
 end
 
 -- Forgets the recipes: after a scan is saved, they're read again.
@@ -80,6 +82,25 @@ function Chains.CraftCost(itemID)
 	return total / recipe.made
 end
 
+-- What crafting one of an item costs when the crafting strategy crafts it, or nil
+-- when it buys it. Craft myself crafts whatever it can price; Cheapest way only
+-- what costs less to craft than to buy, or can't be bought.
+function Chains.Cost(itemID)
+	if not Chains.Active() then return end
+	local cost = Chains.CraftCost(itemID)
+	if not cost or ns.db.craftStrategy == "craft" then return cost end
+	local buy = ns.Prices.Buy(itemID)
+	if not buy or cost < buy then return cost end
+end
+
+-- The recipe that makes an item when the crafting strategy crafts it (see
+-- Chains.Cost), or nil when it buys it. Craft myself also crafts what it can't
+-- price.
+function Chains.Crafted(itemID)
+	if not Chains.Active() then return end
+	if ns.db.craftStrategy == "craft" or Chains.Cost(itemID) then return Chains.RecipeFor(itemID) end
+end
+
 -- What to buy for `needs` ({ counts = itemIDs that fill it, itemID = the one to
 -- buy, qty } ...), crafting what you can: { { itemID, qty } ... }. What you own
 -- counts once, at every step down; a crafted material you're short of becomes
@@ -102,7 +123,7 @@ function Chains.Missing(needs, owned)
 			qty = qty - take
 		end
 		if qty <= 0 then return end
-		local recipe = depth < MAX_DEPTH and Chains.RecipeFor(itemID)
+		local recipe = depth < MAX_DEPTH and Chains.Crafted(itemID)
 		if not recipe then return buy(itemID, qty) end
 		local crafts = math.ceil(qty / recipe.madeAtLeast)
 		for _, material in ipairs(recipe.materials) do

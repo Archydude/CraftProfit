@@ -232,6 +232,10 @@ ns.STRATEGIES = ns.QUALITY_CRAFTING and {
 		"Materials you know the recipe for are crafted, down to what has to be bought: they cost what their own " ..
 		"materials cost, and the shopping list buys those instead. Recipes from all this character's professions " ..
 		"count, once you've opened that profession's Best crafts list." },
+	{ "mix", "Cheapest way", "Cheapest way",
+		"Each material you know the recipe for is crafted or bought, whichever costs less, down to what has to be " ..
+		"bought. The shopping list buys what that takes. Recipes from all this character's professions count, once " ..
+		"you've opened that profession's Best crafts list." },
 }
 
 -- The current crafting strategy's entry in ns.STRATEGIES.
