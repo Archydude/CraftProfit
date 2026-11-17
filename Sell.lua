@@ -901,7 +901,7 @@ local function drawBag(row, data)
 		row.price:SetAlpha(data.hidden and 0.6 or 1)
 		-- The share of the item's auctions that sell, from TSM.
 		local rate = rated and ns.Prices.SaleRate(entry.link) or nil
-		row.rate:SetText(rate and format("%.0f%%", rate * 100) or Color("muted", "-"))
+		row.rate:SetText(rate and ns.Format.SaleRate(rate) or Color("muted", "-"))
 		row.rate:SetAlpha(data.hidden and 0.6 or 1)
 	end
 	if GameTooltip:IsOwned(row) and not dragging then

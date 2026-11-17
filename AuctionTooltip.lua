@@ -116,7 +116,7 @@ local function onItem(tooltip, data)
 		tooltip:AddDoubleLine(sourceName(from), money(price), 1, 0.82, 0, 1, 1, 1)
 		if qty > 1 then tooltip:AddDoubleLine("  For" .. stack, money(price * qty), 0.53, 0.53, 0.53, 1, 1, 1) end
 	end
-	if rate then tooltip:AddDoubleLine("TSM Sale Rate", format("%.0f%%", rate * 100), 1, 0.82, 0, 1, 1, 1) end
+	if rate then tooltip:AddDoubleLine("TSM Sale Rate", ns.Format.SaleRate(rate), 1, 0.82, 0, 1, 1, 1) end
 	if list then
 		tooltip:AddDoubleLine("AH Deposit " .. table.concat(DURATIONS, " / ") .. stack, table.concat(list, " / "),
 			1, 0.82, 0, 1, 1, 1)

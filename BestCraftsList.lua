@@ -453,7 +453,7 @@ local function rowTooltip(tip, row)
 		addPair(tip, "Sells per day in your region (TSM)", row.soldPerDay and perDayText(row.soldPerDay) or Color("muted", "-"))
 		if ns.Prices.ShowsSaleRate() then
 			addPair(tip, "Sale rate in your region (TSM)",
-				row.saleRate and format("%.0f%%", row.saleRate * 100) or Color("muted", "-"))
+				row.saleRate and ns.Format.SaleRate(row.saleRate) or Color("muted", "-"))
 		end
 	end
 	local daily = goldPerDay(row)
@@ -663,7 +663,7 @@ local function drawRow(button, row)
 	local listed = row.listed and BreakUpLargeNumbers(row.listed) or "-"
 	button.cells.listed:SetText((row.listed and (row.listedAge or 0) < STALE_DAYS) and listed or Color("muted", listed))
 	button.cells.perDay:SetText(row.soldPerDay and perDayText(row.soldPerDay) or Color("muted", "-"))
-	button.cells.saleRate:SetText(row.saleRate and format("%.0f%%", row.saleRate * 100) or Color("muted", "-"))
+	button.cells.saleRate:SetText(row.saleRate and ns.Format.SaleRate(row.saleRate) or Color("muted", "-"))
 	button.cells.sold:SetText(not row.itemName and Color("muted", "-")
 		or row.sold > 0 and tostring(row.sold) or Color("muted", "0"))
 end

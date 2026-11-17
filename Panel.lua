@@ -898,7 +898,7 @@ local function drawDemand(output)
 	if not output.link then return end
 	if ns.Prices.ShowsSaleRate() then
 		local rate = ns.Prices.SaleRate(output.link)
-		addRow("Sale rate " .. Color("muted", "(TSM)"), rate and format("%.0f%%", rate * 100) or Color("muted", "-"))
+		addRow("Sale rate " .. Color("muted", "(TSM)"), rate and ns.Format.SaleRate(rate) or Color("muted", "-"))
 	elseif ns.Prices.HasTSM() then
 		local perDay = ns.Prices.SoldPerDay(output.link)
 		local text = perDay and (perDay < 10 and format("%.1f", perDay) or BreakUpLargeNumbers(math.floor(perDay + 0.5)))

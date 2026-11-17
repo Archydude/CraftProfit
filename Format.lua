@@ -28,6 +28,19 @@ function Format.Money(copper)
 	return copper < 0 and ("-" .. text) or text
 end
 
+-- The colors a sale rate runs through: red at 0%, yellow at 50%, green at 100%.
+local RATE_LOW, RATE_MID, RATE_HIGH = { 1, 0.27, 0.27 }, { 1, 0.82, 0 }, { 0.2, 1, 0.2 }
+
+-- TSM's sale rate (0.42 for 42%) as "42%", colored from red for one that
+-- hardly sells to green for one that always does.
+function Format.SaleRate(rate)
+	local share = math.min(math.max(rate, 0), 1)
+	local from, to, part = RATE_LOW, RATE_MID, share * 2
+	if share > 0.5 then from, to, part = RATE_MID, RATE_HIGH, share * 2 - 1 end
+	local function mix(index) return math.floor((from[index] + (to[index] - from[index]) * part) * 255 + 0.5) end
+	return format("|cff%02x%02x%02x%.0f%%|r", mix(1), mix(2), mix(3), rate * 100)
+end
+
 -- `text` in the color of the item's rarity (green, blue, purple...), or as it is
 -- while the game hasn't loaded the item.
 function Format.RarityColored(itemID, text)
