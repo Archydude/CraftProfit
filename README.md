@@ -49,6 +49,20 @@ The panel reads top to bottom: the expected profit or loss, what comes in (the s
 - Materials without any price are shown in red. Profit is then too high, so take it with a grain of salt.
 - Drag the panel to move it. It remembers where you put it.
 
+### More than one craft
+On the crafting page, the **Crafts** box over the profit sets how many crafts the panel is for. Type a number, up to 999, and the panel follows it:
+
+- **The profit** (expected and without procs), with **x10** after its name, and the sale price.
+- **Your materials:** how many of each, what each costs, and what they cost in all.
+- **The Shopping list button**, the carts and what counts as missing: for that many crafts.
+- **Concentration:** what that many crafts take, with **not enough** when you have less.
+- **Use Craft Profit materials:** how much more they make over that many crafts.
+- **The game's amount box** next to Create: it gets the same number, so Create makes that many. The game keeps it to what you can make with the materials you have, and recipes it only makes one at a time have no amount box.
+
+The cost of a skill-up, how well the item sells, the procs of your last craft and the session line stay as they are. The box goes back to 1 when you pick another recipe. Crafting orders don't have it: an order is one craft.
+
+It's each craft at today's prices, times the number. Buying or selling a lot at once can move prices, so many crafts can make less than the panel says. When your concentration doesn't cover every craft, the profit still counts all of them as concentrated.
+
 ### What if I used another quality?
 **Click a material** that comes in several qualities (it has a quality icon) to try its next quality. Changed materials are marked **simulated**.
 
@@ -80,9 +94,9 @@ It picks the materials for the blue row and **Use Craft Profit Reagents** (below
 **Use Craft Profit Reagents:** a checkbox on the crafting order form and the crafting page, above Blizzard's **Use Best Quality Reagents**. While it's on, every order or recipe you open gets Craft Profit's materials put in by itself: the crafting strategy's on the crafting page, the most profitable ones on an order. A slot you change afterwards stays as you set it. Unticking it puts back the materials Blizzard picks by itself, and turns concentration back off if the checkbox turned it on. Only one of the two checkboxes can be on: checking one unchecks the other. It's the same setting on both pages. It shows wherever Blizzard's checkbox does, on orders and recipes whose materials come in qualities. On the crafting page, with concentration on, the **concentration strategy** (see Patron orders below) picks the qualities that make the crafting strategy's rank.
 
 ### Shopping list
-Under your materials there's a **Shopping list** button. It shows a count when you're short of materials for one craft; hover it to see what's missing.
+Under your materials there's a **Shopping list** button. It shows a count when you're short of materials for the crafts in the **Crafts** box (one, until you change it); hover it to see what's missing.
 
-**Click** it to add what you're missing for one craft. **Right-click** it to open a menu:
+**Click** it to add what you're missing for that many crafts. **Right-click** it to open a menu:
 
 - **For 1 / 5 / 10 crafts:** adds what you're missing for that many crafts, with the amount and quality, to your shopping list (see Separate lists below). Each line shows how many items it would add, or that they're on the list already. With Auctionator, that's an Auctionator shopping list, in its Shopping tab at the auction house. Without it, it's Craft Profit's own list, in its window at the auction house.
 - **Other amount...:** type any number of crafts. The last number you typed stays in the menu until you log out or `/reload`.
@@ -94,7 +108,7 @@ Shortcut: **Ctrl-click** clears the list, without the menu.
 
 **Checked off as you get them:** materials come off the list as they arrive: bought at the auction house, looted, taken from the mailbox or crafted. (Auction house items that aren't commodities come by mail, so they're checked off once you take them out.) Chat says what came off, and when the list is done. Only what Craft Profit added is checked off: lines you add yourself in Auctionator stay. Moving things between your bags, bank and warband bank doesn't count. Turn off **Check off what you get** in the options to keep the list until you clear it.
 
-**Just one material:** click the cart next to a material you're short of, or **Shift-click** the material, to add only what you're missing of it, for one craft. Pick a quality first by clicking it, and that quality is what gets added. With the TSM search, you get a search for just that material.
+**Just one material:** click the cart next to a material you're short of, or **Shift-click** the material, to add only what you're missing of it, for the crafts in the Crafts box. Pick a quality first by clicking it, and that quality is what gets added. With the TSM search, you get a search for just that material.
 
 **Separate lists:** each character and profession gets its own list, like **Thrall - Blacksmithing**. Turn off **one shopping list per character** or **per profession** in the options to share lists instead; with both off, the list is called **Crafting**. Lists from before 1.19.0, named **Craft Profit - ...**, are moved to the new names the next time you log in, along with what's on them.
 
@@ -218,6 +232,7 @@ Items you can't post, like soulbound ones, show only their vendor prices. On cha
 Craft Profit works on WoW Forever: the panel, Best crafts, the shopping list and the Ledger. Forever's crafting has no ranks, procs, concentration or crafting orders, so everything about those stays out of sight there, options included. What's different:
 
 - **Best crafts** opens from a tab with Craft Profit's logo, under your profession tabs on the right of the profession window. Click it again to go back to your recipes.
+- **Net profit and Gross profit:** the panel's main line is **Net profit** (or **Net loss**): what the craft makes after the materials. Under it, **Gross profit** is what the item sells for after the auction house cut, before the materials.
 - **Crafting strategy** says where the materials you're missing come from:
   - **Buy missing** (default): bought at their auction house price.
   - **Craft myself:** a material you know the recipe for costs what crafting it costs, down to what has to be bought (Copper Tube costs its Copper Bars and Weak Flux, and the bars their ore). The shopping list buys those instead, and the panel marks such materials with a hammer. Click one to open its recipe, in its own profession's window if it's another profession's. What you own counts once, at every step. Recipes from all this character's professions count, once you've opened that profession's Best crafts list, so Engineering can use your smelting.

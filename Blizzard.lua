@@ -2,9 +2,11 @@
 -- (frame fields, the crafting form's "transaction", mixin methods). Blizzard can
 -- change these in any patch, so they live here and nowhere else.
 --
--- The addon reads them and follows them with hooks. The one exception is
+-- The addon reads them and follows them with hooks. The exceptions are
 -- Blizzard.UseMaterials, which fills the form the way Blizzard's own quality
--- picker does, and only when the player clicks or ticks a box for it.
+-- picker does, and only when the player clicks or ticks a box for it, and
+-- Blizzard.SetCraftAmount, which puts the panel's number of crafts in the amount
+-- box next to Create.
 local _, ns = ...
 
 local Blizzard = {}
@@ -630,6 +632,45 @@ end
 
 -- How long the profession window stays hidden before it counts as closed: a
 -- profession switch can hide it for a moment.
+---------------------------------------------------------------------------
+-- The amount box next to Create
+---------------------------------------------------------------------------
+
+-- How many crafts the box should hold, and the recipe that's for.
+local craftAmount, craftAmountRecipe = 1, nil
+
+-- Puts the amount in the box, when it's there to fill: the recipe can be made
+-- more than once and you can make it now. The box keeps it to what you can make.
+-- While several crafts are under way it counts down what's left, so it's left alone.
+local function fillCraftAmount()
+	local page = ProfessionsFrame.CraftingPage
+	local box = page.CreateMultipleInputBox
+	if not (box and box.SetValue and box:IsShown() and box:IsEnabled()) then return end
+	local recipeInfo = page.SchematicForm:GetRecipeInfo()
+	if not (recipeInfo and recipeInfo.recipeID == craftAmountRecipe) then return end
+	if C_TradeSkillUI.GetRemainingRecasts() > 0 then return end
+	box:SetValue(craftAmount)
+end
+
+-- Sets how many crafts of `recipeID` the amount box next to Create holds.
+function Blizzard.SetCraftAmount(amount, recipeID)
+	craftAmount, craftAmountRecipe = amount, recipeID
+	fillCraftAmount()
+end
+
+-- Keeps the amount box at what Blizzard.SetCraftAmount set: the game puts it
+-- back to 1 whenever the form or your bags change.
+function Blizzard.WatchCraftAmount()
+	local page = ProfessionsFrame.CraftingPage
+	if not page.SetupMultipleInputBox then return end
+	hooksecurefunc(page, "SetupMultipleInputBox", function(_, count)
+		-- Not during a craft: the last of several shows 1, as the game has it.
+		if craftAmount > 1 and count == 1 and not (UnitCastingInfo and UnitCastingInfo("player")) then
+			fillCraftAmount()
+		end
+	end)
+end
+
 local CLOSED_DELAY = 0.5
 
 -- Calls onClosed() when you close the profession window (not for a moment).

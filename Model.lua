@@ -443,9 +443,10 @@ local function craftMaterials(scroll, ...)
 end
 
 -- What concentration does for the craft the game described in `info`, or nil when
--- it does nothing: { points, on, short = you have too little, icon = the
--- currency's, quality = the rank it would lift this to, gain = what that rank adds
--- per craft }. No `quality` or `gain` while it's on, since the craft already counts it.
+-- it does nothing: { points, on, short = you have too little, have = how much you
+-- have, icon = the currency's, quality = the rank it would lift this to, gain =
+-- what that rank adds per craft }. No `quality` or `gain` while it's on, since the
+-- craft already counts it.
 local function concentrationOf(ctx, info, quality, model, sold)
 	local points = info and info.concentrationCost or 0
 	if points <= 0 then return end
@@ -454,7 +455,7 @@ local function concentrationOf(ctx, info, quality, model, sold)
 	if not on and not (quality and qualityIDs and quality < #qualityIDs) then return end
 	local currency = info.concentrationCurrencyID and C_CurrencyInfo.GetCurrencyInfo(info.concentrationCurrencyID)
 	local found = { points = points, on = on, short = currency ~= nil and currency.quantity < points,
-		icon = currency and currency.iconFileID }
+		have = currency and currency.quantity, icon = currency and currency.iconFileID }
 	if on then return found end
 
 	found.quality = quality + 1

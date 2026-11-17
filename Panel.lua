@@ -18,6 +18,13 @@ Panel.current = nil
 local frame
 local refreshQueued = false
 
+-- The Crafts box: how many crafts the crafting page's numbers are for, and the
+-- recipe it was typed on (another recipe starts at 1 again).
+local crafts, craftsKey = 1, nil
+-- What this drawing is for: that many crafts (1 on an order), and what's missing
+-- for them.
+local count, shownMissing = 1, nil
+
 ---------------------------------------------------------------------------
 -- Fonts, built from the game's own so they follow its font choice
 ---------------------------------------------------------------------------
@@ -293,6 +300,74 @@ local function addOrderChoices(model)
 	end
 end
 
+-- The Crafts box, on a row of its own with a label: the crafting page's profit,
+-- materials and shopping list button are for the number typed in it.
+local CRAFTS_BOX_WIDTH, CRAFTS_BOX_HEIGHT = 44, 20
+local CRAFTS_ROW = 24
+local craftsBox, craftsBoxUsed
+
+local function setCrafts(value)
+	value = math.max(1, math.min(math.floor(value or 1), ns.Shopping.MAX_CRAFTS))
+	if value == crafts then return end
+	crafts = value
+	-- The amount box next to Create follows it.
+	ns.Blizzard.SetCraftAmount(crafts, craftsKey)
+	Panel.Refresh()
+end
+
+local function createCraftsBox()
+	local box = CreateFrame("EditBox", nil, frame, "InputBoxTemplate")
+	box:SetSize(CRAFTS_BOX_WIDTH, CRAFTS_BOX_HEIGHT)
+	box:SetFrameLevel(frame:GetFrameLevel() + 3)
+	box:SetAutoFocus(false)
+	box:SetNumeric(true)
+	box:SetMaxLetters(#tostring(ns.Shopping.MAX_CRAFTS))
+	box:SetJustifyH("CENTER")
+	box:SetFontObject(fonts.body)
+	-- The panel follows the number while it's typed; an empty box counts as 1.
+	box:SetScript("OnTextChanged", function(self, userInput)
+		if userInput then setCrafts(tonumber(self:GetText())) end
+	end)
+	box:SetScript("OnEnterPressed", box.ClearFocus)
+	box:SetScript("OnEscapePressed", box.ClearFocus)
+	box:SetScript("OnEditFocusGained", function(self) self:HighlightText() end)
+	box:SetScript("OnEditFocusLost", function(self)
+		self:HighlightText(0, 0)
+		self:SetText(tostring(crafts))
+	end)
+	box:SetScript("OnEnter", function(self)
+		GameTooltip:SetOwner(self, "ANCHOR_LEFT")
+		GameTooltip:SetText("Crafts")
+		GameTooltip:AddLine("The profit, the materials and the shopping list button are for this many crafts. The amount "
+			.. "box next to Create gets the same number, up to what you can make now.", 1, 1, 1, true)
+		GameTooltip:AddLine("Every craft is counted at today's prices. Buying or selling a lot at once can move them, "
+			.. "so many crafts can make less than this.", 0.53, 0.53, 0.53, true)
+		GameTooltip:Show()
+	end)
+	box:SetScript("OnLeave", GameTooltip_Hide)
+	return box
+end
+
+local function addCraftsRow()
+	craftsBox = craftsBox or createCraftsBox()
+	local top = -Layout.PAD_TOP - contentHeight
+	local row = addRow("Crafts")
+	row.left:ClearAllPoints()
+	row.left:SetPoint("LEFT", frame, "TOPLEFT", Layout.PAD_SIDE, top - CRAFTS_ROW / 2)
+	contentHeight = contentHeight - math.max(Layout.LINE_HEIGHT, math.ceil(row.left:GetStringHeight()) + 3) + CRAFTS_ROW
+	craftsBox:ClearAllPoints()
+	craftsBox:SetPoint("RIGHT", frame, "TOPRIGHT", -Layout.PAD_SIDE, top - CRAFTS_ROW / 2)
+	-- Not while it's being typed in: the text is the player's until they're done.
+	if not craftsBox:HasFocus() then craftsBox:SetText(tostring(crafts)) end
+	craftsBox:Show()
+	craftsBoxUsed = true
+end
+
+-- "1 craft" or "10 crafts": what this drawing's numbers are for.
+local function craftsText()
+	return ns.Shopping.CraftsText(count)
+end
+
 local function addGap()
 	contentHeight = contentHeight + Layout.GAP
 end
@@ -463,9 +538,9 @@ end
 -- Sections
 ---------------------------------------------------------------------------
 
--- How many of a material you're short of for one craft (0 when you have enough).
+-- How many of a material you're short of for the crafts shown (0 when you have enough).
 local function missingOf(model, material)
-	for _, entry in ipairs(model.missing or {}) do
+	for _, entry in ipairs(shownMissing or model.missing or {}) do
 		if entry.itemID == material.itemID then return entry.qty end
 	end
 	return 0
@@ -477,10 +552,10 @@ local function shopMaterial(model, material)
 	local qty = missingOf(model, material)
 	if qty == 0 then
 		local name = C_Item.GetItemNameByID(material.itemID) or "that material"
-		ns.Shopping.Say(format("Nothing missing: you have enough %s for 1 craft.", name))
+		ns.Shopping.Say(format("Nothing missing: you have enough %s for %s.", name, craftsText()))
 		return
 	end
-	ns.Shopping.AddMissing({ { itemID = material.itemID, qty = qty } }, "1 craft", nil, model.listSource)
+	ns.Shopping.AddMissing({ { itemID = material.itemID, qty = qty } }, craftsText(), nil, model.listSource)
 end
 
 -- The hammer after a material you craft yourself, in the text: the same picture
@@ -531,7 +606,8 @@ local function materialTooltip(model, material, canCycle)
 		local missing = missingOf(model, material)
 		if material.estimated then
 			tip:AddLine(" ")
-			tip:AddLine(Color("missing", format("You're short of %d for 1 craft.", missing > 0 and missing or material.qty)))
+			tip:AddLine(Color("missing", format("You're short of %d for %s.",
+				missing > 0 and missing or material.qty * count, craftsText())))
 		end
 		tip:AddLine(" ")
 		if canCycle then
@@ -550,15 +626,16 @@ end
 
 local function shoppingTooltip(model, target)
 	return function(tip)
-		if #model.missing > 0 then
-			tip:SetText("Missing for 1 craft")
-			for _, material in ipairs(model.missing) do ns.Shopping.AddMissingLine(tip, material.itemID, material.qty) end
+		local missing = shownMissing or model.missing
+		if #missing > 0 then
+			tip:SetText("Missing for " .. craftsText())
+			for _, material in ipairs(missing) do ns.Shopping.AddMissingLine(tip, material.itemID, material.qty) end
 		else
-			tip:SetText("Nothing missing for 1 craft")
+			tip:SetText("Nothing missing for " .. craftsText())
 		end
 		tip:AddLine(" ")
-		tip:AddLine(Color("simulated", target == "tsm" and "Click: copy a TSM search for 1 craft"
-			or "Click: add what's missing for 1 craft to the shopping list"))
+		tip:AddLine(Color("simulated", target == "tsm" and ("Click: copy a TSM search for " .. craftsText())
+			or format("Click: add what's missing for %s to the shopping list", craftsText())))
 		tip:AddLine(Color("simulated", "Right-click: pick how many crafts"))
 		if ns.Shopping.CanClear() then
 			tip:AddLine(Color("simulated", format("Ctrl-click: clear the \"%s\" shopping list", ns.Shopping.ListName())))
@@ -566,14 +643,15 @@ local function shoppingTooltip(model, target)
 	end
 end
 
--- The button for the shopping list or the TSM search. It shows even when one
--- craft is covered, since its menu buys for several. Hidden when shopping is
--- turned off in the options.
+-- The button for the shopping list or the TSM search, for the crafts shown. It
+-- shows even when they're covered, since its menu buys for more. Hidden when
+-- shopping is turned off in the options.
 local function drawShoppingButton(model)
 	if not model.shoppable then return end
 	local target = ns.Shopping.ListTarget()
 	if not target then return end
-	local missing = ns.Shopping.Total(model.missing)
+	local missing = ns.Shopping.Total(shownMissing or model.missing)
+	local forCrafts = count
 	addGap()
 	local text
 	if target == "tsm" then
@@ -584,7 +662,7 @@ local function drawShoppingButton(model)
 	local onClick = function(mouseButton, button)
 		-- Right-click opens the menu; Ctrl-click (left) clears the list.
 		local menu = mouseButton == "RightButton"
-		ns.Shopping.Click(model, button, menu, not menu and IsControlKeyDown())
+		ns.Shopping.Click(model, button, menu, not menu and IsControlKeyDown(), forCrafts)
 	end
 	addButton(text, onClick, shoppingTooltip(model, target))
 end
@@ -605,7 +683,7 @@ local function cheaperTooltip(material, cheaper)
 end
 
 -- The cart button on a material you're short of: adds what's missing of it for
--- one craft to the shopping list (or a TSM search).
+-- the crafts shown to the shopping list (or a TSM search).
 local function materialCart(model, material)
 	local missing = missingOf(model, material)
 	local target = ns.Shopping.ListTarget()
@@ -613,7 +691,7 @@ local function materialCart(model, material)
 	return {
 		onClick = function() shopMaterial(model, material) end,
 		tooltip = function(tip)
-			tip:SetText(format("Missing %d for 1 craft", missing))
+			tip:SetText(format("Missing %d for %s", missing, craftsText()))
 			ns.Shopping.AddMissingLine(tip, material.itemID, missing)
 			tip:AddLine(" ")
 			tip:AddLine(Color("simulated", target == "tsm" and "Click: copy a TSM search for them"
@@ -626,7 +704,7 @@ local function drawMaterials(model)
 	if #model.materials == 0 then return end
 	addGap()
 	-- What they cost in all, on the heading.
-	addHeading("Your materials", Color(ns.AmountColor(-model.cost), Money(-model.cost)))
+	addHeading("Your materials", Color(ns.AmountColor(-model.cost), Money(-model.cost * count)))
 	local shownCheaper = {}
 	for index, material in ipairs(model.materials) do
 		local cart = materialCart(model, material)
@@ -654,9 +732,9 @@ local function drawMaterials(model)
 			end
 			tooltip = materialTooltip(model, material, canCycle)
 		end
-		local amount = material.price and Money(material.price * material.qty) or Color("warning", "no price")
+		local amount = material.price and Money(material.price * material.qty * count) or Color("warning", "no price")
 		local top = contentHeight
-		addRow(Item(material.itemID, material.qty) .. tag, amount, nil, onClick, tooltip, cart)
+		addRow(Item(material.itemID, material.qty * count) .. tag, amount, nil, onClick, tooltip, cart)
 		if index % 2 == 0 then stripe(top) end
 
 		-- A cheaper rank to buy instead of using yours, once per slot.
@@ -699,7 +777,8 @@ end
 local function expectedTooltip(model)
 	return function(tip)
 		local procs, chances = model.procs, model.procs.chances
-		tip:SetText(model.expected >= 0 and "Expected profit" or "Expected loss")
+		tip:SetText((model.expected >= 0 and "Expected profit" or "Expected loss")
+			.. (count > 1 and (" for " .. craftsText()) or ""))
 		if model.kind == "order" then
 			tip:AddLine("What this order makes on average, counting resourcefulness on the materials you supply and "
 				.. "the ones the customer sent (what it saves comes back to you). Multicraft doesn't count, since the "
@@ -710,15 +789,15 @@ local function expectedTooltip(model)
 				.. "Without procs, under it, is what it makes when neither procs.", 1, 1, 1, true)
 		end
 		tip:AddLine(" ")
-		tip:AddDoubleLine("Without procs", signedMoney(model.total), 1, 1, 1, 1, 1, 1)
+		tip:AddDoubleLine("Without procs", signedMoney(model.total * count), 1, 1, 1, 1, 1, 1)
 		if chances.multicraft > 0 then
 			tip:AddDoubleLine(format("Multicraft %.0f%% x %.2f extra per item", chances.multicraft * 100, procs.extraPerItem),
-				signedMoney(procs.multicraft), 1, 1, 1, 1, 1, 1)
+				signedMoney(procs.multicraft * count), 1, 1, 1, 1, 1, 1)
 			tip:AddLine("  " .. ns.Procs.SourceText(procs.multicraftProcs), 0.53, 0.53, 0.53)
 		end
 		if chances.resourcefulness > 0 then
 			tip:AddDoubleLine(format("Resourcefulness %.0f%% x %.0f%% saved", chances.resourcefulness * 100,
-				procs.savedShare * 100), signedMoney(procs.resourcefulness), 1, 1, 1, 1, 1, 1)
+				procs.savedShare * 100), signedMoney(procs.resourcefulness * count), 1, 1, 1, 1, 1, 1)
 			tip:AddLine("  " .. ns.Procs.SourceText(procs.resourcefulnessProcs), 0.53, 0.53, 0.53)
 		end
 	end
@@ -752,6 +831,8 @@ end
 
 -- The answer, under the title: the expected profit in the big font, with what a
 -- craft makes without procs under it in grey. Without procs to expect: Profit/Loss.
+-- On the crafting page the Crafts box is over it, and the amounts are for that
+-- many crafts ("x10" after the label).
 local function drawHeadline(model)
 	local total = model.total
 	local procs = model.procs
@@ -762,12 +843,18 @@ local function drawHeadline(model)
 	-- In a box of its own, green for a profit and red for a loss.
 	local top = contentHeight
 	contentHeight = contentHeight + HERO_PAD
+	if model.kind == "craft" then addCraftsRow() end
+	local times = count > 1 and (" " .. Color("muted", "x" .. count)) or ""
 	if expecting then
-		profitRow = addRow(amount >= 0 and "Expected profit" or "Expected loss",
-			Color(ns.AmountColor(amount), Money(amount)), fonts.total, nop, expectedTooltip(model))
-		addRow(Color("muted", "Without procs"), Color("muted", Money(total)), nil, nop, expectedTooltip(model))
+		profitRow = addRow((amount >= 0 and "Expected profit" or "Expected loss") .. times,
+			Color(ns.AmountColor(amount), Money(amount * count)), fonts.total, nop, expectedTooltip(model))
+		addRow(Color("muted", "Without procs"), Color("muted", Money(total * count)), nil, nop, expectedTooltip(model))
 	else
-		profitRow = addRow(amount >= 0 and "Profit" or "Loss", Color(ns.AmountColor(amount), Money(amount)), fonts.total)
+		-- WoW Forever: "Net", next to the Gross profit line under it.
+		local net = not ns.QUALITY_CRAFTING
+		local label = amount >= 0 and (net and "Net profit" or "Profit") or (net and "Net loss" or "Loss")
+		profitRow = addRow(label .. times,
+			Color(ns.AmountColor(amount), Money(amount * count)), fonts.total)
 	end
 	contentHeight = contentHeight + HERO_PAD - 2
 	local tint = amount >= 0 and PROFIT_TINT or LOSS_TINT
@@ -895,14 +982,16 @@ local function bestTooltip(kind, best, recipeID)
 			tip:AddLine(format("Makes %s instead of %s.", rankIcon(recipeID, best.toQuality),
 				rankIcon(recipeID, best.fromQuality)), 1, 1, 1, true)
 		end
+		-- For the crafts shown, like the row.
+		local gain = best.gain * count
 		if best.gain > 0 then
-			tip:AddDoubleLine("You come out ahead", signedMoney(best.gain), 1, 1, 1, 1, 1, 1)
+			tip:AddDoubleLine("You come out ahead", signedMoney(gain), 1, 1, 1, 1, 1, 1)
 		elseif best.toQuality and best.toQuality > best.fromQuality then
-			tip:AddDoubleLine("Costs more, makes a better rank", signedMoney(best.gain), 1, 1, 1, 1, 1, 1)
+			tip:AddDoubleLine("Costs more, makes a better rank", signedMoney(gain), 1, 1, 1, 1, 1, 1)
 		elseif best.savesConcentration then
-			tip:AddDoubleLine("Costs more, saves concentration", signedMoney(best.gain), 1, 1, 1, 1, 1, 1)
+			tip:AddDoubleLine("Costs more, saves concentration", signedMoney(gain), 1, 1, 1, 1, 1, 1)
 		elseif best.usesOwned then
-			tip:AddDoubleLine("Costs more, uses what you own", signedMoney(best.gain), 1, 1, 1, 1, 1, 1)
+			tip:AddDoubleLine("Costs more, uses what you own", signedMoney(gain), 1, 1, 1, 1, 1, 1)
 		end
 	end
 end
@@ -917,22 +1006,24 @@ local function drawBest(model)
 	addGap()
 	local text = Color("simulated", model.kind == "order" and "Use the most profitable materials" or "Use Craft Profit materials")
 	if best.toQuality then text = text .. " " .. rankIcon(model.key, best.toQuality) end
-	if best.gain > 0 then text = text .. " " .. signedMoney(best.gain) end
+	if best.gain > 0 then text = text .. " " .. signedMoney(best.gain * count) end
 	addRow(text, nil, nil, function() ns.Best.Use(best) end, bestTooltip(model.kind, best, model.key))
 end
 
--- What concentration spends on this craft, or the rank it would reach.
+-- What concentration spends on the crafts shown, or the rank it would reach.
 local function drawConcentration(model)
 	local concentration = model.concentration
 	if not concentration then return end
-	local points = concentration.icon and format("%d |T%s:%d|t", concentration.points, concentration.icon, Layout.ICON_SIZE)
-		or format("%d concentration", concentration.points)
-	if concentration.short then points = Color("warning", points .. " (not enough)") end
+	local needed = concentration.points * count
+	local points = concentration.icon and format("%d |T%s:%d|t", needed, concentration.icon, Layout.ICON_SIZE)
+		or format("%d concentration", needed)
+	local short = concentration.short or (concentration.have ~= nil and concentration.have < needed)
+	if short then points = Color("warning", points .. " (not enough)") end
 	if concentration.on then
 		addRow("Uses " .. points)
 	else
 		addRow(format("%s makes %s", points, rankIcon(model.key, concentration.quality)),
-			concentration.gain and signedMoney(concentration.gain) or nil)
+			concentration.gain and signedMoney(concentration.gain * count) or nil)
 	end
 end
 
@@ -968,15 +1059,17 @@ local function drawCraft(model)
 	drawHeadline(model)
 	if output then
 		addGap()
+		-- WoW Forever calls it Gross profit, over the Net profit at the top.
+		local sells = ns.QUALITY_CRAFTING and "Sells for" or "Gross profit"
 		if output.sale then
 			-- One line, after the AH cut.
 			if output.ahCut then
-				addRow("Sells for" .. cutNote(output.ahCut, output.sale, "AH cut"), Money(output.sale - output.ahCut))
+				addRow(sells .. cutNote(output.ahCut, output.sale, "AH cut"), Money((output.sale - output.ahCut) * count))
 			else
-				addRow("Sells for", Money(output.sale))
+				addRow(sells, Money(output.sale * count))
 			end
 		else
-			addRow("Sells for", Color("warning", "no price"))
+			addRow(sells, Color("warning", "no price"))
 		end
 		drawDemand(output)
 		drawSkillup(model)
@@ -1147,8 +1240,18 @@ function Panel.Render()
 		return
 	end
 	rowCount, dividerCount, bandCount, contentHeight, profitRow, procRow = 0, 0, 0, 0, nil, nil
-	rowButtonUsed = false
+	rowButtonUsed, craftsBoxUsed = false, false
 	wipe(dropdownsUsed)
+	-- The Crafts box is for the recipe it was typed on: another one starts at 1.
+	local crafting = model ~= nil and model.kind == "craft"
+	if crafting and model.key ~= craftsKey then
+		-- The amount box next to Create stops following the old number.
+		if crafts > 1 then ns.Blizzard.SetCraftAmount(1, model.key) end
+		crafts, craftsKey = 1, model.key
+		if craftsBox then craftsBox:ClearFocus() end
+	end
+	count = crafting and crafts or 1
+	shownMissing = model and (count > 1 and model.missingFor(count) or model.missing)
 	-- Before the rows, which leave room for it.
 	ns.BestCraftsList.UpdateTab()
 
@@ -1167,6 +1270,7 @@ function Panel.Render()
 	for i = dividerCount + 1, #dividers do dividers[i]:Hide() end
 	for i = bandCount + 1, #bands do bands[i]:Hide() end
 	if rowButton and not rowButtonUsed then rowButton:Hide() end
+	if craftsBox and not craftsBoxUsed then craftsBox:Hide() end
 	for name, dropdown in pairs(dropdowns) do
 		if not dropdownsUsed[name] then dropdown:Hide() end
 	end
@@ -1282,5 +1386,6 @@ function Panel.Init()
 	if frame or not ns.Blizzard.IsLoaded() then return end
 	createFrame()
 	ns.Blizzard.Watch(Panel.Refresh, frame)
+	ns.Blizzard.WatchCraftAmount()
 	ns.Results.Init()
 end

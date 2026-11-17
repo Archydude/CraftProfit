@@ -897,6 +897,7 @@ end
 -- Craft counts the menu always offers.
 local PRESET_CRAFTS = { 1, 5, 10 }
 local MAX_CRAFTS = 999
+Shopping.MAX_CRAFTS = MAX_CRAFTS
 
 -- The last count typed into "Other amount...", offered in the menu until you
 -- log out or /reload.
@@ -1107,11 +1108,11 @@ local function openMenu(owner, model)
 	MenuUtil.CreateContextMenu(owner, function(_, root) Shopping.AddCraftCounts(root, model) end)
 end
 
--- What a click on the panel's button does: adds what's missing for one craft.
--- Right-click (`menu`) opens the menu of craft counts, Ctrl-click (`ctrl`) clears
--- the shopping list. `owner` is the button, for the menu to open from.
--- `model.listName` is the list, when it isn't the current one.
-function Shopping.Click(model, owner, menu, ctrl)
+-- What a click on the panel's button does: adds what's missing for `crafts`
+-- crafts (one, when left out). Right-click (`menu`) opens the menu of craft
+-- counts, Ctrl-click (`ctrl`) clears the shopping list. `owner` is the button, for
+-- the menu to open from. `model.listName` is the list, when it isn't the current one.
+function Shopping.Click(model, owner, menu, ctrl, crafts)
 	if ctrl and Shopping.CanClear() then
 		Shopping.Clear(model.listName)
 	elseif not Shopping.ListTarget() then
@@ -1119,6 +1120,6 @@ function Shopping.Click(model, owner, menu, ctrl)
 	elseif menu then
 		openMenu(owner, model)
 	else
-		addForCrafts(model, 1)
+		addForCrafts(model, crafts or 1)
 	end
 end
