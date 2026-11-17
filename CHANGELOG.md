@@ -1,5 +1,8 @@
 # Changelog
 
+## 4.3.1
+- Fixed: after you opened Craft Profit's options, the game's own options could show the error "AddOn 'CraftProfit' tried to call the protected function 'IsUserOAuthed()'".
+
 ## 4.3.0
 - **Sale rate in the Sell list:** with TSM, every item in the Sell tab's list shows TSM's sale rate, the share of its auctions that sell, between its price and its amount.
 - **Column names in the Sell list:** **Item**, **Price**, **Sale rate** and **Amount** above the list. Craft Profit's auction house window is a little wider and taller to fit them.

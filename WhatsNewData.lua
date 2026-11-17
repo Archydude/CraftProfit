@@ -2,10 +2,13 @@
 ArchdudeWhatsNew:Register("CraftProfit", {
 	title = "Craft Profit",
 	icon = "Interface\\Icons\\INV_Hammer_20",
-	version = "4.3.0",
+	version = "4.3.1",
 	seen = "CraftProfitWhatsNew",
 	saved = { "CraftProfitDB", "CraftProfitCharDB" },
 	changes = {
+		{ "4.3.1",
+			"Fixed: after you opened Craft Profit's options, the game's own options could show the error \"AddOn 'CraftProfit' tried to call the protected function 'IsUserOAuthed()'\".",
+		},
 		{ "4.3.0",
 			"|cffffd100Sale rate in the Sell list:|r with TSM, every item in the Sell tab's list shows TSM's sale rate, the share of its auctions that sell, between its price and its amount.",
 			"|cffffd100Column names in the Sell list:|r |cffffd100Item|r, |cffffd100Price|r, |cffffd100Sale rate|r and |cffffd100Amount|r above the list. Craft Profit's auction house window is a little wider and taller to fit them.",
@@ -48,9 +51,6 @@ ArchdudeWhatsNew:Register("CraftProfit", {
 		},
 		{ "3.11.0",
 			"|cffffd100Sale rate on item tooltips:|r with TSM, a |cffffd100TSM Sale Rate|r line shows the share of the item's auctions that sell. On WoW Forever your region is one server, so it's your own market. Turn it off with |cffffd100Show sale rate|r on the Tooltips options page.",
-		},
-		{ "3.10.0",
-			"|cffffd100Lower of market and lowest:|r a new choice for the TSM prices of materials and crafted items. It takes TSM's market value or the lowest auction, whichever is lower. For crafted items it's the careful choice: to sell now you'd have to match a cheaper auction, and high listings that aren't selling don't count. For materials it can show them cheaper than you can buy them right now.",
 		},
 	},
 })
