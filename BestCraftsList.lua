@@ -21,6 +21,8 @@ local CELL_GAP = 10        -- between columns
 local HEADER_HEIGHT = 20
 local TOP_HEIGHT = 34      -- title, search and filter
 local FOOTER_HEIGHT = 24
+local EMPTY_WIDTH = 420    -- the line an empty list shows: its width,
+local EMPTY_LIFT = 40      -- and how far above the middle it sits
 local TAG_GAP = 4          -- item name to its rank and other icons
 local LEDGER_SIZE = 20     -- the Ledger button on the panel
 local LEDGER_RIGHT = 28    -- panel's right edge to the button (room for its gear)
@@ -169,7 +171,7 @@ local SORT_ARROW_FILE = "Interface\\Buttons\\UI-SortArrow"
 local SORT_ARROW_SIZE = 10
 local MAX_SORTS = 2        -- how many columns the list sorts by at once
 
-local list, listTab, ledgerButton, scrollBox, status, title, strategyDropdown, charactersButton
+local list, listTab, ledgerButton, scrollBox, status, title, strategyDropdown, charactersButton, emptyText
 local headers = {}
 local refreshQueued = false
 
@@ -336,20 +338,36 @@ end
 
 local allRows = {} -- every row before filtering, for the filter menu's counts
 
+-- The rows to show, sorted. Also how many more would show if "Use what I own"
+-- didn't leave out the recipes you're short of materials for.
 local function visibleRows()
 	local search = list.Search:GetText():lower()
-	local shown = {}
+	local shown, short = {}, 0
 	allRows = ns.BestCrafts.Rows()
 	for _, row in ipairs(allRows) do
 		if matches(row, search) and not ns.db.bestHidden[row.group]
 			and not (ns.db.bestIgnored[row.entry.recipeID] and not ns.db.bestShowIgnored)
-			and not (ns.db.bestProfitableOnly and not ((shownProfit(row) or 0) > 0))
-			and not (ns.db.craftStrategy == "owned" and row.short) then
-			shown[#shown + 1] = row
+			and not (ns.db.bestProfitableOnly and not ((shownProfit(row) or 0) > 0)) then
+			if ns.db.craftStrategy == "owned" and row.short then
+				short = short + 1
+			else
+				shown[#shown + 1] = row
+			end
 		end
 	end
 	sortRows(shown)
-	return shown
+	return shown, short
+end
+
+-- What an empty list says, or nil while it has rows, none to filter, or prices
+-- are still being worked out. `short`: see visibleRows.
+local function emptyNote(count, short)
+	if count > 0 or #allRows == 0 or ns.BestCrafts.Progress() then return end
+	if short > 0 then
+		return format("Nothing you can craft with what you own.\n\nThe %s strategy only lists recipes you have every "
+			.. "material for. Pick another strategy below to see the rest.", ns.Strategy()[3])
+	end
+	return "No recipes match the search and the filter."
 end
 
 ---------------------------------------------------------------------------
@@ -727,9 +745,12 @@ function BestCraftsList.Render()
 	local shown = ns.db.bestAllCharacters and "All characters" or (scan and scan.name)
 	title:SetText("Best crafts" .. (shown and ("  " .. Color("muted", shown)) or ""))
 	if ns.db.bestAllCharacters then charactersButton:LockHighlight() else charactersButton:UnlockHighlight() end
-	local rows = visibleRows()
+	local rows, short = visibleRows()
 	scrollBox:SetDataProvider(CreateDataProvider(rows), ScrollBoxConstants.RetainScrollPosition)
 	status:SetText(statusText(#rows, #allRows))
+	local note = emptyNote(#rows, short)
+	emptyText:SetText(note or "")
+	emptyText:SetShown(note ~= nil)
 	-- The strategy can change in the options too.
 	if strategyDropdown then strategyDropdown:GenerateMenu() end
 	updateHeaders()
@@ -1081,6 +1102,9 @@ local function createList()
 	list:SetPoint("BOTTOMLEFT", ns.Blizzard.RecipeList(), "BOTTOMLEFT")
 	-- Over everything there, other addons' frames included.
 	list:SetFrameLevel(math.max(ns.Blizzard.RecipeDetails():GetFrameLevel() + 40, LIST_LEVEL))
+	-- Except what Blizzard draws on a higher strata: that's lowered while the list is open.
+	list:SetScript("OnShow", function() ns.Blizzard.SetDetailsCovered(true) end)
+	list:SetScript("OnHide", function() ns.Blizzard.SetDetailsCovered(false) end)
 	list:SetBackdrop({
 		bgFile = "Interface\\Tooltips\\UI-Tooltip-Background",
 		edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
@@ -1137,6 +1161,14 @@ local function createList()
 	view:SetElementInitializer("Button", drawRow)
 	ScrollUtil.InitScrollBoxListWithScrollBar(scrollBox, scrollBar, view)
 	scrollBox:HookScript("OnSizeChanged", BestCraftsList.Refresh)
+
+	-- Why the list is empty, when it is (see emptyNote).
+	emptyText = list:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
+	emptyText:SetPoint("CENTER", scrollBox, "CENTER", 0, EMPTY_LIFT)
+	emptyText:SetWidth(EMPTY_WIDTH)
+	emptyText:SetJustifyH("CENTER")
+	emptyText:SetTextColor(0.6, 0.6, 0.6)
+	emptyText:Hide()
 
 	createNotice()
 	createHeader("name", "Item")

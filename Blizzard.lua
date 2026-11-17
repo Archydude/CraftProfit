@@ -515,6 +515,21 @@ function Blizzard.RecipeDetails()
 	return ProfessionsFrame.CraftingPage.SchematicForm
 end
 
+-- The recipe details' quality bar has two parts Blizzard draws on a strata above
+-- the rest of the window (its fill and its divider glow), so they show through
+-- whatever covers the details. `covered` puts them on the details' own strata;
+-- false puts them back.
+local RAISED_STRATA = "HIGH"
+function Blizzard.SetDetailsCovered(covered)
+	local details = ProfessionsFrame.CraftingPage.SchematicForm.Details
+	local meter = details and details.QualityMeter
+	if not meter then return end
+	local strata = covered and details:GetFrameStrata() or RAISED_STRATA
+	for _, frame in ipairs({ meter.Center and meter.Center.Fill or false, meter.DividerGlow or false }) do
+		if frame then frame:SetFrameStrata(strata) end
+	end
+end
+
 -- The recipe list on the crafting page: the list covers it too.
 function Blizzard.RecipeList()
 	return ProfessionsFrame.CraftingPage.RecipeList
