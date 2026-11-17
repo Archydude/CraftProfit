@@ -235,10 +235,18 @@ function Prices.SoldPerDay(link)
 	return tsmValue("dbregionsoldperday", itemString)
 end
 
--- Whether the Best crafts list shows TSM's region sale rate: on WoW Forever,
--- where a region is one server, so it's your own market, and only with TSM loaded.
+-- Whether TSM's region sale rate takes the place of Sells/day and Listed (in the
+-- Best crafts list and on the panel): on WoW Forever, where a region is one
+-- server, so it's your own market, and only with TSM loaded. Elsewhere the sale
+-- rate shows beside them (see Prices.HasSaleRate).
 function Prices.ShowsSaleRate()
 	return not ns.QUALITY_CRAFTING and TSM_API ~= nil and TSM_API.GetCustomPriceValue ~= nil
+end
+
+-- Whether TSM's sale rate can be shown at all: only with TSM loaded on this
+-- character (saved TSM prices don't carry it).
+function Prices.HasSaleRate()
+	return TSM_API ~= nil and TSM_API.GetCustomPriceValue ~= nil
 end
 
 -- The share of an item's auctions that sell across the region, from TSM (0.42

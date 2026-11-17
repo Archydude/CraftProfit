@@ -397,7 +397,7 @@ local function marketOf(link)
 		found = {}
 		found.listed, found.listedAge = ns.Prices.Listed(link)
 		found.soldPerDay = ns.Prices.SoldPerDay(link)
-		found.saleRate = ns.Prices.ShowsSaleRate() and ns.Prices.SaleRate(link) or nil
+		found.saleRate = ns.Prices.HasSaleRate() and ns.Prices.SaleRate(link) or nil
 		market[link] = found
 	end
 	return found

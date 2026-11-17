@@ -47,8 +47,9 @@ local STALE_SCAN_DAYS = 7  -- other characters' saved scans this old or older sh
 -- goldWidth: its width when amounts show in whole gold, and foreverWidth: on WoW
 -- Forever, whose amounts are two coins at most (4g 12s), leaving the names room.
 -- forever: true shows it only on WoW Forever, false only off it (Per skill-up
--- takes Gold/day's place there). saleRate: true shows it only with TSM's sale
--- rate (WoW Forever with TSM, see Prices.ShowsSaleRate), false only without it.
+-- takes Gold/day's place there). saleRate: false hides it where TSM's sale rate
+-- takes its place (WoW Forever with TSM, see Prices.ShowsSaleRate). needsRate:
+-- only with TSM loaded, which is where the sale rate comes from.
 -- The demand column is TSM's Sells/day, or without TSM, You sold.
 -- Of the columns that can show, you pick which do (right-click a header, see
 -- columnsMenu): offByDefault ones start hidden, and fixed ones always show.
@@ -56,7 +57,7 @@ local COLUMNS = {
 	{ key = "actions", width = ACTIONS_SIZE },
 	{ key = "sold", width = 64, header = "You sold", sort = "sold", needsTSM = false },
 	{ key = "perDay", width = 64, header = "Sells/day", sort = "perDay", needsTSM = true, saleRate = false },
-	{ key = "saleRate", width = 64, header = "Sale rate", sort = "saleRate", saleRate = true },
+	{ key = "saleRate", width = 64, header = "Sale rate", sort = "saleRate", needsRate = true },
 	{ key = "listed", width = 46, header = "Listed", sort = "listed", saleRate = false },
 	{ key = "gold", width = 74, header = "Gold/day", sort = "gold", forever = false },
 	{ key = "perPoint", width = 96, goldWidth = 56, header = "Per point", sort = "perPoint", forever = false,
@@ -83,8 +84,9 @@ local HEADER_TIPS = {
 	cost = "What the materials for one craft cost, at the rank and with the materials your crafting strategy picks.",
 	listed ="How many were up for sale the last time Auctionator saw them. Needs Auctionator.",
 	perDay = "How many sell per day across your region, on average, from TSM.",
-	saleRate = "Of the auctions posted for this item, the share that sells, from TSM. On WoW Forever your region is "
-		.. "one server, so this is your own market: a high rate means it sells, a low one that most expire.",
+	saleRate = "Of the auctions posted for this item, the share that sells, from TSM: a high rate means it sells, a "
+		.. "low one that most expire. " .. (ns.QUALITY_CRAFTING and "It counts your whole region, not just your realm."
+			or "On WoW Forever your region is one server, so this is your own market."),
 	sold = format("How many your characters sold on the auction house in the last %d days, from the auction "
 		.. "house's mail. Counts sales from when you first opened your mailbox with this version.", ns.Sales.DAYS),
 	perPoint = "What each concentration point earns with this recipe: how much more a craft makes when you "
@@ -251,6 +253,7 @@ end
 local function columnAvailable(column)
 	if column.forever ~= nil and column.forever == ns.QUALITY_CRAFTING then return false end
 	if column.saleRate ~= nil and column.saleRate ~= ns.Prices.ShowsSaleRate() then return false end
+	if column.needsRate and not ns.Prices.HasSaleRate() then return false end
 	if column.needsProcs and not ns.db.countProcs then return false end
 	if column.needsTSM ~= nil and column.needsTSM ~= ns.Prices.HasTSM() then return false end
 	return column.allCharacters == nil or column.allCharacters == ns.db.bestAllCharacters
@@ -451,7 +454,7 @@ local function rowTooltip(tip, row)
 		row.itemName and tostring(row.sold) or Color("muted", "-"))
 	if ns.Prices.HasTSM() then
 		addPair(tip, "Sells per day in your region (TSM)", row.soldPerDay and perDayText(row.soldPerDay) or Color("muted", "-"))
-		if ns.Prices.ShowsSaleRate() then
+		if ns.Prices.HasSaleRate() then
 			addPair(tip, "Sale rate in your region (TSM)",
 				row.saleRate and ns.Format.SaleRate(row.saleRate) or Color("muted", "-"))
 		end
