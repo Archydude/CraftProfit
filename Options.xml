@@ -1,0 +1,10 @@
+<Ui xmlns="http://www.blizzard.com/wow/ui/">
+	<!-- Our own copies of Blizzard's options-page rows. The options list reuses rows of the
+	     same template across pages; with our own templates, a row one of our settings drew
+	     on is never handed to Blizzard's settings (like Discord's button and dropdown)
+	     afterwards. -->
+	<Frame name="CraftProfitSettingsButtonTemplate" inherits="SettingButtonControlTemplate" virtual="true"/>
+	<Frame name="CraftProfitSettingsCheckboxTemplate" inherits="SettingsCheckboxControlTemplate" virtual="true"/>
+	<Frame name="CraftProfitSettingsDropdownTemplate" inherits="SettingsDropdownControlTemplate" virtual="true"/>
+	<Frame name="CraftProfitSettingsSliderTemplate" inherits="SettingsSliderControlTemplate" virtual="true"/>
+</Ui>

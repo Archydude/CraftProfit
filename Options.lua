@@ -104,8 +104,17 @@ function Options.Create()
 		return s
 	end
 
+	-- Like Settings.CreateCheckbox / CreateDropdown / CreateSlider, but on our own row
+	-- templates (see Options.xml). On Blizzard's templates, a row that drew one of our
+	-- settings is later reused for Blizzard's own, which then can't call protected functions:
+	-- its Discord dropdown and button get blocked (ADDON_ACTION_FORBIDDEN on IsUserOAuthed).
+	local function control(kind, s, options, tooltip)
+		pageLayout:AddInitializer(Settings.CreateControlInitializer("CraftProfitSettings" .. kind .. "Template", s,
+			options, tooltip))
+	end
+
 	local function checkbox(key, name, tooltip)
-		Settings.CreateCheckbox(page, setting(key, Settings.VarType.Boolean, name), tooltip)
+		control("Checkbox", setting(key, Settings.VarType.Boolean, name), nil, tooltip)
 	end
 
 	-- `choices`: a list of { value, label }, or a function that returns one.
@@ -116,13 +125,18 @@ function Options.Create()
 			for _, choice in ipairs(list) do container:Add(choice[1], choice[2]) end
 			return container:GetData()
 		end
-		Settings.CreateDropdown(page, setting(key, Settings.VarType.String, name), getOptions, tooltip)
+		control("Dropdown", setting(key, Settings.VarType.String, name), getOptions, tooltip)
 	end
 
 	local function button(name, text, onClick, tooltip)
-		-- No search tags (the last argument): tags written from addon code taint the
-		-- game's options search, and its Discord button then errors (IsUserOAuthed).
-		pageLayout:AddInitializer(CreateSettingsButtonInitializer(name, text, onClick, tooltip, false))
+		-- On our own row template too, and with no search tags: tags written from addon code
+		-- taint the game's options search, and its Discord button then errors (IsUserOAuthed).
+		pageLayout:AddInitializer(Settings.CreateElementInitializer("CraftProfitSettingsButtonTemplate", {
+			name = name,
+			buttonText = text,
+			buttonClick = onClick,
+			tooltip = tooltip,
+		}))
 	end
 
 	---------------------------------------------------------------------------
@@ -227,7 +241,7 @@ function Options.Create()
 	scaleOptions:SetLabelFormatter(MinimalSliderWithSteppersMixin.Label.Right, function(value)
 		return format("%d%%", value * 100 + 0.5)
 	end)
-	Settings.CreateSlider(page, setting("scale", Settings.VarType.Number, "Panel size"), scaleOptions)
+	control("Slider", setting("scale", Settings.VarType.Number, "Panel size"), scaleOptions)
 	-- WoW Forever always shows the two biggest coins (see Format.Money).
 	if quality then
 		dropdown("precision", "Show amounts down to", {
@@ -304,7 +318,7 @@ function Options.Create()
 				for _, part in ipairs(ns.AH_PARTS) do settings[part]:SetValue(value) end
 				settingAll = false
 			end)
-		Settings.CreateDropdown(page, master, function()
+		control("Dropdown", master, function()
 			local container = Settings.CreateControlTextContainer()
 			for _, choice in ipairs(ns.AH_CHOICES) do container:Add(choice[1], choice[2]) end
 			if allParts() == "custom" then container:Add("custom", "Custom") end

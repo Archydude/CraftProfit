@@ -53,6 +53,7 @@ Chains.lua
 BestCrafts.lua
 BestCraftsList.lua
 LedgerWindow.lua
+Options.xml
 Options.lua
 Minimap.lua
 Core.lua
