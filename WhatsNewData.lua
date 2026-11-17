@@ -2,10 +2,16 @@
 ArchdudeWhatsNew:Register("CraftProfit", {
 	title = "Craft Profit",
 	icon = "Interface\\Icons\\INV_Hammer_20",
-	version = "4.5.0",
+	version = "4.5.1",
 	seen = "CraftProfitWhatsNew",
 	saved = { "CraftProfitDB", "CraftProfitCharDB" },
 	changes = {
+		{ "4.5.1",
+			"Fixed: adding a recipe's materials to the shopping list twice doubled them. Adding for the same recipe again now only adds what the list doesn't have for it yet: 10 crafts after 5 adds the difference, and the same amount again adds nothing. For more crafts, pick a bigger amount. Other recipes still add to the amounts on the list.",
+			"The |cffffd100Shopping list|r button's menu says when a line's materials are on the list already, or how many more it would add.",
+			"Fixed: on the Patron tab, adding an order that's already on the shopping list doubled its materials, also through Add profitable or Add all.",
+			"On the Patron tab, |cffffd100Shift-click|r on an order's cart takes off what the order put on the list after you log out and back in too.",
+		},
 		{ "4.5.0",
 			"|cffffd100Concentration strategy:|r Optimize concentration is now a |cffffd100Concentration strategy|r with three choices, for crafts and orders that spend concentration. |cffffd100Cheapest materials|r (default): the cheapest ones, whatever concentration they take. |cffffd100Least concentration|r: what Optimize concentration did. |cffffd100Most gold per point|r (new): the materials that earn the most gold for each concentration point, so cheaper materials win when what they save is worth the extra concentration. If you had Optimize concentration on, you start on Least concentration.",
 			"|cffffd100Where to set it:|r a dropdown on the panel, under Crafting strategy on the crafting page and on orders with a minimum quality. Also in the options and in the gear under the Patron tab's list. The Optimize Concentration checkbox on the crafting page and the order form is gone. On the crafting page the dropdown is faded while it can't change anything (Concentrate is off, or only one combination of materials makes the rank), and its tooltip says why.",
@@ -56,9 +62,6 @@ ArchdudeWhatsNew:Register("CraftProfit", {
 		},
 		{ "3.11.3",
 			"|cffffd100Vendor Sell|r on item tooltips also shows what a vendor pays for the whole stack in your bags.",
-		},
-		{ "3.11.2",
-			"Fixed: hovering a recipe at a vendor showed the TSM price and sale rate of the item it makes, not of the recipe.",
 		},
 	},
 })
