@@ -3,7 +3,7 @@
 Craft Profit tells you, in gold, whether a craft or a crafting order makes or loses money, which recipes are worth making, and which of your characters should make them.
 
 - **Crafting page:** what the item sells for, minus the 5% auction house cut, minus your materials. With nothing to sell (no auction price, an enchant, a recraft), it's a loss of what the materials cost.
-- **Crafting orders:** the commission you receive (after the consortium cut), minus the materials **you** supply, plus any sellable patron rewards.
+- **Crafting orders:** the commission you receive (after the consortium cut), minus the materials **you** supply, plus any sellable patron rewards. A reward that can be sold but has no price shows as **no price** and isn't counted.
 
 - **Procs:** when a craft procs multicraft or resourcefulness, a **Procs** section lists the extra items and returned materials with their value, and **This craft made** under them says what that craft really made; the bonus gold pops up from it with a coin sound. It goes away on your next craft without a proc, or when you pick another recipe. The profit lines below it stay the forecast.
 
@@ -66,7 +66,7 @@ The panel reads top to bottom: the expected profit or loss, what comes in (the s
 What the crafting page crafts. Set it with the **Crafting strategy** dropdown on the panel (under your materials, when a recipe is open), at the bottom of the Best crafts list, or in the options:
 
 - **Highest rank, cheapest materials** (default): the highest rank you can make, with the cheapest materials that reach it. A lower rank is never picked when a better one is in reach, even if it's listed for more or the better rank's materials cost more: buyers want the best rank.
-- **Use what I own:** the highest rank you have every material for, even if buying could reach a better one, and even when a quality you own would sell for more than one you could buy. If you're short for every rank, the highest rank you can make, spending the least gold on what you're missing. Good for clearing out stockpiles and keeping the shopping list short. The Best crafts list only shows recipes you can craft now. Materials split across qualities still put a recipe on the list, but its rank and profit are for one quality per slot. Only this character's bags and bank and your warband bank count.
+- **Use what I own:** the highest rank you have every material for, even if buying could reach a better one, and even when a quality you own would sell for more than one you could buy. If you're short for every rank, the highest rank you can make, spending the least gold on what you're missing. Good for clearing out stockpiles and keeping the shopping list short. The Best crafts list only shows recipes you can craft now, and says so when that's none of them. Materials split across qualities still put a recipe on the list, but its rank and profit are for one quality per slot. Only this character's bags and bank and your warband bank count.
 - **Cheapest materials:** the cheapest materials, whatever rank they make. For skill-ups, first crafts and knowledge.
 
 It picks the materials for the blue row and **Use Craft Profit Reagents** (below), prices the materials you're missing, decides which qualities the shopping list buys, and ranks the Best crafts list. Concentration stays as you set it in the form: with it on, the rank it reaches counts. What you own counts at what it would sell for. Patron orders keep their own rule (below).

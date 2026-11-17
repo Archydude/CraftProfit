@@ -1,5 +1,13 @@
 # Changelog
 
+## 4.5.0
+- **Concentration strategy:** Optimize concentration is now a **Concentration strategy** with three choices, for crafts and orders that spend concentration. **Cheapest materials** (default): the cheapest ones, whatever concentration they take. **Least concentration**: what Optimize concentration did. **Most gold per point** (new): the materials that earn the most gold for each concentration point, so cheaper materials win when what they save is worth the extra concentration. If you had Optimize concentration on, you start on Least concentration.
+- **Where to set it:** a dropdown on the panel, under Crafting strategy on the crafting page and on orders with a minimum quality. Also in the options and in the gear under the Patron tab's list. The Optimize Concentration checkbox on the crafting page and the order form is gone. On the crafting page the dropdown is faded while it can't change anything (Concentrate is off, or only one combination of materials makes the rank), and its tooltip says why.
+- **Per point in Best crafts** follows the concentration strategy: it counts the materials the strategy picks.
+- **Rewards with no price:** on a crafting order, a reward that can be sold but has no price gets its own line saying **no price**, instead of sitting with the rewards that don't sell.
+- **Empty Best crafts list:** it now says why it's empty: with **Use what I own**, you have every material for none of the recipes, or nothing matches the search and the filter.
+- Fixed: a white line from the crafting window's quality bar showed through the Best crafts list.
+
 ## 4.4.0
 - **A new look for the panel:** the crafted item's icon and the recipe's name lead the panel, with what it makes under them. The profit or loss stands in a box of its own, green for a profit and red for a loss. Section headings have a gold line under them, every other material is on a faint stripe, and the session line sits in a strip at the bottom.
 - **Sale rate in color:** TSM's sale rate is colored by how well the item sells, from red for one that hardly sells, through yellow, to green for one that always does. That goes for the panel, Best crafts, the Sell list and item tooltips.

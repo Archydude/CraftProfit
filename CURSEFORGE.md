@@ -39,10 +39,10 @@ Craft Profit answers in gold: **profit or loss?** A panel next to your professio
 - **Patron orders** priced and crafted right in Blizzard's Patron tab
 
 ### Crafts and orders
-The panel leads with the answer: the sale price at the rank you'll get, minus the 5% cut and your materials. On orders: the commission, minus the materials **you** supply, plus sellable rewards.
+The sale price at the rank you'll get, minus the 5% cut and your materials. On orders: the commission, minus the materials **you** supply, plus sellable rewards. With concentration on, the **concentration strategy** picks the materials: cheapest, least concentration or most **gold per point**.
 
 ### What should I craft?
-**Best crafts** lists every recipe you know, most profitable first. Sort by one column or two. Search by item or **material**. With TSM, a **sale rate** column shows what really sells.
+**Best crafts** lists every recipe you know, most profitable first. Search by item or **material**. With TSM, a **sale rate** column shows what really sells.
 
 ### Did it pay off?
 The **Ledger** is your crafting history: what each item cost, sold for, went into your own crafts and really made.
@@ -51,7 +51,7 @@ The **Ledger** is your crafting history: what each item cost, sold for, went int
 **Shopping list**: a click on a material shows it with the amount to buy. **Sell**: your bags with a price and TSM sale rate on every item. Pick one and the lowest price is filled in. **My auctions**: see which are undercut or not first at your price, and cancel them. With Auctionator, choose which of the two does each.
 
 ### Patron orders
-Blizzard's Patron tab shows each order's **expected profit**, **rewards** and missing **materials**. **Next order** works through them, one click per step.
+Blizzard's Patron tab shows each order's **expected profit**, **rewards** and missing **materials**. **Next order** works through them.
 
 ### WoW Forever
 Best crafts shows what a **skill point** costs with each recipe, and the **chance** of one. **Craft myself** prices materials you can make at what crafting them costs; a click opens their recipe.
@@ -72,11 +72,11 @@ Vendor prices, the auction price, TSM's **sale rate** and the **AH deposit**.
 
 ## B. Upload File form
 
-**File:** `dist\CraftProfit-4.4.0.zip`
+**File:** `dist\CraftProfit-4.5.0.zip`
 
 **Display name**
 ```
-Craft Profit 4.4.0
+Craft Profit 4.5.0
 ```
 
 **Release type:** `Release`
@@ -85,6 +85,14 @@ Craft Profit 4.4.0
 
 **Changelog** (paste only the newest part; paste older parts too if they never went up)
 ```markdown
+4.5.0
+- **Concentration strategy:** Optimize concentration is now a **Concentration strategy** with three choices, for crafts and orders that spend concentration. **Cheapest materials** (default): the cheapest ones, whatever concentration they take. **Least concentration**: what Optimize concentration did. **Most gold per point** (new): the materials that earn the most gold for each concentration point, so cheaper materials win when what they save is worth the extra concentration. If you had Optimize concentration on, you start on Least concentration.
+- **Where to set it:** a dropdown on the panel, under Crafting strategy on the crafting page and on orders with a minimum quality. Also in the options and in the gear under the Patron tab's list. The Optimize Concentration checkbox on the crafting page and the order form is gone. On the crafting page the dropdown is faded while it can't change anything (Concentrate is off, or only one combination of materials makes the rank), and its tooltip says why.
+- **Per point in Best crafts** follows the concentration strategy: it counts the materials the strategy picks.
+- **Rewards with no price:** on a crafting order, a reward that can be sold but has no price gets its own line saying **no price**, instead of sitting with the rewards that don't sell.
+- **Empty Best crafts list:** it now says why it's empty: with **Use what I own**, you have every material for none of the recipes, or nothing matches the search and the filter.
+- Fixed: a white line from the crafting window's quality bar showed through the Best crafts list.
+
 4.4.0
 - **A new look for the panel:** the crafted item's icon and the recipe's name lead the panel, with what it makes under them. The profit or loss stands in a box of its own, green for a profit and red for a loss. Section headings have a gold line under them, every other material is on a faint stripe, and the session line sits in a strip at the bottom.
 - **Sale rate in color:** TSM's sale rate is colored by how well the item sells, from red for one that hardly sells, through yellow, to green for one that always does. That goes for the panel, Best crafts, the Sell list and item tooltips.
