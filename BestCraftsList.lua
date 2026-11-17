@@ -91,7 +91,8 @@ local HEADER_TIPS = {
 		.. "house's mail. Counts sales from when you first opened your mailbox with this version.", ns.Sales.DAYS),
 	perPoint = "What each concentration point earns with this recipe: how much more a craft makes when you "
 		.. "concentrate to reach the next rank, divided by the concentration that takes. For seeing where your "
-		.. "concentration is worth the most. Recipes where concentrating adds nothing show -.",
+		.. "concentration is worth the most. The concentration strategy picks the materials for it. Recipes where "
+		.. "concentrating adds nothing show -.",
 }
 -- WoW Forever has no ranks or procs to explain.
 if not ns.QUALITY_CRAFTING then

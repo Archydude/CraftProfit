@@ -73,9 +73,9 @@ local function mixKey(slots, mix)
 end
 
 -- The slots you fill that come in several qualities:
--- { slotIndex, qty, options = { { itemID, cost, buy, quality } ... } cheapest first },
--- where cost is what using that quality in this slot really costs you, and buy
--- the gold you'd spend on it.
+-- { slotIndex, qty, options = { { itemID, full, cost, buy, quality } ... } cheapest first },
+-- where full is that quality's price for the slot, cost what using it really
+-- costs you, and buy the gold you'd spend on it.
 local function qualitySlots(schematic, provided)
 	local list = {}
 	for slotIndex, slot in ipairs(schematic.reagentSlotSchematics) do
@@ -84,8 +84,10 @@ local function qualitySlots(schematic, provided)
 			local options = {}
 			for _, reagent in ipairs(slot.reagents) do
 				if reagent.itemID then
+					local price = ns.Prices.Material(reagent.itemID)
 					options[#options + 1] = {
 						itemID = reagent.itemID,
+						full = price and price * slot.quantityRequired or UNPRICED,
 						cost = ns.Model.EffectiveCost(reagent.itemID, slot.quantityRequired) or UNPRICED,
 						buy = ns.Model.BuyCost(reagent.itemID, slot.quantityRequired) or UNPRICED,
 						quality = C_TradeSkillUI.GetItemReagentQualityByItemInfo(reagent.itemID) or 0,
@@ -109,7 +111,7 @@ local function mixesOf(slots, maxMixes, byBuy)
 	local count = 1
 	for _, entry in ipairs(slots) do count = count * #entry.options end
 	if count > (maxMixes or MAX_MIXES) then
-		local top = { cost = 0, buy = 0 }
+		local top = { cost = 0, buy = 0, full = 0 }
 		for i, entry in ipairs(slots) do
 			local best = 1
 			for o, option in ipairs(entry.options) do
@@ -120,12 +122,12 @@ local function mixesOf(slots, maxMixes, byBuy)
 		return { top }
 	end
 
-	local mixes = { { cost = 0, buy = 0 } }
+	local mixes = { { cost = 0, buy = 0, full = 0 } }
 	for i, entry in ipairs(slots) do
 		local grown = {}
 		for _, mix in ipairs(mixes) do
 			for o, option in ipairs(entry.options) do
-				local nextMix = { cost = mix.cost + option.cost, buy = mix.buy + option.buy }
+				local nextMix = { cost = mix.cost + option.cost, buy = mix.buy + option.buy, full = mix.full + option.full }
 				for j = 1, i - 1 do nextMix[j] = mix[j] end
 				nextMix[i] = o
 				grown[#grown + 1] = nextMix
@@ -171,6 +173,28 @@ local function picksOf(slots, mix)
 		picks[#picks + 1] = { itemID = itemID, qty = entry.qty }
 	end
 	return overrides, picks
+end
+
+-- For "Most gold per point" (see ns.CONCENTRATION_STRATEGIES): whether making `profit`
+-- for `points` of concentration beats `otherProfit` for `otherPoints`. A profit
+-- always beats a loss, and of two losses the smaller one wins: a loss earns
+-- nothing per point.
+local function earnsMore(profit, points, otherProfit, otherPoints)
+	if (profit > 0) ~= (otherProfit > 0) then return profit > 0 end
+	if profit <= 0 then return profit > otherProfit end
+	return profit / points > otherProfit / otherPoints
+end
+Planner.EarnsMore = earnsMore
+
+-- What any mix makes, from `model`: the same craft or order priced with one mix
+-- (`mix`). Between mixes only what their materials cost at full price differs, as
+-- the panel counts profit, less the share of it resourcefulness gives back when
+-- procs count. Returns a function: mix -> profit.
+local function earnings(model, mix)
+	local procs = ns.db.countProcs and model.expected and model.procs
+	local kept = procs and 1 - procs.chances.resourcefulness * procs.savedShare or 1
+	local profit = ns.Model.Shown(model)
+	return function(other) return profit + (mix.full - other.full) * kept end
 end
 
 -- Shares out your concentration among the listed orders that need it to reach
@@ -223,9 +247,10 @@ end
 --   { overrides, picks }                             no minimum: the cheapest of each
 --   { minQuality, overrides, picks }                 cheapest mix that reaches the minimum
 --   { minQuality, overrides, picks, concentration }  only reached with concentration:
---                                                    the cheapest mix that does it, or with the
---                                                    "Optimize concentration" option, the mix that
---                                                    takes the least (the cheapest of those)
+--                                                    the cheapest mix that does it, or by the
+--                                                    concentration strategy, the mix that takes
+--                                                    the least (the cheapest of those) or earns
+--                                                    the most gold per point
 --   { minQuality, overrides, picks, unreachable }    not even the top qualities reach it
 -- With "Patron materials" set to Use what I own, "cheapest" means the least gold
 -- spent (what you own is free), then the cheapest. With "Reach the minimum with"
@@ -263,9 +288,20 @@ function Planner.ForOrder(order, schematic, provided)
 	end
 
 	local mixes = mixesOf(slots, nil, byBuy)
-	local least = ns.db.leastConcentration
+	local goal = ns.OptimizesFor()
 	local known = predictionsFor(format("order:%s:%s", tostring(order.orderID), skillKey(order.spellID)))
 	local plan, withConcentration, predicted, best
+	-- Whether a mix that needs `concentration` beats `found`, the one kept so far.
+	-- Mixes come cheapest first, so a later one only wins on what the option goes for.
+	local profitOf -- "gold": what a mix makes (see earnings), priced when two are first compared
+	local function beats(mix, concentration, found)
+		if goal == "gold" then
+			profitOf = profitOf or earnings(ns.Model.Order({ order = order, schematic = schematic, provided = provided,
+				overrides = (picksOf(slots, found.mix)) }), found.mix)
+			return earnsMore(profitOf(mix), concentration, profitOf(found.mix), found.concentration)
+		end
+		return goal == "least" and concentration < found.concentration
+	end
 	for _, mix in ipairs(mixes) do
 		local key = mixKey(slots, mix)
 		local found = known[key]
@@ -282,9 +318,8 @@ function Planner.ForOrder(order, schematic, provided)
 				plan = { mix = mix }
 				break
 			end
-			-- Mixes come cheapest first, so a later one only wins on less concentration.
 			if quality + 1 >= minQuality and cost > 0
-				and (not withConcentration or least and cost < withConcentration.concentration) then
+				and (not withConcentration or beats(mix, cost, withConcentration)) then
 				withConcentration = { mix = mix, concentration = cost, currencyID = currencyID }
 			end
 			if not best or quality > best.quality then best = { mix = mix, quality = quality } end
@@ -408,9 +443,10 @@ end
 
 -- The plan, or nil. Also true when this frame's share of asking the game
 -- (PLAN_BUDGET_MS) ran out before every mix was asked about.
-local function planCraft(recipeInfo, schematic, transaction, slots, context)
-	local function planOf(mix, quality, concentration)
-		local plan = { quality = quality, concentration = concentration }
+local function planCraft(ctx, slots, context)
+	local recipeInfo, schematic, transaction = ctx.recipeInfo, ctx.schematic, ctx.transaction
+	local function planOf(mix, quality, concentration, ways)
+		local plan = { quality = quality, concentration = concentration, ways = ways }
 		plan.overrides, plan.picks = picksOf(slots, mix)
 		return plan
 	end
@@ -421,13 +457,26 @@ local function planCraft(recipeInfo, schematic, transaction, slots, context)
 		return planOf(mix)
 	end
 
-	-- Each rank the mixes reach: its cheapest mix, or with "Optimize concentration",
-	-- the one that takes the least, or with "Use what I own", the one that spends
-	-- the least (mixes come cheapest first, so a later one only wins on those).
-	local least = ns.db.leastConcentration
+	-- Each rank the mixes reach: its cheapest mix, or by the concentration strategy,
+	-- the one that takes the least or earns the most gold per point, or with "Use
+	-- what I own", the one that spends the least (mixes come cheapest first, so a
+	-- later one only wins on those).
+	local goal = ns.OptimizesFor()
 	local ownedFirst = ns.db.craftStrategy == "owned"
-	local function beats(mix, concentration, found)
-		if least and concentration and found.concentration and concentration ~= found.concentration then
+	-- "gold": rank -> what a mix that makes it earns (see earnings), priced when two are first compared.
+	local profits = {}
+	local function beats(mix, quality, concentration, found)
+		if goal == "gold" and concentration and found.concentration then
+			local profitOf = profits[quality]
+			if not profitOf then
+				profitOf = earnings(ns.Model.Craft({ recipeInfo = recipeInfo, schematic = schematic, transaction = transaction,
+					isRecraft = ctx.isRecraft, overrides = (picksOf(slots, found.mix)), procs = true }), found.mix)
+				profits[quality] = profitOf
+			end
+			local profit, foundProfit = profitOf(mix), profitOf(found.mix)
+			if earnsMore(profit, concentration, foundProfit, found.concentration) then return true end
+			if earnsMore(foundProfit, found.concentration, profit, concentration) then return false end
+		elseif goal == "least" and concentration and found.concentration and concentration ~= found.concentration then
 			return concentration < found.concentration
 		end
 		return ownedFirst and mix.buy < found.mix.buy
@@ -435,6 +484,7 @@ local function planCraft(recipeInfo, schematic, transaction, slots, context)
 	local known = predictionsFor(context)
 	local deadline = debugprofilestop() + PLAN_BUDGET_MS
 	local byQuality = {}
+	local ways = {} -- rank -> how many mixes make it
 	for _, mix in ipairs(mixesOf(slots)) do
 		local key = mixKey(slots, mix)
 		local predicted = known[key]
@@ -448,8 +498,9 @@ local function planCraft(recipeInfo, schematic, transaction, slots, context)
 		local quality, concentration
 		if predicted then quality, concentration = predicted[1], predicted[2] end
 		if quality then
+			ways[quality] = (ways[quality] or 0) + 1
 			local found = byQuality[quality]
-			if not found or beats(mix, concentration, found) then
+			if not found or beats(mix, quality, concentration, found) then
 				byQuality[quality] = { mix = mix, cost = mix.cost, buy = mix.buy, short = mix.buy > 0, quality = quality,
 					concentration = concentration }
 			end
@@ -461,23 +512,24 @@ local function planCraft(recipeInfo, schematic, transaction, slots, context)
 	local options = {}
 	for _, found in pairs(byQuality) do options[#options + 1] = found end
 	local best = Planner.Choose(options)
-	return planOf(best.mix, best.quality, best.concentration)
+	return planOf(best.mix, best.quality, best.concentration, ways[best.quality])
 end
 
 -- Which qualities the recipe on the crafting page should use, with what's in the
 -- form's other slots and its concentration as they are: the rank the crafting
--- strategy picks, made the cheapest way (with concentration and "Optimize
--- concentration": the way that takes the least, the cheapest of those).
--- { overrides, picks, quality, concentration }, or nil. Also true while a recipe with many mixes is still being worked out: ask again
+-- strategy picks, made the cheapest way (with concentration, by the
+-- concentration strategy: the way that takes the least, the cheapest of those,
+-- or the way that earns the most gold per point).
+-- { overrides, picks, quality, concentration, ways = how many mixes make that rank }, or nil. Also true while a recipe with many mixes is still being worked out: ask again
 -- next frame.
 function Planner.ForCraft(ctx)
 	local recipeInfo, schematic, transaction = ctx.recipeInfo, ctx.schematic, ctx.transaction
 	local slots = qualitySlots(schematic, {})
 	if #slots == 0 then return end
 	local context = craftContext(recipeInfo.recipeID, schematic, transaction, slots, ns.Blizzard.IsConcentrating(transaction))
-	local key = format("%s:%s:%s", context, tostring(ns.db.leastConcentration), ns.db.craftStrategy)
+	local key = format("%s:%s:%s", context, tostring(ns.OptimizesFor()), ns.db.craftStrategy)
 	if key ~= craftPlanKey then
-		local plan, pending = planCraft(recipeInfo, schematic, transaction, slots, context)
+		local plan, pending = planCraft(ctx, slots, context)
 		if pending then return nil, true end
 		craftPlan, craftPlanKey = plan or false, key
 	end
@@ -485,8 +537,9 @@ function Planner.ForCraft(ctx)
 end
 
 -- Testing (/craftprofit testplan): prints every mix the crafting page's plan
--- tries, the rank the game predicts for each, and the plan it picks. False when
--- the crafting page shows no recipe.
+-- tries, the rank and concentration the game predicts for each, what it makes
+-- (and per concentration point), and the plan it picks. False when the crafting
+-- page shows no recipe.
 function Planner.Explain()
 	local ctx = ns.Blizzard.ActivePage() == "craft" and ns.Blizzard.CraftContext()
 	if not ctx then return false end
@@ -498,8 +551,9 @@ function Planner.Explain()
 			tostring(C_TradeSkillUI.GetItemReagentQualityByItemInfo(itemID)))
 	end
 	local concentrating = ns.Blizzard.IsConcentrating(transaction)
-	say("Recipe %d, recraft %s, item %s, concentrating %s, strategy %s", recipeID, tostring(ctx.isRecraft),
-		tostring((transaction:GetAllocationItemGUID())), tostring(concentrating), tostring(ns.db.craftStrategy))
+	say("Recipe %d, recraft %s, item %s, concentrating %s, strategy %s, concentration strategy %s", recipeID,
+		tostring(ctx.isRecraft), tostring((transaction:GetAllocationItemGUID())), tostring(concentrating),
+		tostring(ns.db.craftStrategy), tostring(ns.db.concentrationStrategy))
 	for _, entry in ipairs(transaction:CreateCraftingReagentInfoTbl()) do
 		local itemID = entry.reagent and entry.reagent.itemID
 		say("  form: slot %s, %s x%s", tostring(entry.dataSlotIndex), itemID and name(itemID) or "?", tostring(entry.quantity))
@@ -513,8 +567,12 @@ function Planner.Explain()
 		local names = {}
 		for i, entry in ipairs(slots) do names[i] = format("%dx %s", entry.qty, name(entry.options[mix[i]].itemID)) end
 		quality, concentration = ns.Blizzard.PredictQuality(recipeID, schematic, transaction, overrides)
-		say("Mix: rank %s, concentration %s, cost %s: %s", tostring(quality), tostring(concentration),
-			tostring(math.floor(mix.cost / 10000)), table.concat(names, ", "))
+		-- The profit as the panel would show it, and what each concentration point earns.
+		local profit = ns.Model.Shown(ns.Model.Craft({ recipeInfo = recipeInfo, schematic = schematic, transaction = transaction,
+			isRecraft = ctx.isRecraft, overrides = overrides, procs = true })) / 10000
+		local perPoint = concentration and concentration > 0 and format(", %.2fg per point", profit / concentration) or ""
+		say("Mix: rank %s, concentration %s, cost %s, profit %.0fg%s: %s", tostring(quality), tostring(concentration),
+			tostring(math.floor(mix.cost / 10000)), profit, perPoint, table.concat(names, ", "))
 	end
 	local plan = Planner.ForCraft(ctx)
 	if not plan then return say("Plan: none") or true end

@@ -91,7 +91,7 @@ ns.DEFAULTS = {
 	patronList = true,    -- Craft Profit's columns, buttons and footer on the Patron tab's order list
 	patronSort = false,   -- the Patron tab sorted by profit: "desc" | "asc", or false for Blizzard's sort
 	concentrationFor = "profit", -- patron orders that need concentration get it by: "profit" | "knowledge", or "none" of it
-	leastConcentration = false, -- orders that need concentration: the qualities that need the least, cheapest of those
+	concentrationStrategy = "cheapest", -- where concentration is spent, the qualities picked: "cheapest" | "least" concentration | most "gold" per point
 	patronMaterials = "cheapest", -- patron orders' material qualities: "cheapest" | "owned" (see ns.PATRON_MATERIALS_CHOICES)
 	patronReach = "materials",    -- reaching an order's minimum quality: "materials" | "concentration" first
 	nextLosing = true,    -- the Patron tab's Next order button goes on to orders that lose gold
@@ -125,11 +125,34 @@ ns.KNOWLEDGE_ITEMS = {
 	[246331] = 2, -- Glimmer
 }
 
--- The "Optimize concentration" option, in the Patron tab's gear menu and the options.
-ns.LEAST_CONCENTRATION = "Optimize concentration"
-ns.LEAST_CONCENTRATION_TIP = "Orders that only reach their minimum quality with concentration use the material " ..
-	"qualities that need the least of it, and the cheapest of those. The materials cost more, but your " ..
-	"concentration lasts for more orders.\n\nOff: the cheapest materials that reach it, whatever concentration they take."
+-- The concentration strategy: which material qualities are picked where
+-- concentration is spent. On the panel, in the options and in the Patron tab's
+-- gear menu. { key, label, tooltip }.
+ns.CONCENTRATION_STRATEGY_TITLE = "Concentration strategy"
+ns.CONCENTRATION_STRATEGY_TIP = "Which material qualities are picked where concentration is spent: on orders that " ..
+	"only reach their minimum quality with concentration, and on the crafting page with concentration on."
+ns.CONCENTRATION_STRATEGIES = {
+	{ "cheapest", "Cheapest materials (default)", "The cheapest material qualities, whatever concentration they take." },
+	{ "least", "Least concentration", "The material qualities that take the least concentration, and the " ..
+		"cheapest of those. The materials cost more, but your concentration lasts for more crafts." },
+	{ "gold", "Most gold per point", "The material qualities that earn the most gold for each concentration point. " ..
+		"Cheaper materials win when what they save is worth the extra concentration." },
+}
+
+-- One of those: the one for `key`, or the one in use.
+function ns.ConcentrationStrategy(key)
+	key = key or ns.db.concentrationStrategy
+	for _, strategy in ipairs(ns.CONCENTRATION_STRATEGIES) do
+		if strategy[1] == key then return strategy end
+	end
+	return ns.CONCENTRATION_STRATEGIES[1]
+end
+
+-- What the concentration strategy picks by, when not just the cheapest: "least", "gold", or nil.
+function ns.OptimizesFor()
+	local key = ns.ConcentrationStrategy()[1]
+	return key ~= "cheapest" and key or nil
+end
 
 -- The "Next order: include orders that lose gold" option, in the Patron tab's gear menu and the options.
 ns.NEXT_LOSING = "Next order: include orders that lose gold"

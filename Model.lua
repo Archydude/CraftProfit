@@ -137,7 +137,7 @@ end
 -- slotIndex -> { itemID, saves, buyCost, ownValue }. Slots you've picked a quality
 -- for, or that are missing, are left alone. With the Patron orders list's `plan`
 -- for the order, only the rank it picks is suggested, so this never goes against
--- it (Optimize concentration can pick a dearer rank on purpose).
+-- it (the concentration strategy can pick a dearer rank on purpose).
 local function cheaperRanks(ctx, materials, picks, plan)
 	local planned = plan and not plan.unreachable and plan.overrides or {}
 	local order, schematic, transaction, recipeInfo = ctx.order, ctx.schematic, ctx.transaction, ctx.recipeInfo
@@ -304,6 +304,15 @@ function Model.BasicCost(materials)
 	return cost
 end
 
+-- How an item binds when it can still be sold: not at all, when equipped or when used.
+local SELLABLE_BINDS = { [0] = true, [2] = true, [3] = true }
+
+-- Whether an item can be sold at all. False too while the game doesn't have the item yet.
+local function canBeSold(link)
+	local bind = select(14, C_Item.GetItemInfo(link))
+	return bind ~= nil and SELLABLE_BINDS[bind] == true
+end
+
 -- The basic materials the customer sent for an order: { { itemID, qty, price } }.
 -- Resourcefulness saves these too, and what it saves comes back to you.
 local function providedBasics(order, schematic)
@@ -366,8 +375,8 @@ local function bestCraftMaterials(ctx, model)
 	local formQuality = plan.quality and ns.Blizzard.PredictQuality(ctx.recipeInfo.recipeID, schematic, transaction, {})
 	local otherRank = formQuality and plan.quality ~= formQuality
 	local betterRank = otherRank and plan.quality > formQuality
-	-- Or, with "Optimize concentration" on, when it takes less than the form does.
-	local savesConcentration = ns.db.leastConcentration and plan.concentration
+	-- Or, with a concentration strategy that picks for it, when it takes less than the form does.
+	local savesConcentration = ns.OptimizesFor() and plan.concentration
 		and (ns.Blizzard.FormConcentrationCost(ctx.recipeInfo.recipeID, schematic, transaction) or 0) > plan.concentration
 	-- Or, with "Use what I own", whatever it's worth: spending less is the point.
 	local usesOwned = ns.db.craftStrategy == "owned"
@@ -460,7 +469,8 @@ local function concentrationOf(ctx, info, quality, model, sold)
 end
 
 -- The recipe selected on the crafting page. With ctx.overrides (slotIndex ->
--- itemID), prices those qualities instead of the form's, for comparing. Nil and
+-- itemID), prices those qualities instead of the form's, for comparing; with
+-- ctx.procs too, counting what procs add like the form's own model. Nil and
 -- true while the crafting strategy's plan is still being worked out (see
 -- Planner.ForCraft).
 function Model.Craft(ctx)
@@ -477,6 +487,7 @@ function Model.Craft(ctx)
 		icon = schematic.icon,
 		canSimulate = true,
 		simulating = simulating,
+		concentrating = ns.Blizzard.IsConcentrating(transaction), -- Concentrate is on in the form
 		notes = notes,
 	}
 
@@ -487,6 +498,9 @@ function Model.Craft(ctx)
 		plan, pending = ns.Planner.ForCraft(ctx)
 		if pending then return nil, true end
 	end
+	-- How many material mixes make the rank it picked: with one, or none to pick
+	-- from, the concentration strategy has nothing to choose between.
+	model.ways = plan and plan.ways or 0
 	local fill = strategyFill(transaction, plan, picks)
 	-- And the slots the form tops up with another quality because you're short of
 	-- the strategy's: what you can craft right now (realCost) still uses those.
@@ -546,11 +560,12 @@ function Model.Craft(ctx)
 	addShopping(model, sold, {}, shopPicks)
 	model.total = (model.total or 0) - model.cost
 
-	-- What multicraft and resourcefulness add on average (see Procs.Expected).
-	if not (planning or ctx.isRecraft) then
+	-- What multicraft and resourcefulness add on average (see Procs.Expected). For
+	-- picked qualities (ctx.overrides) only when ctx.procs asks.
+	if not ctx.isRecraft and (ctx.procs or not planning) then
 		local info = ns.Blizzard.CraftInfo(ctx, merged(picks, filled))
 		local chances = ns.Procs.Chances(info)
-		model.concentration = concentrationOf(ctx, info, quality, model, sold)
+		if not planning then model.concentration = concentrationOf(ctx, info, quality, model, sold) end
 		local output = model.output
 		local sale = output and output.sale and output.sale - (output.ahCut or 0)
 		model.procs = ns.Procs.Expected(ns.Procs.ProfessionOf(recipeInfo.recipeID), chances, sale,
@@ -591,8 +606,8 @@ local function bestMaterials(ctx, model)
 	local minQuality = order.minQuality or 0
 	local belowMinimum = minQuality > 1 and ctx.recipeInfo
 		and (ns.Blizzard.PredictQuality(ctx.recipeInfo.recipeID, schematic, transaction, {}, ctx.provided) or 0) < minQuality
-	-- Or, with "Optimize concentration" on, when it takes less than the form does.
-	local savesConcentration = ns.db.leastConcentration and plan.concentration and ctx.recipeInfo
+	-- Or, with a concentration strategy that picks for it, when it takes less than the form does.
+	local savesConcentration = ns.OptimizesFor() and plan.concentration and ctx.recipeInfo
 		and ns.Blizzard.IsConcentrating(transaction)
 		and (ns.Blizzard.FormConcentrationCost(ctx.recipeInfo.recipeID, schematic, transaction, ctx.provided) or 0)
 			> plan.concentration
@@ -676,7 +691,8 @@ function Model.Order(ctx)
 	end
 
 	-- What an NPC (patron) order gives on top of the commission. Sellable items
-	-- count toward profit; currencies (Moxie...) have no gold value.
+	-- count toward profit; currencies (Moxie...) have no gold value. An item that
+	-- could be sold but has no price is `unpriced`: it isn't counted either.
 	model.rewards = {}
 	model.knowledge = 0
 	local rewardsValue = 0
@@ -689,7 +705,8 @@ function Model.Order(ctx)
 			local knowledge = ns.KNOWLEDGE_ITEMS[itemID]
 			rewardsValue = rewardsValue + (value or 0)
 			model.knowledge = model.knowledge + (knowledge or 0) * qty
-			model.rewards[#model.rewards + 1] = { itemID = itemID, qty = qty, value = value, knowledge = knowledge }
+			model.rewards[#model.rewards + 1] = { itemID = itemID, qty = qty, value = value, knowledge = knowledge,
+				unpriced = not value and canBeSold(reward.itemLink) or nil }
 		elseif reward.currencyType then
 			local currency = C_CurrencyInfo.GetCurrencyInfo(reward.currencyType)
 			if currency then model.rewards[#model.rewards + 1] = { currency = currency, qty = qty } end

@@ -2,9 +2,8 @@
 -- profitable ones) or a recipe (the crafting strategy's). The panel's row puts
 -- them in once; the "Use Craft Profit Reagents" checkbox, above Blizzard's "Use
 -- Best Quality Reagents" on the order form and on the crafting page, puts them in
--- every order or recipe you open. Above it, "Optimize Concentration" picks the
--- ones that need the least concentration instead. When a recipe's reagents reach
--- down to them, both move into a row beside Blizzard's.
+-- every order or recipe you open. When a recipe's reagents reach down to it, it
+-- moves beside Blizzard's.
 local _, ns = ...
 
 local Best = {}
@@ -13,25 +12,12 @@ ns.Best = Best
 local format = string.format
 
 local LABEL = "Use Craft Profit Reagents"
-local CONCENTRATION_LABEL = "Optimize Concentration"
 local LABEL_GAP = 2 -- checkbox to its label
 local ROW_GAP = 0   -- between the stacked checkboxes
 local ROW_SPACE = 16 -- between the checkboxes when they sit in a row
 
--- One of each on every form that has Blizzard's checkbox.
-local boxes, concentrationBoxes = {}, {}
-
--- How faded Optimize Concentration is while it doesn't change the form.
-local DIMMED_ALPHA = 0.45
-
--- Optimize Concentration only changes the form through Use Most Profitable
--- Reagents, so it's dimmed (box, check and label) while that's off. It stays
--- clickable: it still sets the Patron tab's picks.
-local function updateDim()
-	for _, box in ipairs(concentrationBoxes) do
-		box:SetAlpha(ns.db.bestMaterials and 1 or DIMMED_ALPHA)
-	end
-end
+-- One on every form that has Blizzard's checkbox.
+local boxes = {}
 
 -- What the checkbox already put in for the open order or recipe, so each set goes
 -- in once and a slot you change afterwards stays as you set it. Cleared for each
@@ -90,12 +76,20 @@ local function showTooltip(self)
 		GameTooltip:AddLine(strategy[4], 1, 1, 1, true)
 		GameTooltip:AddLine("Change it in the options or at the bottom of the Best crafts list.", 0.53, 0.53, 0.53, true)
 		GameTooltip:AddLine(" ")
-		GameTooltip:AddLine("Concentration stays as you set it. With it on, the ranks it reaches count.", 1, 1, 1, true)
+		GameTooltip:AddLine("Concentration stays as you set it. With it on, the ranks it reaches count, and the "
+			.. "concentration strategy picks the materials for them.", 1, 1, 1, true)
 	else
 		GameTooltip:AddLine("Puts the most profitable materials in every crafting order you open: the cheapest qualities "
 			.. "that still reach the order's minimum quality, with what you own counted at what it would sell for. "
-			.. "Turns on concentration when the minimum quality needs it.", 1, 1, 1, true)
+			.. "Turns on concentration when the minimum quality needs it; the concentration strategy then picks the materials.",
+			1, 1, 1, true)
 	end
+	local concentration = ns.ConcentrationStrategy()
+	GameTooltip:AddLine(" ")
+	GameTooltip:AddLine(format("%s: %s", ns.CONCENTRATION_STRATEGY_TITLE, ns.ChoiceName(concentration)), 1, 0.82, 0)
+	GameTooltip:AddLine(concentration[3], 1, 1, 1, true)
+	GameTooltip:AddLine("Change it on the panel, in the options or in the gear at the bottom of the Patron tab.",
+		0.53, 0.53, 0.53, true)
 	GameTooltip:AddLine(" ")
 	GameTooltip:AddLine("Turning it on turns off Use Best Quality Reagents, and the other way round. "
 		.. "The same setting on the crafting page and the order form.", 0.53, 0.53, 0.53, true)
@@ -114,7 +108,6 @@ local function onClick(self)
 		-- Back to what Blizzard puts in by itself, like unticking its checkbox.
 		ns.Blizzard.ResetMaterials(concentrated)
 	end
-	updateDim()
 	forget()
 	ns.Panel.Refresh()
 	showTooltip(self)
@@ -125,102 +118,58 @@ local function onBlizzardBestQuality(checked)
 	if checked and ns.db.bestMaterials then
 		ns.db.bestMaterials = false
 		for _, box in ipairs(boxes) do box:SetChecked(false) end
-		updateDim()
 	end
 	forget()
 end
 
-local function showConcentrationTooltip(self)
-	GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
-	GameTooltip:SetText(CONCENTRATION_LABEL)
-	if onCraftPage() then
-		GameTooltip:AddLine("With concentration on, uses the material qualities that reach your crafting strategy's "
-			.. "rank with the least concentration, and the cheapest of those. The materials cost more, but your concentration "
-			.. "lasts for more crafts.\n\nOff: the cheapest materials for that rank, whatever concentration they take.",
-			1, 1, 1, true)
-	else
-		GameTooltip:AddLine(ns.LEAST_CONCENTRATION_TIP, 1, 1, 1, true)
-	end
-	if not ns.db.bestMaterials then
-		GameTooltip:AddLine(" ")
-		GameTooltip:AddLine(LABEL .. " is off, so this doesn't change the form right now.", 1, 0.82, 0, true)
-	end
-	GameTooltip:AddLine(" ")
-	GameTooltip:AddLine("Picks the materials for " .. LABEL .. " and the Patron tab. "
-		.. "The same as Optimize concentration at the bottom of that list.", 0.53, 0.53, 0.53, true)
-	GameTooltip:Show()
-end
-
-local function onConcentrationClick(self)
-	local on = self:GetChecked() and true or false
-	PlaySound(on and SOUNDKIT.IG_MAINMENU_OPTION_CHECKBOX_ON or SOUNDKIT.IG_MAINMENU_OPTION_CHECKBOX_OFF)
-	for _, box in ipairs(concentrationBoxes) do box:SetChecked(on) end
-	-- New picks go in by themselves while Use Craft Profit Reagents is on.
-	ns.Patron.SetLeastConcentration(on)
-	showConcentrationTooltip(self)
-end
-
--- A checkbox like Blizzard's, above `below`, with a clickable label.
-local function addCheckbox(parent, below, text, setting, onClickHandler, tooltip)
-	local box = CreateFrame("CheckButton", nil, parent, "UICheckButtonTemplate")
-	box:SetSize(below:GetSize())
-	box:SetPoint("BOTTOMLEFT", below, "TOPLEFT", 0, ROW_GAP)
+-- A checkbox like Blizzard's, above it, with a clickable label.
+local function addCheckbox(blizzardBox)
+	local box = CreateFrame("CheckButton", nil, blizzardBox, "UICheckButtonTemplate")
+	box:SetSize(blizzardBox:GetSize())
+	box:SetPoint("BOTTOMLEFT", blizzardBox, "TOPLEFT", 0, ROW_GAP)
 	local label = box:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
 	label:SetPoint("LEFT", box, "RIGHT", LABEL_GAP, 0)
-	label:SetText(LIGHTGRAY_FONT_COLOR:WrapTextInColorCode(text))
+	label:SetText(LIGHTGRAY_FONT_COLOR:WrapTextInColorCode(LABEL))
 	box.label = label
 	-- The label is clickable too, like Blizzard's.
 	box:SetHitRectInsets(0, -(label:GetStringWidth() + LABEL_GAP), 0, 0)
-	box:SetChecked(ns.db[setting])
-	box:SetScript("OnClick", onClickHandler)
-	box:SetScript("OnEnter", tooltip)
+	box:SetChecked(ns.db.bestMaterials)
+	box:SetScript("OnClick", onClick)
+	box:SetScript("OnEnter", showTooltip)
 	box:SetScript("OnLeave", GameTooltip_Hide)
-	-- The setting can change elsewhere (options, the Patron tab).
-	box:SetScript("OnShow", function(self)
-		self:SetChecked(ns.db[setting])
-		updateDim()
-	end)
+	-- The other form's checkbox may have changed the setting.
+	box:SetScript("OnShow", function(self) self:SetChecked(ns.db.bestMaterials) end)
 	return box
 end
 
--- Stacks a form's checkboxes above Blizzard's, or when that would run into the
--- reagents, puts them in a row beside it.
+-- Puts a form's checkbox above Blizzard's, or when that would run into the
+-- reagents, beside it.
 local function placeBoxes(form)
 	local blizzardBox = form.AllocateBestQualityCheckbox
 	local top = blizzardBox:GetTop()
 	if not top then return end -- not on screen yet
-	for i, box in ipairs(boxes) do
+	for _, box in ipairs(boxes) do
 		if box:GetParent() == blizzardBox then
-			local concentration = concentrationBoxes[i]
-			local height = blizzardBox:GetHeight() + ROW_GAP
-			local fits = top + 2 * height <= ns.Blizzard.ReagentsBottom(form)
+			local fits = top + blizzardBox:GetHeight() + ROW_GAP <= ns.Blizzard.ReagentsBottom(form)
 			box:ClearAllPoints()
-			concentration:ClearAllPoints()
 			if fits then
 				box:SetPoint("BOTTOMLEFT", blizzardBox, "TOPLEFT", 0, ROW_GAP)
-				concentration:SetPoint("BOTTOMLEFT", box, "TOPLEFT", 0, ROW_GAP)
 			else
 				box:SetPoint("LEFT", blizzardBox.text, "RIGHT", ROW_SPACE, 0)
-				concentration:SetPoint("LEFT", box.label, "RIGHT", ROW_SPACE, 0)
 			end
 		end
 	end
 end
 
--- Adds the checkboxes above Blizzard's on each form, stacked upward. Safe to call
--- more than once.
+-- Adds the checkbox above Blizzard's on each form. Safe to call more than once.
 function Best.Init()
 	if #boxes > 0 then return end
-	-- On Blizzard's checkbox, so they show only where that one does: recipes whose
+	-- On Blizzard's checkbox, so it shows only where that one does: recipes whose
 	-- materials come in qualities.
 	for _, blizzardBox in ipairs(ns.Blizzard.BestQualityBoxes()) do
-		local box = addCheckbox(blizzardBox, blizzardBox, LABEL, "bestMaterials", onClick, showTooltip)
-		boxes[#boxes + 1] = box
-		concentrationBoxes[#concentrationBoxes + 1] = addCheckbox(blizzardBox, box, CONCENTRATION_LABEL,
-			"leastConcentration", onConcentrationClick, showConcentrationTooltip)
+		boxes[#boxes + 1] = addCheckbox(blizzardBox)
 	end
 	if #boxes == 0 then return end
-	updateDim()
 
 	ns.Blizzard.WatchForms(onBlizzardBestQuality, forget, boxes[1])
 	ns.Blizzard.WatchLayout(placeBoxes)

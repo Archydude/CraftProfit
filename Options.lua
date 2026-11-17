@@ -431,10 +431,15 @@ function Options.Create()
 			"quality show \"No concentration\", get no cart or craft button, and Add profitable and Add all skip them; " ..
 			"on their order form, Use Craft Profit Reagents leaves the materials alone. The crafting page isn't affected.\n\n" ..
 			"You can also switch it with the gear at the bottom of the Patron tab.")
-		checkbox("leastConcentration", ns.LEAST_CONCENTRATION, ns.LEAST_CONCENTRATION_TIP ..
-			"\n\nAlso picks the materials for Use Craft Profit Reagents on the order form and the crafting page. " ..
-			"Patron orders don't use concentration while Spend concentration on is set to Don't use concentration. " ..
-			"You can also switch it with the gear at the bottom of the Patron tab.")
+		local concentrationTip = ns.CONCENTRATION_STRATEGY_TIP .. "\n\n"
+		for _, strategy in ipairs(ns.CONCENTRATION_STRATEGIES) do
+			concentrationTip = concentrationTip .. strategy[2] .. ": " .. strategy[3] .. "\n\n"
+		end
+		dropdown("concentrationStrategy", ns.CONCENTRATION_STRATEGY_TITLE, ns.CONCENTRATION_STRATEGIES, concentrationTip ..
+			"Gold per point counts the profit as the panel shows it, with procs when Count procs in profits is on.\n\n" ..
+			"It picks the materials for Use Craft Profit Reagents on the order form and the crafting page. Patron orders " ..
+			"don't use concentration while Spend concentration on is set to Don't use concentration. Also on the panel " ..
+			"and in the gear at the bottom of the Patron tab.")
 		checkbox("nextLosing", ns.NEXT_LOSING, ns.NEXT_LOSING_TIP ..
 			"\n\nYou can also switch it with the gear at the bottom of the Patron tab.")
 	end

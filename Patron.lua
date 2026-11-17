@@ -422,7 +422,9 @@ local function profitTooltip(row)
 				plan.concentration), 1, 0.4, 0.4, true)
 			tooltip:AddLine("Using:", 1, 1, 1)
 		elseif plan.concentration then
-			tooltip:AddLine(format(ns.db.leastConcentration and "Reached with %d concentration, the least it can take, using:"
+			local goal = ns.OptimizesFor()
+			tooltip:AddLine(format(goal == "gold" and "Reached with %d concentration, the most gold for each point, using:"
+				or goal and "Reached with %d concentration, the least it can take, using:"
 				or "Reached with %d concentration, using:", plan.concentration), 1, 1, 1, true)
 		else
 			tooltip:AddLine("Reached with the cheapest qualities that do it:", 1, 1, 1, true)
@@ -1289,18 +1291,8 @@ local function openGearMenu(owner)
 		for _, choice in ipairs(ns.CONCENTRATION_CHOICES) do
 			root:CreateRadio(choice[2], isChosen, choose, choice[1])
 		end
-		local least = root:CreateCheckbox(ns.LEAST_CONCENTRATION, function() return ns.db.leastConcentration end, function()
-			Patron.SetLeastConcentration(not ns.db.leastConcentration)
-			return MenuResponse and MenuResponse.Refresh
-		end)
-		least:SetTooltip(function(tooltip)
-			GameTooltip_SetTitle(tooltip, ns.LEAST_CONCENTRATION)
-			tooltip:AddLine(ns.LEAST_CONCENTRATION_TIP, 1, 1, 1, true)
-			if ns.db.concentrationFor == "none" then
-				tooltip:AddLine("Patron orders don't use concentration now (Don't use concentration, above). "
-					.. "It still picks the materials on the crafting page.", 1, 0.82, 0, true)
-			end
-		end)
+		ns.ChoiceMenu("concentrationStrategy", ns.CONCENTRATION_STRATEGY_TITLE, ns.CONCENTRATION_STRATEGIES)(nil, root)
+		root:CreateDivider()
 		local losing = root:CreateCheckbox(ns.NEXT_LOSING, function() return ns.db.nextLosing end, function()
 			ns.Options.Set("nextLosing", not ns.db.nextLosing)
 			return MenuResponse and MenuResponse.Refresh
@@ -1360,7 +1352,7 @@ local function createFooter()
 	gear:SetScript("OnEnter", function(self)
 		GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
 		GameTooltip:SetText("Craft Profit")
-		GameTooltip:AddLine("Which orders get your concentration first, Optimize concentration, shopping and the options.",
+		GameTooltip:AddLine("Which orders get your concentration first, the concentration strategy, shopping and the options.",
 			1, 1, 1, true)
 		GameTooltip:Show()
 	end)
@@ -1521,15 +1513,6 @@ function Patron.QueueRedraw(stepsOnly)
 		queued, queuedFull = false, false
 		Patron.Redraw(not full)
 	end)
-end
-
--- Turns "Optimize concentration" on or off. Every order's picks change,
--- including the open order's "Use the most profitable materials".
-function Patron.SetLeastConcentration(on)
-	ns.db.leastConcentration = on
-	ns.Planner.Reset()
-	ns.Panel.Refresh()
-	Patron.Redraw()
 end
 
 -- Where a proc of a patron order crafted from the list shows: the list, to flash,

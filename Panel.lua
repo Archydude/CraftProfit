@@ -190,6 +190,8 @@ end
 -- A little extra space that sets the next row apart.
 -- The crafting strategy dropdown, on a row of its own with a label.
 local STRATEGY_WIDTH = 140
+local CONCENTRATION_WIDTH = 165 -- the concentration strategy's: its names are longer
+local IDLE_ALPHA = 0.45 -- how faded a dropdown is while it changes nothing for what's open
 local DROPDOWN_HEIGHT = 24
 
 -- The panel's dropdowns, by name, made the first time they're needed, and the
@@ -240,31 +242,54 @@ local function addStrategyDropdown()
 	end)
 end
 
--- On a crafting order: Order materials, and with a minimum quality, Reach the
--- minimum with. The same choices as under the Patron tab's list.
-local function addOrderChoices(model)
-	local function choiceRow(name, label, key, title, choices)
-		addDropdownRow(name, label, function(dropdown)
-			if dropdown.SetSelectionTranslator then dropdown:SetSelectionTranslator(ns.ChoiceText(choices)) end
-			dropdown:SetupMenu(ns.ChoiceMenu(key, title, choices))
-			dropdown:HookScript("OnEnter", function(self)
-				GameTooltip:SetOwner(self, "ANCHOR_LEFT")
-				GameTooltip:SetText(title)
-				for _, choice in ipairs(choices) do
-					GameTooltip:AddLine(" ")
-					GameTooltip:AddLine(ns.ChoiceName(choice), 1, 0.82, 0)
-					GameTooltip:AddLine(choice[3], 1, 1, 1, true)
-				end
+-- A dropdown row for one of the settings with choices ({ key, label, tooltip }
+-- each): its tooltip lists them under `intro` (optional), then `note` in grey.
+-- `width`: when the choices' names need more than the usual.
+local function addChoiceRow(name, label, key, title, choices, note, intro, width)
+	addDropdownRow(name, label, function(dropdown)
+		if width then dropdown:SetWidth(width) end
+		if dropdown.SetSelectionTranslator then dropdown:SetSelectionTranslator(ns.ChoiceText(choices)) end
+		dropdown:SetupMenu(ns.ChoiceMenu(key, title, choices))
+		dropdown:HookScript("OnEnter", function(self)
+			GameTooltip:SetOwner(self, "ANCHOR_LEFT")
+			GameTooltip:SetText(title)
+			-- Why it changes nothing right now, when it doesn't (see addConcentrationDropdown).
+			if self.idleNote then GameTooltip:AddLine(self.idleNote, 1, 0.82, 0, true) end
+			if intro then GameTooltip:AddLine(intro, 1, 1, 1, true) end
+			for _, choice in ipairs(choices) do
 				GameTooltip:AddLine(" ")
-				GameTooltip:AddLine("For every crafting order. Also under the Patron tab's list and in the options.",
-					0.53, 0.53, 0.53, true)
-				GameTooltip:Show()
-			end)
+				GameTooltip:AddLine(ns.ChoiceName(choice), 1, 0.82, 0)
+				GameTooltip:AddLine(choice[3], 1, 1, 1, true)
+			end
+			GameTooltip:AddLine(" ")
+			GameTooltip:AddLine(note, 0.53, 0.53, 0.53, true)
+			GameTooltip:Show()
 		end)
-	end
-	choiceRow("orderMaterials", "Materials", "patronMaterials", ns.PATRON_MATERIALS_TITLE, ns.PATRON_MATERIALS_CHOICES)
+	end)
+end
+
+-- The concentration strategy dropdown, like the crafting strategy's. With
+-- `idleNote` (why it changes nothing for what's open), it's faded and its tooltip
+-- says so; it still sets the strategy.
+local function addConcentrationDropdown(idleNote)
+	local title = ns.CONCENTRATION_STRATEGY_TITLE
+	addChoiceRow("concentration", idleNote and Color("muted", title) or title, "concentrationStrategy", title,
+		ns.CONCENTRATION_STRATEGIES, "Also under the Patron tab's list and in the options.", ns.CONCENTRATION_STRATEGY_TIP,
+		CONCENTRATION_WIDTH)
+	local dropdown = dropdowns.concentration
+	dropdown.idleNote = idleNote
+	dropdown:SetAlpha(idleNote and IDLE_ALPHA or 1)
+end
+
+-- On a crafting order: Order materials, and with a minimum quality, Reach the
+-- minimum with and the concentration strategy. The same choices as under the
+-- Patron tab's list.
+local function addOrderChoices(model)
+	local note = "For every crafting order. Also under the Patron tab's list and in the options."
+	addChoiceRow("orderMaterials", "Materials", "patronMaterials", ns.PATRON_MATERIALS_TITLE, ns.PATRON_MATERIALS_CHOICES, note)
 	if (model.minQuality or 0) > 1 then
-		choiceRow("orderReach", "Reach with", "patronReach", ns.PATRON_REACH_TITLE, ns.PATRON_REACH_CHOICES)
+		addChoiceRow("orderReach", "Reach with", "patronReach", ns.PATRON_REACH_TITLE, ns.PATRON_REACH_CHOICES, note)
+		addConcentrationDropdown()
 	end
 end
 
@@ -830,9 +855,13 @@ end
 
 -- What the row's materials are, for its tooltip.
 local function bestExplanation(kind, best)
-	local least = ns.db.leastConcentration and best.concentration
+	-- What the concentration strategy picked them for, when they spend any.
+	local goal = best.concentration and ns.OptimizesFor()
 	if kind == "order" then
-		if least then
+		if goal == "gold" then
+			return format("The materials that reach the order's minimum quality and earn the most gold for each "
+				.. "concentration point (it takes %d).", best.concentration)
+		elseif goal then
 			return format("The materials that reach the order's minimum quality with the least concentration (%d), "
 				.. "and the cheapest of those.", best.concentration)
 		end
@@ -840,8 +869,11 @@ local function bestExplanation(kind, best)
 	end
 	local strategy = ns.Strategy()
 	local text = format("Crafting strategy: %s. %s", strategy[2], strategy[4])
-	if least and strategy[1] ~= "cheapest" then
-		text = text .. format(" With Optimize Concentration: the materials that reach that rank with the least "
+	if goal == "gold" and strategy[1] ~= "cheapest" then
+		text = text .. format(" Concentration strategy: the materials that make that rank and earn the most gold "
+			.. "for each concentration point (it takes %d).", best.concentration)
+	elseif goal and strategy[1] ~= "cheapest" then
+		text = text .. format(" Concentration strategy: the materials that reach that rank with the least "
 			.. "concentration (%d), the cheapest of those.", best.concentration)
 	end
 	return text
@@ -954,20 +986,34 @@ local function drawCraft(model)
 	-- Right above the blue row, which follows it. (Orders have their own rule.)
 	addGap()
 	addStrategyDropdown()
+	-- Only where materials come in qualities. Faded when it has nothing to choose
+	-- between: a craft only spends concentration with Concentrate on, and then
+	-- only when more than one mix of materials makes the rank.
+	if ns.QUALITY_CRAFTING then
+		addConcentrationDropdown(not model.concentrating
+			and "Concentrate is off in the crafting window, so this changes nothing for this recipe right now."
+			or model.ways == 0 and "This recipe has no materials or ranks to choose between, so this changes nothing for it."
+			or model.ways == 1 and "Only one combination of materials makes this rank, so this changes nothing for this "
+				.. "recipe. The rank comes from your crafting strategy."
+			or nil)
+	end
 	drawBest(model)
 	drawProcs(model)
 	drawFooter(model)
 end
 
 -- An order's income: the commission after the cut and the rewards that sell, with
--- their sum on the heading. Rewards that don't sell share one grey line of icons,
--- named in its tooltip.
+-- their sum on the heading. A reward that could sell but has no price gets a line
+-- that says so. Rewards that don't sell share one grey line of icons, named in
+-- its tooltip.
 local function drawIncome(model)
-	local income, sellable, other = model.receive, {}, {}
+	local income, sellable, unpriced, other = model.receive, {}, {}, {}
 	for _, reward in ipairs(model.rewards) do
 		if reward.value then
 			income = income + reward.value
 			sellable[#sellable + 1] = reward
+		elseif reward.unpriced then
+			unpriced[#unpriced + 1] = reward
 		else
 			other[#other + 1] = reward
 		end
@@ -977,6 +1023,13 @@ local function drawIncome(model)
 	-- One line, after the consortium's cut.
 	addRow("Commission" .. cutNote(model.consortiumCut, model.commission, "cut"), Money(model.receive))
 	for _, reward in ipairs(sellable) do addRow(Item(reward.itemID, reward.qty), Money(reward.value)) end
+	for _, reward in ipairs(unpriced) do
+		addRow(Item(reward.itemID, reward.qty), Color("warning", "no price"), nil, nop, function(tip)
+			tip:SetText("No price")
+			tip:AddLine("This reward can be sold, but your price source has no price for it, so the profit doesn't count it.",
+				1, 1, 1, true)
+		end)
+	end
 	if #other > 0 then
 		local icons = {}
 		for _, reward in ipairs(other) do

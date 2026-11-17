@@ -38,6 +38,12 @@ local function loadSettings()
 		db.ahSell, db.ahCancel, db.ahPrice = "own", "own", "own"
 	end
 	db.ahScan = nil -- a choice of its own before release, now part of ahPrice
+	-- Up to 4.4 "Optimize concentration" was a checkbox, for the least concentration.
+	if db.concentrationStrategy == nil and db.leastConcentration then
+		db.concentrationStrategy = db.concentrationGoal == "gold" and "gold" or "least"
+	end
+	-- The last two were never released.
+	db.leastConcentration, db.concentrationGoal, db.concentrationLast = nil, nil, nil
 	for key, value in pairs(ns.DEFAULTS) do
 		if db[key] == nil then db[key] = value end
 	end

@@ -457,6 +457,38 @@ local function costOf(entry, option)
 	return full, effective, unpriced, basic, buy, short
 end
 
+-- The one of `options` (see priceEntry) to concentrate with to lift `quality` a
+-- rank, which then sells for `liftedPrice`: the one the concentration strategy
+-- picks, as on the crafting page (the cheapest, the one that takes the least
+-- concentration, or the one that earns the most gold per point). Nil when none lifts it.
+local function liftedOption(entry, options, quality, liftedPrice)
+	local goal = ns.OptimizesFor()
+	-- What a craft with it makes, as the list counts profit.
+	local function made(candidate)
+		local profit = liftedPrice - candidate.full
+		if not ns.db.countProcs then return profit end
+		return profit + ns.Procs.Expected(entry.professionID, entry.chances, liftedPrice, candidate.basic, entry.character).total
+	end
+	local function beats(candidate, found)
+		local points, foundPoints = candidate.option.concentration, found.option.concentration
+		if goal == "gold" then
+			local profit, foundProfit = made(candidate), made(found)
+			if ns.Planner.EarnsMore(profit, points, foundProfit, foundPoints) then return true end
+			if ns.Planner.EarnsMore(foundProfit, foundPoints, profit, points) then return false end
+		elseif goal == "least" and points ~= foundPoints then
+			return points < foundPoints
+		end
+		return candidate.cost < found.cost
+	end
+	local lifted
+	for _, candidate in ipairs(options) do
+		if candidate.quality == quality and candidate.option.concentration and (not lifted or beats(candidate, lifted)) then
+			lifted = candidate
+		end
+	end
+	return lifted
+end
+
 -- Seconds until the recipe can be crafted again, or nil when it can now.
 local function cooldownOf(recipeID)
 	local cooldown, _, charges, maxCharges = C_TradeSkillUI.GetRecipeCooldown(recipeID)
@@ -525,17 +557,11 @@ local function priceEntry(entry)
 	row.procs = ns.Procs.Expected(entry.professionID, entry.chances, sale, best.basic, entry.character)
 	row.expected = row.profit and row.profit + row.procs.total
 
-	-- What concentrating adds: one rank above the row's, made the cheapest way,
-	-- minus what the row makes without it.
+	-- What concentrating adds: one rank above the row's, made the concentration
+	-- strategy's way, minus what the row makes without it.
 	local liftedPrice = row.profit and prices[row.quality + 1]
 	if liftedPrice then
-		local lifted
-		for _, candidate in ipairs(options) do
-			if candidate.quality == row.quality and candidate.option.concentration
-				and (not lifted or candidate.cost < lifted.cost) then
-				lifted = candidate
-			end
-		end
+		local lifted = liftedOption(entry, options, row.quality, liftedPrice)
 		local extra = lifted and liftedPrice - lifted.full - row.profit
 		if extra and extra > 0 then
 			row.concentration = { extra = extra, points = lifted.option.concentration, quality = row.quality + 1 }
