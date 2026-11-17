@@ -1,5 +1,11 @@
 # Changelog
 
+## 4.6.0
+- **Crafts box:** on the crafting page, a **Crafts** box over the profit sets how many crafts the panel is for. Type a number and the profit, the sale price, your materials and what they cost, the **Shopping list** button and the concentration line all follow it. The profit shows **x10** after its name. The box goes back to 1 when you pick another recipe. It's each craft at today's prices, times the number, so buying or selling a lot at once can make it less.
+- **The game's amount box follows it:** the amount box next to Create gets the same number, up to what you can make with the materials you have, so Create makes that many.
+- **Cheapest way (WoW Forever):** a new crafting strategy, a mix of Buy missing and Craft myself. Each material you know the recipe for is crafted or bought, whichever costs less, at every step down. The shopping list buys what that takes, and only the materials that come out as crafted get the hammer.
+- **Net profit and Gross profit (WoW Forever):** the panel's main line is now called **Net profit** (or Net loss), and **Sells for** is now **Gross profit**. The numbers are the same.
+
 ## 4.5.1
 - Fixed: adding a recipe's materials to the shopping list twice doubled them. Adding for the same recipe again now only adds what the list doesn't have for it yet: 10 crafts after 5 adds the difference, and the same amount again adds nothing. For more crafts, pick a bigger amount. Other recipes still add to the amounts on the list.
 - The **Shopping list** button's menu says when a line's materials are on the list already, or how many more it would add.

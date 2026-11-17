@@ -2,10 +2,16 @@
 ArchdudeWhatsNew:Register("CraftProfit", {
 	title = "Craft Profit",
 	icon = "Interface\\Icons\\INV_Hammer_20",
-	version = "4.5.1",
+	version = "4.6.0",
 	seen = "CraftProfitWhatsNew",
 	saved = { "CraftProfitDB", "CraftProfitCharDB" },
 	changes = {
+		{ "4.6.0",
+			"|cffffd100Crafts box:|r on the crafting page, a |cffffd100Crafts|r box over the profit sets how many crafts the panel is for. Type a number and the profit, the sale price, your materials and what they cost, the |cffffd100Shopping list|r button and the concentration line all follow it. The profit shows |cffffd100x10|r after its name. The box goes back to 1 when you pick another recipe. It's each craft at today's prices, times the number, so buying or selling a lot at once can make it less.",
+			"|cffffd100The game's amount box follows it:|r the amount box next to Create gets the same number, up to what you can make with the materials you have, so Create makes that many.",
+			"|cffffd100Cheapest way (WoW Forever):|r a new crafting strategy, a mix of Buy missing and Craft myself. Each material you know the recipe for is crafted or bought, whichever costs less, at every step down. The shopping list buys what that takes, and only the materials that come out as crafted get the hammer.",
+			"|cffffd100Net profit and Gross profit (WoW Forever):|r the panel's main line is now called |cffffd100Net profit|r (or Net loss), and |cffffd100Sells for|r is now |cffffd100Gross profit|r. The numbers are the same.",
+		},
 		{ "4.5.1",
 			"Fixed: adding a recipe's materials to the shopping list twice doubled them. Adding for the same recipe again now only adds what the list doesn't have for it yet: 10 crafts after 5 adds the difference, and the same amount again adds nothing. For more crafts, pick a bigger amount. Other recipes still add to the amounts on the list.",
 			"The |cffffd100Shopping list|r button's menu says when a line's materials are on the list already, or how many more it would add.",
@@ -59,9 +65,6 @@ ArchdudeWhatsNew:Register("CraftProfit", {
 			"|cffffd100My auctions tab:|r your auctions with the lowest price anyone else asks, and which of them are undercut. |cffffd100Cancel|r takes one down, and |cffffd100Cancel next undercut|r works through the undercut ones, one for each click.",
 			"Changed: the Shopping list button's menu now opens with a |cffffd100right-click|r. It was Shift-click.",
 			"Changed: with TSM and no Auctionator, the Shopping list button now adds to Craft Profit's own shopping list. To get the TSM search back, pick |cffffd100TSM search to copy|r under |cffffd100Shop with|r. The button also shows now when neither addon is installed.",
-		},
-		{ "3.11.3",
-			"|cffffd100Vendor Sell|r on item tooltips also shows what a vendor pays for the whole stack in your bags.",
 		},
 	},
 })

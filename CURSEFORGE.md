@@ -39,22 +39,22 @@ Craft Profit answers in gold: **profit or loss?** A panel next to your professio
 - **Patron orders** priced and crafted right in Blizzard's Patron tab
 
 ### Crafts and orders
-The sale price at the rank you'll get, minus the 5% cut and your materials. On orders: the commission, minus the materials **you** supply, plus sellable rewards. With concentration on, the **concentration strategy** picks the materials: cheapest, least concentration or most **gold per point**.
+The sale price at the rank you'll get, minus the 5% cut and your materials. On orders: the commission, minus the materials **you** supply, plus sellable rewards. With concentration on, the **concentration strategy** picks the materials: cheapest, least concentration or most **gold per point**. The **Crafts** box shows it all for any number of crafts, and fills the game's amount box.
 
 ### What should I craft?
 **Best crafts** lists every recipe you know, most profitable first. Search by item or **material**. With TSM, a **sale rate** column shows what really sells.
 
 ### Did it pay off?
-The **Ledger** is your crafting history: what each item cost, sold for, went into your own crafts and really made.
+The **Ledger** is your crafting history: what each item cost, sold for and really made.
 
 ### At the auction house
-**Shopping list**: a click on a material shows it with the amount to buy. **Sell**: your bags with a price and TSM sale rate on every item. Pick one and the lowest price is filled in. **My auctions**: see which are undercut or not first at your price, and cancel them. With Auctionator, choose which of the two does each.
+**Shopping list**: a click on a material shows it with the amount to buy. **Sell**: your bags with a price and TSM sale rate on every item, and the lowest price filled in. **My auctions**: see which are undercut or not first, and cancel them. With Auctionator, choose which of the two does each.
 
 ### Patron orders
 Blizzard's Patron tab shows each order's **expected profit**, **rewards** and missing **materials**. **Next order** works through them.
 
 ### WoW Forever
-Best crafts shows what a **skill point** costs with each recipe, and the **chance** of one. **Craft myself** prices materials you can make at what crafting them costs; a click opens their recipe.
+Best crafts shows what a **skill point** costs with each recipe, and the **chance** of one. **Craft myself** prices materials you can make at what crafting them costs, and **Cheapest way** crafts or buys each one, whichever costs less.
 
 ### Item tooltips
 Vendor prices, the auction price, TSM's **sale rate** and the **AH deposit**.
@@ -72,11 +72,11 @@ Vendor prices, the auction price, TSM's **sale rate** and the **AH deposit**.
 
 ## B. Upload File form
 
-**File:** `dist\CraftProfit-4.5.1.zip`
+**File:** `dist\CraftProfit-4.6.0.zip`
 
 **Display name**
 ```
-Craft Profit 4.5.1
+Craft Profit 4.6.0
 ```
 
 **Release type:** `Release`
@@ -85,6 +85,12 @@ Craft Profit 4.5.1
 
 **Changelog** (paste only the newest part; paste older parts too if they never went up)
 ```markdown
+4.6.0
+- **Crafts box:** on the crafting page, a **Crafts** box over the profit sets how many crafts the panel is for. Type a number and the profit, the sale price, your materials and what they cost, the **Shopping list** button and the concentration line all follow it. The profit shows **x10** after its name. The box goes back to 1 when you pick another recipe. It's each craft at today's prices, times the number, so buying or selling a lot at once can make it less.
+- **The game's amount box follows it:** the amount box next to Create gets the same number, up to what you can make with the materials you have, so Create makes that many.
+- **Cheapest way (WoW Forever):** a new crafting strategy, a mix of Buy missing and Craft myself. Each material you know the recipe for is crafted or bought, whichever costs less, at every step down. The shopping list buys what that takes, and only the materials that come out as crafted get the hammer.
+- **Net profit and Gross profit (WoW Forever):** the panel's main line is now called **Net profit** (or Net loss), and **Sells for** is now **Gross profit**. The numbers are the same.
+
 4.5.1
 - Fixed: adding a recipe's materials to the shopping list twice doubled them. Adding for the same recipe again now only adds what the list doesn't have for it yet: 10 crafts after 5 adds the difference, and the same amount again adds nothing. For more crafts, pick a bigger amount. Other recipes still add to the amounts on the list.
 - The **Shopping list** button's menu says when a line's materials are on the list already, or how many more it would add.
