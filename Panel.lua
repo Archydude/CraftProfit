@@ -458,10 +458,35 @@ local function shopMaterial(model, material)
 	ns.Shopping.AddMissing({ { itemID = material.itemID, qty = qty } }, "1 craft")
 end
 
+-- The hammer after a material you craft yourself, in the text: the same picture
+-- as the Patron tab's craft button.
+local CRAFTED_ICON
+local function craftedIcon()
+	if not CRAFTED_ICON then
+		for _, atlas in ipairs({ "Cursor_Repair_32", "worldquest-icon-blacksmithing" }) do
+			if not CRAFTED_ICON and C_Texture.GetAtlasInfo(atlas) then
+				CRAFTED_ICON = format("|A:%s:%d:%d|a", atlas, Layout.ICON_SIZE - 2, Layout.ICON_SIZE - 2)
+			end
+		end
+		CRAFTED_ICON = CRAFTED_ICON or format("|TInterface\\Icons\\Trade_BlackSmithing:%d|t", Layout.ICON_SIZE - 2)
+	end
+	return CRAFTED_ICON
+end
+
+-- Whether a material is one you craft yourself (Craft myself), so it's priced at
+-- what crafting it costs.
+local function isCrafted(material)
+	return ns.Chains.Active() and ns.Chains.RecipeFor(material.itemID) ~= nil
+end
+
 -- `canCycle`: the material comes in qualities you can click through.
 local function materialTooltip(model, material, canCycle)
 	return function(tip)
 		tip:SetItemByID(material.itemID)
+		if isCrafted(material) then
+			tip:AddLine(" ")
+			tip:AddLine(craftedIcon() .. " You craft this yourself: priced at what crafting it costs.", 1, 1, 1, true)
+		end
 		local age = material.price and ns.Prices.MaterialAge(material.itemID)
 		if age ~= nil then
 			local stale = age == false or age >= STALE_DAYS
@@ -573,9 +598,8 @@ local function drawMaterials(model)
 			or (not cart and missingOf(model, material) > 0 and ("  " .. Color("missing", "missing")))
 			or ""
 		-- Craft myself: priced at what crafting it costs.
-		if ns.Chains.Active() and ns.Chains.RecipeFor(material.itemID) then
-			tag = tag .. "  " .. Color("muted", "crafted")
-		end
+		local crafted = isCrafted(material)
+		if crafted then tag = tag .. "  " .. craftedIcon() end
 		-- Click cycles qualities; Shift-click shops for just this material.
 		local onClick, tooltip
 		local canCycle = model.canSimulate and ns.Simulation.CanChange(material)
@@ -589,6 +613,9 @@ local function drawMaterials(model)
 				end
 			end
 			tooltip = materialTooltip(model, material, canCycle)
+		elseif crafted then
+			-- Nothing to click, but the hammer is explained on hover.
+			onClick, tooltip = nop, materialTooltip(model, material, false)
 		end
 		local amount = material.price and Money(material.price * material.qty) or Color("warning", "no price")
 		local top = contentHeight
