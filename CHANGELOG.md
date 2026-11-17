@@ -1,5 +1,11 @@
 # Changelog
 
+## 4.4.0
+- **A new look for the panel:** the crafted item's icon and the recipe's name lead the panel, with what it makes under them. The profit or loss stands in a box of its own, green for a profit and red for a loss. Section headings have a gold line under them, every other material is on a faint stripe, and the session line sits in a strip at the bottom.
+- **Sale rate in color:** TSM's sale rate is colored by how well the item sells, from red for one that hardly sells, through yellow, to green for one that always does. That goes for the panel, Best crafts, the Sell list and item tooltips.
+- **Sale rate on Retail:** with TSM, Best crafts has a **Sale rate** column beside Sells/day, and the panel shows the sale rate in place of sells per day. On Retail it counts your whole region. Alts on saved TSM prices keep sells per day, which is what those carry.
+- **Open a material's recipe (WoW Forever):** with **Craft myself**, a material you craft yourself has a hammer after its name on the panel, in place of the word "crafted". Click it to open its recipe, in its own profession's window when it belongs to another profession.
+
 ## 4.3.1
 - Fixed: after you opened Craft Profit's options, the game's own options could show the error "AddOn 'CraftProfit' tried to call the protected function 'IsUserOAuthed()'".
 

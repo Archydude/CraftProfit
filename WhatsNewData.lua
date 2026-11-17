@@ -2,10 +2,16 @@
 ArchdudeWhatsNew:Register("CraftProfit", {
 	title = "Craft Profit",
 	icon = "Interface\\Icons\\INV_Hammer_20",
-	version = "4.3.1",
+	version = "4.4.0",
 	seen = "CraftProfitWhatsNew",
 	saved = { "CraftProfitDB", "CraftProfitCharDB" },
 	changes = {
+		{ "4.4.0",
+			"|cffffd100A new look for the panel:|r the crafted item's icon and the recipe's name lead the panel, with what it makes under them. The profit or loss stands in a box of its own, green for a profit and red for a loss. Section headings have a gold line under them, every other material is on a faint stripe, and the session line sits in a strip at the bottom.",
+			"|cffffd100Sale rate in color:|r TSM's sale rate is colored by how well the item sells, from red for one that hardly sells, through yellow, to green for one that always does. That goes for the panel, Best crafts, the Sell list and item tooltips.",
+			"|cffffd100Sale rate on Retail:|r with TSM, Best crafts has a |cffffd100Sale rate|r column beside Sells/day, and the panel shows the sale rate in place of sells per day. On Retail it counts your whole region. Alts on saved TSM prices keep sells per day, which is what those carry.",
+			"|cffffd100Open a material's recipe (WoW Forever):|r with |cffffd100Craft myself|r, a material you craft yourself has a hammer after its name on the panel, in place of the word \"crafted\". Click it to open its recipe, in its own profession's window when it belongs to another profession.",
+		},
 		{ "4.3.1",
 			"Fixed: after you opened Craft Profit's options, the game's own options could show the error \"AddOn 'CraftProfit' tried to call the protected function 'IsUserOAuthed()'\".",
 		},
@@ -48,9 +54,6 @@ ArchdudeWhatsNew:Register("CraftProfit", {
 		},
 		{ "3.11.1",
 			"Fixed an error when opening the options during combat (\"tried to call the protected function 'OpenSettingsPanel()'\"). The options now open as soon as the fight ends.",
-		},
-		{ "3.11.0",
-			"|cffffd100Sale rate on item tooltips:|r with TSM, a |cffffd100TSM Sale Rate|r line shows the share of the item's auctions that sell. On WoW Forever your region is one server, so it's your own market. Turn it off with |cffffd100Show sale rate|r on the Tooltips options page.",
 		},
 	},
 })

@@ -42,26 +42,26 @@ Craft Profit answers in gold: **profit or loss?** A panel next to your professio
 The panel leads with the answer: the sale price at the rank you'll get, minus the 5% cut and your materials. On orders: the commission, minus the materials **you** supply, plus sellable rewards.
 
 ### What should I craft?
-**Best crafts** lists every recipe you know, most profitable first. Sort by one column or two. Search by item or **material**.
+**Best crafts** lists every recipe you know, most profitable first. Sort by one column or two. Search by item or **material**. With TSM, a **sale rate** column shows what really sells.
 
 ### Did it pay off?
 The **Ledger** is your crafting history: what each item cost, sold for, went into your own crafts and really made.
 
 ### At the auction house
-Craft Profit's window opens beside the auction house. **Shopping list**: a click on a material shows it with the amount to buy. **Sell**: your bags with a price and TSM sale rate on every item. Pick one and the lowest price is filled in. **My auctions**: see which are undercut or not first at your price, and cancel them. With Auctionator, choose which of the two does each.
+**Shopping list**: a click on a material shows it with the amount to buy. **Sell**: your bags with a price and TSM sale rate on every item. Pick one and the lowest price is filled in. **My auctions**: see which are undercut or not first at your price, and cancel them. With Auctionator, choose which of the two does each.
 
 ### Patron orders
 Blizzard's Patron tab shows each order's **expected profit**, **rewards** and missing **materials**. **Next order** works through them, one click per step.
 
 ### WoW Forever
-Best crafts shows what a **skill point** costs with each recipe, and the **chance** of one. **Craft myself** prices materials you can make at what crafting them costs.
+Best crafts shows what a **skill point** costs with each recipe, and the **chance** of one. **Craft myself** prices materials you can make at what crafting them costs; a click opens their recipe.
 
 ### Item tooltips
 Vendor prices, the auction price, TSM's **sale rate** and the **AH deposit**.
 
 ### Good to know
 - **TSM prices for alts** that keep TSM turned off.
-- Click the minimap button, or type **/craftprofit** for options.
+- Type **/craftprofit** for options.
 
 **Feedback and bug reports are welcome** in the comments.
 ```
@@ -72,11 +72,11 @@ Vendor prices, the auction price, TSM's **sale rate** and the **AH deposit**.
 
 ## B. Upload File form
 
-**File:** `dist\CraftProfit-4.3.1.zip`
+**File:** `dist\CraftProfit-4.4.0.zip`
 
 **Display name**
 ```
-Craft Profit 4.3.1
+Craft Profit 4.4.0
 ```
 
 **Release type:** `Release`
@@ -85,6 +85,12 @@ Craft Profit 4.3.1
 
 **Changelog** (paste only the newest part; paste older parts too if they never went up)
 ```markdown
+4.4.0
+- **A new look for the panel:** the crafted item's icon and the recipe's name lead the panel, with what it makes under them. The profit or loss stands in a box of its own, green for a profit and red for a loss. Section headings have a gold line under them, every other material is on a faint stripe, and the session line sits in a strip at the bottom.
+- **Sale rate in color:** TSM's sale rate is colored by how well the item sells, from red for one that hardly sells, through yellow, to green for one that always does. That goes for the panel, Best crafts, the Sell list and item tooltips.
+- **Sale rate on Retail:** with TSM, Best crafts has a **Sale rate** column beside Sells/day, and the panel shows the sale rate in place of sells per day. On Retail it counts your whole region. Alts on saved TSM prices keep sells per day, which is what those carry.
+- **Open a material's recipe (WoW Forever):** with **Craft myself**, a material you craft yourself has a hammer after its name on the panel, in place of the word "crafted". Click it to open its recipe, in its own profession's window when it belongs to another profession.
+
 4.3.1
 - Fixed: after you opened Craft Profit's options, the game's own options could show the error "AddOn 'CraftProfit' tried to call the protected function 'IsUserOAuthed()'".
 
