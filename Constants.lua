@@ -33,6 +33,7 @@ ns.Layout = {
 	GEAR_SPACE = 22,                   -- room kept for the options button on the first row
 	ICON_SIZE = 18,                    -- item, currency and quality icons in the text
 	DEFAULT_POS = { x = 36, y = -60 }, -- from the profession window's top-right corner
+	BORDER = { 0.66, 0.55, 0.32, 1 },  -- the panel's border: bronze
 }
 
 -- Text colors, as |c codes (alpha + RGB).

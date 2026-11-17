@@ -122,8 +122,9 @@ local function flashBorder(panel)
 	panel.flasher:SetScript("OnUpdate", function(self, elapsed)
 		elapsedTotal = elapsedTotal + elapsed
 		local p = math.min(elapsedTotal / BORDER_FLASH_SECONDS, 1)
-		-- Gold (1, 0.82, 0) to grey (0.6, 0.6, 0.6).
-		panel:SetBackdropBorderColor(1 - 0.4 * p, 0.82 - 0.22 * p, 0.6 * p, 1)
+		-- Gold (1, 0.82, 0) back to the border's own color.
+		local r, g, b = unpack(Layout.BORDER)
+		panel:SetBackdropBorderColor(1 + (r - 1) * p, 0.82 + (g - 0.82) * p, b * p, 1)
 		if p >= 1 then self:SetScript("OnUpdate", nil) end
 	end)
 end

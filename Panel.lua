@@ -33,8 +33,8 @@ end
 local fonts = {
 	body = makeFont("CraftProfitBodyFont", GameFontHighlightSmall, 4),
 	heading = makeFont("CraftProfitHeadingFont", GameFontNormalSmall, 4), -- gold section headings
-	title = makeFont("CraftProfitTitleFont", GameFontNormal, 3),
-	total = makeFont("CraftProfitTotalFont", GameFontNormalLarge, 2),     -- Profit / Loss
+	title = makeFont("CraftProfitTitleFont", GameFontNormal, 4),
+	total = makeFont("CraftProfitTotalFont", GameFontNormalLarge, 4),     -- Profit / Loss
 }
 
 ---------------------------------------------------------------------------
@@ -272,27 +272,162 @@ local function addGap()
 	contentHeight = contentHeight + Layout.GAP
 end
 
+---------------------------------------------------------------------------
+-- Decoration: tinted bands behind rows, fading lines, the header
+---------------------------------------------------------------------------
+
+local WHITE = "Interface\\Buttons\\WHITE8X8"
+local GOLD = { 1, 0.82, 0 }
+local PROFIT_TINT, LOSS_TINT = { 0.2, 0.9, 0.3 }, { 1, 0.3, 0.3 }
+local EDGE = 4          -- the frame's border: decoration stays inside it
+local BOX_INSET = 6     -- panel edge to a box around rows
+local HERO_PAD = 6      -- inside the box around the profit, above and below
+local ICON = 36         -- the crafted item's icon in the header
+local HEADER_HEIGHT = ICON + 8
+
+-- Colors a texture from one color at its left (or bottom) to another at its
+-- right (or top). Guarded: how the game takes a gradient differs between versions.
+local function gradient(texture, orientation, from, fromAlpha, to, toAlpha)
+	texture:SetTexture(WHITE)
+	local ok = pcall(function()
+		texture:SetGradient(orientation, CreateColor(from[1], from[2], from[3], fromAlpha),
+			CreateColor(to[1], to[2], to[3], toAlpha))
+	end)
+	if not ok then texture:SetVertexColor(from[1], from[2], from[3], math.max(fromAlpha, toAlpha)) end
+end
+
+local bands, bandCount = {}, 0
+
+-- A strip behind the rows, from "top" down the content for "height", "inset" from
+-- the panel's sides (or "width" wide from its left). The caller colors it.
+local function addBand(top, height, inset, width)
+	bandCount = bandCount + 1
+	local band = bands[bandCount]
+	if not band then
+		band = frame:CreateTexture(nil, "BORDER")
+		bands[bandCount] = band
+	end
+	band:ClearAllPoints()
+	band:SetPoint("TOPLEFT", inset, -Layout.PAD_TOP - top)
+	if width then band:SetWidth(width) else band:SetPoint("RIGHT", -inset, 0) end
+	band:SetHeight(height)
+	band:Show()
+	return band
+end
+
 local dividers = {}
 local dividerCount = 0
 
--- A thin line across the panel, like the one above a sum.
-local function addDivider()
+-- A gold line that fades out to the right, under a heading or over the footer.
+local function addRule(inset)
 	dividerCount = dividerCount + 1
 	local line = dividers[dividerCount]
 	if not line then
 		line = frame:CreateTexture(nil, "ARTWORK")
-		line:SetColorTexture(1, 1, 1, 0.25)
 		dividers[dividerCount] = line
 	end
-	contentHeight = contentHeight + Layout.DIVIDER_GAP
+	gradient(line, "HORIZONTAL", GOLD, 0.7, GOLD, 0)
 	local y = -Layout.PAD_TOP - contentHeight
 	line:ClearAllPoints()
-	line:SetPoint("TOPLEFT", Layout.PAD_SIDE, y)
-	line:SetPoint("TOPRIGHT", -Layout.PAD_SIDE, y)
+	line:SetPoint("TOPLEFT", inset, y)
+	line:SetPoint("TOPRIGHT", -inset, y)
 	-- At least one screen pixel, whatever the panel size.
 	PixelUtil.SetHeight(line, 1, 1)
 	line:Show()
-	contentHeight = contentHeight + line:GetHeight() + Layout.DIVIDER_GAP
+end
+
+-- A section's heading in gold, with what it adds up to and a line under it.
+local function addHeading(left, right)
+	local row = addRow(left, right, fonts.heading)
+	addRule(Layout.PAD_SIDE)
+	contentHeight = contentHeight + Layout.DIVIDER_GAP
+	return row
+end
+
+-- A faint stripe behind the row that was just added at "top": every other line
+-- of a list, so amounts are easy to follow across.
+local function stripe(top)
+	local band = addBand(top - 2, contentHeight - top, BOX_INSET)
+	gradient(band, "HORIZONTAL", { 1, 1, 1 }, 0.05, { 1, 1, 1 }, 0.05)
+end
+
+local header
+
+local function createHeader()
+	header = {}
+	header.band = frame:CreateTexture(nil, "BORDER")
+	header.band:SetPoint("TOPLEFT", EDGE, -EDGE)
+	header.band:SetPoint("TOPRIGHT", -EDGE, -EDGE)
+	header.band:SetHeight(Layout.PAD_TOP + HEADER_HEIGHT - EDGE)
+	gradient(header.band, "VERTICAL", GOLD, 0.02, GOLD, 0.2)
+	header.line = frame:CreateTexture(nil, "ARTWORK")
+	header.line:SetPoint("TOPLEFT", header.band, "BOTTOMLEFT")
+	header.line:SetPoint("TOPRIGHT", header.band, "BOTTOMRIGHT")
+	PixelUtil.SetHeight(header.line, 1, 1)
+	gradient(header.line, "HORIZONTAL", GOLD, 0.8, GOLD, 0.1)
+
+	local icon = CreateFrame("Button", nil, frame)
+	icon:SetSize(ICON, ICON)
+	icon:SetPoint("TOPLEFT", Layout.PAD_SIDE, -Layout.PAD_TOP)
+	icon:SetFrameLevel(frame:GetFrameLevel() + 2)
+	-- A rim in the item's rarity color, then the icon without its own border.
+	icon.rim = icon:CreateTexture(nil, "BACKGROUND")
+	icon.rim:SetPoint("TOPLEFT", -1, 1)
+	icon.rim:SetPoint("BOTTOMRIGHT", 1, -1)
+	icon.texture = icon:CreateTexture(nil, "ARTWORK")
+	icon.texture:SetAllPoints()
+	icon.texture:SetTexCoord(0.08, 0.92, 0.08, 0.92)
+	icon:SetHighlightTexture("Interface\\Buttons\\ButtonHilight-Square", "ADD")
+	icon:SetScript("OnEnter", function(self)
+		if not self.link then return end
+		GameTooltip:SetOwner(self, "ANCHOR_LEFT")
+		GameTooltip:SetHyperlink(self.link)
+		GameTooltip:Show()
+	end)
+	icon:SetScript("OnLeave", GameTooltip_Hide)
+	icon:SetScript("OnClick", function(self)
+		if self.link and IsModifiedClick() then HandleModifiedItemClick(self.link) end
+	end)
+	-- The panel can be dragged by it too.
+	icon:RegisterForDrag("LeftButton")
+	icon:SetScript("OnDragStart", function() frame:GetScript("OnDragStart")(frame) end)
+	icon:SetScript("OnDragStop", function() frame:GetScript("OnDragStop")(frame) end)
+	header.icon = icon
+
+	header.title = frame:CreateFontString(nil, "OVERLAY")
+	header.title:SetFontObject(fonts.title)
+	header.title:SetPoint("TOPLEFT", icon, "TOPRIGHT", 10, -1)
+	header.title:SetJustifyH("LEFT")
+	header.title:SetWordWrap(false)
+	header.sub = frame:CreateFontString(nil, "OVERLAY")
+	header.sub:SetFontObject(fonts.body)
+	header.sub:SetPoint("TOPLEFT", header.title, "BOTTOMLEFT", 0, -4)
+	header.sub:SetPoint("RIGHT", frame, "RIGHT", -Layout.PAD_SIDE, 0)
+	header.sub:SetJustifyH("LEFT")
+	header.sub:SetWordWrap(false)
+end
+
+-- The top of the panel: the crafted item's icon, the recipe's name and what it
+-- makes (on an order: what's ordered). "link" is the item, when there is one.
+local function drawHeader(model, sub, link)
+	if not header then createHeader() end
+	local icon = header.icon
+	local itemID = link and C_Item.GetItemInfoInstant(link)
+	icon.link = link
+	icon.texture:SetTexture((itemID and C_Item.GetItemIconByID(itemID)) or model.icon or "Interface\\Icons\\INV_Hammer_20")
+	local quality = link and C_Item.GetItemQualityByID(link)
+	local color = quality and ITEM_QUALITY_COLORS[quality]
+	if color then
+		icon.rim:SetColorTexture(color.r, color.g, color.b, 1)
+	else
+		icon.rim:SetColorTexture(0.5, 0.5, 0.5, 1)
+	end
+	-- Room for the options button and the Ledger button at its right.
+	header.title:SetWidth(Layout.WIDTH - 2 * Layout.PAD_SIDE - ICON - 10 - Layout.GEAR_SPACE
+		- ns.BestCraftsList.HeaderSpace())
+	header.title:SetText(model.title)
+	header.sub:SetText(sub or "")
+	contentHeight = contentHeight + HEADER_HEIGHT
 end
 
 local function signedMoney(amount)
@@ -429,9 +564,9 @@ local function drawMaterials(model)
 	if #model.materials == 0 then return end
 	addGap()
 	-- What they cost in all, on the heading.
-	addRow("Your materials", Color(ns.AmountColor(-model.cost), Money(-model.cost)), fonts.heading)
+	addHeading("Your materials", Color(ns.AmountColor(-model.cost), Money(-model.cost)))
 	local shownCheaper = {}
-	for _, material in ipairs(model.materials) do
+	for index, material in ipairs(model.materials) do
 		local cart = materialCart(model, material)
 		-- Short of it, with shopping turned off in the options: the word instead.
 		local tag = (material.simulated and ("  " .. Color("simulated", "simulated")))
@@ -456,7 +591,9 @@ local function drawMaterials(model)
 			tooltip = materialTooltip(model, material, canCycle)
 		end
 		local amount = material.price and Money(material.price * material.qty) or Color("warning", "no price")
+		local top = contentHeight
 		addRow(Item(material.itemID, material.qty) .. tag, amount, nil, onClick, tooltip, cart)
+		if index % 2 == 0 then stripe(top) end
 
 		-- A cheaper rank to buy instead of using yours, once per slot.
 		local cheaper = model.cheaper and model.cheaper[material.slotIndex]
@@ -476,7 +613,7 @@ local function drawProcs(model)
 	local proc = ns.Results.ProcFor(model)
 	if not proc then return end
 	addGap()
-	addRow("Procs", nil, fonts.heading)
+	addHeading("Procs")
 	if proc.multicraft > 0 then
 		addRow(format("Multicraft: +%d extra", proc.multicraft),
 			proc.multicraftValue and signedMoney(proc.multicraftValue) or Color("muted", "no price"))
@@ -552,17 +689,26 @@ end
 -- The answer, under the title: the expected profit in the big font, with what a
 -- craft makes without procs under it in grey. Without procs to expect: Profit/Loss.
 local function drawHeadline(model)
-	addGap()
 	local total = model.total
 	local procs = model.procs
-	if procs and procs.total > 0 then
-		local expected = model.expected
-		profitRow = addRow(expected >= 0 and "Expected profit" or "Expected loss",
-			Color(ns.AmountColor(expected), Money(expected)), fonts.total, nop, expectedTooltip(model))
+	local expecting = procs and procs.total > 0
+	local amount = expecting and model.expected or total
+	if not amount then return end
+	addGap()
+	-- In a box of its own, green for a profit and red for a loss.
+	local top = contentHeight
+	contentHeight = contentHeight + HERO_PAD
+	if expecting then
+		profitRow = addRow(amount >= 0 and "Expected profit" or "Expected loss",
+			Color(ns.AmountColor(amount), Money(amount)), fonts.total, nop, expectedTooltip(model))
 		addRow(Color("muted", "Without procs"), Color("muted", Money(total)), nil, nop, expectedTooltip(model))
-	elseif total then
-		profitRow = addRow(total >= 0 and "Profit" or "Loss", Color(ns.AmountColor(total), Money(total)), fonts.total)
+	else
+		profitRow = addRow(amount >= 0 and "Profit" or "Loss", Color(ns.AmountColor(amount), Money(amount)), fonts.total)
 	end
+	contentHeight = contentHeight + HERO_PAD - 2
+	local tint = amount >= 0 and PROFIT_TINT or LOSS_TINT
+	gradient(addBand(top, contentHeight - top, BOX_INSET), "HORIZONTAL", tint, 0.3, tint, 0.05)
+	gradient(addBand(top, contentHeight - top, BOX_INSET, 3), "HORIZONTAL", tint, 1, tint, 1)
 end
 
 local INFO_ICON = "|TInterface\\Common\\help-i:20:20|t"
@@ -604,7 +750,11 @@ local function drawFooter(model)
 	local session = ns.db.session
 	local showSession = ns.db.showSession and session.crafts > 0
 
-	addDivider()
+	-- The bottom of the panel is a darker strip, under a line.
+	addGap()
+	local top = contentHeight
+	addRule(EDGE)
+	contentHeight = contentHeight + Layout.DIVIDER_GAP + 2
 	if notes.missing then
 		addRow(Color("warning", format("%d material(s) have no price, so profit is too high", notes.missing)))
 	end
@@ -628,6 +778,8 @@ local function drawFooter(model)
 			session.crafts, session.crafts == 1 and "" or "s", luck and (dot .. luck) or ""),
 			INFO_ICON, nil, ns.Results.ConfirmResetSession, footerTooltip(true, sessionNotes))
 	end
+	local band = addBand(top, contentHeight + Layout.PAD_BOTTOM - EDGE - top, EDGE)
+	gradient(band, "HORIZONTAL", { 0, 0, 0 }, 0.35, { 0, 0, 0 }, 0.35)
 end
 
 -- " (after 10% cut)", in grey, for an amount shown after a cut. Empty when
@@ -740,12 +892,11 @@ local function drawSkillup(model)
 end
 
 local function drawCraft(model)
-	addRow(model.title, nil, fonts.title)
-	drawHeadline(model)
 	local output = model.output
+	drawHeader(model, output and format("Makes %sx %s", output.qtyText, output.link), output and output.link)
+	drawHeadline(model)
 	if output then
 		addGap()
-		addRow(format("Makes %sx %s", output.qtyText, output.link))
 		if output.sale then
 			-- One line, after the AH cut.
 			if output.ahCut then
@@ -783,7 +934,7 @@ local function drawIncome(model)
 		end
 	end
 	addGap()
-	addRow("Income", Color(ns.AmountColor(income), Money(income)), fonts.heading)
+	addHeading("Income", Color(ns.AmountColor(income), Money(income)))
 	-- One line, after the consortium's cut.
 	addRow("Commission" .. cutNote(model.consortiumCut, model.commission, "cut"), Money(model.receive))
 	for _, reward in ipairs(sellable) do addRow(Item(reward.itemID, reward.qty), Money(reward.value)) end
@@ -805,7 +956,7 @@ local function drawIncome(model)
 end
 
 local function drawOrder(model)
-	addRow(model.title, nil, fonts.title)
+	drawHeader(model, model.recipeName)
 	drawHeadline(model)
 	drawIncome(model)
 
@@ -903,7 +1054,7 @@ function Panel.Render()
 		Panel.Refresh()
 		return
 	end
-	rowCount, dividerCount, contentHeight, profitRow, procRow = 0, 0, 0, nil, nil
+	rowCount, dividerCount, bandCount, contentHeight, profitRow, procRow = 0, 0, 0, 0, nil, nil
 	rowButtonUsed = false
 	wipe(dropdownsUsed)
 	-- Before the rows, which leave room for it.
@@ -922,6 +1073,7 @@ function Panel.Render()
 		if rows[i].cart then rows[i].cart:Hide() end
 	end
 	for i = dividerCount + 1, #dividers do dividers[i]:Hide() end
+	for i = bandCount + 1, #bands do bands[i]:Hide() end
 	if rowButton and not rowButtonUsed then rowButton:Hide() end
 	for name, dropdown in pairs(dropdowns) do
 		if not dropdownsUsed[name] then dropdown:Hide() end
@@ -980,8 +1132,8 @@ local function createFrame()
 		tile = true, tileSize = 16, edgeSize = 16,
 		insets = { left = 4, right = 4, top = 4, bottom = 4 },
 	})
-	frame:SetBackdropColor(0.05, 0.05, 0.05, 0.92)
-	frame:SetBackdropBorderColor(0.6, 0.6, 0.6, 1)
+	frame:SetBackdropColor(0.03, 0.03, 0.04, 0.95)
+	frame:SetBackdropBorderColor(unpack(Layout.BORDER))
 	frame:Hide()
 
 	-- Drag to move (unless locked); the spot is remembered relative to the profession window.
