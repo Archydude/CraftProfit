@@ -190,20 +190,10 @@ end
 -- listOrders, each also by orderID, and the concentration they use.
 local state = { rows = {}, unknown = {}, byID = {}, unknownByID = {} }
 
--- What each order added to the shopping list this session (orderID -> { { itemID,
--- qty } ... }), so Shift-click can take the same amounts back off.
-local added = {}
-
-local function remember(rows)
-	-- A TSM search adds nothing to the list, so there's nothing to take back off.
-	if not ns.Shopping.CanClear() then return end
-	for _, row in ipairs(rows) do
-		local list = added[row.order.orderID] or {}
-		for _, material in ipairs(row.model.missing) do
-			list[#list + 1] = { itemID = material.itemID, qty = material.qty }
-		end
-		added[row.order.orderID] = list
-	end
+-- Who an order's materials are for on the shopping list: adding it again adds
+-- nothing twice, and Shift-click takes off what it put there.
+local function sourceOf(row)
+	return ns.Shopping.OrderSource(row.order.orderID)
 end
 
 -- What's missing for all of these orders together.
@@ -211,6 +201,16 @@ local function missingForAll(rows)
 	local jobs = {}
 	for i, row in ipairs(rows) do jobs[i] = row.job end
 	return ns.Model.MissingForAll(jobs)
+end
+
+-- The same order by order, for the shopping list: { { source, missing } ... }.
+-- What you own still counts once across them.
+local function missingParts(rows)
+	local parts, stock = {}, {}
+	for i, row in ipairs(rows) do
+		parts[i] = { source = sourceOf(row), missing = ns.Model.MissingForAll({ row.job }, stock) }
+	end
+	return parts
 end
 
 local function skippedText(skipped)
@@ -319,8 +319,7 @@ local function addAll()
 	if usingTSM() then
 		addToTSMSearch(reachable)
 	else
-		ns.Shopping.AddMissing(missingForAll(reachable), ordersText(#reachable))
-		remember(reachable)
+		ns.Shopping.AddParts(missingParts(reachable), ordersText(#reachable))
 	end
 	if short > 0 then ns.Shopping.Say(ns.Color("muted", shortText(short))) end
 	if unreachable > 0 then ns.Shopping.Say(ns.Color("muted", unreachableText(unreachable))) end
@@ -330,26 +329,22 @@ end
 local function addProfitable()
 	local rows = profitableRows(state.rows)
 	if usingTSM() then return addToTSMSearch(rows) end
-	ns.Shopping.AddMissing(missingForAll(rows), "the " .. ordersText(#rows) .. " that make a profit")
-	remember(rows)
+	ns.Shopping.AddParts(missingParts(rows), "the " .. ordersText(#rows) .. " that make a profit")
 end
 
 local function addOrder(row)
 	if usingTSM() then return addToTSMSearch({ row }) end
-	ns.Shopping.AddMissing(row.model.missing, row.name)
-	remember({ row })
+	ns.Shopping.AddMissing(row.model.missing, row.name, nil, sourceOf(row))
 end
 
--- Shift-click: takes off what this order added, or what it's missing now if it
--- added nothing this session. With TSM, takes it out of the search.
+-- Shift-click: takes off what this order put on the list, or what it's missing
+-- now if that's nothing. With TSM, takes it out of the search.
 local function removeOrder(row)
 	if usingTSM() then
 		ns.db.tsmOrders[row.order.orderID] = nil
 		return showTSMSearch()
 	end
-	local list = added[row.order.orderID] or row.model.missing
-	added[row.order.orderID] = nil
-	ns.Shopping.RemoveMissing(list, row.name)
+	ns.Shopping.RemoveMissing(row.model.missing, row.name, sourceOf(row))
 end
 
 ---------------------------------------------------------------------------
@@ -494,7 +489,7 @@ local function shopTooltip(row)
 	end
 	if tsm and inTSMSearch(row) then
 		tooltip:AddLine(ns.Color("simulated", "Shift-click: take it out of the TSM search"))
-	elseif added[row.order.orderID] and not tsm then
+	elseif not tsm and ns.Shopping.Holds(sourceOf(row)) then
 		tooltip:AddLine(ns.Color("simulated", "Shift-click: remove it from the shopping list"))
 	end
 end

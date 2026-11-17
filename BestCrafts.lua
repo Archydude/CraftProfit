@@ -673,6 +673,7 @@ function BestCrafts.ShoppingModel(row)
 		missingFor = function(crafts) return ns.Model.Missing(schematic, {}, picks, crafts) end,
 		shoppable = true,
 		listName = listNameOf(row.entry),
+		listSource = ns.Shopping.RecipeSource(row.entry.recipeID),
 	}
 end
 

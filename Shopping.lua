@@ -256,6 +256,153 @@ local function forgetList(listName)
 end
 
 ---------------------------------------------------------------------------
+-- Who put what on a list
+---------------------------------------------------------------------------
+-- ns.db.listSources[target][listName][source][itemID] = how many of an item on a
+-- list one recipe or one order put there, saved. Adding for the same recipe or
+-- order again only tops the list up to what it's missing now; different ones add
+-- up. `target` is "own" or "auctionator": two lists under the same name.
+--
+-- These amounts follow the list down only when they're looked at (settle): what
+-- you got, took off or cleared since comes off them first.
+
+function Shopping.RecipeSource(recipeID)
+	return "recipe:" .. tostring(recipeID)
+end
+
+function Shopping.OrderSource(orderID)
+	return "order:" .. tostring(orderID)
+end
+
+local function forgetSources(target, listName)
+	ns.db.listSources[target][listName] = nil
+end
+
+-- How many of an item are on a list now, as a function of its itemID.
+local function amountsOn(target, listName)
+	if target == "own" then
+		local list = ns.db.ownLists[listName] or {}
+		return function(itemID) return list[itemID] or 0 end
+	end
+	local api, tracked = auctionatorAPI(), ns.db.listItems[listName] or {}
+	local byKey = api and select(2, readList(api, listName)) or {}
+	return function(itemID)
+		local line = tracked[itemID] and lineFor(byKey, tracked[itemID])
+		return line and line.term.quantity or 0
+	end
+end
+
+-- Lowers what a list's sources hold of an item to how many are still on it.
+local function settle(sources, itemID, onList)
+	local excess = -onList
+	for _, held in pairs(sources) do excess = excess + (held[itemID] or 0) end
+	for _, held in pairs(sources) do
+		if excess <= 0 then return end
+		local have = held[itemID]
+		if have then
+			local take = math.min(have, excess)
+			held[itemID] = have > take and have - take or nil
+			excess = excess - take
+		end
+	end
+end
+
+-- Whether shopping goes to a list that keeps amounts, and so sources: its target.
+local function keptTarget()
+	local target = Shopping.ListTarget()
+	if target == "own" or target == "auctionator" then return target end
+end
+
+-- What `source` has on a list now ({ { itemID, qty } ... } by itemID), or nil.
+local function heldBy(target, listName, source)
+	local sources = ns.db.listSources[target][listName]
+	local held = sources and sources[source]
+	if not held then return end
+	local onList, items = amountsOn(target, listName), {}
+	for itemID in pairs(held) do settle(sources, itemID, onList(itemID)) end
+	for itemID, qty in pairs(held) do items[#items + 1] = { itemID = itemID, qty = qty } end
+	if #items == 0 then
+		sources[source] = nil
+		return
+	end
+	table.sort(items, function(a, b) return a.itemID < b.itemID end)
+	return items
+end
+
+-- Whether a recipe or an order has something on the current list.
+function Shopping.Holds(source)
+	local target = keptTarget()
+	return target ~= nil and heldBy(target, Shopping.ListName(), source) ~= nil
+end
+
+-- What `source` would still add to a list out of what it's missing ({ { itemID,
+-- qty } ... }): that, less what it already put there. Everything without a source,
+-- or for a TSM search. `listName` defaults to the current list.
+function Shopping.ToAdd(missing, listName, source)
+	local target = keptTarget()
+	if not (source and target) then return missing end
+	listName = listName or Shopping.ListName()
+	local sources = ns.db.listSources[target][listName]
+	local held = sources and sources[source]
+	if not held then return missing end
+	local onList, rest = amountsOn(target, listName), {}
+	for _, material in ipairs(missing) do
+		settle(sources, material.itemID, onList(material.itemID))
+		local qty = material.qty - (held[material.itemID] or 0)
+		if qty > 0 then rest[#rest + 1] = { itemID = material.itemID, qty = qty } end
+	end
+	return rest
+end
+
+-- Records what was just added: `adds` is a list of { source, rest }, what each
+-- source asked for, and `added` the items that went on the list (the ones the
+-- auction house sells).
+local function hold(target, listName, adds, added)
+	local onList = {}
+	for _, item in ipairs(added) do onList[item.itemID] = true end
+	for _, add in ipairs(adds) do
+		for _, material in ipairs(add.source and add.rest or {}) do
+			if onList[material.itemID] then
+				local lists = ns.db.listSources[target]
+				lists[listName] = lists[listName] or {}
+				local held = lists[listName][add.source] or {}
+				lists[listName][add.source] = held
+				held[material.itemID] = (held[material.itemID] or 0) + material.qty
+			end
+		end
+	end
+end
+
+-- Lowers what `source` holds by what came off the list ({ { itemID, qty } ... }).
+local function release(target, listName, source, removed)
+	local sources = ns.db.listSources[target][listName]
+	local held = sources and sources[source]
+	if not held then return end
+	for _, item in ipairs(removed) do
+		local have = item.itemID and held[item.itemID]
+		if have then held[item.itemID] = have > item.qty and have - item.qty or nil end
+	end
+	if not next(held) then sources[source] = nil end
+end
+
+-- At login: forgets what's recorded for lists and items that are gone.
+local function pruneSources()
+	for target, lists in pairs(ns.db.listSources) do
+		local known = target == "own" and ns.db.ownLists or ns.db.listItems
+		for listName, sources in pairs(lists) do
+			local items = known[listName]
+			for source, held in pairs(sources) do
+				for itemID in pairs(held) do
+					if not (items and items[itemID]) then held[itemID] = nil end
+				end
+				if not next(held) then sources[source] = nil end
+			end
+			if not next(sources) then lists[listName] = nil end
+		end
+	end
+end
+
+---------------------------------------------------------------------------
 -- Craft Profit's own shopping list
 ---------------------------------------------------------------------------
 -- ns.db.ownLists[listName][itemID] = how many are still to buy. Saved for all your
@@ -316,6 +463,7 @@ end
 local function clearOwn(names)
 	local cleared = {}
 	for _, name in ipairs(names) do
+		forgetSources("own", name)
 		if ns.db.ownLists[name] then
 			ns.db.ownLists[name] = nil
 			cleared[#cleared + 1] = format("\"%s\"", name)
@@ -562,7 +710,10 @@ counter:RegisterEvent("PLAYER_ENTERING_WORLD")
 counter:RegisterEvent("BAG_UPDATE_DELAYED")
 counter:SetScript("OnEvent", function(_, event, isInitialLogin, isReload)
 	if event == "PLAYER_ENTERING_WORLD" then
-		if isInitialLogin or isReload then moveOldLists() end
+		if isInitialLogin or isReload then
+			moveOldLists()
+			if ns.db then pruneSources() end
+		end
 		settledAt = GetTime() + SETTLE_SECONDS
 		C_Timer.After(SETTLE_SECONDS, function() checkOff(true) end)
 	end
@@ -631,13 +782,13 @@ end
 
 -- Adds the auction house materials to the list.
 -- `forText` says what they're for in chat: "5 crafts", "3 patron orders".
-local function sendToAuctionator(api, missing, forText, listName)
-	-- Picked now: the window may close before the items load.
-	listName = listName or Shopping.ListName()
+-- `adds` says who asked for them (see hold).
+local function sendToAuctionator(api, missing, forText, listName, adds)
 	sortMissing(missing, function(auction, vendor, bound)
 		if #auction > 0 then
 			if addToList(api, auction, listName) then
 				track(listName, auction)
+				hold("auctionator", listName, adds, auction)
 				say(format("Added to Auctionator's \"%s\" shopping list, for %s: %s.",
 					listName, forText, itemList(auction)))
 			else
@@ -649,12 +800,11 @@ local function sendToAuctionator(api, missing, forText, listName)
 end
 
 -- The same, to Craft Profit's own list.
-local function sendToOwn(missing, forText, listName)
-	-- Picked now: the window may close before the items load.
-	listName = listName or Shopping.ListName()
+local function sendToOwn(missing, forText, listName, adds)
 	sortMissing(missing, function(auction, vendor, bound)
 		if #auction > 0 then
 			addToOwn(listName, auction)
+			hold("own", listName, adds, auction)
 			say(format("Added to the \"%s\" shopping list, for %s: %s.", listName, forText, itemList(auction)))
 			ns.ShoppingList.Added()
 		end
@@ -722,11 +872,13 @@ function Shopping.Clear(listName)
 			if pcall(api.CreateShoppingList, ADDON_NAME, name, {}) then
 				cleared[#cleared + 1] = format("\"%s\"", name)
 				forgetList(name)
+				forgetSources("auctionator", name)
 			else
 				failed = true
 			end
 		else
 			forgetList(name)
+			forgetSources("auctionator", name)
 		end
 	end
 	if failed then say(ns.Color("warning", "Auctionator couldn't clear the shopping list.")) end
@@ -772,32 +924,66 @@ end
 
 Shopping.Say = say
 
--- Adds missing materials ({ { itemID, qty } ... }) to the shopping list.
+-- Adds missing materials to the shopping list. `parts` is a list of { source,
+-- missing }: what one recipe or order is missing ({ { itemID, qty } ... }). Each
+-- adds only what it hasn't put on the list yet (see Shopping.ToAdd); without a
+-- source, everything.
 -- `forText` says what they're for in chat: "5 crafts", "3 patron orders".
 -- `listName` defaults to the current list.
-function Shopping.AddMissing(missing, forText, listName)
-	if #missing == 0 then
+function Shopping.AddParts(parts, forText, listName)
+	local missing = 0
+	for _, part in ipairs(parts) do missing = missing + #part.missing end
+	if missing == 0 then
 		say(format("Nothing missing for %s.", forText))
 		return
 	end
 	local target = Shopping.ListTarget()
-	if target == "tsm" then
-		copyTSMSearch(missing, forText)
-	elseif target == "auctionator" then
-		sendToAuctionator(auctionatorAPI(), missing, forText, listName)
-	elseif target == "own" then
-		sendToOwn(missing, forText, listName)
-	else
+	if not target then
 		say(ns.Color("warning", "The shopping list is turned off in the options."))
+		return
+	end
+	-- Picked now: the window may close before the items load.
+	listName = listName or Shopping.ListName()
+	local adds, toAdd, byItem = {}, {}, {}
+	for i, part in ipairs(parts) do
+		adds[i] = { source = part.source, rest = Shopping.ToAdd(part.missing, listName, part.source) }
+		for _, material in ipairs(adds[i].rest) do
+			local entry = byItem[material.itemID]
+			if not entry then
+				entry = { itemID = material.itemID, qty = 0 }
+				byItem[material.itemID] = entry
+				toAdd[#toAdd + 1] = entry
+			end
+			entry.qty = entry.qty + material.qty
+		end
+	end
+	if #toAdd == 0 then
+		local phrase = Shopping.ListPhrase(listName):gsub("^%l", string.upper)
+		say(format("%s already has what's missing for %s.", phrase, forText))
+	elseif target == "tsm" then
+		copyTSMSearch(toAdd, forText)
+	elseif target == "auctionator" then
+		sendToAuctionator(auctionatorAPI(), toAdd, forText, listName, adds)
+	else
+		sendToOwn(toAdd, forText, listName, adds)
 	end
 end
 
--- Takes materials ({ { itemID, qty } ... }) back off the shopping list.
+-- The same for one list of missing materials. `source` is the recipe or order
+-- they're for (Shopping.RecipeSource, Shopping.OrderSource).
+function Shopping.AddMissing(missing, forText, listName, source)
+	Shopping.AddParts({ { source = source, missing = missing } }, forText, listName)
+end
+
+-- Takes materials ({ { itemID, qty } ... }) back off the shopping list: what
+-- `source` has on it, or `missing` when that's nothing.
 -- `forText` says what they were for in chat.
-function Shopping.RemoveMissing(missing, forText)
-	if Shopping.ListTarget() == "own" then
-		local listName = Shopping.ListName()
+function Shopping.RemoveMissing(missing, forText, source)
+	local target, listName = keptTarget(), Shopping.ListName()
+	missing = source and target and heldBy(target, listName, source) or missing
+	if target == "own" then
 		local removed = removeFromOwn(listName, missing)
+		if source then release(target, listName, source, removed) end
 		if #removed == 0 then
 			say(format("Nothing on the shopping list for %s.", forText))
 		else
@@ -814,17 +1000,18 @@ function Shopping.RemoveMissing(missing, forText)
 	for _, material in ipairs(missing) do
 		container:AddContinuable(Item:CreateFromItemID(material.itemID))
 	end
-	local listName = Shopping.ListName()
 	container:ContinueOnLoad(function()
 		local items = {}
 		for _, material in ipairs(missing) do
 			local name, link = C_Item.GetItemInfo(material.itemID)
 			if name then
 				local tier = C_TradeSkillUI.GetItemReagentQualityByItemInfo(material.itemID)
-				items[#items + 1] = { name = name, link = link or name, qty = material.qty, tier = tier and tier > 0 and tier or nil }
+				items[#items + 1] = { itemID = material.itemID, name = name, link = link or name, qty = material.qty,
+					tier = tier and tier > 0 and tier or nil }
 			end
 		end
 		local removed = removeFromList(api, items, listName)
+		if removed and source then release("auctionator", listName, source, removed) end
 		if not removed then
 			say(ns.Color("warning", "Auctionator couldn't update the shopping list."))
 		elseif #removed == 0 then
@@ -837,7 +1024,7 @@ function Shopping.RemoveMissing(missing, forText)
 end
 
 local function addForCrafts(model, crafts)
-	Shopping.AddMissing(model.missingFor(crafts), Shopping.CraftsText(crafts), model.listName)
+	Shopping.AddMissing(model.missingFor(crafts), Shopping.CraftsText(crafts), model.listName, model.listSource)
 end
 
 -- The typed count from "Other amount...", remembered for the menu.
@@ -894,11 +1081,16 @@ function Shopping.AddCraftCounts(root, model)
 		table.sort(counts)
 	end
 	for _, crafts in ipairs(counts) do
-		local total = Shopping.Total(model.missingFor(crafts))
-		local note = total > 0 and format("(%d missing)", total) or "(nothing missing)"
+		-- What a click would add: less than what's missing once this recipe has
+		-- materials on the list.
+		local missing = model.missingFor(crafts)
+		local total = Shopping.Total(missing)
+		local more = Shopping.Total(Shopping.ToAdd(missing, model.listName, model.listSource))
+		local note = total == 0 and "(nothing missing)" or more == 0 and "(on the list)"
+			or more < total and format("(%d more)", more) or format("(%d missing)", total)
 		local button = root:CreateButton(format("For %s %s", Shopping.CraftsText(crafts), ns.Color("muted", note)),
 			function() addForCrafts(model, crafts) end)
-		button:SetEnabled(total > 0)
+		button:SetEnabled(more > 0)
 	end
 	root:CreateButton("Other amount...", function() StaticPopup_Show("CRAFTPROFIT_CRAFTS", nil, nil, model) end)
 

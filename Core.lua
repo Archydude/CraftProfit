@@ -51,6 +51,10 @@ local function loadSettings()
 	db.tsmOrders = db.tsmOrders or {} -- the Patron tab's running TSM search (see Patron.lua)
 	db.listItems = db.listItems or {} -- what Craft Profit put on each Auctionator shopping list (see Shopping.lua)
 	db.ownLists = db.ownLists or {} -- Craft Profit's own shopping lists (see Shopping.lua)
+	-- What each recipe and order put on those lists and on Auctionator's (see Shopping.lua).
+	db.listSources = db.listSources or {}
+	db.listSources.own = db.listSources.own or {}
+	db.listSources.auctionator = db.listSources.auctionator or {}
 	db.sellHidden = db.sellHidden or {} -- items you hid from the Sell tab's list: itemID -> true (see Sell.lua)
 	db.sellFavorites = db.sellFavorites or {} -- your favorites on that list: itemID -> true
 	db.sellFolded = db.sellFolded or {} -- sections of that list you folded away: section name -> true

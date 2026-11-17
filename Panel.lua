@@ -480,7 +480,7 @@ local function shopMaterial(model, material)
 		ns.Shopping.Say(format("Nothing missing: you have enough %s for 1 craft.", name))
 		return
 	end
-	ns.Shopping.AddMissing({ { itemID = material.itemID, qty = qty } }, "1 craft")
+	ns.Shopping.AddMissing({ { itemID = material.itemID, qty = qty } }, "1 craft", nil, model.listSource)
 end
 
 -- The hammer after a material you craft yourself, in the text: the same picture

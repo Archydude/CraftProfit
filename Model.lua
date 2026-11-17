@@ -9,6 +9,7 @@
 --   materials     see Model.Materials
 --   missing       what's missing for one craft, see Model.Missing
 --   missingFor    function(crafts) -> what's missing for that many crafts
+--   listSource    who its materials are for on the shopping list (see Shopping.lua)
 --   shoppable     there are materials you supply that the shopping list can buy
 --   cost         what the listed materials cost (simulated ones included)
 --   total         forecast profit; with nothing to sell, a loss of what the materials cost
@@ -558,6 +559,7 @@ function Model.Craft(ctx)
 		shopPicks = plan.overrides
 	end
 	addShopping(model, sold, {}, shopPicks)
+	model.listSource = ns.Shopping.RecipeSource(recipeInfo.recipeID)
 	model.total = (model.total or 0) - model.cost
 
 	-- What multicraft and resourcefulness add on average (see Procs.Expected). For
@@ -669,6 +671,7 @@ function Model.Order(ctx)
 		shopPicks = plan.overrides
 	end
 	addShopping(model, schematic, ctx.provided, shopPicks)
+	model.listSource = ns.Shopping.OrderSource(order.orderID)
 	model.cheaper = canSimulate and cheaperRanks(ctx, model.materials, picks, plan) or {}
 
 	-- While simulating: the quality the picked materials give, and whether it meets
