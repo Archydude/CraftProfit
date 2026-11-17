@@ -42,13 +42,13 @@ Craft Profit answers in gold: **profit or loss?** A panel next to your professio
 The panel leads with the answer: the sale price at the rank you'll get, minus the 5% cut and your materials. On orders: the commission, minus the materials **you** supply, plus sellable rewards.
 
 ### What should I craft?
-**Best crafts** lists every recipe you know, most profitable first. Sort by any column, and by a second with a Shift-click. Search by item or **material**. **All characters** puts every character's professions in one list.
+**Best crafts** lists every recipe you know, most profitable first. Sort by one column or two. Search by item or **material**.
 
 ### Did it pay off?
 The **Ledger** is your crafting history: what each item cost, sold for, went into your own crafts and really made.
 
 ### At the auction house
-Craft Profit's window opens beside the auction house. **Shopping list**: a click on a material shows it with the amount to buy. **Sell**: your bags with a price on every item. Pick one and the lowest price is filled in. **My auctions**: see which are undercut and cancel them, one click each. With Auctionator installed, choose which of the two shops, sells, cancels and prices.
+Craft Profit's window opens beside the auction house. **Shopping list**: a click on a material shows it with the amount to buy. **Sell**: your bags with a price and TSM sale rate on every item. Pick one and the lowest price is filled in. **My auctions**: see which are undercut or not first at your price, and cancel them. With Auctionator, choose which of the two does each.
 
 ### Patron orders
 Blizzard's Patron tab shows each order's **expected profit**, **rewards** and missing **materials**. **Next order** works through them, one click per step.
@@ -72,11 +72,11 @@ Vendor prices, the auction price, TSM's **sale rate** and the **AH deposit**.
 
 ## B. Upload File form
 
-**File:** `dist\CraftProfit-4.2.0.zip`
+**File:** `dist\CraftProfit-4.3.0.zip`
 
 **Display name**
 ```
-Craft Profit 4.2.0
+Craft Profit 4.3.0
 ```
 
 **Release type:** `Release`
@@ -85,6 +85,12 @@ Craft Profit 4.2.0
 
 **Changelog** (paste only the newest part; paste older parts too if they never went up)
 ```markdown
+4.3.0
+- **Sale rate in the Sell list:** with TSM, every item in the Sell tab's list shows TSM's sale rate, the share of its auctions that sell, between its price and its amount.
+- **Column names in the Sell list:** **Item**, **Price**, **Sale rate** and **Amount** above the list. Craft Profit's auction house window is a little wider and taller to fit them.
+- **Not first in My auctions:** an auction says **Not first** when nobody asks less than you, but others at your price are listed before yours, and its line says how many, like **5 before yours at this price**. Undercut auctions also say how many come before them. A **+** after the number means there are more than that. **Cancel next undercut** leaves Not first auctions alone.
+- Removed: the Sell tab's own list of what the picked item is listed for, with the picked item's line above it. It showed up when the game's sell page wasn't showing the item. The game's sell page still lists them, and the price is still filled in from the lowest one.
+
 4.2.0
 - **Auctionator or Craft Profit at the auction house:** with Auctionator installed, you choose which of the two you use there, on the new **Auction house** options page. **At the auction house, use** sets it for everything at once. Under it, **Shop with**, **Sell with**, **Cancel with** and **Price with** set each part on its own, and the first one reads **Custom** while they differ. Craft Profit's window only has the tabs for the parts set to Craft Profit.
 - Changed: with Auctionator installed, everything starts on Auctionator, so Craft Profit's window and its button on the auction house are gone until you pick Craft Profit under **At the auction house, use**. If you already had Craft Profit under **Shop with**, everything starts on Craft Profit. Without Auctionator nothing changes: Craft Profit does all of it.

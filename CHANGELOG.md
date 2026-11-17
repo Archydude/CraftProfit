@@ -1,5 +1,11 @@
 # Changelog
 
+## 4.3.0
+- **Sale rate in the Sell list:** with TSM, every item in the Sell tab's list shows TSM's sale rate, the share of its auctions that sell, between its price and its amount.
+- **Column names in the Sell list:** **Item**, **Price**, **Sale rate** and **Amount** above the list. Craft Profit's auction house window is a little wider and taller to fit them.
+- **Not first in My auctions:** an auction says **Not first** when nobody asks less than you, but others at your price are listed before yours, and its line says how many, like **5 before yours at this price**. Undercut auctions also say how many come before them. A **+** after the number means there are more than that. **Cancel next undercut** leaves Not first auctions alone.
+- Removed: the Sell tab's own list of what the picked item is listed for, with the picked item's line above it. It showed up when the game's sell page wasn't showing the item. The game's sell page still lists them, and the price is still filled in from the lowest one.
+
 ## 4.2.0
 - **Auctionator or Craft Profit at the auction house:** with Auctionator installed, you choose which of the two you use there, on the new **Auction house** options page. **At the auction house, use** sets it for everything at once. Under it, **Shop with**, **Sell with**, **Cancel with** and **Price with** set each part on its own, and the first one reads **Custom** while they differ. Craft Profit's window only has the tabs for the parts set to Craft Profit.
 - Changed: with Auctionator installed, everything starts on Auctionator, so Craft Profit's window and its button on the auction house are gone until you pick Craft Profit under **At the auction house, use**. If you already had Craft Profit under **Shop with**, everything starts on Craft Profit. Without Auctionator nothing changes: Craft Profit does all of it.
