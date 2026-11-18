@@ -62,6 +62,7 @@ end
 -- Saved settings and their defaults.
 ns.DEFAULTS = {
 	crafting = true,      -- show on the normal crafting page
+	panelAuto = true,     -- the panel opens by itself with the profession window; off: only from its button there
 	orders = true,        -- show on crafting orders
 	locked = false,
 	scale = 1,

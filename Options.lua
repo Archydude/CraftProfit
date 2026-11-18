@@ -236,6 +236,11 @@ function Options.Create()
 			"Profit for the order you have open: commission minus the materials you supply.")
 	end
 
+	checkbox("panelAuto", "Open with the profession window",
+		"The panel opens by itself when you pick a recipe. Off: it stays closed until you click the Craft Profit " ..
+		"button at the top of the profession window. That button opens and closes the panel either way.\n\n" ..
+		"Also at the bottom of the panel.")
+
 	header("Look")
 	local scaleOptions = Settings.CreateSliderOptions(0.6, 1.5, 0.05)
 	scaleOptions:SetLabelFormatter(MinimalSliderWithSteppersMixin.Label.Right, function(value)

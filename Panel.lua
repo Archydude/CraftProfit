@@ -363,6 +363,45 @@ local function addCraftsRow()
 	craftsBoxUsed = true
 end
 
+-- The panel's last line: a checkbox for whether it opens by itself with the
+-- profession window (the "Open with the profession window" option).
+local AUTO_ROW, AUTO_CHECK = 24, 22
+local autoCheck, autoCheckUsed
+
+local function createAutoCheck()
+	local check = CreateFrame("CheckButton", nil, frame, "UICheckButtonTemplate")
+	check:SetSize(AUTO_CHECK, AUTO_CHECK)
+	check:SetFrameLevel(frame:GetFrameLevel() + 3)
+	check:SetScript("OnClick", function(self) ns.Options.Set("panelAuto", self:GetChecked() == true) end)
+	check:SetScript("OnEnter", function(self)
+		GameTooltip:SetOwner(self, "ANCHOR_LEFT")
+		GameTooltip:SetText("Open with the profession window")
+		GameTooltip:AddLine("The panel opens by itself when you pick a recipe.", 1, 1, 1, true)
+		GameTooltip:AddLine("Off: it stays closed until you click the Craft Profit button at the top of the "
+			.. "profession window. That button opens and closes the panel either way.", 0.53, 0.53, 0.53, true)
+		GameTooltip:Show()
+	end)
+	check:SetScript("OnLeave", GameTooltip_Hide)
+	return check
+end
+
+local function addAutoRow()
+	autoCheck = autoCheck or createAutoCheck()
+	local top = -Layout.PAD_TOP - contentHeight
+	local row = addRow(Color("muted", "Open with the profession window"))
+	row.left:ClearAllPoints()
+	row.left:SetPoint("LEFT", frame, "TOPLEFT", Layout.PAD_SIDE + AUTO_CHECK, top - AUTO_ROW / 2)
+	row.left:SetWidth(Layout.WIDTH - 2 * Layout.PAD_SIDE - AUTO_CHECK)
+	contentHeight = contentHeight - math.max(Layout.LINE_HEIGHT, math.ceil(row.left:GetStringHeight()) + 3) + AUTO_ROW
+	autoCheck:ClearAllPoints()
+	autoCheck:SetPoint("LEFT", frame, "TOPLEFT", Layout.PAD_SIDE - 4, top - AUTO_ROW / 2)
+	autoCheck:SetChecked(ns.db.panelAuto == true)
+	-- The label is clickable too, like Blizzard's.
+	autoCheck:SetHitRectInsets(0, -(row.left:GetStringWidth() + 2), 0, 0)
+	autoCheck:Show()
+	autoCheckUsed = true
+end
+
 -- "1 craft" or "10 crafts": what this drawing's numbers are for.
 local function craftsText()
 	return ns.Shopping.CraftsText(count)
@@ -929,6 +968,7 @@ local function drawFooter(model)
 			session.crafts, session.crafts == 1 and "" or "s", luck and (dot .. luck) or ""),
 			INFO_ICON, nil, ns.Results.ConfirmResetSession, footerTooltip(true, sessionNotes))
 	end
+	addAutoRow()
 	local band = addBand(top, contentHeight + Layout.PAD_BOTTOM - EDGE - top, EDGE)
 	gradient(band, "HORIZONTAL", { 0, 0, 0 }, 0.35, { 0, 0, 0 }, 0.35)
 end
@@ -1233,6 +1273,11 @@ local function refreshTooltip()
 	end
 end
 
+-- Whether the panel is open while the profession window is. Each time that
+-- window opens it starts as the "Open with the profession window" option says;
+-- the Craft Profit button on the window then opens or closes it.
+local open = true
+
 -- Redraws right away. Prefer Panel.Refresh, which batches redraws.
 function Panel.Render()
 	refreshQueued = false
@@ -1245,7 +1290,7 @@ function Panel.Render()
 		return
 	end
 	rowCount, dividerCount, bandCount, contentHeight, profitRow, procRow = 0, 0, 0, 0, nil, nil
-	rowButtonUsed, craftsBoxUsed = false, false
+	rowButtonUsed, craftsBoxUsed, autoCheckUsed = false, false, false
 	wipe(dropdownsUsed)
 	-- The Crafts box is for the recipe it was typed on: another one starts at 1.
 	local crafting = model ~= nil and model.kind == "craft"
@@ -1276,10 +1321,13 @@ function Panel.Render()
 	for i = bandCount + 1, #bands do bands[i]:Hide() end
 	if rowButton and not rowButtonUsed then rowButton:Hide() end
 	if craftsBox and not craftsBoxUsed then craftsBox:Hide() end
+	if autoCheck and not autoCheckUsed then autoCheck:Hide() end
 	for name, dropdown in pairs(dropdowns) do
 		if not dropdownsUsed[name] then dropdown:Hide() end
 	end
-	if model then
+	-- Closed (see Panel.Toggle), it's drawn all the same, so what follows the panel
+	-- (the shopping list, the Best crafts tab) has what it needs.
+	if model and open then
 		frame:SetHeight(Layout.PAD_TOP + contentHeight + Layout.PAD_BOTTOM)
 		frame:Show()
 	else
@@ -1287,6 +1335,13 @@ function Panel.Render()
 	end
 	refreshTooltip()
 	ns.Best.Check(model)
+end
+
+-- Opens the panel, or closes it: the Craft Profit button on the profession window.
+-- It stays that way until the profession window is opened again.
+function Panel.Toggle()
+	open = not open
+	Panel.Render()
 end
 
 -- Redraws once at the end of this frame, however many times it's called.
@@ -1318,6 +1373,32 @@ function Panel.Place()
 	frame:SetScale(ns.db.scale)
 	frame:ClearAllPoints()
 	frame:SetPoint("TOPLEFT", ProfessionsFrame, "TOPRIGHT", pos.x, pos.y)
+end
+
+-- The Craft Profit button on the profession window's title bar, left of where
+-- the window's own buttons and other addons' sit: it opens and closes the panel.
+local TOGGLE_WIDTH, TOGGLE_HEIGHT = 92, 20
+local TOGGLE_X, TOGGLE_Y = -104, -1 -- from the window's top right corner
+
+local function createToggle()
+	local toggle = CreateFrame("Button", nil, ProfessionsFrame, "UIPanelButtonTemplate")
+	toggle:SetSize(TOGGLE_WIDTH, TOGGLE_HEIGHT)
+	toggle:SetPoint("TOPRIGHT", ProfessionsFrame, "TOPRIGHT", TOGGLE_X, TOGGLE_Y)
+	-- Over the title bar's art, like the window's close button.
+	local close = ProfessionsFrame.CloseButton
+	if close then toggle:SetFrameLevel(close:GetFrameLevel()) end
+	toggle:SetText("Craft Profit")
+	toggle:SetScript("OnClick", Panel.Toggle)
+	toggle:SetScript("OnEnter", function(self)
+		GameTooltip:SetOwner(self, "ANCHOR_TOP")
+		GameTooltip:SetText("Craft Profit")
+		GameTooltip:AddLine("Click: open or close the Craft Profit panel.", 1, 1, 1, true)
+		GameTooltip:Show()
+	end)
+	toggle:SetScript("OnLeave", GameTooltip_Hide)
+	-- Each time the window opens, the panel starts open or closed as the option says.
+	open = ns.db.panelAuto == true
+	ProfessionsFrame:HookScript("OnShow", function() open = ns.db.panelAuto == true end)
 end
 
 local function createFrame()
@@ -1369,6 +1450,8 @@ local function createFrame()
 		GameTooltip:Show()
 	end)
 	gear:SetScript("OnLeave", GameTooltip_Hide)
+
+	createToggle()
 
 	-- Item names arrive from the server after first use; redraw when they do.
 	frame:RegisterEvent("GET_ITEM_INFO_RECEIVED")
