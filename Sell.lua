@@ -2,7 +2,8 @@
 -- It lists what's in your bags that can be auctioned: your favorites, your own
 -- crafts, then the rest by the game's kind of item. A section's name folds it
 -- away, dragging it moves the section up or down, and a right-click on an item
--- makes it a favorite or hides it. Pick
+-- makes it a favorite or hides it. A click on a column's name sorts every
+-- section by that column, and another click reverses it. Pick
 -- one to see what it's listed for, set the price, amount and how long it lasts,
 -- and post it. Every auction is posted by your own click on Post. The game's own
 -- sell page is filled in with the same item, price, amount and duration, so its
@@ -33,7 +34,14 @@ local FOLD_SIZE = 14     -- the plus or minus before a section's name
 local PRICE_WIDTH = 76   -- the column of prices before it
 local RATE_WIDTH = 62    -- TSM's sale rate between them, as wide as its "Sale rate" header; only with TSM
 local HEADER_ROOM = 18   -- the columns' names over the bag list
+local HEADER_HEIGHT = 16 -- a column's name, as a button
 local COUNT_WIDTH = 48  -- the column of amounts at a bag line's right end
+local COLUMN_GAP = 6     -- between two columns
+-- The sorted column's arrow, as on the Best crafts list: the auction house's, or the older one.
+local SORT_ARROW_ATLAS = "auctionhouse-ui-sortarrow"
+local SORT_ARROW_FILE = "Interface\\Buttons\\UI-SortArrow"
+local SORT_ARROW_SIZE = 10
+local ARROW_ROOM = SORT_ARROW_SIZE + 3 -- what the arrow takes beside a column's name
 local LIST_GAP = 10      -- under the bag list's frame
 local BAG_HEIGHT = BAG_ROWS * ROW_HEIGHT + 2 * INSET_PAD
 local LINE = 26          -- from one line of the form to the next
@@ -85,6 +93,9 @@ local showHidden = false
 -- The search box over the bag list, and what's typed in it, in lower case ("" for nothing).
 local searchBox
 local filter = ""
+-- The columns' names over the bag list, by what each sorts by: "name", "price",
+-- "rate" (only with TSM) and "amount".
+local headers = {}
 -- Items your saved Best crafts scans say you craft: itemID -> true.
 local crafts
 local scanTries = 0
@@ -576,29 +587,158 @@ local function sectionOf(entry)
 	return entry.kind or OTHER
 end
 
--- The list as it's shown: its sections in order ({ name, entries }, the lines by
--- name), and the hidden items. The sections are in the order you dragged them
--- into; until you do, and for a section that's new since, it's favorites, your
--- crafts, then the kinds by name. What the search box doesn't ask for is left
--- out of both.
+---------------------------------------------------------------------------
+-- Sorting by a column
+---------------------------------------------------------------------------
+
+-- Whether TSM is there to say an item's sale rate: only then does the list have
+-- that column.
+local function hasRates()
+	return TSM_API ~= nil and TSM_API.GetCustomPriceValue ~= nil
+end
+
+-- What a line is sorted by, for each column but the name. Your price addon may
+-- have no price or no sale rate for an item (nil).
+local SORT_VALUES = {
+	price = function(entry) return ns.Prices.Sale(entry.link, entry.itemID) end,
+	rate = function(entry) return ns.Prices.SaleRate(entry.link) end,
+	amount = function(entry) return entry.count end,
+}
+
+-- The column the list is sorted by, and whether that's A to Z or lowest first.
+-- A list left sorted by sale rate goes by name while TSM isn't there: it has no
+-- such column then.
+local function sortOrder()
+	local key, ascending = ns.db.sellSort, ns.db.sellSortAscending == true
+	if key == "name" then return key, ascending end
+	if not SORT_VALUES[key] or (key == "rate" and not hasRates()) then return "name", true end
+	return key, ascending
+end
+
+-- By name, then by key: the list's order until you sort it by another column,
+-- and what settles two lines that are the same in the sorted column.
+local function byName(a, b)
+	if a.name ~= b.name then return a.name < b.name end
+	return a.key < b.key
+end
+
+-- Puts a section's lines in the sorted column's order. `values` is each line's
+-- price, sale rate or amount (line -> value), read before the sorting, so the
+-- price addon is never asked while two lines are compared; nil when the list
+-- goes by name. A line without a value goes last whichever way the column is
+-- sorted, and lines with the same value go by name, then by key, so the order
+-- is the same every time.
+local function sortLines(lines, values, ascending)
+	if not values then
+		table.sort(lines, ascending and byName or function(a, b)
+			if a.name ~= b.name then return a.name > b.name end
+			return a.key < b.key
+		end)
+		return
+	end
+	table.sort(lines, function(a, b)
+		local valueA, valueB = values[a], values[b]
+		if valueA == valueB then return byName(a, b) end
+		if valueA == nil then return false end
+		if valueB == nil then return true end
+		if ascending then return valueA < valueB end
+		return valueA > valueB
+	end)
+end
+
+-- How wide a column of a bag line is. The amount and the sale rate are only as
+-- wide as their names, so the one the list is sorted by is wider by its arrow.
+local COLUMN_WIDTHS = { price = PRICE_WIDTH, rate = RATE_WIDTH, amount = COUNT_WIDTH }
+local function columnWidth(key)
+	local width = COLUMN_WIDTHS[key]
+	if key ~= "price" and key == sortOrder() then width = width + ARROW_ROOM end
+	return width
+end
+
+-- Puts the columns' names over the columns of a bag line (see drawBag), from the
+-- right, and the sorted one's in gold with an arrow beside it: down for highest
+-- first or Z to A, up for lowest first or A to Z.
+local function drawHeaders()
+	local sorted, ascending = sortOrder()
+	local right = -(SCROLLBAR_ROOM + 8) -- a line's right edge, then its amount
+	for _, key in ipairs({ "amount", "rate", "price" }) do
+		local header = headers[key]
+		if header then
+			local width = columnWidth(key)
+			header:ClearAllPoints()
+			header:SetPoint("BOTTOMRIGHT", bagInset, "TOPRIGHT", right, 1)
+			header:SetSize(width, HEADER_HEIGHT)
+			right = right - width - COLUMN_GAP
+		end
+	end
+	-- The item's name has the rest of the line.
+	headers.name:ClearAllPoints()
+	headers.name:SetPoint("BOTTOMLEFT", bagInset, "TOPLEFT", INSET_PAD + 6, 1)
+	headers.name:SetPoint("BOTTOMRIGHT", bagInset, "TOPRIGHT", right, 1)
+	headers.name:SetHeight(HEADER_HEIGHT)
+	for key, header in pairs(headers) do
+		local sorts = key == sorted
+		header.text:SetText(sorts and Color("heading", header.label) or header.label)
+		local arrow = header.arrow
+		arrow:SetShown(sorts)
+		if sorts then
+			if ascending then arrow:SetTexCoord(0, 1, 1, 0) else arrow:SetTexCoord(0, 1, 0, 1) end
+			arrow:ClearAllPoints()
+			local textWidth = header.text:GetStringWidth()
+			if key == "name" then
+				arrow:SetPoint("LEFT", header, "LEFT", textWidth + 3, 0)
+			else
+				arrow:SetPoint("RIGHT", header, "RIGHT", -textWidth - 3, 0)
+			end
+		end
+	end
+end
+
+-- A click on a column's name: the list is sorted by that column, or the other
+-- way round when it already was. Names start A to Z, the rest highest first.
+local function setSort(key)
+	local sorted, ascending = sortOrder()
+	if sorted == key then
+		ns.db.sellSortAscending = not ascending
+	else
+		ns.db.sellSortAscending = key == "name"
+	end
+	ns.db.sellSort = key
+	drawHeaders()
+	drawBags()
+end
+
+-- The list as it's shown: its sections in order ({ name, entries }, the lines in
+-- the sorted column's order), and the hidden items, sorted the same way. The
+-- sections are in the order you dragged them into; until you do, and for a
+-- section that's new since, it's favorites, your crafts, then the kinds by name.
+-- What the search box doesn't ask for is left out of both.
 local function sections()
-	local byName, list, hidden = {}, {}, {}
+	local named, list, hidden = {}, {}, {}
+	local key, ascending = sortOrder()
+	local read = SORT_VALUES[key]
+	local values = read and {} or nil
 	for _, entry in ipairs(entries) do
 		if not matches(entry) then
 			-- searched away
-		elseif ns.db.sellHidden[entry.itemID] then
-			hidden[#hidden + 1] = entry
 		else
-			local name = sectionOf(entry)
-			local section = byName[name]
-			if not section then
-				section = { name = name, entries = {} }
-				byName[name] = section
-				list[#list + 1] = section
+			if values then values[entry] = read(entry) end
+			if ns.db.sellHidden[entry.itemID] then
+				hidden[#hidden + 1] = entry
+			else
+				local name = sectionOf(entry)
+				local section = named[name]
+				if not section then
+					section = { name = name, entries = {} }
+					named[name] = section
+					list[#list + 1] = section
+				end
+				section.entries[#section.entries + 1] = entry
 			end
-			section.entries[#section.entries + 1] = entry
 		end
 	end
+	for _, section in ipairs(list) do sortLines(section.entries, values, ascending) end
+	sortLines(hidden, values, ascending)
 	local order, first = ns.db.sellOrder, { [FAVORITES] = 1, [CRAFTS] = 2 }
 	local function place(name)
 		return tIndexOf(order, name) or (#order + (first[name] or 3))
@@ -803,7 +943,7 @@ local function createBagRow(row)
 	row.count:SetWidth(COUNT_WIDTH)
 	row.count:SetJustifyH("RIGHT")
 	row.rate = row:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
-	row.rate:SetPoint("RIGHT", row.count, "LEFT", -6, 0)
+	row.rate:SetPoint("RIGHT", row.count, "LEFT", -COLUMN_GAP, 0)
 	row.rate:SetWidth(RATE_WIDTH)
 	row.rate:SetJustifyH("RIGHT")
 	row.price = row:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
@@ -855,10 +995,13 @@ local function drawBag(row, data)
 	row.count:SetShown(columns)
 	row.price:SetShown(entry ~= nil) -- only an item has one
 	-- TSM's sale rate has its column only with TSM; without it the price sits by the amount.
-	local rated = TSM_API ~= nil and TSM_API.GetCustomPriceValue ~= nil
+	local rated = hasRates()
 	row.rate:SetShown(entry ~= nil and rated)
+	-- The sorted column is wider, as its name over the list is (see columnWidth).
+	row.count:SetWidth(columnWidth("amount"))
+	row.rate:SetWidth(columnWidth("rate"))
 	row.price:ClearAllPoints()
-	row.price:SetPoint("RIGHT", rated and row.rate or row.count, "LEFT", -6, 0)
+	row.price:SetPoint("RIGHT", rated and row.rate or row.count, "LEFT", -COLUMN_GAP, 0)
 	row.text:ClearAllPoints()
 	if columns then
 		row.text:SetPoint("LEFT", row.icon, "RIGHT", 6, 0)
@@ -933,11 +1076,6 @@ drawBags = function()
 	bagBox:SetDataProvider(CreateDataProvider(rows), ScrollBoxConstants.RetainScrollPosition)
 	emptyText:SetText(#entries == 0 and EMPTY_TEXT or NO_MATCH_TEXT)
 	emptyText:SetShown(found == 0)
-end
-
-local function byName(a, b)
-	if a.name ~= b.name then return a.name < b.name end
-	return a.key < b.key
 end
 
 local function postedText(this)
@@ -1060,6 +1198,9 @@ local function post()
 		stopPosting()
 		return
 	end
+	-- The line that's next in the list right now is the one picked once the auction
+	-- is up: selling part of a stack can move this line first, in a list sorted by amount.
+	this.after = neighbor(this.key)
 	updateTotals() -- Post greys out until the auction is up
 	watch(this)
 end
@@ -1070,7 +1211,7 @@ local function posted()
 	posting = nil
 	if not panel then return end
 	if selected and selected.key == this.key then
-		choose(neighbor(this.key), postedText(this))
+		choose(this.after and byKey[this.after.key] or neighbor(this.key), postedText(this))
 	else
 		updateTotals()
 	end
@@ -1206,6 +1347,32 @@ local function scrollList(parent, y, rowHeight, rows, draw, width)
 	return box, inset, bar
 end
 
+-- One column's name over the bag list, as a button: a click on it sorts the list
+-- by that column (see setSort). It's as wide as its column; its text isn't held
+-- to that, so a name a little wider than its column still shows whole.
+local function createHeader(key, label)
+	local header = CreateFrame("Button", nil, body)
+	header.text = header:CreateFontString(nil, "OVERLAY", "GameFontHighlight") -- white; the sorted one turns gold
+	header.text:SetPoint(key == "name" and "LEFT" or "RIGHT")
+	header.label = label
+	header.arrow = header:CreateTexture(nil, "OVERLAY")
+	header.arrow:SetSize(SORT_ARROW_SIZE, SORT_ARROW_SIZE)
+	if C_Texture.GetAtlasInfo(SORT_ARROW_ATLAS) then
+		header.arrow:SetAtlas(SORT_ARROW_ATLAS)
+	else
+		header.arrow:SetTexture(SORT_ARROW_FILE)
+	end
+	header:SetScript("OnClick", function() setSort(key) end)
+	header:SetScript("OnEnter", function(self)
+		GameTooltip:SetOwner(self, "ANCHOR_TOP")
+		GameTooltip:SetText(label)
+		GameTooltip:AddLine(Color("simulated", "Click to sort; click again to reverse."))
+		GameTooltip:Show()
+	end)
+	header:SetScript("OnLeave", GameTooltip_Hide)
+	headers[key] = header
+end
+
 -- The tab is made by three functions, not one: Lua lets a function use at most
 -- 60 of this file's variables, and one function making all of it goes past that
 -- (the file then doesn't load at all). Keep each of them well under it.
@@ -1230,22 +1397,12 @@ local function createLists(width, y)
 	end)
 	y = y - SEARCH_ROOM - HEADER_ROOM
 	bagBox, bagInset = scrollList(body, y, ROW_HEIGHT, BAG_ROWS, drawBag, width)
-	-- The columns' names, over the columns of a bag line (see createBagRow).
-	local function header(text, justify, x)
-		local name = body:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-		name:SetPoint(justify == "LEFT" and "BOTTOMLEFT" or "BOTTOMRIGHT", bagInset,
-			justify == "LEFT" and "TOPLEFT" or "TOPRIGHT", x, 3)
-		name:SetText(text)
-	end
-	local right = -(SCROLLBAR_ROOM + 8) -- a line's right edge, then its amount
-	header("Item", "LEFT", INSET_PAD + 6)
-	header("Amount", "RIGHT", right)
-	right = right - COUNT_WIDTH - 6
-	if TSM_API ~= nil and TSM_API.GetCustomPriceValue ~= nil then
-		header("Sale rate", "RIGHT", right)
-		right = right - RATE_WIDTH - 6
-	end
-	header("Price", "RIGHT", right)
+	-- The columns' names, over the columns of a bag line (see drawHeaders).
+	createHeader("name", "Item")
+	createHeader("price", "Price")
+	if hasRates() then createHeader("rate", "Sale rate") end
+	createHeader("amount", "Amount")
+	drawHeaders()
 	emptyText = body:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
 	emptyText:SetPoint("CENTER", bagInset, "CENTER")
 	emptyText:SetText(EMPTY_TEXT)
