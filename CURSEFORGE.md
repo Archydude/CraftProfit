@@ -1,19 +1,21 @@
-# Craft Profit: CurseForge upload sheet
+# Craftonomics: CurseForge upload sheet
 
 What to type into each CurseForge field, ready to copy and paste. The steps for a first upload and for releasing an update are in [UPLOADING.md](../UPLOADING.md).
 
-Update this sheet with every release: the zip, the display name and the changelog, and rewrite the description so it covers everything in the new version. The release script won't publish until the zip, display name and changelog name the new version.
+Update this sheet with every release: the zips, the display name and the changelog, and rewrite the description so it covers everything in the new version. The release script won't publish until the zips, display name and changelog name the new version.
+
+The project was called Craft Profit up to 4.8. Its CurseForge address still ends in `craft-profit`.
 
 ## A. Project form
 
 **Project name**
 ```
-Craft Profit
+Craftonomics
 ```
 
 **Summary**
 ```
-Profit or loss on every craft, which recipes are worth making, and its own auction house window. Works alone or with TSM and Auctionator, on Retail and WoW Forever.
+Profit or loss on every craft, which recipes are worth making, and its own auction house window. Works alone or with TSM and Auctionator, on Retail and WoW Forever. Formerly Craft Profit.
 ```
 
 **Main category:** `Professions`
@@ -21,7 +23,7 @@ Profit or loss on every craft, which recipes are worth making, and its own aucti
 
 **License:** `MIT License`
 
-**Logo / avatar:** `CraftProfit\images\logo-400.png`
+**Logo / avatar:** `Craftonomics\images\logo-400.png`
 
 **Description** (paste everything between the lines)
 
@@ -29,7 +31,7 @@ Profit or loss on every craft, which recipes are worth making, and its own aucti
 ```markdown
 ## Is this craft worth it?
 
-Craft Profit answers in gold: **profit or loss?** A panel next to your profession window prices every craft and crafting order. On **Retail** and **WoW Forever**.
+Craftonomics, formerly **Craft Profit**, answers in gold: **profit or loss?** A panel next to your profession window prices every craft and crafting order. On **Retail** and **WoW Forever**.
 
 - **Expected profit** on every craft, procs included
 - **Best crafts**: every recipe ranked by profit, across all your characters
@@ -61,30 +63,36 @@ Vendor prices, the auction price, TSM's **sale rate** and **trend**, and the **A
 
 ### Good to know
 - **TSM prices for alts** that keep TSM turned off.
-- Type **/craftprofit** for options.
+- Type **/craftonomics** for options.
 
 **Feedback and bug reports are welcome** in the comments.
 ```
 ---
 
-**Source link:** `https://github.com/Archydude/CraftProfit`
-**Issues link:** `https://github.com/Archydude/CraftProfit/issues`
+**Source link:** `https://github.com/Archydude/Craftonomics`
+**Issues link:** `https://github.com/Archydude/Craftonomics/issues`
 
 ## B. Upload File form
 
-**File:** `dist\CraftProfit-4.8.0.zip`
+**Files:** two, each uploaded with only its own game versions (why is in [UPLOADING.md](../UPLOADING.md)). The display name, release type and changelog are the same for both.
+- `dist\Craftonomics-5.0.0-retail.zip`: Retail `12.1.5`
+- `dist\Craftonomics-5.0.0-forever.zip`: WoW Forever `1.60.1`
 
 **Display name**
 ```
-Craft Profit 4.8.0
+Craftonomics 5.0.0
 ```
 
 **Release type:** `Release`
 
-**Game versions:** Retail `12.1.5`, WoW Forever `1.60.1`.
-
 **Changelog** (paste only the newest part; paste older parts too if they never went up)
 ```markdown
+5.0.0
+- **Craft Profit is now Craftonomics.** Several addons on CurseForge have almost the same name, and on WoW Forever Craft Profit couldn't be installed together with two of them. The new name ends the mix-ups. Everything works as before; only the name changed, also where it shows in buttons and options, like **Use Craftonomics Reagents**.
+- **Commands:** `/craftprofit` is now `/craftonomics`, or `/cn` for short.
+- **On Retail, your settings and history come along.** For that, the update adds a second line to your addon list, **Craftonomics: old Craft Profit settings**. Leave it on; it goes away in a later update.
+- **On WoW Forever, your settings and history start fresh:** your options, the Ledger and the recipes Best crafts had saved. Open Best crafts once for each profession to bring its recipes back.
+
 4.8.0
 - **All recipes on Retail:** the All recipes window now works on Retail too. It lists every profession's recipes that make something you can trade, whether or not one of your characters knows them, with what the materials cost, the **Gross Profit** and **Net Profit** of one craft, and with TSM the **TSM Sale Rate** and **Sold per Day**. Open it from the minimap button's right-click menu or with `/craftprofit recipes`.
 - **One expansion at a time:** on Retail, a dropdown picks the expansion, starting on the newest.

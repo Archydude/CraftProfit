@@ -1,4 +1,4 @@
--- Craft Profit: the math behind the Best crafts list. No drawing here;
+-- Craftonomics: the math behind the Best crafts list. No drawing here;
 -- BestCraftsList.lua draws what this works out.
 --
 -- The game only says which rank a craft comes out at while the profession window
@@ -267,7 +267,7 @@ end
 function BestCrafts.Explain()
 	local ctx = ns.Blizzard.ActivePage() == "craft" and ns.Blizzard.CraftContext()
 	if not ctx then return false end
-	local function say(...) print("|cffffd100Craft Profit:|r " .. string.format(...)) end
+	local function say(...) print("|cffffd100Craftonomics:|r " .. string.format(...)) end
 	local recipeID = ctx.recipeInfo.recipeID
 	local professionID, name = shownProfession()
 	local recipeIDs = (C_TradeSkillUI.GetAllRecipeIDs or C_TradeSkillUI.GetFilteredRecipeIDs)() or {}

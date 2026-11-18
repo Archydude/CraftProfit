@@ -1,4 +1,4 @@
--- Craft Profit: what your characters sold on the auction house, for the Best
+-- Craftonomics: what your characters sold on the auction house, for the Best
 -- crafts list's "You sold" column. Read from the "Auction successful" mail each
 -- time the mailbox shows it, so a sale counts whether or not you take the gold.
 local _, ns = ...
@@ -16,8 +16,8 @@ local MAIL_DAYS = 30
 local SAME_MAIL = 300
 local DAY = 86400
 
--- CraftProfitDB.sales = {
---   since = when Craft Profit started counting (time()),
+-- CraftonomicsDB.sales = {
+--   since = when Craftonomics started counting (time()),
 --   list = { { name, qty, money, t } ... }, every sale in the last MAIL_DAYS days,
 --   wide = when sales started being kept for MAIL_DAYS, not DAYS (time()),
 -- }
@@ -29,8 +29,8 @@ local saved
 local totals, totalsUntil
 
 function Sales.Init()
-	CraftProfitDB.sales = CraftProfitDB.sales or { since = time(), list = {} }
-	saved = CraftProfitDB.sales
+	CraftonomicsDB.sales = CraftonomicsDB.sales or { since = time(), list = {} }
+	saved = CraftonomicsDB.sales
 	saved.wide = saved.wide or time()
 end
 
@@ -112,7 +112,7 @@ function Sales.Sold(name)
 	return totals[name] or 0
 end
 
--- How many days of sales there are so far: DAYS, or fewer when Craft Profit
+-- How many days of sales there are so far: DAYS, or fewer when Craftonomics
 -- started counting more recently.
 function Sales.DaysCounted()
 	if not saved then return 0 end

@@ -1,4 +1,4 @@
--- Craft Profit: turning numbers and items into panel text.
+-- Craftonomics: turning numbers and items into panel text.
 local _, ns = ...
 
 local Format = {}

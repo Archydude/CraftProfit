@@ -1,4 +1,4 @@
--- Craft Profit: startup, saved settings and the slash command.
+-- Craftonomics: startup, saved settings and the slash command.
 --
 -- Next to the profession window, shows your profit or loss on:
 --   * a normal craft:    what the item sells for (minus the AH cut) minus the materials
@@ -7,8 +7,9 @@ local ADDON_NAME, ns = ...
 
 -- Fills in defaults and moves settings from older versions forward.
 local function loadSettings()
-	CraftProfitDB = CraftProfitDB or {}
-	local db = CraftProfitDB
+	ns.Rename.BeforeDefaults() -- settings saved under the old name, Craft Profit, are in by now (see Rename.lua)
+	CraftonomicsDB = CraftonomicsDB or {}
+	local db = CraftonomicsDB
 	-- Pre-release builds: one TSM price for everything, and a show/hide toggle.
 	if db.source then
 		db.matSource, db.saleSource, db.source = db.source, db.source, nil
@@ -32,7 +33,7 @@ local function loadSettings()
 	db.useVendor = nil
 	-- The Ledger's "All time" was gone before it was ever released.
 	if db.ledgerRange == 0 then db.ledgerRange = 90 end
-	-- Up to 4.1 only where missing materials go was a choice. With Craft Profit
+	-- Up to 4.1 only where missing materials go was a choice. With Craftonomics
 	-- picked for that, it does the rest of the auction house too.
 	if db.ahSell == nil and db.listAddon == "own" then
 		db.ahSell, db.ahCancel, db.ahPrice = "own", "own", "own"
@@ -49,8 +50,8 @@ local function loadSettings()
 	end
 	db.session = db.session or { total = 0, crafts = 0 }
 	db.tsmOrders = db.tsmOrders or {} -- the Patron tab's running TSM search (see Patron.lua)
-	db.listItems = db.listItems or {} -- what Craft Profit put on each Auctionator shopping list (see Shopping.lua)
-	db.ownLists = db.ownLists or {} -- Craft Profit's own shopping lists (see Shopping.lua)
+	db.listItems = db.listItems or {} -- what Craftonomics put on each Auctionator shopping list (see Shopping.lua)
+	db.ownLists = db.ownLists or {} -- Craftonomics' own shopping lists (see Shopping.lua)
 	-- What each recipe and order put on those lists and on Auctionator's (see Shopping.lua).
 	db.listSources = db.listSources or {}
 	db.listSources.own = db.listSources.own or {}
@@ -107,15 +108,16 @@ events:SetScript("OnEvent", function(self, event, ...)
 	if ns.Panel.Frame() then self:UnregisterEvent("ADDON_LOADED") end
 end)
 
-SLASH_CRAFTPROFIT1 = "/craftprofit"
-SlashCmdList.CRAFTPROFIT = function(msg)
-	-- Testing: /craftprofit testquality <rank> (or "off") pretends every patron
+SLASH_CRAFTONOMICS1 = "/craftonomics"
+SLASH_CRAFTONOMICS2 = "/cn"
+SlashCmdList.CRAFTONOMICS = function(msg)
+	-- Testing: /craftonomics testquality <rank> (or "off") pretends every patron
 	-- order needs at least that rank, to see orders you can't reach.
 	local command, value = (msg or ""):lower():match("^%s*(%S+)%s*(%S*)")
 	if command == "testquality" then
 		local rank = tonumber(value)
 		ns.Planner.SetTestMinQuality(rank)
-		ns.Shopping.Say(rank and string.format("Testing: every patron order now needs at least rank %d. /reload or /craftprofit testquality off to stop.", rank)
+		ns.Shopping.Say(rank and string.format("Testing: every patron order now needs at least rank %d. /reload or /craftonomics testquality off to stop.", rank)
 			or "Testing off: patron orders use their real minimum quality.")
 		return
 	end
@@ -123,7 +125,7 @@ SlashCmdList.CRAFTPROFIT = function(msg)
 		-- Testing: pretend you have this much concentration.
 		local amount = tonumber(value)
 		ns.Planner.testConcentration = amount
-		ns.Shopping.Say(amount and string.format("Testing: pretending you have %d concentration. /reload or /craftprofit testconcentration off to stop.", amount)
+		ns.Shopping.Say(amount and string.format("Testing: pretending you have %d concentration. /reload or /craftonomics testconcentration off to stop.", amount)
 			or "Testing off: your real concentration is used.")
 		return
 	end
@@ -147,7 +149,7 @@ SlashCmdList.CRAFTPROFIT = function(msg)
 	end
 	if command == "minimap" then
 		ns.Options.Set("minimap", not ns.db.minimap)
-		ns.Shopping.Say(ns.db.minimap and "Minimap button shown." or "Minimap button hidden. /craftprofit minimap shows it again.")
+		ns.Shopping.Say(ns.db.minimap and "Minimap button shown." or "Minimap button hidden. /craftonomics minimap shows it again.")
 		return
 	end
 	if command == "ledger" then
@@ -165,13 +167,13 @@ SlashCmdList.CRAFTPROFIT = function(msg)
 		return
 	end
 	if command == "scan" then
-		-- Craft Profit's own price scan, at the auction house.
+		-- Craftonomics' own price scan, at the auction house.
 		local started, problem = ns.PriceScan.Start()
 		ns.Shopping.Say(started and "Scanning the auction house for prices..." or problem)
 		return
 	end
 	if command == "testscan" then
-		-- Testing: where Craft Profit's own price scan stands.
+		-- Testing: where Craftonomics' own price scan stands.
 		ns.PriceScan.Explain()
 		return
 	end
@@ -192,7 +194,7 @@ SlashCmdList.CRAFTPROFIT = function(msg)
 	end
 	if command == "testledger" then
 		-- Testing: made-up records in the Ledger window. Nothing is saved.
-		ns.Shopping.Say(ns.LedgerWindow.ToggleDemo() and "Testing: the Ledger shows made-up records. /craftprofit testledger again goes back to yours."
+		ns.Shopping.Say(ns.LedgerWindow.ToggleDemo() and "Testing: the Ledger shows made-up records. /craftonomics testledger again goes back to yours."
 			or "Testing off: the Ledger shows your records.")
 		return
 	end

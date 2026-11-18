@@ -1,4 +1,4 @@
--- Craft Profit: the "Craft myself" crafting strategy, on WoW Forever. A material
+-- Craftonomics: the "Craft myself" crafting strategy, on WoW Forever. A material
 -- one of this character's recipes makes costs what crafting it costs: its own
 -- materials, priced the same way, down to the ones that have to be bought. The
 -- shopping list buys those instead of the material. "Cheapest way" does that

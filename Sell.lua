@@ -1,4 +1,4 @@
--- Craft Profit: the Sell tab of its auction house window (see ShoppingList.lua).
+-- Craftonomics: the Sell tab of its auction house window (see ShoppingList.lua).
 -- It lists what's in your bags that can be auctioned, your favorites first. A
 -- right-click on an item makes it a favorite or hides it. A click on a column's
 -- name sorts the list by that column, and another click reverses it. Pick
@@ -93,7 +93,7 @@ local headers = {}
 local scanTries = 0
 -- The key of the item this tab put on the game's own sell page, while it's there.
 local nativeKey
--- Why the game's own sell page couldn't be filled in last, for /craftprofit testsell.
+-- Why the game's own sell page couldn't be filled in last, for /craftonomics testsell.
 local nativeProblem
 -- Whether this tab is writing to the game's sell page, or reading from it: one
 -- never answers the other.
@@ -101,7 +101,7 @@ local pushing, pulling = false, false
 -- The game's sell pages this tab already follows: page -> true.
 local followed = {}
 -- While Post hands the auction to the game, and whether the game refused it. What
--- the last refusal looked like is kept for /craftprofit testsell.
+-- the last refusal looked like is kept for /craftonomics testsell.
 local calling, refused, lastRefusal = false, false, nil
 
 -- Copper as exact gold, silver and copper: a price to match can't be rounded.
@@ -1046,7 +1046,7 @@ local function posted()
 	end
 end
 
-StaticPopupDialogs["CRAFTPROFIT_POST_WARNING"] = {
+StaticPopupDialogs["CRAFTONOMICS_POST_WARNING"] = {
 	text = "%s",
 	button1 = ACCEPT,
 	button2 = CANCEL,
@@ -1075,7 +1075,7 @@ local function askToConfirm()
 	if not posting then return end
 	posting.confirming = true
 	StaticPopup_Hide("AUCTION_HOUSE_POST_WARNING")
-	StaticPopup_Show("CRAFTPROFIT_POST_WARNING", CONFIRM_AUCTION_POSTING_TEXT or "Post this auction?")
+	StaticPopup_Show("CRAFTONOMICS_POST_WARNING", CONFIRM_AUCTION_POSTING_TEXT or "Post this auction?")
 end
 
 ---------------------------------------------------------------------------
@@ -1384,7 +1384,7 @@ events:SetScript("OnEvent", function(_, event, numPosted, total)
 		selected, pick, listings, posting, nativeKey, seenKey = nil, nil, nil, nil, nil, nil
 		-- A search is as old as this visit to the auction house.
 		if searchBox then searchBox:SetText("") end
-		StaticPopup_Hide("CRAFTPROFIT_POST_WARNING")
+		StaticPopup_Hide("CRAFTONOMICS_POST_WARNING")
 	end
 	if event == "AUCTION_HOUSE_AUCTION_CREATED" then
 		-- Several of one item (not a stack) go up one at a time: the last one ends it.

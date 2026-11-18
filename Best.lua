@@ -1,6 +1,6 @@
--- Craft Profit: Craft Profit's materials for a crafting order (the most
+-- Craftonomics: Craftonomics' materials for a crafting order (the most
 -- profitable ones) or a recipe (the crafting strategy's). The panel's row puts
--- them in once; the "Use Craft Profit Reagents" checkbox, above Blizzard's "Use
+-- them in once; the "Use Craftonomics Reagents" checkbox, above Blizzard's "Use
 -- Best Quality Reagents" on the order form and on the crafting page, puts them in
 -- every order or recipe you open. When a recipe's reagents reach down to it, it
 -- moves beside Blizzard's.
@@ -11,7 +11,7 @@ ns.Best = Best
 
 local format = string.format
 
-local LABEL = "Use Craft Profit Reagents"
+local LABEL = "Use Craftonomics Reagents"
 local LABEL_GAP = 2 -- checkbox to its label
 local ROW_GAP = 0   -- between the stacked checkboxes
 local ROW_SPACE = 16 -- between the checkboxes when they sit in a row

@@ -1,4 +1,4 @@
--- Craft Profit: the My auctions tab of its auction house window (see
+-- Craftonomics: the My auctions tab of its auction house window (see
 -- ShoppingList.lua). It lists your auctions with the lowest price anyone else
 -- asks, says which ones are undercut or have others' auctions listed before them
 -- at the same price, and cancels them: one auction for each
@@ -123,7 +123,7 @@ local function cancel(auction, confirmed)
 	end
 	local cost = C_AuctionHouse.GetCancelCost(auction.id) or 0
 	if cost > 0 and not confirmed then
-		StaticPopup_Show("CRAFTPROFIT_CANCEL_AUCTION", exact(cost), nil, auction)
+		StaticPopup_Show("CRAFTONOMICS_CANCEL_AUCTION", exact(cost), nil, auction)
 		return
 	end
 	if not C_AuctionHouse.IsThrottledMessageSystemReady() then
@@ -158,7 +158,7 @@ local function cancel(auction, confirmed)
 	end)
 end
 
-StaticPopupDialogs["CRAFTPROFIT_CANCEL_AUCTION"] = {
+StaticPopupDialogs["CRAFTONOMICS_CANCEL_AUCTION"] = {
 	text = "Someone has bid on this auction, so cancelling it costs %s.\n\nCancel it anyway?",
 	button1 = YES,
 	button2 = NO,
@@ -483,7 +483,7 @@ events:SetScript("OnEvent", function(_, event, auctionID)
 	if event == "AUCTION_HOUSE_CLOSED" then
 		-- What was read and asked is as old as this visit to the auction house.
 		auctions, checks, cancelling, gone, loaded = {}, {}, {}, {}, false
-		StaticPopup_Hide("CRAFTPROFIT_CANCEL_AUCTION")
+		StaticPopup_Hide("CRAFTONOMICS_CANCEL_AUCTION")
 	end
 	if not panel then return end
 	if event == "AUCTION_CANCELED" then

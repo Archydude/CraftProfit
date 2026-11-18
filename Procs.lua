@@ -1,4 +1,4 @@
--- Craft Profit: multicraft and resourcefulness. Your chances come with each answer
+-- Craftonomics: multicraft and resourcefulness. Your chances come with each answer
 -- the game gives about a craft. How big a proc is (how many extra items, how much
 -- of a material comes back) the game doesn't say, so it's learned from your own
 -- crafts, starting from base values. From those: what procs add to a craft on
@@ -18,20 +18,20 @@ local BASE_SAVED = 0.30 -- resourcefulness: the share of a material that comes b
 local MIN_PROCS = 10
 
 -- The names the game shows for the two stats: localized, with the English ones
--- as a last resort. (/craftprofit testprocs shows what the game sends.)
+-- as a last resort. (/craftonomics testprocs shows what the game sends.)
 local STATS = {
 	multicraft = { ITEM_MOD_MULTICRAFT_SHORT, ITEM_MOD_MULTICRAFT, "Multicraft" },
 	resourcefulness = { ITEM_MOD_RESOURCEFULNESS_SHORT, ITEM_MOD_RESOURCEFULNESS, "Resourcefulness" },
 }
 
--- CraftProfitDB.procSizes["Name-Realm"][professionID] = {
+-- CraftonomicsDB.procSizes["Name-Realm"][professionID] = {
 --   multicraft = { n, sum },      -- one per proc: extra items / items the craft made
 --   resourcefulness = { n, sum }, -- one per material that came back: returned / used
 -- }
 local mine -- this character's table
 
 function Procs.Init()
-	CraftProfitDB.procSizes = CraftProfitDB.procSizes or {}
+	CraftonomicsDB.procSizes = CraftonomicsDB.procSizes or {}
 end
 
 -- This character's counts for a profession, made when first needed.
@@ -41,8 +41,8 @@ local function sizesFor(professionID)
 		realm = realm or GetNormalizedRealmName()
 		if not (name and realm) then return end
 		local key = name .. "-" .. realm
-		CraftProfitDB.procSizes[key] = CraftProfitDB.procSizes[key] or {}
-		mine = CraftProfitDB.procSizes[key]
+		CraftonomicsDB.procSizes[key] = CraftonomicsDB.procSizes[key] or {}
+		mine = CraftonomicsDB.procSizes[key]
 	end
 	local sizes = mine[professionID]
 	if not sizes then
@@ -88,12 +88,12 @@ function Procs.RecipeChances(recipeID)
 	return Procs.Chances(ok and info or nil)
 end
 
--- Testing (/craftprofit testprocs): prints what the game says about the recipe on
+-- Testing (/craftonomics testprocs): prints what the game says about the recipe on
 -- the crafting page's stats, and the proc sizes in use. False with no recipe open.
 function Procs.Explain()
 	local ctx = ns.Blizzard.ActivePage() == "craft" and ns.Blizzard.CraftContext()
 	if not ctx then return false end
-	local function say(...) print("|cffffd100Craft Profit:|r " .. format(...)) end
+	local function say(...) print("|cffffd100Craftonomics:|r " .. format(...)) end
 	local info = ns.Blizzard.CraftInfo(ctx)
 	for _, stat in ipairs(info and info.bonusStats or {}) do
 		say("stat %q: value %s, %s%%, bonus %s%%", tostring(stat.bonusStatName), tostring(stat.bonusStatValue),
@@ -114,7 +114,7 @@ end
 local function average(professionID, kind, base, character)
 	local sizes
 	if character then
-		sizes = (CraftProfitDB.procSizes[character] or {})[professionID]
+		sizes = (CraftonomicsDB.procSizes[character] or {})[professionID]
 	else
 		sizes = professionID and sizesFor(professionID)
 	end

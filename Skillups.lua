@@ -1,4 +1,4 @@
--- Craft Profit: what one skill point costs with a recipe, on WoW Forever. The
+-- Craftonomics: what one skill point costs with a recipe, on WoW Forever. The
 -- materials, minus what the item is worth back, divided by the skill points a
 -- craft gives on average at your skill: an orange recipe always gives one, a
 -- yellow or green one less often the closer it is to grey, and a grey one never.

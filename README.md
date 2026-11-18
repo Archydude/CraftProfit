@@ -1,13 +1,15 @@
-# Craft Profit
+# Craftonomics
 
-Craft Profit tells you, in gold, whether a craft or a crafting order makes or loses money, which recipes are worth making, and which of your characters should make them.
+Craftonomics tells you, in gold, whether a craft or a crafting order makes or loses money, which recipes are worth making, and which of your characters should make them.
+
+It was called **Craft Profit** up to version 4.8. On Retail your settings and history come along to the new name. On WoW Forever they start fresh.
 
 - **Crafting page:** what the item sells for, minus the 5% auction house cut, minus your materials. With nothing to sell (no auction price, an enchant, a recraft), it's a loss of what the materials cost.
 - **Crafting orders:** the commission you receive (after the consortium cut), minus the materials **you** supply, plus any sellable patron rewards. A reward that can be sold but has no price shows as **no price** and isn't counted.
 
 - **Procs:** when a craft procs multicraft or resourcefulness, a **Procs** section lists the extra items and returned materials with their value, and **This craft made** under them says what that craft really made; the bonus gold pops up from it with a coin sound. It goes away on your next craft without a proc, or when you pick another recipe. The profit lines below it stay the forecast.
 
-- **Expected profit:** the panel's main line, at the top, is what a craft makes on average once multicraft and resourcefulness are counted, with **Without procs** under it: what it makes when neither procs. Your chances come from the game; how big your procs are, Craft Profit learns from your own crafts (until it has 10 procs of a kind, it uses typical values). Hover it for each proc's chance, size and what it adds.
+- **Expected profit:** the panel's main line, at the top, is what a craft makes on average once multicraft and resourcefulness are counted, with **Without procs** under it: what it makes when neither procs. Your chances come from the game; how big your procs are, Craftonomics learns from your own crafts (until it has 10 procs of a kind, it uses typical values). Hover it for each proc's chance, size and what it adds.
 
 - **Crafting strategy:** pick what to craft: the highest rank you can make (default), the highest rank using what you own, or the cheapest materials. One click, or a checkbox on the crafting page and the order form, puts its materials in; missing materials and the shopping list follow it too. On an order, the cheapest materials that reach its minimum quality.
 
@@ -17,9 +19,9 @@ Craft Profit tells you, in gold, whether a craft or a crafting order makes or lo
 
 - **All recipes:** a window with every profession's recipes, known or not, with what one craft makes and, with TSM, how well the item sells (see [All recipes](#all-recipes)).
 
-- **Shopping list:** adds what you're short of, for one or more crafts or for every patron order at once, to Craft Profit's own shopping list, an Auctionator shopping list, or a TSM search to copy. Craft Profit's list and the Auctionator list check materials off as you get them.
+- **Shopping list:** adds what you're short of, for one or more crafts or for every patron order at once, to Craftonomics' own shopping list, an Auctionator shopping list, or a TSM search to copy. Craftonomics' list and the Auctionator list check materials off as you get them.
 
-- **Auction house window:** Craft Profit's own window beside the auction house: your shopping list, selling from your bags, your auctions with the undercut ones marked, and a price scan of its own.
+- **Auction house window:** Craftonomics' own window beside the auction house: your shopping list, selling from your bags, your auctions with the undercut ones marked, and a price scan of its own.
 
 - **Session total:** under Profit/Loss, what all your crafts made since you logged in on this character (a `/reload` keeps it), including orders crafted from the Patron tab, where it also shows under the order list. Crafts whose item has no sale price, like enchants and treatises, count as a loss of what their materials cost, less what resourcefulness gives back. Click it to reset it to zero. After 5 crafts it also shows your **luck**: how much more (or less) your procs made than expected, like **Luck +14%**.
 
@@ -29,12 +31,12 @@ Craft Profit tells you, in gold, whether a craft or a crafting order makes or lo
 
 - **Best rank on tooltips:** an item you can craft shows the highest rank you can make it at with top-quality materials, anywhere you see its tooltip.
 
-Nothing runs until you open your profession window, apart from Craft Profit's window at the auction house (and its price scan there, when neither TSM nor Auctionator gives you prices), noting your auction sales when you open your mailbox, noting what vendors sell when you visit one and, if you turn it on, saving TSM prices for your alts when you log in. Procs are counted as an average, always shown next to the profit without them.
+Nothing runs until you open your profession window, apart from Craftonomics' window at the auction house (and its price scan there, when neither TSM nor Auctionator gives you prices), noting your auction sales when you open your mailbox, noting what vendors sell when you visit one and, if you turn it on, saving TSM prices for your alts when you log in. Procs are counted as an average, always shown next to the profit without them.
 
-Works by itself: with no price addon, Craft Profit scans the auction house for prices (see [Auction house window](#auction-house-window)). It uses **TradeSkillMaster** and **Auctionator** prices when they're installed, and TSM adds how fast items sell. Built for WoW Midnight 12.1, and works on **WoW Forever** too, with a few things of its own there (see [WoW Forever](#wow-forever)).
+Works by itself: with no price addon, Craftonomics scans the auction house for prices (see [Auction house window](#auction-house-window)). It uses **TradeSkillMaster** and **Auctionator** prices when they're installed, and TSM adds how fast items sell. Built for WoW Midnight 12.1, and works on **WoW Forever** too, with a few things of its own there (see [WoW Forever](#wow-forever)).
 
 ## Install
-Copy the `CraftProfit` folder to `World of Warcraft\_retail_\Interface\AddOns\` and restart the game.
+Copy the `Craftonomics` folder to `World of Warcraft\_retail_\Interface\AddOns\` and restart the game.
 
 ## Use
 Open your profession and pick a recipe, or open a crafting order. The panel appears to the right of the window.
@@ -51,7 +53,7 @@ The panel reads top to bottom: the expected profit or loss, what comes in (the s
 - For recipes that make a varying amount, the average is used.
 - Materials without any price are shown in red. Profit is then too high, so take it with a grain of salt.
 - Drag the panel to move it. It remembers where you put it.
-- A **Craft Profit** button at the top of the profession window opens and closes the panel. The panel's last line, **Open with the profession window**, says whether it opens by itself: untick it and the panel stays closed until you click that button.
+- A **Craftonomics** button at the top of the profession window opens and closes the panel. The panel's last line, **Open with the profession window**, says whether it opens by itself: untick it and the panel stays closed until you click that button.
 
 ### More than one craft
 On the crafting page, the **Crafts** box over the profit sets how many crafts the panel is for. Type a number, up to 999, and the panel follows it:
@@ -60,7 +62,7 @@ On the crafting page, the **Crafts** box over the profit sets how many crafts th
 - **Your materials:** how many of each, what each costs, and what they cost in all.
 - **The Shopping list button**, the carts and what counts as missing: for that many crafts.
 - **Concentration:** what that many crafts take, with **not enough** when you have less.
-- **Use Craft Profit materials:** how much more they make over that many crafts.
+- **Use Craftonomics materials:** how much more they make over that many crafts.
 - **The game's amount box** next to Create: it gets the same number, so Create makes that many. The game keeps it to what you can make with the materials you have, and recipes it only makes one at a time have no amount box.
 
 The cost of a skill-up, how well the item sells, the procs of your last craft and the session line stay as they are. The box goes back to 1 when you pick another recipe. Crafting orders don't have it: an order is one craft.
@@ -87,22 +89,22 @@ What the crafting page crafts. Set it with the **Crafting strategy** dropdown on
 - **Use what I own:** the highest rank you have every material for, even if buying could reach a better one, and even when a quality you own would sell for more than one you could buy. If you're short for every rank, the highest rank you can make, spending the least gold on what you're missing. Good for clearing out stockpiles and keeping the shopping list short. The Best crafts list only shows recipes you can craft now, and says so when that's none of them. Materials split across qualities still put a recipe on the list, but its rank and profit are for one quality per slot. Only this character's bags and bank and your warband bank count.
 - **Cheapest materials:** the cheapest materials, whatever rank they make. For skill-ups, first crafts and knowledge.
 
-It picks the materials for the blue row and **Use Craft Profit Reagents** (below), prices the materials you're missing, decides which qualities the shopping list buys, and ranks the Best crafts list. Concentration stays as you set it in the form: with it on, the rank it reaches counts. What you own counts at what it would sell for. Patron orders keep their own rule (below).
+It picks the materials for the blue row and **Use Craftonomics Reagents** (below), prices the materials you're missing, decides which qualities the shopping list buys, and ranks the Best crafts list. Concentration stays as you set it in the form: with it on, the rank it reaches counts. What you own counts at what it would sell for. Patron orders keep their own rule (below).
 
-**The blue row:** when the form holds other materials than Craft Profit would use, a blue row under the materials puts them in Blizzard's form with a click. Hover it to see what it puts in.
+**The blue row:** when the form holds other materials than Craftonomics would use, a blue row under the materials puts them in Blizzard's form with a click. Hover it to see what it puts in.
 
-- **On the crafting page:** **Use Craft Profit materials**, the crafting strategy's materials. It says how much more they make, or which rank they make instead (e.g. rank 5 instead of rank 4, even when that costs more).
+- **On the crafting page:** **Use Craftonomics materials**, the crafting strategy's materials. It says how much more they make, or which rank they make instead (e.g. rank 5 instead of rank 4, even when that costs more).
 - **On a crafting order:** **Use the most profitable materials**, the cheapest qualities that still reach the order's minimum quality, the same materials the Patron tab prices each order with. If reaching the minimum quality takes concentration, it turns that on too.
 - A material you don't have enough of stays as it was, and chat says what to buy.
 
-**Use Craft Profit Reagents:** a checkbox on the crafting order form and the crafting page, above Blizzard's **Use Best Quality Reagents**. While it's on, every order or recipe you open gets Craft Profit's materials put in by itself: the crafting strategy's on the crafting page, the most profitable ones on an order. A slot you change afterwards stays as you set it. Unticking it puts back the materials Blizzard picks by itself, and turns concentration back off if the checkbox turned it on. Only one of the two checkboxes can be on: checking one unchecks the other. It's the same setting on both pages. It shows wherever Blizzard's checkbox does, on orders and recipes whose materials come in qualities. On the crafting page, with concentration on, the **concentration strategy** (see Patron orders below) picks the qualities that make the crafting strategy's rank.
+**Use Craftonomics Reagents:** a checkbox on the crafting order form and the crafting page, above Blizzard's **Use Best Quality Reagents**. While it's on, every order or recipe you open gets Craftonomics' materials put in by itself: the crafting strategy's on the crafting page, the most profitable ones on an order. A slot you change afterwards stays as you set it. Unticking it puts back the materials Blizzard picks by itself, and turns concentration back off if the checkbox turned it on. Only one of the two checkboxes can be on: checking one unchecks the other. It's the same setting on both pages. It shows wherever Blizzard's checkbox does, on orders and recipes whose materials come in qualities. On the crafting page, with concentration on, the **concentration strategy** (see Patron orders below) picks the qualities that make the crafting strategy's rank.
 
 ### Shopping list
 Under your materials there's a **Shopping list** button. It shows a count when you're short of materials for the crafts in the **Crafts** box (one, until you change it); hover it to see what's missing.
 
 **Click** it to add what you're missing for that many crafts. **Right-click** it to open a menu:
 
-- **For 1 / 5 / 10 crafts:** adds what you're missing for that many crafts, with the amount and quality, to your shopping list (see Separate lists below). Each line shows how many items it would add, or that they're on the list already. With Auctionator, that's an Auctionator shopping list, in its Shopping tab at the auction house. Without it, it's Craft Profit's own list, in its window at the auction house.
+- **For 1 / 5 / 10 crafts:** adds what you're missing for that many crafts, with the amount and quality, to your shopping list (see Separate lists below). Each line shows how many items it would add, or that they're on the list already. With Auctionator, that's an Auctionator shopping list, in its Shopping tab at the auction house. Without it, it's Craftonomics' own list, in its window at the auction house.
 - **Other amount...:** type any number of crafts. The last number you typed stays in the menu until you log out or `/reload`.
 - **Clear shopping list.**
 
@@ -110,20 +112,20 @@ Adding for the same recipe again only adds what the list doesn't have for it yet
 
 Shortcut: **Ctrl-click** clears the list, without the menu.
 
-**Checked off as you get them:** materials come off the list as they arrive: bought at the auction house, looted, taken from the mailbox or crafted. (Auction house items that aren't commodities come by mail, so they're checked off once you take them out.) Chat says what came off, and when the list is done. Only what Craft Profit added is checked off: lines you add yourself in Auctionator stay. Moving things between your bags, bank and warband bank doesn't count. Turn off **Check off what you get** in the options to keep the list until you clear it.
+**Checked off as you get them:** materials come off the list as they arrive: bought at the auction house, looted, taken from the mailbox or crafted. (Auction house items that aren't commodities come by mail, so they're checked off once you take them out.) Chat says what came off, and when the list is done. Only what Craftonomics added is checked off: lines you add yourself in Auctionator stay. Moving things between your bags, bank and warband bank doesn't count. Turn off **Check off what you get** in the options to keep the list until you clear it.
 
 **Just one material:** click the cart next to a material you're short of, or **Shift-click** the material, to add only what you're missing of it, for the crafts in the Crafts box. Pick a quality first by clicking it, and that quality is what gets added. With the TSM search, you get a search for just that material.
 
 **Separate lists:** each character and profession gets its own list, like **Thrall - Blacksmithing**. Turn off **one shopping list per character** or **per profession** in the options to share lists instead; with both off, the list is called **Crafting**. Lists from before 1.19.0, named **Craft Profit - ...**, are moved to the new names the next time you log in, along with what's on them.
 
-**Where the list goes:** with Auctionator installed, to an Auctionator shopping list. Without it, to Craft Profit's own shopping list, which shows in its window at the auction house (see [Auction house window](#auction-house-window)). Pick another with **Shop with** at the bottom of the menu, in the gear menu at the bottom of the Patron tab, or in the options: **Auctionator**, **TSM search to copy** or **Craft Profit**.
+**Where the list goes:** with Auctionator installed, to an Auctionator shopping list. Without it, to Craftonomics' own shopping list, which shows in its window at the auction house (see [Auction house window](#auction-house-window)). Pick another with **Shop with** at the bottom of the menu, in the gear menu at the bottom of the Patron tab, or in the options: **Auctionator**, **TSM search to copy** or **Craftonomics**.
 
 **TSM search to copy:** when you pick it, the button says **Copy TSM search** instead, with the same menu. Pick an amount and a box shows a search, already selected: press Ctrl+C and paste it into the search box on TSM's Shopping tab. It searches for exactly the ranks you're missing and stops at the amounts you need.
 
 You can hide the Shopping list button and the Patron tab's shopping buttons in the options. The options also have a **Clear** button for the list.
 
 ### Patron orders
-On the **Patron** orders tab, Blizzard's order list shows Craft Profit's columns where Patron Name, Commission and Reagents were: Materials, Rewards and Profit, then Blizzard's time left, then Actions at the end. Clicking anywhere else on a row still opens the order.
+On the **Patron** orders tab, Blizzard's order list shows Craftonomics' columns where Patron Name, Commission and Reagents were: Materials, Rewards and Profit, then Blizzard's time left, then Actions at the end. Clicking anywhere else on a row still opens the order.
 
 - **Materials:** **Ready** with a green check when you have everything, in the qualities that make the most profit, or how many you're missing, in orange. Hover it to see exactly what's missing. What you own counts once down the list: the order you started takes what it needs first, then the others, most profitable first, so two orders that need the same materials don't both say Ready on one stack; the one that comes up short shows what it's missing. Orders whose recipe you don't know say **Recipe not known** under Profit.
 - **Rewards:** what the patron gives besides the commission, as icons: profession knowledge (its count in green), Artisan's Moxie, items. Hover one for its tooltip and what it sells for.
@@ -152,14 +154,14 @@ Under the list: how much concentration the orders use, this session's total (cli
 
 **Concentration:** the orders that need concentration share what you have. By default the orders that make the most gold per concentration point get it first; the options, or the gear under the list, can put orders that reward profession knowledge first instead. Once it runs out, the rest show their concentration in red, their profit turns grey, their Materials say **No concentration** when nothing's missing, and Add profitable and Add all skip them.
 
-**Don't use concentration:** the third choice for which orders get concentration. Patron orders then never spend it: an order that only reaches its minimum quality with concentration shows its profit in grey and **No concentration** under Materials, with no cart and no craft button, and Add profitable and Add all skip it. On its order form, Use Craft Profit Reagents and the blue row leave the materials alone. Orders that reach their minimum without concentration work as usual, and the crafting page isn't affected.
+**Don't use concentration:** the third choice for which orders get concentration. Patron orders then never spend it: an order that only reaches its minimum quality with concentration shows its profit in grey and **No concentration** under Materials, with no cart and no craft button, and Add profitable and Add all skip it. On its order form, Use Craftonomics Reagents and the blue row leave the materials alone. Orders that reach their minimum without concentration work as usual, and the crafting page isn't affected.
 
-**Concentration strategy:** a dropdown on the panel (under Crafting strategy on the crafting page, and on an order with a minimum quality), in the gear menu under the list and in the options. It says which material qualities are picked where concentration is spent: on an order that only reaches its minimum quality with concentration, and on the crafting page with concentration on. **Cheapest materials** (default): the cheapest qualities, whatever concentration they take. **Least concentration**: the qualities that need the least of it, and the cheapest of those, so your concentration covers more crafts; the materials cost more. **Most gold per point**: the qualities that earn the most gold for each concentration point, so cheaper materials win when what they save is worth the extra concentration. Use Craft Profit Reagents and the blue row on the order form pick the same materials.
+**Concentration strategy:** a dropdown on the panel (under Crafting strategy on the crafting page, and on an order with a minimum quality), in the gear menu under the list and in the options. It says which material qualities are picked where concentration is spent: on an order that only reaches its minimum quality with concentration, and on the crafting page with concentration on. **Cheapest materials** (default): the cheapest qualities, whatever concentration they take. **Least concentration**: the qualities that need the least of it, and the cheapest of those, so your concentration covers more crafts; the materials cost more. **Most gold per point**: the qualities that earn the most gold for each concentration point, so cheaper materials win when what they save is worth the extra concentration. Use Craftonomics Reagents and the blue row on the order form pick the same materials.
 
 Turn off **Show on the Patron tab** in the options to get Blizzard's own columns back.
 
 ### Best crafts
-Click the **Best crafts** tab, next to the profession window's own tabs (from any of them, it goes back to your recipes first), or type `/craftprofit best`. The tab fills the recipe list and the recipe details with every recipe you know in the profession shown (Midnight Blacksmithing, say), most profitable first. It works out each recipe for a few seconds after it opens, and shows how far it's got at the bottom.
+Click the **Best crafts** tab, next to the profession window's own tabs (from any of them, it goes back to your recipes first), or type `/craftonomics best`. The tab fills the recipe list and the recipe details with every recipe you know in the profession shown (Midnight Blacksmithing, say), most profitable first. It works out each recipe for a few seconds after it opens, and shows how far it's got at the bottom.
 
 - **Expected** (or **Profit**): what one craft makes after the 5% auction house cut, at the rank your crafting strategy picks (without concentration), with the materials it picks: the same ones the crafting page would use. With **Count procs in profits** on (the default), it's what a craft makes on average with procs, and the list ranks by it; off, the column is **Profit**, without them. Its quality icon is after the name. Recipes whose item has no auction price at the rank you'd make say **No price**, in grey, at the bottom.
 - **Gold/day:** roughly what the recipe could make in a day: the profit on each item times how many sell per day. So a recipe with a big profit that hardly sells stops looking better than one that sells all day. It's for comparing recipes, not a promise: with TSM it counts sales across your whole region, and you'd only get a share of them; without TSM, your own sales from the last 14 days. Recipes that lose gold or haven't sold show **-**. The list still opens sorted by profit; click the header to sort by it.
@@ -174,7 +176,7 @@ Click the **Best crafts** tab, next to the profession window's own tabs (from an
 
 **Hover a row** for the sale price, each material and its price, the profit, and what concentration would add (e.g. **+95g for 38 concentration, 2g 50s per point**). For items with ranks, each rank's price and how many of it are listed, so a rank nobody buys stands out.
 
-**Click a row** to open its recipe. With **Use Craft Profit Reagents** on, its materials go straight in. Click **Best crafts** again to go back to the recipe.
+**Click a row** to open its recipe. With **Use Craftonomics Reagents** on, its materials go straight in. Click **Best crafts** again to go back to the recipe.
 
 The list stays open when you switch to another profession: it comes back with that profession's recipes once they show. It closes when you click its tab, open a recipe from it or from a link, or close the profession window.
 
@@ -235,9 +237,9 @@ Item tooltips get a few lines on what the item is worth, each with its own optio
 Items you can't post, like soulbound ones, show only their vendor prices. On characters using TSM prices saved for alts, the auction price is the saved price's own line instead.
 
 ## WoW Forever
-Craft Profit works on WoW Forever: the panel, Best crafts, the shopping list and the Ledger. Forever's crafting has no ranks, procs, concentration or crafting orders, so everything about those stays out of sight there, options included. What's different:
+Craftonomics works on WoW Forever: the panel, Best crafts, the shopping list and the Ledger. Forever's crafting has no ranks, procs, concentration or crafting orders, so everything about those stays out of sight there, options included. What's different:
 
-- **Best crafts** opens from a tab with Craft Profit's logo, under your profession tabs on the right of the profession window. Click it again to go back to your recipes.
+- **Best crafts** opens from a tab with Craftonomics' logo, under your profession tabs on the right of the profession window. Click it again to go back to your recipes.
 - **Net profit and Gross profit:** the panel's main line is **Net profit** (or **Net loss**): what the craft makes after the materials. Under it, **Gross profit** is what the item sells for after the auction house cut, before the materials.
 - **Crafting strategy** says where the materials you're missing come from:
   - **Buy missing** (default): bought at their auction house price.
@@ -252,7 +254,7 @@ Craft Profit works on WoW Forever: the panel, Best crafts, the shopping list and
 - Amounts show the two biggest coins, like **1s 4c** or **4g 12s**.
 
 ## All recipes
-A window with every profession's recipes that make something you can trade, whether or not one of your characters knows them, so you can see what's worth making and what's selling. Open it from the minimap button's right-click menu or with `/craftprofit recipes`. It prices every recipe when it opens, which takes a moment.
+A window with every profession's recipes that make something you can trade, whether or not one of your characters knows them, so you can see what's worth making and what's selling. Open it from the minimap button's right-click menu or with `/craftonomics recipes`. It prices every recipe when it opens, which takes a moment.
 
 Every recipe is priced as if you bought all its materials (at a vendor when one sells them, otherwise on the auction house) and sold what one craft makes, at today's prices. A recipe that makes a varying number of items counts the average.
 
@@ -268,30 +270,30 @@ Every recipe is priced as if you bought all its materials (at a vendor when one 
 - Without TSM it shows profit only: the sale rate and sold per day are TSM's.
 
 ## Auction house window
-Craft Profit has its own window at the auction house. It opens beside the game's auction house window, and a button with Craft Profit's logo on that window's right edge opens and closes it. It has up to four tabs: **Shopping list**, **Sell**, **My auctions** and **Prices**.
+Craftonomics has its own window at the auction house. It opens beside the game's auction house window, and a button with Craftonomics' logo on that window's right edge opens and closes it. It has up to four tabs: **Shopping list**, **Sell**, **My auctions** and **Prices**.
 
-**Auctionator or Craft Profit:** with Auctionator installed, you choose which of the two you use at the auction house. **At the auction house, use** on the options' Auction house page sets it for everything at once, and four choices under it set each part on its own:
+**Auctionator or Craftonomics:** with Auctionator installed, you choose which of the two you use at the auction house. **At the auction house, use** on the options' Auction house page sets it for everything at once, and four choices under it set each part on its own:
 
-- **Shop with:** where missing materials go: Auctionator's shopping list, Craft Profit's own, or a search to paste into TSM.
-- **Sell with:** Craft Profit shows the Sell tab, and its window opens by itself at the auction house.
-- **Cancel with:** Craft Profit shows the My auctions tab.
-- **Price with:** Craft Profit shows the Prices tab, and its price scan can start by itself (not while your prices come from TSM). It's also whose price is used when both have one. The other prices what the first doesn't, and TSM's prices still come before both.
+- **Shop with:** where missing materials go: Auctionator's shopping list, Craftonomics' own, or a search to paste into TSM.
+- **Sell with:** Craftonomics shows the Sell tab, and its window opens by itself at the auction house.
+- **Cancel with:** Craftonomics shows the My auctions tab.
+- **Price with:** Craftonomics shows the Prices tab, and its price scan can start by itself (not while your prices come from TSM). It's also whose price is used when both have one. The other prices what the first doesn't, and TSM's prices still come before both.
 
-The window only has the tabs for what Craft Profit does. With Auctionator for everything, the window and its side button are gone. The first choice reads **Custom** while the four aren't all the same. Auctionator's own tabs stay on the auction house whatever you pick. Without Auctionator installed, Craft Profit does all of it and these choices aren't shown; only **Shop with** stays, when TSM is installed.
+The window only has the tabs for what Craftonomics does. With Auctionator for everything, the window and its side button are gone. The first choice reads **Custom** while the four aren't all the same. Auctionator's own tabs stay on the auction house whatever you pick. Without Auctionator installed, Craftonomics does all of it and these choices aren't shown; only **Shop with** stays, when TSM is installed.
 
-It opens by itself when **Sell with** is Craft Profit, or when Craft Profit's shopping list has something on it. Turn the opening off with **Open at the auction house** in the options; the side button still opens it. It doesn't open by itself over another addon's auction house window.
+It opens by itself when **Sell with** is Craftonomics, or when Craftonomics' shopping list has something on it. Turn the opening off with **Open at the auction house** in the options; the side button still opens it. It doesn't open by itself over another addon's auction house window.
 
-Away from the auction house the window is only the shopping list. Open it from the minimap button's menu, the Shopping list menus, or with `/craftprofit shop`.
+Away from the auction house the window is only the shopping list. Open it from the minimap button's menu, the Shopping list menus, or with `/craftonomics shop`.
 
 ### Shopping list tab
-What's on Craft Profit's own shopping lists: each list under its name, every material with the amount still to buy and what that costs, and the total at the bottom.
+What's on Craftonomics' own shopping lists: each list under its name, every material with the amount still to buy and what that costs, and the total at the bottom.
 
 - **Click** a material to show it at the auction house. For a stackable material, the amount you still need is filled in.
 - **Right-click** a material to take it off the list. **Clear** next to a list's name empties that list.
 - Materials come off as you get them, for the lists of the character you're on.
 
 ### Sell tab
-Everything in your bags that can be auctioned, with what one sells for and how many you have. The price is your price addon's (or Craft Profit's own scan's), and shows **-** when there's none. With TSM, a column between them shows TSM's sale rate: the share of the item's auctions that sell.
+Everything in your bags that can be auctioned, with what one sells for and how many you have. The price is your price addon's (or Craftonomics' own scan's), and shows **-** when there's none. With TSM, a column between them shows TSM's sale rate: the share of the item's auctions that sell.
 
 - **One list:** your favorites come first, marked with a star, then everything else.
 - **Sort:** click a column's name (Item, Price, Sale rate, Amount) to sort by it, and click again to reverse. Items with no price or no sale rate go last.
@@ -319,22 +321,22 @@ Opening the tab switches the game's window to its own Auctions tab.
 Where your prices come from, when the auction house was last scanned and how many items the scan found.
 
 - **Scan now** reads the lowest price of everything on the auction house and how many are up. It can take a few minutes on a busy auction house, and you can keep buying and selling while it runs. **Stop** ends it early and keeps what it read.
-- Craft Profit prices your materials and crafts with its scan when neither TSM nor Auctionator does, for items those two have no price for, or always when you pick **Craft Profit's scan only** under **Price addon** in the options.
+- Craftonomics prices your materials and crafts with its scan when neither TSM nor Auctionator does, for items those two have no price for, or always when you pick **Craftonomics' scan only** under **Price addon** in the options.
 - With neither TSM nor Auctionator, a scan starts by itself when you open the auction house, at most once an hour. Turn that off with **Scan when I open the auction house**, on the tab or in the options.
 - What vendors sell is learned as you visit them.
 
-At the auction house, `/craftprofit sell`, `/craftprofit auctions` and `/craftprofit prices` open the window on that tab, and `/craftprofit scan` starts a scan.
+At the auction house, `/craftonomics sell`, `/craftonomics auctions` and `/craftonomics prices` open the window on that tab, and `/craftonomics scan` starts a scan.
 
 ## Minimap button
 - **Click:** opens the profession window of the profession you opened last, on its Best crafts list. Click again to close the list.
-- **Right-click:** a menu to open any of your professions' Best crafts, Craft Profit's shopping list (when you use it), the Ledger, All recipes, switch the crafting strategy, or open the options.
+- **Right-click:** a menu to open any of your professions' Best crafts, Craftonomics' shopping list (when you use it), the Ledger, All recipes, switch the crafting strategy, or open the options.
 - **Hover:** this session's total and your luck.
 - Drag it around the minimap. It's also in the minimap's addon menu, and works with minimap button collectors.
-- Hide it with **Show minimap button** in the options, or type `/craftprofit minimap` (type it again to bring it back).
+- Hide it with **Show minimap button** in the options, or type `/craftonomics minimap` (type it again to bring it back).
 
 ## Ledger
 
-Your crafting history in its own window: what you made, what sold, and how close the forecast was. Open it with the book button at the top of the panel, from the minimap button's right-click menu, or with `/craftprofit ledger`. It records from the moment you have this version, for all your characters.
+Your crafting history in its own window: what you made, what sold, and how close the forecast was. Open it with the book button at the top of the panel, from the minimap button's right-click menu, or with `/craftonomics ledger`. It records from the moment you have this version, for all your characters.
 
 - **Overview:** totals by type (regular crafts, patron, personal, guild and public orders), by profession and by character, the items furthest below their forecast, and a chart of profit by the day it was crafted. Crafts from more than 90 days ago show at the bottom, one line per month, when no character, profession or type is picked.
 - **Crafts:** every craft with when, who, what type, how many, its status, the forecast and the profit so far. Hover a row for the details.
@@ -346,7 +348,7 @@ How the numbers work:
 
 - **Orders** count as sold as soon as you finish them, for what they paid. **Regular crafts** count as they sell, after the auction house cut, minus their share of the materials.
 - **Sales** come from your "Auction successful" mail, so open your mailbox for them to count, within the 30 days the mail lasts. A sale counts toward your oldest unsold craft of that item and rank, so one craft's result is an estimate; totals are what really sold.
-- **Ranks:** the mail only names the item, so Craft Profit also notes what you post, and uses the price to find the rank. If it can't tell, the sale goes to your oldest craft of any rank.
+- **Ranks:** the mail only names the item, so Craftonomics also notes what you post, and uses the price to find the rank. If it can't tell, the sale goes to your oldest craft of any rank.
 - **Your own crafts used as materials** count as used, at what they were worth when crafted, not as unsold. With **Craft myself** or **Cheapest way** on WoW Forever, the craft they went into already counted them at what they cost to make, so they make no profit of their own: it's all in that craft.
 - **Materials cost** is what they were worth when you crafted, not what you paid for them, so profit says whether a craft is worth doing. **Spent on materials** adds these up, whether you bought or gathered them; what you really paid is on the **Purchased** tab.
 - **Purchases** cover the auction house, through any addon, and materials from vendors. A sale no craft explains counts toward what you bought of that item.
@@ -356,7 +358,7 @@ How the numbers work:
 - The window shows each craft for 90 days; after that only its month's totals stay.
 
 ## TSM prices for alts
-Keep TSM turned off on your crafting alts and they still get TSM prices. Turn on **Save TSM prices for alts** in the options, and each time a character with TSM logs in, Craft Profit keeps its prices for your other characters on the same WoW account.
+Keep TSM turned off on your crafting alts and they still get TSM prices. Turn on **Save TSM prices for alts** in the options, and each time a character with TSM logs in, Craftonomics keeps its prices for your other characters on the same WoW account.
 
 - **What's saved**, under **Save prices for**: **Your recipes** (the materials and crafts of every character's recipes, once you've opened their Best crafts list), **All crafting items**, or **Everything TSM has** (every item TSM has auction prices for on your realm, gear at each item level included). A save starts half a minute after you log in and waits while you're in combat. Chat says when it starts and ends, and the footers say **saving for alts...** while it runs.
 - If TSM has far fewer prices than the last save, for example when its desktop app hasn't run, the last save stays and chat says so.
@@ -367,19 +369,19 @@ Keep TSM turned off on your crafting alts and they still get TSM prices. Turn on
 - Turning the option off deletes the saved prices, for all your characters.
 
 ## Options
-Click the gear on the panel (or Craft Profit options in the gear menu under the Patron tab's list), type `/craftprofit`, or go to **Esc → Options → AddOns → Craft Profit**. The main page has what to craft and where prices come from; click the **+** next to Craft Profit for the other pages.
+Click the gear on the panel (or Craftonomics options in the gear menu under the Patron tab's list), type `/craftonomics` (or `/cn` for short), or go to **Esc → Options → AddOns → Craftonomics**. The main page has what to craft and where prices come from; click the **+** next to Craftonomics for the other pages.
 
-**Craft Profit**
+**Craftonomics**
 
 | Option | What it does |
 |---|---|
 | Crafting strategy | What the crafting page crafts: Highest rank, cheapest materials (default), Use what I own, or Cheapest materials. On WoW Forever: Buy missing (default), Craft myself or Cheapest way. Also at the bottom of the Best crafts list. |
 | Count procs in profits | On by default. The Best crafts list ranks by what crafts make on average with procs. Also in the Best crafts list's Filter menu. Not on WoW Forever. |
-| Show minimap button | On by default. Also `/craftprofit minimap`. |
-| Price addon | Automatic (TSM first, then Auctionator for anything TSM has no price for, then Craft Profit's own scan), TSM only, Auctionator only, or Craft Profit's scan only. |
-| Scan when I open the auction house | On by default. Craft Profit's own price scan starts by itself at the auction house, at most once an hour, and only while your prices come from that scan. Also on the Prices tab. |
+| Show minimap button | On by default. Also `/craftonomics minimap`. |
+| Price addon | Automatic (TSM first, then Auctionator for anything TSM has no price for, then Craftonomics' own scan), TSM only, Auctionator only, or Craftonomics' scan only. |
+| Scan when I open the auction house | On by default. Craftonomics' own price scan starts by itself at the auction house, at most once an hour, and only while your prices come from that scan. Also on the Prices tab. |
 | TSM price for materials / crafted items | Market value (default), lowest auction right now, the lower of those two, historical price or region market average. The lower of the two is the careful choice for crafted items: you'd have to match a cheaper auction to sell now. For materials it can show them cheaper than you can buy them right now. |
-| Remind me of old prices | On by default. With prices from Auctionator or Craft Profit's own scan: a chat reminder at the auction house after a day, and a notice over the Best crafts list after 3 days. With TSM prices saved for alts: the same, to log in on a character with TSM. |
+| Remind me of old prices | On by default. With prices from Auctionator or Craftonomics' own scan: a chat reminder at the auction house after a day, and a notice over the Best crafts list after 3 days. With TSM prices saved for alts: the same, to log in on a character with TSM. |
 | Buy vendor items on the auction house | Off by default: materials a vendor sells (thread, flux, vials...) are priced at the vendor, and the shopping list says in chat to buy them there. On: they're priced at their auction house price and go on the shopping list; when the auction house asks more than a vendor, the tooltips of what's missing (the Shopping list button, a material's cart, a Best crafts row) show both prices, and chat says so when the shopping list gets it. |
 | Subtract auction house cut (5%) | On by default. |
 | Save TSM prices for alts | Off by default. Characters with TSM keep its prices for your characters that don't load it (see [TSM prices for alts](#tsm-prices-for-alts)). Turning it off deletes the saved prices. |
@@ -392,7 +394,7 @@ Click the gear on the panel (or Craft Profit options in the gear menu under the 
 | Show on the crafting page / on crafting orders | Turn the panel on or off for each page. WoW Forever has no crafting orders. |
 | Panel size | Size of the whole panel, 60% to 150%. |
 | Show amounts down to | Gold, silver (default) or copper. Not on WoW Forever, which always shows the two biggest coins. |
-| Open with the profession window | The panel opens by itself when you pick a recipe. Off: it stays closed until you click the **Craft Profit** button at the top of the profession window, which opens and closes the panel either way. Also at the bottom of the panel. On by default. |
+| Open with the profession window | The panel opens by itself when you pick a recipe. Off: it stays closed until you click the **Craftonomics** button at the top of the profession window, which opens and closes the panel either way. Also at the bottom of the panel. On by default. |
 | Lock panel position | Stops the panel from being dragged. |
 | Panel position: Reset | Puts the panel back next to the profession window. |
 | Animate procs | On by default. Not on WoW Forever. |
@@ -413,12 +415,12 @@ Click the gear on the panel (or Craft Profit options in the gear menu under the 
 
 | Option | What it does |
 |---|---|
-| At the auction house, use | Auctionator (default) or Craft Profit for everything at the auction house. It sets the four choices below, and reads Custom while they differ. Without Auctionator installed, Craft Profit does all of it and these choices aren't shown (see [Auction house window](#auction-house-window)). |
-| Shop with | Auctionator, TSM search to copy, or Craft Profit: where missing materials go. Also at the bottom of the Shopping list menu and in the gear menu under the Patron tab's list. |
-| Sell with | Craft Profit shows the Sell tab and opens the window by itself at the auction house. |
-| Cancel with | Craft Profit shows the My auctions tab. |
-| Price with | Craft Profit shows the Prices tab, and its scan can start by itself. Also whose price is used when both have one, after TSM's. |
-| Open at the auction house | On by default. Craft Profit's window opens by itself beside the auction house when Sell with is Craft Profit, or its shopping list has something on it. |
+| At the auction house, use | Auctionator (default) or Craftonomics for everything at the auction house. It sets the four choices below, and reads Custom while they differ. Without Auctionator installed, Craftonomics does all of it and these choices aren't shown (see [Auction house window](#auction-house-window)). |
+| Shop with | Auctionator, TSM search to copy, or Craftonomics: where missing materials go. Also at the bottom of the Shopping list menu and in the gear menu under the Patron tab's list. |
+| Sell with | Craftonomics shows the Sell tab and opens the window by itself at the auction house. |
+| Cancel with | Craftonomics shows the My auctions tab. |
+| Price with | Craftonomics shows the Prices tab, and its scan can start by itself. Also whose price is used when both have one, after TSM's. |
+| Open at the auction house | On by default. Craftonomics' window opens by itself beside the auction house when Sell with is Craftonomics, or its shopping list has something on it. |
 | Default posting time | How long an auction lasts when you pick an item on the Sell tab: the last one you used (default), or always the same one. |
 
 **Patron orders** (not on WoW Forever)
@@ -445,6 +447,6 @@ Click the gear on the panel (or Craft Profit options in the gear menu under the 
 
 ## Notes
 - With Auctionator, prices come from your own auction house scans. Once Auctionator's last scan is over a day old, the panel's and the Best crafts list's footers say so in red ("last scan 2 days ago"), and opening the auction house reminds you in chat to run a full scan. Over 3 days old, opening the Best crafts list shows a notice in the middle of the list, once a session. Turn the reminders off with **Remind me of old prices** in the options. With TSM, the TSM desktop app keeps them up to date for you. With Auctionator, the panel's notes say how old its oldest price is (**seen today**, or **oldest 4 days ago**, in red and in sight at the bottom of the panel once it's 3 days or more), and each material's tooltip says when Auctionator last saw it. Visit the auction house to refresh them.
-- With Craft Profit's own price scan, the footers show the scan's age the same way. The chat reminder only comes when you've turned off **Scan when I open the auction house**, since otherwise a new scan is about to start.
-- A big Blizzard update to the profession window or the auction house may need a Craft Profit update too.
+- With Craftonomics' own price scan, the footers show the scan's age the same way. The chat reminder only comes when you've turned off **Scan when I open the auction house**, since otherwise a new scan is about to start.
+- A big Blizzard update to the profession window or the auction house may need a Craftonomics update too.
 - After an update, a What's New window shows what changed since the version you had. Tick **Don't show this after updates** to stop it opening, for all the addons that use it. Type `/whatsnew` to see the latest changes, or to turn it back on.

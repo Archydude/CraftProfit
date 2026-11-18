@@ -1,4 +1,4 @@
--- Craft Profit: the All recipes window. Every profession's recipes with what a
+-- Craftonomics: the All recipes window. Every profession's recipes with what a
 -- craft would make at today's prices and how the item sells, whether or not a
 -- character of yours knows the recipe (see AllRecipes.lua). On WoW Forever an
 -- enchant, which makes nothing to sell, is listed with what its materials cost.
@@ -825,7 +825,7 @@ local function createList()
 end
 
 local function create()
-	frame = CreateFrame("Frame", "CraftProfitAllRecipes", UIParent, "ButtonFrameTemplate")
+	frame = CreateFrame("Frame", "CraftonomicsAllRecipes", UIParent, "ButtonFrameTemplate")
 	ButtonFrameTemplate_HidePortrait(frame)
 	frame:SetTitle("All recipes")
 	frame:SetSize(WIDTH, HEIGHT)
@@ -839,7 +839,7 @@ local function create()
 	frame:SetScript("OnDragStart", frame.StartMoving)
 	frame:SetScript("OnDragStop", frame.StopMovingOrSizing)
 	frame:Hide()
-	tinsert(UISpecialFrames, "CraftProfitAllRecipes")
+	tinsert(UISpecialFrames, "CraftonomicsAllRecipes")
 	frame.Inset:ClearAllPoints()
 	frame.Inset:SetPoint("TOPLEFT", SIDE - 4, -INSET_TOP)
 	frame.Inset:SetPoint("BOTTOMRIGHT", -(SIDE - 4), 32)

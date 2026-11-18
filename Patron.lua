@@ -1,5 +1,5 @@
--- Craft Profit: the Patron tab of the crafting orders page. Blizzard's own order
--- list gets Craft Profit's columns in the room of three of its own (Patron Name,
+-- Craftonomics: the Patron tab of the crafting orders page. Blizzard's own order
+-- list gets Craftonomics' columns in the room of three of its own (Patron Name,
 -- Commission, Reagents): Profit, Rewards, Materials and Actions. Actions has a
 -- button to shop for what's missing and one to start, craft and complete the
 -- order. Above the list, buttons add what's missing for the profitable
@@ -593,7 +593,7 @@ local function layoutColumns(area, frames)
 end
 
 -- Blizzard's frames we moved into our columns (its time left cell and header),
--- with where it had put them, to put them back when Craft Profit's columns are
+-- with where it had put them, to put them back when Craftonomics' columns are
 -- turned off. The list lays them out again by itself on another tab.
 local moved = setmetatable({}, { __mode = "k" })
 
@@ -839,7 +839,7 @@ end
 local HEADERS = {
 	profit = { text = "Profit", sorts = "profit", tip = "Commission after the cut, plus the rewards that sell, minus the "
 		.. "materials you supply, at the qualities that reach the order's minimum quality. The concentration it "
-		.. "takes is shown after it.\n\nWith Count procs in profits on (Craft Profit options), it's "
+		.. "takes is shown after it.\n\nWith Count procs in profits on (Craftonomics options), it's "
 		.. "Expected: what the order makes on average with resourcefulness, on the materials you supply and the "
 		.. "ones the customer sent (what it saves comes back to you). Multicraft doesn't count, since the customer "
 		.. "gets the item." },
@@ -1321,7 +1321,7 @@ local function openGearMenu(owner)
 			end)
 		end
 		root:CreateDivider()
-		root:CreateButton("Craft Profit options", ns.Options.Open)
+		root:CreateButton("Craftonomics options", ns.Options.Open)
 	end)
 end
 
@@ -1357,7 +1357,7 @@ local function createFooter()
 	gear:SetScript("OnClick", openGearMenu)
 	gear:SetScript("OnEnter", function(self)
 		GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
-		GameTooltip:SetText("Craft Profit")
+		GameTooltip:SetText("Craftonomics")
 		GameTooltip:AddLine("Which orders get your concentration first, the concentration strategy, shopping and the options.",
 			1, 1, 1, true)
 		GameTooltip:Show()
@@ -1523,7 +1523,7 @@ end
 
 -- Where a proc of a patron order crafted from the list shows: the list, to flash,
 -- and the frame the gold floats up from (that order's Profit text, or the list).
--- nil when the list isn't showing Craft Profit's columns.
+-- nil when the list isn't showing Craftonomics' columns.
 function Patron.ProcTarget(orderID)
 	if not (active and footer and footer:IsVisible()) then return end
 	local list, anchor = ns.Blizzard.OrderList(), nil

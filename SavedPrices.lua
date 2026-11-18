@@ -1,4 +1,4 @@
--- Craft Profit: TSM's prices, saved for your characters that don't load TSM.
+-- Craftonomics: TSM's prices, saved for your characters that don't load TSM.
 -- When a character with TSM logs in, the materials and crafts in every
 -- character's saved scans (see Scans.lua) are priced and saved for its realm,
 -- with the items that characters without TSM had no price for, and, if the
@@ -7,7 +7,7 @@
 --
 -- Which items TSM has data for comes from TSM's own data as the game loads it
 -- (see onTSMData); their prices still come through TSM's API, like every other
--- price in Craft Profit.
+-- price in Craftonomics.
 --
 -- A saved file only loads up to a limit of unique values, so each realm's prices
 -- are saved as one string.
@@ -34,7 +34,7 @@ local SHRINK_LIMIT = 0.5
 -- At most this many items wait for a character with TSM to price them.
 local MAX_WANTED = 2000
 
--- CraftProfitDB.tsmPrices[realm] = {
+-- CraftonomicsDB.tsmPrices[realm] = {
 --   time = when it was saved, character = who saved it ("Name-Realm"),
 --   matSource, saleSource = the TSM prices it used for materials and crafts,
 --   items = the Save prices for choice it was made with (see ns.SAVE_ITEMS_CHOICES),
@@ -43,14 +43,14 @@ local MAX_WANTED = 2000
 --     times a thousand, each empty when TSM had none,
 -- }
 -- A key is the itemID, or "itemID@itemLevel" for gear, whose price depends on its level.
--- CraftProfitDB.tsmWanted = { key -> the item's link, or its itemID for a material }
+-- CraftonomicsDB.tsmWanted = { key -> the item's link, or its itemID for a material }
 local saved, wanted
 local wantedCount = 0
 
 function SavedPrices.Init()
-	CraftProfitDB.tsmPrices = CraftProfitDB.tsmPrices or {}
-	CraftProfitDB.tsmWanted = CraftProfitDB.tsmWanted or {}
-	saved, wanted = CraftProfitDB.tsmPrices, CraftProfitDB.tsmWanted
+	CraftonomicsDB.tsmPrices = CraftonomicsDB.tsmPrices or {}
+	CraftonomicsDB.tsmWanted = CraftonomicsDB.tsmWanted or {}
+	saved, wanted = CraftonomicsDB.tsmPrices, CraftonomicsDB.tsmWanted
 	for _ in pairs(wanted) do wantedCount = wantedCount + 1 end
 end
 
@@ -113,7 +113,7 @@ local function onTSMData(tag, realmOrRegion, data)
 end
 
 -- TSM hands its data to this function as the game loads TradeSkillMaster_AppHelper,
--- which loads after Craft Profit. Without it (TSM changed, or isn't loaded), saves
+-- which loads after Craftonomics. Without it (TSM changed, or isn't loaded), saves
 -- of more than your recipes save just your recipes.
 if type(TSM_APPHELPER_LOAD_DATA) == "function" then
 	hooksecurefunc("TSM_APPHELPER_LOAD_DATA", onTSMData)
@@ -218,7 +218,7 @@ local function mapOf(source)
 end
 
 -- Keeps an item with no saved price for the next character with TSM to price.
--- Only items Craft Profit prices are wanted, not every item you hover, so these
+-- Only items Craftonomics prices are wanted, not every item you hover, so these
 -- stay few: an item missing from TSM's auction data can still have a vendor price.
 local function want(key, value)
 	if wanted[key] or wantedCount >= MAX_WANTED then return end
@@ -227,7 +227,7 @@ local function want(key, value)
 end
 
 -- The saved prices of `key` and the save they're from, or nil when no save has
--- it, and then it's wanted with `value` (see CraftProfitDB.tsmWanted) if that's
+-- it, and then it's wanted with `value` (see CraftonomicsDB.tsmWanted) if that's
 -- given. A save that has it without a price means TSM had none, so it isn't
 -- wanted again.
 local function lookup(key, value)
@@ -285,7 +285,7 @@ end
 -- Item tooltips, on characters without TSM
 ---------------------------------------------------------------------------
 
--- One line with the item's saved TSM price, as Craft Profit prices it: gear at
+-- One line with the item's saved TSM price, as Craftonomics prices it: gear at
 -- its sale price, anything else at a vendor's price (with the vendor option on)
 -- or its material price, or its sale price without one. Which TSM price that
 -- is ("dbmarket", "vendorbuy"...), then whose prices they are and how old, in
@@ -351,7 +351,7 @@ local function copper(value)
 	return value and format("%.0f", value) or ""
 end
 
--- One key's saved line (see CraftProfitDB.tsmPrices), and whether TSM had any
+-- One key's saved line (see CraftonomicsDB.tsmPrices), and whether TSM had any
 -- price for it. The sale price is for `link`, or for TSM's name for the item
 -- (`tsmName`, see tsmItems).
 local function priceKey(key, link, tsmName)

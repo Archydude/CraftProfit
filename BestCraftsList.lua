@@ -1,4 +1,4 @@
--- Craft Profit: the Best crafts list. A "Best crafts" button at the top of the
+-- Craftonomics: the Best crafts list. A "Best crafts" button at the top of the
 -- panel opens a list over the crafting page's recipe details: every recipe of the
 -- profession shown, most profitable first. Draws the rows BestCrafts.lua works out.
 local _, ns = ...
@@ -33,7 +33,7 @@ local BACK_INSET = 4       -- the list's edge to its background
 local TAB_GAP = 2          -- the tab before it to the Best crafts tab
 local SIDE_TAB_GAP = 2     -- Forever: the side tab above it to the Best crafts side tab, as Blizzard's
 local LEDGER_ICON = "Interface\\Icons\\INV_Misc_Book_09"
-local SIDE_TAB_ICON = "Interface\\AddOns\\CraftProfit\\Media\\logo" -- the addon's logo
+local SIDE_TAB_ICON = "Interface\\AddOns\\Craftonomics\\Media\\logo" -- the addon's logo
 local OPEN_TRIES, OPEN_RETRY = 20, 0.1 -- from an order: waiting for the recipes to show
 local REOPEN_TRIES = 40    -- after a profession switch: waiting for its recipes (OPEN_RETRY apart)
 local FILTER_WIDTH = 90
@@ -1103,7 +1103,7 @@ local function showNotice(text)
 	notice.shade:Show()
 end
 
--- Testing (/craftprofit testnotice): shows the old prices notice on the open
+-- Testing (/craftonomics testnotice): shows the old prices notice on the open
 -- list, whatever the scan's age. False when the list isn't open.
 function BestCraftsList.TestNotice()
 	if not (list and list:IsVisible()) then return false end
@@ -1113,7 +1113,7 @@ function BestCraftsList.TestNotice()
 end
 
 local function createList()
-	list = CreateFrame("Frame", "CraftProfitBestCrafts", ProfessionsFrame.CraftingPage, "BackdropTemplate")
+	list = CreateFrame("Frame", "CraftonomicsBestCrafts", ProfessionsFrame.CraftingPage, "BackdropTemplate")
 	-- The recipe list and the recipe details, as a page of its own.
 	list:SetPoint("TOPRIGHT", ns.Blizzard.RecipeDetails(), "TOPRIGHT")
 	list:SetPoint("BOTTOMLEFT", ns.Blizzard.RecipeList(), "BOTTOMLEFT")

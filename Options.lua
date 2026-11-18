@@ -1,4 +1,4 @@
--- Craft Profit: the options window (Esc > Options > AddOns > Craft Profit). The
+-- Craftonomics: the options window (Esc > Options > AddOns > Craftonomics). The
 -- main page has what to craft and where prices come from; the rest sit on pages
 -- under its "+": Panel, Shopping list, Auction house, Patron orders and Tooltips. WoW Forever
 -- has no ranks, procs, concentration or crafting orders, so the options for
@@ -27,7 +27,7 @@ function Options.Open()
 		if not openAfterCombat then
 			openAfterCombat = true
 			combatWatch:RegisterEvent("PLAYER_REGEN_ENABLED")
-			print("|cffffd100Craft Profit:|r the options open when you leave combat.")
+			print("|cffffd100Craftonomics:|r the options open when you leave combat.")
 		end
 		return
 	end
@@ -57,7 +57,7 @@ end
 
 function Options.Create()
 	local layout
-	category, layout = Settings.RegisterVerticalLayoutCategory("Craft Profit")
+	category, layout = Settings.RegisterVerticalLayoutCategory("Craftonomics")
 	local db = ns.db
 	local quality = ns.QUALITY_CRAFTING -- false on WoW Forever
 	-- The page settings go on: the main page, then each page under its "+".
@@ -85,7 +85,7 @@ function Options.Create()
 	end
 
 	local function setting(key, varType, name)
-		local s = Settings.RegisterAddOnSetting(page, "CRAFTPROFIT_" .. key:upper(), key, db, varType, name, ns.DEFAULTS[key])
+		local s = Settings.RegisterAddOnSetting(page, "CRAFTONOMICS_" .. key:upper(), key, db, varType, name, ns.DEFAULTS[key])
 		s:SetValueChangedCallback(function(...)
 			onChanged(...)
 			-- A part of the auction house changed on its own: the choice for all of them reads it again.
@@ -109,7 +109,7 @@ function Options.Create()
 	-- settings is later reused for Blizzard's own, which then can't call protected functions:
 	-- its Discord dropdown and button get blocked (ADDON_ACTION_FORBIDDEN on IsUserOAuthed).
 	local function control(kind, s, options, tooltip)
-		pageLayout:AddInitializer(Settings.CreateControlInitializer("CraftProfitSettings" .. kind .. "Template", s,
+		pageLayout:AddInitializer(Settings.CreateControlInitializer("CraftonomicsSettings" .. kind .. "Template", s,
 			options, tooltip))
 	end
 
@@ -131,7 +131,7 @@ function Options.Create()
 	local function button(name, text, onClick, tooltip)
 		-- On our own row template too, and with no search tags: tags written from addon code
 		-- taint the game's options search, and its Discord button then errors (IsUserOAuthed).
-		pageLayout:AddInitializer(Settings.CreateElementInitializer("CraftProfitSettingsButtonTemplate", {
+		pageLayout:AddInitializer(Settings.CreateElementInitializer("CraftonomicsSettingsButtonTemplate", {
 			name = name,
 			buttonText = text,
 			buttonClick = onClick,
@@ -152,7 +152,7 @@ function Options.Create()
 		strategyTip = strategyTip .. strategy[2] .. ": " .. strategy[4] .. "\n\n"
 	end
 	dropdown("craftStrategy", "Crafting strategy", strategyChoices, strategyTip .. (quality and
-		"It picks the materials for Use Craft Profit Reagents and the panel's blue row, prices missing materials, " ..
+		"It picks the materials for Use Craftonomics Reagents and the panel's blue row, prices missing materials, " ..
 		"decides what the shopping list buys, and ranks the Best crafts list. Patron orders keep their own rule: the " ..
 		"cheapest materials that reach the order's minimum quality." or
 		"It prices your materials, decides what the shopping list buys, and ranks the Best crafts list.") ..
@@ -172,23 +172,23 @@ function Options.Create()
 	checkbox("minimap", "Show minimap button",
 		"Click: your profession window, on the Best crafts list of the profession you opened last. Right-click: a " ..
 		"menu with your professions, the Ledger, the crafting strategy and these options. Hover: this session's total.\n\n" ..
-		"Also in the minimap's addon menu, and /craftprofit minimap shows or hides it.")
+		"Also in the minimap's addon menu, and /craftonomics minimap shows or hides it.")
 
 	header("Prices")
 	dropdown("provider", "Price addon", {
 		{ "auto", "Automatic (TSM first)" },
 		{ "tsm", "TradeSkillMaster only" },
 		{ "auctionator", "Auctionator only" },
-		{ "own", "Craft Profit's scan only" },
+		{ "own", "Craftonomics' scan only" },
 	}, "Where prices come from. Automatic uses TSM, falls back to Auctionator for items TSM has no price for, " ..
-		"and to Craft Profit's own scan of the auction house for what neither prices. With neither installed, " ..
-		"Craft Profit's scan prices everything.\n\n" ..
-		"The scan runs from the Prices tab of Craft Profit's window at the auction house (/craftprofit prices).")
+		"and to Craftonomics' own scan of the auction house for what neither prices. With neither installed, " ..
+		"Craftonomics' scan prices everything.\n\n" ..
+		"The scan runs from the Prices tab of Craftonomics' window at the auction house (/craftonomics prices).")
 	checkbox("autoScan", "Scan when I open the auction house",
-		"Craft Profit's own price scan starts by itself when you open the auction house.\n\n" ..
+		"Craftonomics' own price scan starts by itself when you open the auction house.\n\n" ..
 		"Only while your prices come from that scan (not from TSM or Auctionator), and at most once an hour. " ..
 		"Chat says when it starts and when it's done.\n\n" ..
-		"Off: you start it with Scan now on the Prices tab, or /craftprofit scan.")
+		"Off: you start it with Scan now on the Prices tab, or /craftonomics scan.")
 	dropdown("matSource", "TSM price for materials", ns.TSM_SOURCES,
 		"What you'd pay for materials. Market value smooths out spikes; lowest auction is what you'd pay right now. " ..
 		"The lower of the two can show materials cheaper than you can buy them right now.")
@@ -196,7 +196,7 @@ function Options.Create()
 		"What you'd get for the item you craft. The lower of market value and the lowest auction is the careful " ..
 		"choice: you'd have to match a cheaper auction to sell now, and high listings that aren't selling don't count.")
 	checkbox("scanReminder", "Remind me of old prices",
-		"With prices from Auctionator or Craft Profit's scan: when the last scan is over a day old, a chat line reminds you when you open " ..
+		"With prices from Auctionator or Craftonomics' scan: when the last scan is over a day old, a chat line reminds you when you open " ..
 		"the auction house, and when it's over 3 days old, a notice over the Best crafts list when you open it (once a " ..
 		"session). The panel's and the list's footers always say how old the scan is, in red once it's a day old.\n\n" ..
 		"With TSM prices saved by another character: the same reminders, to log in on a character with TSM.")
@@ -237,7 +237,7 @@ function Options.Create()
 	end
 
 	checkbox("panelAuto", "Open with the profession window",
-		"The panel opens by itself when you pick a recipe. Off: it stays closed until you click the Craft Profit " ..
+		"The panel opens by itself when you pick a recipe. Off: it stays closed until you click the Craftonomics " ..
 		"button at the top of the profession window. That button opens and closes the panel either way.\n\n" ..
 		"Also at the bottom of the panel.")
 
@@ -288,7 +288,7 @@ function Options.Create()
 		"to an Auctionator shopping list.\n\n" ..
 		"TSM: the same menu gives you a search to copy into TSM's Shopping tab, for exactly the " ..
 		(quality and "ranks and " or "") .. "amounts you're missing.\n\n" ..
-		"Craft Profit's own list: the same menu adds them to a list of its own. Its window opens beside the " ..
+		"Craftonomics' own list: the same menu adds them to a list of its own. Its window opens beside the " ..
 		"auction house, where a click on a material shows it with the amount you still need. " ..
 		"It's used when Auctionator isn't installed, unless you pick the TSM search under " .. ns.LIST_ADDON_LABEL .. ".")
 	checkbox("listPerCharacter", "One list per character",
@@ -299,9 +299,9 @@ function Options.Create()
 		format("Each profession gets its own list, like \"Blacksmithing\".\n\n" ..
 			"Can be combined with one list per character. With neither, the list is \"%s\".", ns.SHOPPING_LIST))
 	checkbox("checkOff", "Check off what you get",
-		"Materials come off the shopping list, Auctionator's or Craft Profit's own, as you get them: bought, " ..
+		"Materials come off the shopping list, Auctionator's or Craftonomics' own, as you get them: bought, " ..
 		"looted, from the mailbox or crafted. Chat says what came off, and when the list is done.\n\n" ..
-		"Only what Craft Profit put on the list. Moving things between your bags and banks doesn't count.")
+		"Only what Craftonomics put on the list. Moving things between your bags and banks doesn't count.")
 	button("Shopping list", "Clear", function() ns.Shopping.Clear() end,
 		"Empties the shopping list. Ctrl-click the Shopping list button does the same.\n\n" ..
 		"With one list per profession, this clears the list of the profession window that's open, " ..
@@ -311,12 +311,12 @@ function Options.Create()
 	---------------------------------------------------------------------------
 
 	startPage("Auction house")
-	-- Without Auctionator there's nothing to choose between: Craft Profit does
+	-- Without Auctionator there's nothing to choose between: Craftonomics does
 	-- everything, so only "Shop with" is left, and only when TSM is there to pick.
 	local hasAuctionator = Auctionator ~= nil
 	-- The Settings calls differ between game versions, and the parts below work without this one.
 	if hasAuctionator then pcall(function()
-		local master = Settings.RegisterProxySetting(page, "CRAFTPROFIT_AHALL", Settings.VarType.String, ns.AH_LABEL,
+		local master = Settings.RegisterProxySetting(page, "CRAFTONOMICS_AHALL", Settings.VarType.String, ns.AH_LABEL,
 			ns.DEFAULTS.listAddon, allParts, function(value)
 				if settingAll or value == "custom" then return end
 				settingAll = true
@@ -328,10 +328,10 @@ function Options.Create()
 			for _, choice in ipairs(ns.AH_CHOICES) do container:Add(choice[1], choice[2]) end
 			if allParts() == "custom" then container:Add("custom", "Custom") end
 			return container:GetData()
-		end, "Auctionator or Craft Profit for everything at the auction house: shopping, selling, canceling " ..
+		end, "Auctionator or Craftonomics for everything at the auction house: shopping, selling, canceling " ..
 			"and prices. Picking one sets all four choices below.\n\n" ..
 			"Custom: the choices below aren't all the same.\n\n" ..
-			"Craft Profit's window only has the tabs for what Craft Profit does. With Auctionator for everything, " ..
+			"Craftonomics' window only has the tabs for what Craftonomics does. With Auctionator for everything, " ..
 			"the window and its button on the auction house are gone.\n\n" ..
 			"Auctionator's own tabs stay on the auction house whatever you pick.")
 		allSetting = master
@@ -346,7 +346,7 @@ function Options.Create()
 				elseif key == "tsm" then
 					offered = ns.Prices.HasTSM()
 				elseif not hasAuctionator and db.listAddon ~= "tsm" then
-					-- Without Auctionator, a saved "Auctionator" means Craft Profit's list:
+					-- Without Auctionator, a saved "Auctionator" means Craftonomics' list:
 					-- this row keeps the saved value, so it comes back with Auctionator.
 					key = db.listAddon
 				end
@@ -355,30 +355,30 @@ function Options.Create()
 			return list
 		end,
 			(hasAuctionator and "Auctionator: missing materials go to Auctionator's shopping list.\n\n" or "") ..
-			"Craft Profit: they go to Craft Profit's own shopping list, on the Shopping list tab of its window.\n\n" ..
+			"Craftonomics: they go to Craftonomics' own shopping list, on the Shopping list tab of its window.\n\n" ..
 			(ns.Prices.HasTSM() and "TSM search to copy: they become a search to paste into TSM's Shopping tab.\n\n" or "") ..
 			"You can also switch it at the bottom of the Shopping list menus.")
 	end
 	if hasAuctionator then
 		dropdown("ahSell", "Sell with", ns.AH_CHOICES,
-			"Craft Profit: its window has the Sell tab and opens by itself at the auction house. An item you put up " ..
+			"Craftonomics: its window has the Sell tab and opens by itself at the auction house. An item you put up " ..
 			"for sale from your bags is picked there.\n\n" ..
-			"Auctionator: no Sell tab, and Craft Profit leaves selling alone.")
+			"Auctionator: no Sell tab, and Craftonomics leaves selling alone.")
 		dropdown("ahCancel", "Cancel with", ns.AH_CHOICES,
-			"Craft Profit: its window has the My auctions tab, with your undercut auctions and the button that " ..
+			"Craftonomics: its window has the My auctions tab, with your undercut auctions and the button that " ..
 			"cancels them.\n\n" ..
 			"Auctionator: no My auctions tab.")
 		dropdown("ahPrice", "Price with", ns.AH_CHOICES,
-			"Craft Profit: its window has the Prices tab, and with Scan when I open the auction house on, its price " ..
+			"Craftonomics: its window has the Prices tab, and with Scan when I open the auction house on, its price " ..
 			"scan starts by itself. It doesn't while your prices come from TSM.\n\n" ..
-			"Auctionator: no Prices tab, and Craft Profit's scan doesn't start by itself. /craftprofit scan still " ..
+			"Auctionator: no Prices tab, and Craftonomics' scan doesn't start by itself. /craftonomics scan still " ..
 			"starts one.\n\n" ..
 			"It's also whose price is used when both have one. The other prices what the first doesn't.\n\n" ..
 			"TSM's prices still come before both. Price addon on the main page can limit prices to one addon.")
 	end
 	header("Auction house window")
 	checkbox("auctionWindow", "Open at the auction house",
-		"Craft Profit's own window opens beside the auction house. There it has four tabs:\n\n" ..
+		"Craftonomics' own window opens beside the auction house. There it has four tabs:\n\n" ..
 		"Shopping list: what you still have to buy. A click on a material shows it at the auction house.\n\n" ..
 		"Sell: what's in your bags that can be auctioned, your favorites first. Pick one, set the price, the " ..
 		"amount and how long it lasts, and post it. The game's own sell page shows what it's listed for and " ..
@@ -386,15 +386,15 @@ function Options.Create()
 		"My auctions: your auctions, which of them are undercut, and a button that cancels those. The " ..
 		"game's own Auctions tab opens beside it.\n\n" ..
 		"Prices: when the auction house was last scanned for prices, and the button that scans it.\n\n" ..
-		(hasAuctionator and "It only has the tabs for what Craft Profit does (see the choices above).\n\n" ..
-			"It opens by itself beside the game's own auction house window, when Sell with is Craft Profit or " ..
-			"Craft Profit's shopping list has something on it. "
+		(hasAuctionator and "It only has the tabs for what Craftonomics does (see the choices above).\n\n" ..
+			"It opens by itself beside the game's own auction house window, when Sell with is Craftonomics or " ..
+			"Craftonomics' shopping list has something on it. "
 			or "It opens by itself beside the game's own auction house window. ") ..
 		"It doesn't open over another addon's " ..
 		"auction house window.\n\n" ..
 		"Away from the auction house it's only the shopping list.\n\n" ..
-		"Off: it only opens from the minimap button's menu, the Shopping list menus, or /craftprofit shop. " ..
-		"At the auction house, /craftprofit sell, auctions and prices open its other tabs.")
+		"Off: it only opens from the minimap button's menu, the Shopping list menus, or /craftonomics shop. " ..
+		"At the auction house, /craftonomics sell, auctions and prices open its other tabs.")
 	dropdown("sellDefault", "Default posting time", ns.SELL_DEFAULT_CHOICES,
 		"How long an auction lasts when you pick an item on the Sell tab. You can still change it there for " ..
 		"the item you're posting.\n\n" ..
@@ -434,7 +434,7 @@ function Options.Create()
 			"Knowledge first: orders that reward profession knowledge first, then the rest by profit.\n\n" ..
 			"Don't use concentration: patron orders never spend it. Orders that need it to reach their minimum " ..
 			"quality show \"No concentration\", get no cart or craft button, and Add profitable and Add all skip them; " ..
-			"on their order form, Use Craft Profit Reagents leaves the materials alone. The crafting page isn't affected.\n\n" ..
+			"on their order form, Use Craftonomics Reagents leaves the materials alone. The crafting page isn't affected.\n\n" ..
 			"You can also switch it with the gear at the bottom of the Patron tab.")
 		local concentrationTip = ns.CONCENTRATION_STRATEGY_TIP .. "\n\n"
 		for _, strategy in ipairs(ns.CONCENTRATION_STRATEGIES) do
@@ -442,7 +442,7 @@ function Options.Create()
 		end
 		dropdown("concentrationStrategy", ns.CONCENTRATION_STRATEGY_TITLE, ns.CONCENTRATION_STRATEGIES, concentrationTip ..
 			"Gold per point counts the profit as the panel shows it, with procs when Count procs in profits is on.\n\n" ..
-			"It picks the materials for Use Craft Profit Reagents on the order form and the crafting page. Patron orders " ..
+			"It picks the materials for Use Craftonomics Reagents on the order form and the crafting page. Patron orders " ..
 			"don't use concentration while Spend concentration on is set to Don't use concentration. Also on the panel " ..
 			"and in the gear at the bottom of the Patron tab.")
 		checkbox("nextLosing", ns.NEXT_LOSING, ns.NEXT_LOSING_TIP ..
@@ -463,7 +463,7 @@ function Options.Create()
 			{ "all", "All your characters" },
 			{ "current", "This character only" },
 		}, "All your characters: one line for each character that knows the recipe, best rank first.\n\n" ..
-			"A character shows up once you've opened its profession window, on any version of Craft Profit since 1.7.")
+			"A character shows up once you've opened its profession window, on any version of Craftonomics since 1.7.")
 		checkbox("rankConcentration", "Show its concentration",
 			"When the best rank needs concentration, add how much.")
 		button("Saved characters", "Forget...", ns.Ranks.OpenForgetMenu,
@@ -495,7 +495,7 @@ function Options.Create()
 		"Not on items you can't post, like soulbound ones.")
 	checkbox("priceTooltip", "Show saved TSM prices",
 		"On characters without TSM that use TSM prices saved by another character (see Save TSM prices for alts, " ..
-		"on the main page): one line with the item's price, as Craft Profit prices it, and whose " ..
+		"on the main page): one line with the item's price, as Craftonomics prices it, and whose " ..
 		"prices they are and how old.\n\nOnly items in those saved prices show it.")
 
 	Settings.RegisterAddOnCategory(category)

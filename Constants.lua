@@ -1,4 +1,4 @@
--- Craft Profit: values shared by every file. Change them here, not inline.
+-- Craftonomics: values shared by every file. Change them here, not inline.
 local _, ns = ...
 
 -- The auction house keeps 5% of every sale.
@@ -79,7 +79,7 @@ ns.DEFAULTS = {
 	locked = false,
 	scale = 1,
 	precision = "silver", -- smallest coin shown: "copper" | "silver" | "gold"
-	provider = "auto",    -- "auto" | "tsm" | "auctionator" | "own" (Craft Profit's scan, see Prices.lua)
+	provider = "auto",    -- "auto" | "tsm" | "auctionator" | "own" (Craftonomics' scan, see Prices.lua)
 	matSource = "dbmarket",
 	saleSource = "dbmarket",
 	vendorOnAH = false,   -- materials vendors sell are bought on the auction house, not at a vendor
@@ -98,13 +98,13 @@ ns.DEFAULTS = {
 	ahSell = "auctionator",    -- selling: "own" shows the Sell tab
 	ahCancel = "auctionator",  -- canceling: "own" shows the My auctions tab
 	ahPrice = "auctionator",   -- prices: whose come first with both (after TSM's); "own" shows the Prices tab and lets the scan start by itself
-	auctionWindow = true,    -- Craft Profit's window opens by itself at the auction house (see ShoppingList.lua)
+	auctionWindow = true,    -- Craftonomics' window opens by itself at the auction house (see ShoppingList.lua)
 	auctionTab = "sell",       -- the tab it was last on at the auction house: "shop" | "sell" | "auctions" | "prices"
 	sellDuration = 0,          -- how long auctions posted from the Sell tab last, by the game's number for it (0: not chosen yet, so the game's own choice)
 	sellDefault = "last",      -- what a newly picked item starts on: "last" | "1" | "2" | "3" (see ns.SELL_DEFAULT_CHOICES)
 	sellSort = "name",         -- the column the Sell tab's list is sorted by: "name" | "price" | "rate" | "amount"
 	sellSortAscending = true,  -- and whether that's A to Z or lowest first
-	patronList = true,    -- Craft Profit's columns, buttons and footer on the Patron tab's order list
+	patronList = true,    -- Craftonomics' columns, buttons and footer on the Patron tab's order list
 	recipesExpansion = false,  -- Retail: the expansion the All recipes window lists, by the game's number (false: the newest)
 	recipesRank = "highest",   -- Retail: recipes with ranks are priced at their "highest" rank with the best materials, or their "lowest" with the cheapest
 	recipesProfitable = false, -- the All recipes window lists only the recipes that make gold
@@ -117,10 +117,10 @@ ns.DEFAULTS = {
 	patronMaterials = "cheapest", -- patron orders' material qualities: "cheapest" | "owned" (see ns.PATRON_MATERIALS_CHOICES)
 	patronReach = "materials",    -- reaching an order's minimum quality: "materials" | "concentration" first
 	nextLosing = true,    -- the Patron tab's Next order button goes on to orders that lose gold
-	bestMaterials = false, -- "Use Craft Profit Reagents" on the order form and crafting page: put them in every order or recipe you open
+	bestMaterials = false, -- "Use Craftonomics Reagents" on the order form and crafting page: put them in every order or recipe you open
 	craftStrategy = ns.QUALITY_CRAFTING and "highest" or "buy", -- what the crafting page and Best crafts list craft (see ns.STRATEGIES)
-	scanReminder = true,  -- remind you to scan the auction house when Auctionator's or Craft Profit's prices are old
-	autoScan = true,      -- Craft Profit's own price scan starts by itself at the auction house (see PriceScan.lua)
+	scanReminder = true,  -- remind you to scan the auction house when Auctionator's or Craftonomics' prices are old
+	autoScan = true,      -- Craftonomics' own price scan starts by itself at the auction house (see PriceScan.lua)
 	minimap = true,       -- the minimap button (its position is in minimapIcon, kept by LibDBIcon)
 	countProcs = true,    -- multicraft and resourcefulness count in the Best crafts list
 	rankTooltip = true,   -- best rank you can craft, on crafted items' tooltips
@@ -290,7 +290,7 @@ function ns.StrategyText(selection)
 	end
 end
 
--- What you use at the auction house, Auctionator or Craft Profit, is one choice
+-- What you use at the auction house, Auctionator or Craftonomics, is one choice
 -- for each part of it: these settings, in the options' order. The first (where
 -- missing materials go) can also be a TSM search. AH_LABEL is the option that
 -- sets them all at once.
@@ -298,23 +298,23 @@ ns.AH_LABEL = "At the auction house, use"
 ns.AH_PARTS = { "listAddon", "ahSell", "ahCancel", "ahPrice" }
 ns.AH_CHOICES = {
 	{ "auctionator", "Auctionator" },
-	{ "own", "Craft Profit" },
+	{ "own", "Craftonomics" },
 }
 
--- Whether Craft Profit does that part of the auction house itself: it's the one
+-- Whether Craftonomics does that part of the auction house itself: it's the one
 -- picked, or Auctionator isn't installed to do it.
 function ns.UsesOwn(part)
 	return ns.db[part] == "own" or not Auctionator
 end
 
 -- Choices for where missing materials go: Auctionator's list, a TSM search, or
--- Craft Profit's own list. The option's name is also the title over these choices
+-- Craftonomics' own list. The option's name is also the title over these choices
 -- in the Shopping list menus.
 ns.LIST_ADDON_LABEL = "Shop with"
 ns.LIST_ADDON_CHOICES = {
 	{ "auctionator", "Auctionator" },
 	{ "tsm", "TSM search to copy" },
-	{ "own", "Craft Profit" },
+	{ "own", "Craftonomics" },
 }
 
 -- The shopping list the missing materials button adds to, when the list isn't

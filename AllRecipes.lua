@@ -1,4 +1,4 @@
--- Craft Profit: every profession's recipes, priced as if you bought the
+-- Craftonomics: every profession's recipes, priced as if you bought the
 -- materials and sold what a craft makes, whether or not a character of yours
 -- knows the recipe. For the All recipes window (AllRecipesWindow.lua). The recipes
 -- are unpacked and priced a few at a time while the window is open, and let go

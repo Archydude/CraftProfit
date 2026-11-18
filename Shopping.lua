@@ -1,5 +1,5 @@
--- Craft Profit: the shopping list button. Adds what you're short of, for one or
--- more crafts, to an Auctionator shopping list or to Craft Profit's own (its
+-- Craftonomics: the shopping list button. Adds what you're short of, for one or
+-- more crafts, to an Auctionator shopping list or to Craftonomics' own (its
 -- window is ShoppingList.lua), or gives you a TSM search for it.
 local ADDON_NAME, ns = ...
 
@@ -16,7 +16,7 @@ local TRADEABLE = {
 }
 
 local function say(text)
-	print(ns.Color("heading", "Craft Profit:") .. " " .. text)
+	print(ns.Color("heading", "Craftonomics:") .. " " .. text)
 end
 
 local function auctionatorAPI()
@@ -36,7 +36,7 @@ local function tsmLoaded()
 end
 
 -- Where lists of missing materials go: "auctionator" (its shopping list), "tsm"
--- (a search to copy into TSM's Shopping tab) or "own" (Craft Profit's own list),
+-- (a search to copy into TSM's Shopping tab) or "own" (Craftonomics' own list),
 -- or nil when shopping is turned off. The "Shop with" choice decides (one
 -- of the parts of the auction house, see ns.AH_PARTS). The TSM
 -- search is only ever used when it was chosen: a choice whose addon isn't loaded
@@ -50,7 +50,7 @@ function Shopping.ListTarget()
 end
 
 -- "Shop with" radios at the bottom of a menu: the addons that are loaded and
--- Craft Profit's own list. Left out with neither addon, when there's no choice.
+-- Craftonomics' own list. Left out with neither addon, when there's no choice.
 -- The menu redraws for the new choice.
 function Shopping.AddShopWithChoice(root)
 	local offered = { auctionator = auctionatorAPI() ~= nil, tsm = tsmLoaded(), own = true }
@@ -94,7 +94,7 @@ function Shopping.ListName(profession, character)
 end
 
 -- How chat and tooltips name a list: Auctionator's "Snir - Blacksmithing"
--- shopping list, or the "Snir - Blacksmithing" shopping list for Craft Profit's
+-- shopping list, or the "Snir - Blacksmithing" shopping list for Craftonomics'
 -- own. `listName` defaults to the current list.
 function Shopping.ListPhrase(listName)
 	return format(Shopping.ListTarget() == "auctionator" and "Auctionator's \"%s\" shopping list"
@@ -226,10 +226,10 @@ end
 -- is the one "missing" uses (bags, bank, warband bank), so moving things between
 -- them changes nothing.
 --
--- ns.db.listItems[listName][itemID] = { name, tier }: the lines Craft Profit put on
+-- ns.db.listItems[listName][itemID] = { name, tier }: the lines Craftonomics put on
 -- each Auctionator list, saved, since a list outlives the session. Lines you add
 -- yourself in Auctionator are left alone, and an entry goes once its line is gone.
--- Craft Profit's own lists (below) are checked off the same way.
+-- Craftonomics' own lists (below) are checked off the same way.
 
 -- How many of each listed item you had when last counted (itemID -> count), this
 -- session. Only a rise since then is checked off: what you use up just lowers it.
@@ -403,7 +403,7 @@ local function pruneSources()
 end
 
 ---------------------------------------------------------------------------
--- Craft Profit's own shopping list
+-- Craftonomics' own shopping list
 ---------------------------------------------------------------------------
 -- ns.db.ownLists[listName][itemID] = how many are still to buy. Saved for all your
 -- characters, under the same names as the Auctionator lists. A list that empties
@@ -419,7 +419,7 @@ local function itemLink(itemID)
 	return link or name or format("item %d", itemID)
 end
 
--- Adds { { itemID, qty } ... } to one of Craft Profit's own lists.
+-- Adds { { itemID, qty } ... } to one of Craftonomics' own lists.
 local function addToOwn(listName, items)
 	local list = ns.db.ownLists[listName] or {}
 	ns.db.ownLists[listName] = list
@@ -431,7 +431,7 @@ local function addToOwn(listName, items)
 	ownChanged()
 end
 
--- Takes { { itemID, qty } ... } off one of Craft Profit's own lists, lowering
+-- Takes { { itemID, qty } ... } off one of Craftonomics' own lists, lowering
 -- amounts and dropping lines that reach zero. Returns what came off ({ { itemID,
 -- qty, link, gone } }, gone when its whole line went) and how many lines are left.
 local function removeFromOwn(listName, items)
@@ -473,23 +473,23 @@ local function clearOwn(names)
 		ownChanged()
 		say(format("Cleared the %s shopping list%s.", table.concat(cleared, ", "), #cleared > 1 and "s" or ""))
 	else
-		say(#names > 1 and "Your Craft Profit shopping lists are already empty."
+		say(#names > 1 and "Your Craftonomics shopping lists are already empty."
 			or format("The \"%s\" shopping list is already empty.", names[1]))
 	end
 end
 
--- Empties one of Craft Profit's own lists: the Clear button beside its name.
+-- Empties one of Craftonomics' own lists: the Clear button beside its name.
 function Shopping.ClearOwn(listName)
 	clearOwn({ listName })
 end
 
--- Takes a whole line off one of Craft Profit's own lists: a right-click on it.
+-- Takes a whole line off one of Craftonomics' own lists: a right-click on it.
 function Shopping.RemoveOwn(listName, itemID)
 	local list = ns.db.ownLists[listName]
 	if list and list[itemID] then removeFromOwn(listName, { { itemID = itemID, qty = list[itemID] } }) end
 end
 
--- Whether any of Craft Profit's own lists has something on it.
+-- Whether any of Craftonomics' own lists has something on it.
 function Shopping.OwnHasItems()
 	return next(ns.db.ownLists) ~= nil
 end
@@ -540,7 +540,7 @@ local function checkOffList(api, listName, tracked, gained)
 		left == 0 and " That's everything on it." or ""))
 end
 
--- The same for one of Craft Profit's own lists.
+-- The same for one of Craftonomics' own lists.
 local function checkOffOwn(listName, gained)
 	local items = {}
 	for itemID in pairs(ns.db.ownLists[listName] or {}) do
@@ -554,7 +554,7 @@ local function checkOffOwn(listName, gained)
 end
 
 -- Checks off what you got since the last count, on this character's lists:
--- Craft Profit's own, and Auctionator's when it's loaded. `settling`: only take
+-- Craftonomics' own, and Auctionator's when it's loaded. `settling`: only take
 -- the counts.
 local function checkOff(settling)
 	if not (ns.db and ns.db.checkOff) then
@@ -583,7 +583,7 @@ local function checkOff(settling)
 	end
 end
 
--- Craft Profit's own lists that have something on them, this character's first:
+-- Craftonomics' own lists that have something on them, this character's first:
 -- { { name, mine, items = { { itemID, qty } ... } } ... }, the items by name.
 function Shopping.OwnLists()
 	local mine = {}
@@ -613,9 +613,9 @@ end
 -- Lists from before the rename
 ---------------------------------------------------------------------------
 -- Up to 1.18 the lists were named "Craft Profit - Snir - Blacksmithing", or just
--- "Craft Profit". Each login moves every old list, any character's, onto today's
--- name, adding up amounts the new list already has, and takes its check-off
--- tracking along.
+-- "Craft Profit" (the addon's name until 4.8). Each login moves every old list,
+-- any character's, onto today's name, adding up amounts the new list already
+-- has, and takes its check-off tracking along.
 
 local OLD_LIST = "Craft Profit"
 
@@ -799,7 +799,7 @@ local function sendToAuctionator(api, missing, forText, listName, adds)
 	end)
 end
 
--- The same, to Craft Profit's own list.
+-- The same, to Craftonomics' own list.
 local function sendToOwn(missing, forText, listName, adds)
 	sortMissing(missing, function(auction, vendor, bound)
 		if #auction > 0 then
@@ -814,7 +814,7 @@ end
 
 -- The popup with a TSM search to copy. It can't be edited, so a stray key
 -- doesn't break it.
-StaticPopupDialogs.CRAFTPROFIT_TSM_SEARCH = {
+StaticPopupDialogs.CRAFTONOMICS_TSM_SEARCH = {
 	text = "TSM search for %s\n\nPress Ctrl+C to copy it, then paste it into the search box on TSM's Shopping tab.",
 	button1 = CLOSE,
 	hasEditBox = true,
@@ -849,13 +849,13 @@ local function copyTSMSearch(missing, forText)
 			local parts = {}
 			for _, item in ipairs(auction) do parts[#parts + 1] = format("i:%d/x%d", item.itemID, item.qty) end
 			say(format("TSM search for %s: %s.", forText, itemList(auction)))
-			StaticPopup_Show("CRAFTPROFIT_TSM_SEARCH", forText, nil, table.concat(parts, ";"))
+			StaticPopup_Show("CRAFTONOMICS_TSM_SEARCH", forText, nil, table.concat(parts, ";"))
 		end
 		sayUnbuyable(vendor, bound, auction)
 	end)
 end
 
--- Empties the shopping list (see listsToClear): Craft Profit's own when that's
+-- Empties the shopping list (see listsToClear): Craftonomics' own when that's
 -- where materials go, else Auctionator's. Auctionator's API can't delete a list,
 -- so an empty one is left behind; the next add fills it again.
 function Shopping.Clear(listName)
@@ -885,7 +885,7 @@ function Shopping.Clear(listName)
 	if #cleared > 0 then
 		say(format("Cleared Auctionator's %s shopping list%s.", table.concat(cleared, ", "), #cleared > 1 and "s" or ""))
 	elseif not failed then
-		say(#names > 1 and "Your Craft Profit shopping lists are already empty."
+		say(#names > 1 and "Your Craftonomics shopping lists are already empty."
 			or format("Auctionator's \"%s\" shopping list is already empty.", names[1]))
 	end
 end
@@ -1043,7 +1043,7 @@ local function popupEditBox(popup)
 end
 
 -- "Other amount...": asks for a number of crafts.
-StaticPopupDialogs.CRAFTPROFIT_CRAFTS = {
+StaticPopupDialogs.CRAFTONOMICS_CRAFTS = {
 	text = "Buy materials for how many crafts?",
 	button1 = OKAY,
 	button2 = CANCEL,
@@ -1093,7 +1093,7 @@ function Shopping.AddCraftCounts(root, model)
 			function() addForCrafts(model, crafts) end)
 		button:SetEnabled(more > 0)
 	end
-	root:CreateButton("Other amount...", function() StaticPopup_Show("CRAFTPROFIT_CRAFTS", nil, nil, model) end)
+	root:CreateButton("Other amount...", function() StaticPopup_Show("CRAFTONOMICS_CRAFTS", nil, nil, model) end)
 
 	if not tsm then
 		root:CreateDivider()

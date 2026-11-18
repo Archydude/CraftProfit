@@ -1,4 +1,4 @@
--- Craft Profit: what each character's Best crafts scan found, for the list's
+-- Craftonomics: what each character's Best crafts scan found, for the list's
 -- All characters view. The game only says how a craft turns out for the character
 -- whose profession window is open, so each finished scan is saved, and the other
 -- characters' recipes are priced from that. Prices stay live; only the ranks and
@@ -16,7 +16,7 @@ local format = string.format
 -- Scans saved in another format are ignored until that character scans again.
 local FORMAT = 1
 
--- CraftProfitDB.characters["Name-Realm"].scans[professionID] = {
+-- CraftonomicsDB.characters["Name-Realm"].scans[professionID] = {
 --   format, time = when it was scanned, name = the profession ("Midnight Blacksmithing"),
 --   recipes = { packed recipe ... } (see packRecipe),
 -- }
@@ -212,7 +212,7 @@ end
 -- This character's saved recipes, of every profession it has scanned.
 function Scans.Mine()
 	local _, myKey = ns.Ranks.Me()
-	local character = myKey and CraftProfitDB.characters[myKey]
+	local character = myKey and CraftonomicsDB.characters[myKey]
 	local list = {}
 	for professionID, saved in pairs(character and character.scans or {}) do
 		if saved.format == FORMAT then
@@ -227,7 +227,7 @@ end
 function Scans.Entries(shownProfession)
 	local list = {}
 	local _, myKey = ns.Ranks.Me()
-	for key, character in pairs(CraftProfitDB.characters) do
+	for key, character in pairs(CraftonomicsDB.characters) do
 		for professionID, saved in pairs(character.scans or {}) do
 			if saved.format == FORMAT and not (key == myKey and professionID == shownProfession) then
 				for _, entry in ipairs(entriesOf(saved, professionID, key)) do list[#list + 1] = entry end

@@ -1,6 +1,6 @@
--- Craft Profit: minimap button (LibDBIcon, so minimap button collectors pick it
+-- Craftonomics: minimap button (LibDBIcon, so minimap button collectors pick it
 -- up) and addon compartment entry. Click to open your profession window on the
--- Best crafts list, right-click for a menu (with Craft Profit's shopping list
+-- Best crafts list, right-click for a menu (with Craftonomics' shopping list
 -- when you use it), hover for this session's total.
 local _, ns = ...
 
@@ -9,7 +9,7 @@ ns.Minimap = Button
 
 local format = string.format
 
-local NAME = "CraftProfit" -- the button's name with LibDBIcon
+local NAME = "Craftonomics" -- the button's name with LibDBIcon
 local ICON = "Interface\\Icons\\INV_Hammer_20"
 -- The menu's own lines each start with an icon, like its profession lines: a bag
 -- for the shopping list, the Ledger's book (as on the Best crafts list), and a
@@ -45,7 +45,7 @@ end
 -- The profession to open: the one whose window you opened last, or else your first.
 local function lastProfession()
 	local list = professions()
-	local last = CraftProfitCharDB and CraftProfitCharDB.lastProfession
+	local last = CraftonomicsCharDB and CraftonomicsCharDB.lastProfession
 	for _, profession in ipairs(list) do
 		if profession.skillLine == last then return profession end
 	end
@@ -96,12 +96,12 @@ end
 
 local function openMenu()
 	MenuUtil.CreateContextMenu(UIParent, function(_, root)
-		root:CreateTitle("Craft Profit")
+		root:CreateTitle("Craftonomics")
 		for _, profession in ipairs(professions()) do
 			root:CreateButton(withIcon(profession.icon, profession.name .. ": Best crafts"),
 				function() openBestCrafts(profession.skillLine) end)
 		end
-		-- Craft Profit's own shopping list, when that's what you shop with or it has something on it.
+		-- Craftonomics' own shopping list, when that's what you shop with or it has something on it.
 		if ns.Shopping.ListTarget() == "own" or ns.Shopping.OwnHasItems() then
 			root:CreateButton(withIcon(SHOPPING_ICON, "Shopping list"), function() ns.ShoppingList.Show("shop") end)
 		end
@@ -124,7 +124,7 @@ local function onClick(mouseButton)
 end
 
 local function fillTooltip(tooltip)
-	tooltip:SetText("Craft Profit")
+	tooltip:SetText("Craftonomics")
 	local session = ns.db.session
 	if session.crafts > 0 then
 		local luck = ns.Procs.LuckText()
@@ -157,7 +157,7 @@ function Button.Init()
 	ns.db.minimapIcon.hide = not ns.db.minimap
 	local launcher = LibStub("LibDataBroker-1.1"):NewDataObject(NAME, {
 		type = "launcher",
-		label = "Craft Profit",
+		label = "Craftonomics",
 		icon = ICON,
 		OnClick = function(_, mouseButton) onClick(mouseButton) end,
 		OnTooltipShow = fillTooltip,
@@ -172,21 +172,21 @@ events:SetScript("OnEvent", function()
 	if not ns.Blizzard.IsOwnProfession() then return end
 	local skillLine = ns.Blizzard.ShownBaseProfession()
 	if not skillLine then return end
-	CraftProfitCharDB = CraftProfitCharDB or {}
-	CraftProfitCharDB.lastProfession = skillLine
+	CraftonomicsCharDB = CraftonomicsCharDB or {}
+	CraftonomicsCharDB.lastProfession = skillLine
 end)
 
 -- Addon compartment (the addon menu on Retail's minimap), named in the .toc.
-function CraftProfit_OnAddonCompartmentClick(_, mouseButton)
+function Craftonomics_OnAddonCompartmentClick(_, mouseButton)
 	onClick(mouseButton)
 end
 
-function CraftProfit_OnAddonCompartmentEnter(_, menuButton)
+function Craftonomics_OnAddonCompartmentEnter(_, menuButton)
 	GameTooltip:SetOwner(menuButton, "ANCHOR_LEFT")
 	fillTooltip(GameTooltip)
 	GameTooltip:Show()
 end
 
-function CraftProfit_OnAddonCompartmentLeave()
+function Craftonomics_OnAddonCompartmentLeave()
 	GameTooltip:Hide()
 end

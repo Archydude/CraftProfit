@@ -1,4 +1,4 @@
--- Craft Profit: its own auction house prices, for when neither TSM nor
+-- Craftonomics: its own auction house prices, for when neither TSM nor
 -- Auctionator prices here (see Prices.lua). A scan reads the lowest price of
 -- everything on the auction house, and how many are up, and saves them for the
 -- realm. What vendors sell is learned whenever you visit one. The Prices tab
@@ -29,7 +29,7 @@ local OLD_DAYS = 21
 -- for the window's own first search, and runs at most this often. In seconds.
 local AUTO_DELAY, AUTO_EVERY = 2, 3600
 
--- CraftProfitDB.scanPrices[realm] = {
+-- CraftonomicsDB.scanPrices[realm] = {
 --   time = when the last full scan ended, count = how many items it found,
 --   prices = "key,price,listed,day;..." with the lowest price in copper, how many
 --     were up in the last full scan (0 when it didn't see the item), and the day
@@ -37,7 +37,7 @@ local AUTO_DELAY, AUTO_EVERY = 2, 3600
 -- }
 -- A key is the itemID, "itemID@itemLevel" for gear (as SavedPrices.SaleKey), or
 -- "p" and the species for a caged battle pet.
--- CraftProfitDB.vendorSeen[itemID] = what a vendor sells one for, in copper.
+-- CraftonomicsDB.vendorSeen[itemID] = what a vendor sells one for, in copper.
 local realm, save
 local prices, counts, days -- key -> lowest price, how many are up, day last seen
 -- The scan that's running: { items, rows, pages, seen, today, auto, disturbed }.
@@ -73,8 +73,8 @@ local function load()
 	if prices then return true end
 	realm = realm or realmName()
 	if not realm then return false end
-	CraftProfitDB.scanPrices = CraftProfitDB.scanPrices or {}
-	save = CraftProfitDB.scanPrices[realm]
+	CraftonomicsDB.scanPrices = CraftonomicsDB.scanPrices or {}
+	save = CraftonomicsDB.scanPrices[realm]
 	prices, counts, days = {}, {}, {}
 	if save and type(save.prices) == "string" then
 		for key, price, listed, day in save.prices:gmatch("([^,;]+),(%d+),(%d+),(%d+)") do
@@ -91,7 +91,7 @@ local function pack()
 	end
 	save = save or {}
 	save.prices = table.concat(lines, ";")
-	CraftProfitDB.scanPrices[realm] = save
+	CraftonomicsDB.scanPrices[realm] = save
 end
 
 local function tell()
@@ -128,7 +128,7 @@ end
 
 -- What a vendor sells one for, in copper, from the vendors you've visited.
 function PriceScan.Vendor(itemID)
-	local seen = CraftProfitDB.vendorSeen
+	local seen = CraftonomicsDB.vendorSeen
 	return seen and seen[itemID] or nil
 end
 
@@ -325,7 +325,7 @@ function PriceScan.Watch(listener)
 end
 
 -- Whether the scan that starts by itself is due: the option is on, scanning is
--- Craft Profit's to do (see Prices.ScansItself), and the last one is old enough.
+-- Craftonomics' to do (see Prices.ScansItself), and the last one is old enough.
 local function autoDue()
 	if not ns.db.autoScan or not ns.Prices.ScansItself() then return false end
 	local seconds = PriceScan.Seconds()
@@ -354,8 +354,8 @@ end
 
 -- Notes what the vendor you're at sells for gold, with no limit on how many.
 local function readVendor()
-	CraftProfitDB.vendorSeen = CraftProfitDB.vendorSeen or {}
-	local seen = CraftProfitDB.vendorSeen
+	CraftonomicsDB.vendorSeen = CraftonomicsDB.vendorSeen or {}
+	local seen = CraftonomicsDB.vendorSeen
 	for index = 1, GetMerchantNumItems() do
 		local info = C_MerchantFrame.GetItemInfo(index)
 		local link = GetMerchantItemLink(index)

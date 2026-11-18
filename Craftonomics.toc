@@ -1,24 +1,25 @@
 ## Interface: 120105, 16001
-## Title: Craft Profit
-## Notes: Your profit or loss on every craft and crafting order, a Best crafts tab of what's worth crafting, a Ledger of how it really went, and its own auction house window. Works alone or with TSM and Auctionator. Type /craftprofit for options.
+## Title: Craftonomics
+## Notes: Your profit or loss on every craft and crafting order, a Best crafts tab of what's worth crafting, a Ledger of how it really went, and its own auction house window. Works alone or with TSM and Auctionator. Type /craftonomics for options. Formerly Craft Profit.
 ## Author: Archdude
-## Version: 4.8.0
-## OptionalDeps: TradeSkillMaster, Auctionator
-## SavedVariables: CraftProfitDB, CraftProfitWhatsNew
-## SavedVariablesPerCharacter: CraftProfitCharDB
+## Version: 5.0.0
+## OptionalDeps: TradeSkillMaster, Auctionator, CraftProfit
+## SavedVariables: CraftonomicsDB, CraftonomicsWhatsNew
+## SavedVariablesPerCharacter: CraftonomicsCharDB
 ## IconTexture: Interface\Icons\INV_Hammer_20
 ## Category-enUS: Professions
 ## X-License: MIT
 ## X-Curse-Project-ID: 1723749
-## AddonCompartmentFunc: CraftProfit_OnAddonCompartmentClick
-## AddonCompartmentFuncOnEnter: CraftProfit_OnAddonCompartmentEnter
-## AddonCompartmentFuncOnLeave: CraftProfit_OnAddonCompartmentLeave
+## AddonCompartmentFunc: Craftonomics_OnAddonCompartmentClick
+## AddonCompartmentFuncOnEnter: Craftonomics_OnAddonCompartmentEnter
+## AddonCompartmentFuncOnLeave: Craftonomics_OnAddonCompartmentLeave
 
 Libs\LibStub\LibStub.lua
 Libs\CallbackHandler-1.0\CallbackHandler-1.0.lua
 Libs\LibDataBroker-1.1\LibDataBroker-1.1.lua
 Libs\LibDBIcon-1.0\LibDBIcon-1.0.lua
 
+Rename.lua
 Constants.lua
 Data\Forever.lua
 Data\ForeverRecipes.lua

@@ -1,4 +1,4 @@
--- Craft Profit: the ledger's records. What you crafted, sold, posted and used up,
+-- Craftonomics: the ledger's records. What you crafted, sold, posted and used up,
 -- kept packed as text so a long history stays small in the saved variables, and
 -- only unpacked while the Ledger window is open. Which sale paid for which craft
 -- isn't kept: Ledger.Analyze works that out each time, oldest craft first.
@@ -27,7 +27,7 @@ Ledger.KINDS = {
 }
 Ledger.KIND_ORDER = { "craft", "patron", "personal", "guild", "public" }
 
--- CraftProfitDB.ledger = {
+-- CraftonomicsDB.ledger = {
 --   names = { "Name-Realm" or "Tailoring" ... }, shared by the records below,
 --   items = itemID -> name, of what you've crafted,
 --   days = day number -> { crafts, sales, posts, used }, each a string of lines:
@@ -811,8 +811,8 @@ function Ledger.ToggleDemo()
 end
 
 function Ledger.Init()
-	CraftProfitDB.ledger = CraftProfitDB.ledger or { names = {}, items = {}, days = {}, months = {} }
-	saved = CraftProfitDB.ledger
+	CraftonomicsDB.ledger = CraftonomicsDB.ledger or { names = {}, items = {}, days = {}, months = {} }
+	saved = CraftonomicsDB.ledger
 	for index, name in ipairs(saved.names) do nameIndex[name] = index end
 	watchPosts()
 	local events = CreateFrame("Frame")
@@ -827,7 +827,7 @@ function Ledger.Init()
 		-- The sales the mailbox already told us about count from the start.
 		if not saved.seeded then
 			saved.seeded = true
-			for _, sale in ipairs(CraftProfitDB.sales and CraftProfitDB.sales.list or {}) do Ledger.RecordSale(sale) end
+			for _, sale in ipairs(CraftonomicsDB.sales and CraftonomicsDB.sales.list or {}) do Ledger.RecordSale(sale) end
 		end
 	end)
 end

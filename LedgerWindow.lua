@@ -1,4 +1,4 @@
--- Craft Profit: the Ledger window. Overview, every craft, how each item did, from the
+-- Craftonomics: the Ledger window. Overview, every craft, how each item did, from the
 -- records in Ledger.lua. They're unpacked when it opens and let go when it closes.
 local _, ns = ...
 
@@ -54,7 +54,7 @@ local SHOWS_PROCS = ns.QUALITY_CRAFTING
 local NO_CRAFTS = "Nothing here yet. Crafts are recorded from now on, with what the panel forecast for them."
 local NO_BOUGHT = "Nothing here yet. What you buy on the auction house, and materials from vendors, are recorded from now on."
 local NO_MATCH = "Nothing matches the filters."
-local NO_COST = "Crafted while the Craft Profit panel wasn't showing this recipe, so what its materials cost isn't known. It's left out of profit."
+local NO_COST = "Crafted while the Craftonomics panel wasn't showing this recipe, so what its materials cost isn't known. It's left out of profit."
 local MATCH_NOTE = "A sale counts toward your oldest unsold craft of that item and rank, so one craft's result is an estimate. Totals are what really sold."
 
 local frame, scrollBox, headerBar, footer, empty, chart, searchBox, exportFrame
@@ -692,7 +692,7 @@ local function drawTiles(total, spent)
 	}
 	local notes = {
 		"Orders when they're done, regular crafts as they sell, each minus its materials."
-			.. (total.unknown > 0 and format("\n\n%s crafts are left out: they were crafted while the Craft Profit panel wasn't showing their recipe, so what their materials cost isn't known.",
+			.. (total.unknown > 0 and format("\n\n%s crafts are left out: they were crafted while the Craftonomics panel wasn't showing their recipe, so what their materials cost isn't known.",
 				BreakUpLargeNumbers(total.unknown)) or ""),
 		format("%s items: what sold on the auction house, after its cut, and what orders paid.", BreakUpLargeNumbers(total.sold)),
 		"What the materials in these crafts were worth when you crafted them, whether you bought or gathered them."
@@ -847,7 +847,7 @@ local function exportText()
 end
 
 -- Asks first: there's no getting the records back.
-StaticPopupDialogs.CRAFTPROFIT_CLEAR_LEDGER = {
+StaticPopupDialogs.CRAFTONOMICS_CLEAR_LEDGER = {
 	text = "Clear the whole Ledger, for all your characters?\n\nEvery craft, sale and purchase in it is gone for good.",
 	button1 = "Clear",
 	button2 = CANCEL,
@@ -1047,7 +1047,7 @@ local function createChart()
 end
 
 local function create()
-	frame = CreateFrame("Frame", "CraftProfitLedger", UIParent, "ButtonFrameTemplate")
+	frame = CreateFrame("Frame", "CraftonomicsLedger", UIParent, "ButtonFrameTemplate")
 	ButtonFrameTemplate_HidePortrait(frame)
 	frame:SetTitle("Ledger")
 	frame:SetSize(WIDTH, HEIGHT)
@@ -1061,7 +1061,7 @@ local function create()
 	frame:SetScript("OnDragStart", frame.StartMoving)
 	frame:SetScript("OnDragStop", frame.StopMovingOrSizing)
 	frame:Hide()
-	tinsert(UISpecialFrames, "CraftProfitLedger")
+	tinsert(UISpecialFrames, "CraftonomicsLedger")
 	frame.Inset:ClearAllPoints()
 	frame.Inset:SetPoint("TOPLEFT", SIDE - 4, -INSET_TOP)
 	frame.Inset:SetPoint("BOTTOMRIGHT", -(SIDE - 4), 32)
@@ -1117,7 +1117,7 @@ local function create()
 	clear:SetText("Clear")
 	clear:SetSize(clear:GetFontString():GetUnboundedStringWidth() + 24, 22)
 	clear:SetPoint("RIGHT", export, "LEFT", -6, 0)
-	clear:SetScript("OnClick", function() StaticPopup_Show("CRAFTPROFIT_CLEAR_LEDGER") end)
+	clear:SetScript("OnClick", function() StaticPopup_Show("CRAFTONOMICS_CLEAR_LEDGER") end)
 
 	footer = frame:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
 	footer:SetPoint("BOTTOMLEFT", SIDE + 4, 10)
@@ -1148,7 +1148,7 @@ function LedgerWindow.Show()
 	LedgerWindow.Render()
 end
 
--- Testing (/craftprofit testledger): made-up records in the window, or back to
+-- Testing (/craftonomics testledger): made-up records in the window, or back to
 -- yours. Nothing is saved.
 function LedgerWindow.ToggleDemo()
 	local on = ns.Ledger.ToggleDemo()

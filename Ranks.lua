@@ -1,4 +1,4 @@
--- Craft Profit: on a crafted item's tooltip, the best rank each of your
+-- Craftonomics: on a crafted item's tooltip, the best rank each of your
 -- characters can craft it at with the top quality of every material, using
 -- concentration when that reaches a higher rank. Also the best rank with the
 -- optional reagents that make it hardest (the ones that raise its item level).
@@ -20,7 +20,7 @@ local FRAME_BUDGET_MS = 2
 -- of changes (opening the window, crafting) scans once.
 local SCAN_DELAY = 1
 
--- CraftProfitDB.characters["Name-Realm"] = {
+-- CraftonomicsDB.characters["Name-Realm"] = {
 --   name, realm, class = for showing the character on tooltips,
 --   professions = { [professionID] = {
 --     parent = base profession (Blacksmithing), for dropping unlearned ones,
@@ -34,8 +34,8 @@ local characters
 local myKey, saved -- this character's key and professions, from login on
 
 function Ranks.Init()
-	CraftProfitDB.characters = CraftProfitDB.characters or {}
-	characters = CraftProfitDB.characters
+	CraftonomicsDB.characters = CraftonomicsDB.characters or {}
+	characters = CraftonomicsDB.characters
 end
 
 -- This character's saved entry and its key, or nil before login.
@@ -53,11 +53,11 @@ local function login()
 	local me = characters[myKey] or { professions = {} }
 	me.name, me.realm, me.class = name, realm, UnitClassBase("player")
 	characters[myKey] = me
-	if CraftProfitCharDB and CraftProfitCharDB.professions then
-		for professionID, profession in pairs(CraftProfitCharDB.professions) do
+	if CraftonomicsCharDB and CraftonomicsCharDB.professions then
+		for professionID, profession in pairs(CraftonomicsCharDB.professions) do
 			me.professions[professionID] = me.professions[professionID] or profession
 		end
-		CraftProfitCharDB.professions = nil
+		CraftonomicsCharDB.professions = nil
 	end
 	saved = me.professions
 end
@@ -173,14 +173,14 @@ local function rankOf(recipeID, recipeInfo)
 	return rank, schematic.outputItemID
 end
 
--- Testing (/craftprofit testrank): prints how the open crafting order turns out
+-- Testing (/craftonomics testrank): prints how the open crafting order turns out
 -- next to how Craft Rank works it out for the same recipe. False when no order is open.
 function Ranks.Explain()
 	local ctx = ns.Blizzard.OrderContext()
 	if not (ctx and ctx.live and ctx.transaction) then return false end
 	local order, transaction = ctx.order, ctx.transaction
 	local recipeID = order.spellID
-	local function say(...) print("|cffffd100Craft Profit:|r " .. format(...)) end
+	local function say(...) print("|cffffd100Craftonomics:|r " .. format(...)) end
 	local function line(label, info)
 		if not info then return say("%s: no answer", label) end
 		say("%s: rank %s, difficulty %d + %d, skill %d + %d, concentration %d", label, tostring(info.craftingQuality),
@@ -455,7 +455,7 @@ function Ranks.Forget(key)
 	ns.Shopping.Say(format("Forgot %s's Craft Ranks and Best crafts.", name))
 end
 
-StaticPopupDialogs.CRAFTPROFIT_FORGET_CHARACTER = {
+StaticPopupDialogs.CRAFTONOMICS_FORGET_CHARACTER = {
 	text = "Forget %s's Craft Ranks and Best crafts?",
 	button1 = "Forget",
 	button2 = CANCEL,
@@ -481,7 +481,7 @@ function Ranks.OpenForgetMenu()
 		for _, entry in ipairs(others) do
 			local name = characterName(entry.character, true)
 			root:CreateButton(name, function()
-				StaticPopup_Show("CRAFTPROFIT_FORGET_CHARACTER", name, nil, entry.key)
+				StaticPopup_Show("CRAFTONOMICS_FORGET_CHARACTER", name, nil, entry.key)
 			end)
 		end
 	end)

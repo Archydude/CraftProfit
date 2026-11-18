@@ -1,4 +1,4 @@
--- Craft Profit: asking the auction house what an item is listed for, and for
+-- Craftonomics: asking the auction house what an item is listed for, and for
 -- your own auctions, for the Sell and My auctions tabs (Sell.lua, Auctions.lua).
 -- The auction house answers one question at a time, so the questions wait in a
 -- line here. Nothing is posted, bought or cancelled from this file.
@@ -18,7 +18,7 @@ local MAX_ROWS = 40
 local open = false
 local queue, active = {}, nil
 local retryDue = false
--- Why the last question failed, for /craftprofit testauctions.
+-- Why the last question failed, for /craftonomics testauctions.
 Search.lastProblem = nil
 
 local function priceSorts()

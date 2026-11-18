@@ -1,10 +1,10 @@
--- Craft Profit: its auction house window, and the Shopping list tab in it (the
+-- Craftonomics: its auction house window, and the Shopping list tab in it (the
 -- list itself is in Shopping.lua). The Sell and My auctions tabs are in Sell.lua
 -- and Auctions.lua. The window opens beside the auction house, and from the
--- minimap button's menu, the Shopping list menus or /craftprofit shop, and a side
+-- minimap button's menu, the Shopping list menus or /craftonomics shop, and a side
 -- button on the auction house window opens and closes it there. Away from
 -- the auction house it's only the shopping list: the other tabs need the auction
--- house, so they and /craftprofit sell, auctions and prices wait for it. A click on a
+-- house, so they and /craftonomics sell, auctions and prices wait for it. A click on a
 -- material shows it at the auction house, with the amount still to buy filled in.
 local _, ns = ...
 
@@ -32,7 +32,7 @@ local DOCK_GAP = 4       -- between the auction house (or its side buttons) and 
 -- The side button on the auction house window: its icon (the addon's logo), where
 -- the first side button sits on the window's right edge (other addons put theirs
 -- there too), and the gap under the one above.
-local SIDE_ICON = "Interface\\AddOns\\CraftProfit\\Media\\logo"
+local SIDE_ICON = "Interface\\AddOns\\Craftonomics\\Media\\logo"
 local SIDE_X, SIDE_Y = -2, -52
 local SIDE_GAP = 2
 local SIDE_ICON_SIZE = 24 -- on Retail, where the icon doesn't fill the button
@@ -72,7 +72,7 @@ local nameLookDue, nameLooks, unnamed = false, 0, nil
 
 -- The material a click is waiting on, while the game loads its auction details.
 local pending
--- Why the last click searched by name, for /craftprofit testshop.
+-- Why the last click searched by name, for /craftonomics testshop.
 local lastProblem
 
 -- Blizzard's auction house window, when it's the one on screen.
@@ -248,7 +248,7 @@ end
 ---------------------------------------------------------------------------
 
 -- Whether a tab is there at the auction house: the ones for the parts of it that
--- Craft Profit does (see ns.UsesOwn). A shopping list of Craft Profit's that
+-- Craftonomics does (see ns.UsesOwn). A shopping list of Craftonomics' that
 -- still has something on it doesn't keep its tab: away from the auction house
 -- the minimap button's menu still opens it.
 local TAB_PARTS = { sell = "ahSell", auctions = "ahCancel" }
@@ -256,7 +256,7 @@ local function tabShown(key)
 	if key == "shop" then
 		return (ns.Shopping.ListTarget() or (ns.UsesOwn("listAddon") and "own")) == "own"
 	elseif key == "prices" then
-		-- Also when Craft Profit's scan is the only price addon picked.
+		-- Also when Craftonomics' scan is the only price addon picked.
 		return ns.UsesOwn("ahPrice") or ns.db.provider == "own"
 	end
 	return ns.UsesOwn(TAB_PARTS[key])
@@ -277,7 +277,7 @@ local TAB_OPTIONS = { shop = "Shop with", sell = "Sell with", auctions = "Cancel
 ---------------------------------------------------------------------------
 -- Other addons (All The Things) put their side buttons in the same place, and
 -- share a frame for it, AuctionHouseFrameTabSideBar: its Tabs lists the buttons
--- top to bottom, and selTab is the one whose window is open. Craft Profit's joins
+-- top to bottom, and selTab is the one whose window is open. Craftonomics' joins
 -- it when it's there, so the buttons stack and only one window is open at a time.
 -- It's another addon's arrangement, so every step into it is guarded.
 
@@ -321,7 +321,7 @@ end
 
 local function sideTooltip(self)
 	GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
-	GameTooltip:SetText("Craft Profit")
+	GameTooltip:SetText("Craftonomics")
 	GameTooltip:AddLine("Your shopping list, selling, your auctions and the price scan.", 1, 1, 1, true)
 	GameTooltip:Show()
 end
@@ -332,7 +332,7 @@ end
 local function createSideTab(auctionHouse)
 	local tab = CreateFrame("Frame", nil, auctionHouse, "LargeSideTabButtonTemplate")
 	tab:Hide()
-	tab.tooltipText = "Craft Profit" -- what the game's own tooltip for it reads
+	tab.tooltipText = "Craftonomics" -- what the game's own tooltip for it reads
 	lightSideTab(tab, false)
 	tab:SetCustomOnMouseUpHandler(function(_, button, upInside)
 		-- Another addon's side button asks this way for the window to close, for its own to open.
@@ -490,7 +490,7 @@ local function createTabs()
 end
 
 local function create()
-	frame = CreateFrame("Frame", "CraftProfitShoppingList", UIParent, "ButtonFrameTemplate")
+	frame = CreateFrame("Frame", "CraftonomicsShoppingList", UIParent, "ButtonFrameTemplate")
 	ButtonFrameTemplate_HidePortrait(frame)
 	frame:SetTitle(TAB_LABELS.shop)
 	frame:SetSize(WIDTH, HEIGHT)
@@ -507,7 +507,7 @@ local function create()
 	end)
 	frame:SetScript("OnDragStop", frame.StopMovingOrSizing)
 	frame:Hide()
-	tinsert(UISpecialFrames, "CraftProfitShoppingList")
+	tinsert(UISpecialFrames, "CraftonomicsShoppingList")
 	frame.Inset:ClearAllPoints()
 	frame.Inset:SetPoint("TOPLEFT", SIDE - 4, -INSET_TOP)
 	frame.Inset:SetPoint("BOTTOMRIGHT", -(SIDE - 4), INSET_BOTTOM)
@@ -567,7 +567,7 @@ function ShoppingList.Show(key)
 	-- A menu passes its own things here, so only a tab's name counts.
 	key = (atAuctionHouse and TAB_LABELS[key]) and key or "shop"
 	if atAuctionHouse and not firstTab() then
-		ns.Shopping.Say(format("Craft Profit's auction house window is off: %s is set to Auctionator in the options.",
+		ns.Shopping.Say(format("Craftonomics' auction house window is off: %s is set to Auctionator in the options.",
 			ns.AH_LABEL))
 		return
 	end
@@ -581,7 +581,7 @@ function ShoppingList.IsShown()
 	return frame ~= nil and frame:IsShown()
 end
 
--- An option changed: the tabs and the side button follow what Craft Profit does
+-- An option changed: the tabs and the side button follow what Craftonomics does
 -- at the auction house now.
 function ShoppingList.OptionsChanged()
 	if not atAuctionHouse then return end
@@ -613,7 +613,7 @@ function ShoppingList.Added()
 		ShoppingList.Show()
 	elseif not hinted then
 		hinted = true
-		ns.Shopping.Say(Color("muted", "/craftprofit shop shows your shopping list. It opens by itself at the auction house."))
+		ns.Shopping.Say(Color("muted", "/craftonomics shop shows your shopping list. It opens by itself at the auction house."))
 	end
 end
 
@@ -638,7 +638,7 @@ events:SetScript("OnEvent", function(_, event, itemID)
 			elseif ns.db.auctionWindow and auctionFrame() then
 				-- Only beside the game's own window: it doesn't open over another addon's.
 				-- With something to buy, the shopping list. With nothing, the window still
-				-- opens for selling when that's Craft Profit's part, on the tab you last
+				-- opens for selling when that's Craftonomics' part, on the tab you last
 				-- used if it's still there.
 				if ns.Shopping.ListTarget() == "own" and ns.Shopping.OwnHasItems() then
 					openedByAuctionHouse = true

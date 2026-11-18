@@ -1,4 +1,4 @@
--- Craft Profit: the Prices tab of its auction house window (see
+-- Craftonomics: the Prices tab of its auction house window (see
 -- ShoppingList.lua): where your prices come from, when the auction house was
 -- last scanned, and the button that scans it (the scan itself is in PriceScan.lua).
 local _, ns = ...
@@ -17,7 +17,7 @@ local CHECK_SIZE = 26
 local LABEL_GAP = 2     -- checkbox to its label
 
 local HELP_TEXT = "A scan reads the lowest price of everything on the auction house, and how many are up.\n\n"
-	.. "Craft Profit prices your materials and crafts with it when neither TSM nor Auctionator does, or when "
+	.. "Craftonomics prices your materials and crafts with it when neither TSM nor Auctionator does, or when "
 	.. "you pick it as the Price addon in the options.\n\n"
 	.. "A scan can take a few minutes on a busy auction house, and you can keep buying and selling while it "
 	.. "runs. What vendors sell is learned as you visit them."
@@ -44,7 +44,7 @@ local function refresh()
 	local scanner = ns.Prices.Scanner()
 	local source = "Your prices come from: " .. ns.Prices.SourceLabel() .. "."
 	if scanner ~= "own" then
-		source = source .. Color("muted", "\nCraft Profit's scan only prices what that has no price for.")
+		source = source .. Color("muted", "\nCraftonomics' scan only prices what that has no price for.")
 	end
 	sourceText:SetText(source)
 
@@ -118,7 +118,7 @@ function PricesTab.Create(parent, width)
 	autoCheck:SetScript("OnEnter", function(self)
 		GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
 		GameTooltip:AddLine("Scan when I open the auction house", 1, 1, 1)
-		GameTooltip:AddLine("Only while your prices come from Craft Profit's scan, and at most once an hour.",
+		GameTooltip:AddLine("Only while your prices come from Craftonomics' scan, and at most once an hour.",
 			nil, nil, nil, true)
 		GameTooltip:Show()
 	end)

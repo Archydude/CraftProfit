@@ -3,8 +3,8 @@
 	     same template across pages; with our own templates, a row one of our settings drew
 	     on is never handed to Blizzard's settings (like Discord's button and dropdown)
 	     afterwards. -->
-	<Frame name="CraftProfitSettingsButtonTemplate" inherits="SettingButtonControlTemplate" virtual="true"/>
-	<Frame name="CraftProfitSettingsCheckboxTemplate" inherits="SettingsCheckboxControlTemplate" virtual="true"/>
-	<Frame name="CraftProfitSettingsDropdownTemplate" inherits="SettingsDropdownControlTemplate" virtual="true"/>
-	<Frame name="CraftProfitSettingsSliderTemplate" inherits="SettingsSliderControlTemplate" virtual="true"/>
+	<Frame name="CraftonomicsSettingsButtonTemplate" inherits="SettingButtonControlTemplate" virtual="true"/>
+	<Frame name="CraftonomicsSettingsCheckboxTemplate" inherits="SettingsCheckboxControlTemplate" virtual="true"/>
+	<Frame name="CraftonomicsSettingsDropdownTemplate" inherits="SettingsDropdownControlTemplate" virtual="true"/>
+	<Frame name="CraftonomicsSettingsSliderTemplate" inherits="SettingsSliderControlTemplate" virtual="true"/>
 </Ui>

@@ -1,4 +1,4 @@
--- Craft Profit: which material qualities a patron order should use, for the
+-- Craftonomics: which material qualities a patron order should use, for the
 -- Patron order list: the cheapest ones that still meet the order's minimum
 -- quality. "Cheapest" counts what you own at what it would sell for, so a rank
 -- you have only loses to a cheaper one when buying that really comes out ahead.
@@ -30,11 +30,11 @@ local craftPlan, craftPlanKey
 -- currencyID }, or false when the game couldn't say.
 local predictions = {}
 
--- For testing (/craftprofit testquality <rank>): treat every patron order as
+-- For testing (/craftonomics testquality <rank>): treat every patron order as
 -- needing at least this rank. Not saved; a /reload turns it off.
 Planner.testMinQuality = nil
 
--- For testing (/craftprofit testconcentration <amount>): pretend you have this much
+-- For testing (/craftonomics testconcentration <amount>): pretend you have this much
 -- concentration. Not saved; a /reload turns it off.
 Planner.testConcentration = nil
 
@@ -536,7 +536,7 @@ function Planner.ForCraft(ctx)
 	return craftPlan or nil
 end
 
--- Testing (/craftprofit testplan): prints every mix the crafting page's plan
+-- Testing (/craftonomics testplan): prints every mix the crafting page's plan
 -- tries, the rank and concentration the game predicts for each, what it makes
 -- (and per concentration point), and the plan it picks. False when the crafting
 -- page shows no recipe.
@@ -545,7 +545,7 @@ function Planner.Explain()
 	if not ctx then return false end
 	local recipeInfo, schematic, transaction = ctx.recipeInfo, ctx.schematic, ctx.transaction
 	local recipeID = recipeInfo.recipeID
-	local function say(...) print("|cffffd100Craft Profit:|r " .. format(...)) end
+	local function say(...) print("|cffffd100Craftonomics:|r " .. format(...)) end
 	local function name(itemID)
 		return format("%s (rank %s)", C_Item.GetItemNameByID(itemID) or itemID,
 			tostring(C_TradeSkillUI.GetItemReagentQualityByItemInfo(itemID)))

@@ -1,4 +1,4 @@
--- Craft Profit: what happens after each craft. Works out what the craft really
+-- Craftonomics: what happens after each craft. Works out what the craft really
 -- made (quality you got, multicraft extras, materials resourcefulness returned),
 -- adds it to the session total, and celebrates procs.
 local _, ns = ...
@@ -29,7 +29,7 @@ function Results.ResetSession()
 end
 
 -- Clicking the session row asks first, so a stray click can't wipe it.
-StaticPopupDialogs.CRAFTPROFIT_RESET_SESSION = {
+StaticPopupDialogs.CRAFTONOMICS_RESET_SESSION = {
 	text = "Reset this session's total?",
 	button1 = "Reset",
 	button2 = CANCEL,
@@ -40,7 +40,7 @@ StaticPopupDialogs.CRAFTPROFIT_RESET_SESSION = {
 }
 
 function Results.ConfirmResetSession()
-	StaticPopup_Show("CRAFTPROFIT_RESET_SESSION")
+	StaticPopup_Show("CRAFTONOMICS_RESET_SESSION")
 end
 
 ---------------------------------------------------------------------------
@@ -363,7 +363,7 @@ local function onCraftResult(data)
 	celebrate(result)
 end
 
--- Testing (/craftprofit testproc): a made-up resourcefulness proc, on the Patron
+-- Testing (/craftonomics testproc): a made-up resourcefulness proc, on the Patron
 -- orders list when it's open, otherwise on the panel. Nothing is counted.
 -- Returns where it showed: "list", "panel" or nil.
 function Results.TestProc()

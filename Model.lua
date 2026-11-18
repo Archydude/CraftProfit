@@ -1,4 +1,4 @@
--- Craft Profit: the math. Builds a plain table describing what the panel should
+-- Craftonomics: the math. Builds a plain table describing what the panel should
 -- show for a craft or an order. No drawing here; Panel.lua draws these tables.
 --
 -- Model fields shared by both kinds:

@@ -1,4 +1,4 @@
--- Craft Profit: item tooltips show what a vendor charges and pays for the item,
+-- Craftonomics: item tooltips show what a vendor charges and pays for the item,
 -- what it sells for with the price you picked (TSM's price type, or Auctionator),
 -- TSM's sale rate and trend, and the auction house deposit for posting it, so you
 -- can tell whether it's worth putting up. Each line has its own option.
@@ -71,7 +71,7 @@ end
 -- What the price line calls the price: "TSM Market Value" or "Auctionator".
 local function sourceName(from)
 	if from == "auctionator" then return "Auctionator" end
-	if from == "own" then return "Craft Profit scan" end
+	if from == "own" then return "Craftonomics scan" end
 	return "TSM " .. (TSM_NAMES[ns.db.saleSource] or ns.db.saleSource)
 end
 

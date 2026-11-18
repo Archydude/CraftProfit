@@ -1,4 +1,4 @@
--- Craft Profit: everything that reads Blizzard's profession window internals
+-- Craftonomics: everything that reads Blizzard's profession window internals
 -- (frame fields, the crafting form's "transaction", mixin methods). Blizzard can
 -- change these in any patch, so they live here and nowhere else.
 --

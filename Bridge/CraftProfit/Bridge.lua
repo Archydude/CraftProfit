@@ -1,0 +1,5 @@
+-- Nothing to run. This folder has the name Craftonomics had up to 4.8, Craft
+-- Profit, so the game loads the settings saved under that name; Craftonomics
+-- takes them over (see its Rename.lua). The build puts it in the Retail
+-- download only (tools\packages.ps1): on WoW Forever other addons use this
+-- folder name.

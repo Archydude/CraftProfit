@@ -1,4 +1,4 @@
--- Craft Profit: the hammer on each Patron tab row. Each click does the next
+-- Craftonomics: the hammer on each Patron tab row. Each click does the next
 -- step of that order: start it, craft it with the materials the list picked,
 -- then complete it. The game needs a click for each, and only one order can be
 -- started at a time. Chat confirms each step.
@@ -17,7 +17,7 @@ local crafted = {}   -- crafted, waiting to be completed
 local claiming, completing = {}, {}
 -- How long an unanswered start or complete holds up the next one.
 local ANSWER_WAIT = 5
--- How long a craft that was asked for may take before Craft Profit checks it
+-- How long a craft that was asked for may take before Craftonomics checks it
 -- started: one that's still casting is checked again this much later.
 local CRAFT_WAIT, CRAFT_RECHECK = 10, 2
 -- Completed orders. The order list only refreshes when Blizzard asks for it

@@ -1,4 +1,4 @@
--- Craft Profit: "what if" qualities. Clicking a material in the panel picks
+-- Craftonomics: "what if" qualities. Clicking a material in the panel picks
 -- another quality for it. Only the panel changes; Blizzard's form and the real
 -- craft are untouched.
 local _, ns = ...

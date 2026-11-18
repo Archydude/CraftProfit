@@ -1,5 +1,11 @@
 # Changelog
 
+## 5.0.0
+- **Craft Profit is now Craftonomics.** Several addons on CurseForge have almost the same name, and on WoW Forever Craft Profit couldn't be installed together with two of them. The new name ends the mix-ups. Everything works as before; only the name changed, also where it shows in buttons and options, like **Use Craftonomics Reagents**.
+- **Commands:** `/craftprofit` is now `/craftonomics`, or `/cn` for short.
+- **On Retail, your settings and history come along.** For that, the update adds a second line to your addon list, **Craftonomics: old Craft Profit settings**. Leave it on; it goes away in a later update.
+- **On WoW Forever, your settings and history start fresh:** your options, the Ledger and the recipes Best crafts had saved. Open Best crafts once for each profession to bring its recipes back.
+
 ## 4.8.0
 - **All recipes on Retail:** the All recipes window now works on Retail too. It lists every profession's recipes that make something you can trade, whether or not one of your characters knows them, with what the materials cost, the **Gross Profit** and **Net Profit** of one craft, and with TSM the **TSM Sale Rate** and **Sold per Day**. Open it from the minimap button's right-click menu or with `/craftprofit recipes`.
 - **One expansion at a time:** on Retail, a dropdown picks the expansion, starting on the newest.

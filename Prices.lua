@@ -1,4 +1,4 @@
--- Craft Profit: prices from TradeSkillMaster or Auctionator, TSM prices another
+-- Craftonomics: prices from TradeSkillMaster or Auctionator, TSM prices another
 -- character saved when TSM isn't loaded here (see SavedPrices.lua), or Craft
 -- Profit's own scan of the auction house (see PriceScan.lua).
 local ADDON_NAME, ns = ...
@@ -25,7 +25,7 @@ local function auctionatorAPI()
 	return Auctionator and Auctionator.API and Auctionator.API.v1
 end
 
--- Craft Profit's own scan: the last one asked with Automatic, so it prices what
+-- Craftonomics' own scan: the last one asked with Automatic, so it prices what
 -- nobody else does, and the only one when it's the Price addon picked.
 local function ownScan()
 	if ns.db.provider == "auto" or ns.db.provider == "own" then return ns.PriceScan end
@@ -63,7 +63,7 @@ function Prices.Material(itemID)
 	return ns.Chains.Cost(itemID) or Prices.Buy(itemID)
 end
 
--- With both Auctionator's prices and Craft Profit's scan in use, whether the
+-- With both Auctionator's prices and Craftonomics' scan in use, whether the
 -- scan's come first: the "Price with" choice. Either way the other one prices
 -- what the first doesn't.
 local function ownFirst()
@@ -122,7 +122,7 @@ function Prices.SaleFrom(link, itemID)
 		if value then return value, "saved" end
 	end
 	local api, own = auctionatorAPI(), ownScan()
-	-- Craft Profit's scan before Auctionator's prices when that's the choice.
+	-- Craftonomics' scan before Auctionator's prices when that's the choice.
 	local value = own and ownFirst() and own.Sale(link, itemID)
 	if value then return value, "own" end
 	if api then
@@ -193,17 +193,17 @@ function Prices.HasTSM()
 end
 
 -- Whose scan of the auction house the prices here are as old as: "auctionator",
--- "own" (Craft Profit's), or nil with TSM's prices, which need none.
+-- "own" (Craftonomics'), or nil with TSM's prices, which need none.
 function Prices.Scanner()
 	if tsmAvailable() or Prices.SavedAge() then return end
 	local api, own = auctionatorAPI(), ownScan()
-	-- With both, the one whose prices come first, once Craft Profit has scanned.
+	-- With both, the one whose prices come first, once Craftonomics has scanned.
 	if api and not (own and ownFirst() and own.HasPrices()) then return "auctionator" end
 	if own then return "own" end
 end
 
--- Whether Craft Profit's scan may start by itself: its prices are in use, TSM's
--- aren't (they need no scan), and scanning is Craft Profit's part, or its scan is
+-- Whether Craftonomics' scan may start by itself: its prices are in use, TSM's
+-- aren't (they need no scan), and scanning is Craftonomics' part, or its scan is
 -- the only price addon picked.
 function Prices.ScansItself()
 	if tsmAvailable() or Prices.SavedAge() or not ownScan() then return false end
@@ -290,7 +290,7 @@ local function auctionAge(fnName, arg)
 end
 
 -- How many days ago the auction house was last scanned, by Auctionator (its full
--- scan or its automatic one) or by Craft Profit (0 is within the last day), or
+-- scan or its automatic one) or by Craftonomics (0 is within the last day), or
 -- false when it never was. Nil when prices come from neither (TSM keeps its own
 -- up to date, and saved TSM prices have their own age, see Prices.SavedAge).
 -- Auctionator keeps those times in its own saved state, not its API, so a change
@@ -354,7 +354,7 @@ function Prices.SourceLabel()
 	end
 	if auctionatorAPI() then return "Auctionator" end
 	if ownScan() then
-		return ns.PriceScan.HasPrices() and "Craft Profit's scan" or "none yet - scan at the auction house"
+		return ns.PriceScan.HasPrices() and "Craftonomics' scan" or "none yet - scan at the auction house"
 	end
 	if ns.db.provider == "tsm" then return "TSM is not loaded" end
 	return "Auctionator is not loaded"

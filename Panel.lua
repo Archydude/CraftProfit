@@ -1,4 +1,4 @@
--- Craft Profit: the panel next to the profession window. Draws the tables built
+-- Craftonomics: the panel next to the profession window. Draws the tables built
 -- by Model.lua; the math lives there.
 local _, ns = ...
 
@@ -38,10 +38,10 @@ local function makeFont(name, base, extra)
 end
 
 local fonts = {
-	body = makeFont("CraftProfitBodyFont", GameFontHighlightSmall, 4),
-	heading = makeFont("CraftProfitHeadingFont", GameFontNormalSmall, 4), -- gold section headings
-	title = makeFont("CraftProfitTitleFont", GameFontNormal, 4),
-	total = makeFont("CraftProfitTotalFont", GameFontNormalLarge, 4),     -- Profit / Loss
+	body = makeFont("CraftonomicsBodyFont", GameFontHighlightSmall, 4),
+	heading = makeFont("CraftonomicsHeadingFont", GameFontNormalSmall, 4), -- gold section headings
+	title = makeFont("CraftonomicsTitleFont", GameFontNormal, 4),
+	total = makeFont("CraftonomicsTotalFont", GameFontNormalLarge, 4),     -- Profit / Loss
 }
 
 ---------------------------------------------------------------------------
@@ -240,7 +240,7 @@ local function addStrategyDropdown()
 			GameTooltip:SetOwner(self, "ANCHOR_LEFT")
 			GameTooltip:SetText("Crafting strategy")
 			GameTooltip:AddLine(strategy[2] .. ": " .. strategy[4], 1, 1, 1, true)
-			GameTooltip:AddLine((ns.QUALITY_CRAFTING and "It picks the materials for Use Craft Profit materials, prices "
+			GameTooltip:AddLine((ns.QUALITY_CRAFTING and "It picks the materials for Use Craftonomics materials, prices "
 				.. "what you're missing and decides what the shopping list buys." or "It prices what you're missing and "
 				.. "decides what the shopping list buys.") .. " Also under the Best crafts list and in the options.",
 				0.53, 0.53, 0.53, true)
@@ -377,7 +377,7 @@ local function createAutoCheck()
 		GameTooltip:SetOwner(self, "ANCHOR_LEFT")
 		GameTooltip:SetText("Open with the profession window")
 		GameTooltip:AddLine("The panel opens by itself when you pick a recipe.", 1, 1, 1, true)
-		GameTooltip:AddLine("Off: it stays closed until you click the Craft Profit button at the top of the "
+		GameTooltip:AddLine("Off: it stays closed until you click the Craftonomics button at the top of the "
 			.. "profession window. That button opens and closes the panel either way.", 0.53, 0.53, 0.53, true)
 		GameTooltip:Show()
 	end)
@@ -1015,7 +1015,7 @@ end
 
 local function bestTooltip(kind, best, recipeID)
 	return function(tip)
-		tip:SetText(kind == "order" and "Use the most profitable materials" or "Use Craft Profit materials")
+		tip:SetText(kind == "order" and "Use the most profitable materials" or "Use Craftonomics materials")
 		tip:AddLine("Puts these in the form:", 1, 1, 1)
 		for _, pick in ipairs(best.list) do tip:AddLine(Item(pick.itemID, pick.qty), 1, 1, 1) end
 		if best.concentrate then tip:AddLine("and turns on concentration, which it needs.", 1, 1, 1, true) end
@@ -1038,15 +1038,15 @@ local function bestTooltip(kind, best, recipeID)
 	end
 end
 
--- A row that puts Craft Profit's materials in the form, when it has others: on an
+-- A row that puts Craftonomics' materials in the form, when it has others: on an
 -- order the most profitable ones, on the crafting page the crafting strategy's.
--- With "Use Craft Profit Reagents" on, it only shows when something couldn't go
+-- With "Use Craftonomics Reagents" on, it only shows when something couldn't go
 -- in (you're short of it) or you changed a slot since.
 local function drawBest(model)
 	local best = model.best
 	if not best then return end
 	addGap()
-	local text = Color("simulated", model.kind == "order" and "Use the most profitable materials" or "Use Craft Profit materials")
+	local text = Color("simulated", model.kind == "order" and "Use the most profitable materials" or "Use Craftonomics materials")
 	if best.toQuality then text = text .. " " .. rankIcon(model.key, best.toQuality) end
 	if best.gain > 0 then text = text .. " " .. signedMoney(best.gain * count) end
 	addRow(text, nil, nil, function() ns.Best.Use(best) end, bestTooltip(model.kind, best, model.key))
@@ -1279,7 +1279,7 @@ end
 
 -- Whether the panel is open while the profession window is. Each time that
 -- window opens it starts as the "Open with the profession window" option says;
--- the Craft Profit button on the window then opens or closes it.
+-- the Craftonomics button on the window then opens or closes it.
 local open = true
 
 -- Redraws right away. Prefer Panel.Refresh, which batches redraws.
@@ -1341,7 +1341,7 @@ function Panel.Render()
 	ns.Best.Check(model)
 end
 
--- Opens the panel, or closes it: the Craft Profit button on the profession window.
+-- Opens the panel, or closes it: the Craftonomics button on the profession window.
 -- It stays that way until the profession window is opened again.
 function Panel.Toggle()
 	open = not open
@@ -1379,7 +1379,7 @@ function Panel.Place()
 	frame:SetPoint("TOPLEFT", ProfessionsFrame, "TOPRIGHT", pos.x, pos.y)
 end
 
--- The Craft Profit button on the profession window's title bar, left of where
+-- The Craftonomics button on the profession window's title bar, left of where
 -- the window's own buttons and other addons' sit: it opens and closes the panel.
 local TOGGLE_WIDTH, TOGGLE_HEIGHT = 92, 20
 local TOGGLE_X, TOGGLE_Y = -104, -1 -- from the window's top right corner
@@ -1391,12 +1391,12 @@ local function createToggle()
 	-- Over the title bar's art, like the window's close button.
 	local close = ProfessionsFrame.CloseButton
 	if close then toggle:SetFrameLevel(close:GetFrameLevel()) end
-	toggle:SetText("Craft Profit")
+	toggle:SetText("Craftonomics")
 	toggle:SetScript("OnClick", Panel.Toggle)
 	toggle:SetScript("OnEnter", function(self)
 		GameTooltip:SetOwner(self, "ANCHOR_TOP")
-		GameTooltip:SetText("Craft Profit")
-		GameTooltip:AddLine("Click: open or close the Craft Profit panel.", 1, 1, 1, true)
+		GameTooltip:SetText("Craftonomics")
+		GameTooltip:AddLine("Click: open or close the Craftonomics panel.", 1, 1, 1, true)
 		GameTooltip:Show()
 	end)
 	toggle:SetScript("OnLeave", GameTooltip_Hide)
@@ -1406,7 +1406,7 @@ local function createToggle()
 end
 
 local function createFrame()
-	frame = CreateFrame("Frame", "CraftProfitPanel", ProfessionsFrame, "BackdropTemplate")
+	frame = CreateFrame("Frame", "CraftonomicsPanel", ProfessionsFrame, "BackdropTemplate")
 	frame:SetWidth(Layout.WIDTH)
 	-- On top of the profession window, should it be dragged over it: a frame level
 	-- alone isn't enough (Blizzard raises the window's own layers when it's clicked),
@@ -1450,7 +1450,7 @@ local function createFrame()
 	gear:SetScript("OnClick", ns.Options.Open)
 	gear:SetScript("OnEnter", function(self)
 		GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
-		GameTooltip:SetText("Craft Profit options")
+		GameTooltip:SetText("Craftonomics options")
 		GameTooltip:Show()
 	end)
 	gear:SetScript("OnLeave", GameTooltip_Hide)
