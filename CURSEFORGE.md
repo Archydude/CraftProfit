@@ -4,7 +4,7 @@ What to type into each CurseForge field, ready to copy and paste. The steps for 
 
 Update this sheet with every release: the zips, the display name and the changelog, and rewrite the description so it covers everything in the new version. The release script won't publish until the zips, display name and changelog name the new version.
 
-The project was called Craft Profit up to 4.8. Its CurseForge address still ends in `craft-profit`.
+The project was called Craft Profit up to 4.8. Its CurseForge address is `curseforge.com/wow/addons/craftonomics` since 2026-11-18; the old one, ending in `craft-profit`, redirects to it.
 
 ## A. Project form
 
@@ -23,7 +23,7 @@ Profit or loss on every craft, which recipes are worth making, and its own aucti
 
 **License:** `MIT License`
 
-**Logo / avatar:** `Craftonomics\images\logo-400.png`
+**Logo / avatar:** `Craftonomics\images\logo-v3.png`
 
 **Description** (paste everything between the lines)
 
@@ -75,18 +75,21 @@ Vendor prices, the auction price, TSM's **sale rate** and **trend**, and the **A
 ## B. Upload File form
 
 **Files:** two, each uploaded with only its own game versions (why is in [UPLOADING.md](../UPLOADING.md)). The display name, release type and changelog are the same for both.
-- `dist\Craftonomics-5.0.0-retail.zip`: Retail `12.1.5`
-- `dist\Craftonomics-5.0.0-forever.zip`: WoW Forever `1.60.1`
+- `dist\Craftonomics-5.0.1-retail.zip`: Retail `12.1.5`
+- `dist\Craftonomics-5.0.1-forever.zip`: WoW Forever `1.60.1`
 
 **Display name**
 ```
-Craftonomics 5.0.0
+Craftonomics 5.0.1
 ```
 
 **Release type:** `Release`
 
 **Changelog** (paste only the newest part; paste older parts too if they never went up)
 ```markdown
+5.0.1
+- **New logo:** Craftonomics has a new logo. It shows on the button on the side of the auction house window and, on WoW Forever, on the Best crafts tab.
+
 5.0.0
 - **Craft Profit is now Craftonomics.** Several addons on CurseForge have almost the same name, and on WoW Forever Craft Profit couldn't be installed together with two of them. The new name ends the mix-ups. Everything works as before; only the name changed, also where it shows in buttons and options, like **Use Craftonomics Reagents**.
 - **Commands:** `/craftprofit` is now `/craftonomics`, or `/cn` for short.

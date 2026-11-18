@@ -1,5 +1,8 @@
 # Changelog
 
+## 5.0.1
+- **New logo:** Craftonomics has a new logo. It shows on the button on the side of the auction house window and, on WoW Forever, on the Best crafts tab.
+
 ## 5.0.0
 - **Craft Profit is now Craftonomics.** Several addons on CurseForge have almost the same name, and on WoW Forever Craft Profit couldn't be installed together with two of them. The new name ends the mix-ups. Everything works as before; only the name changed, also where it shows in buttons and options, like **Use Craftonomics Reagents**.
 - **Commands:** `/craftprofit` is now `/craftonomics`, or `/cn` for short.

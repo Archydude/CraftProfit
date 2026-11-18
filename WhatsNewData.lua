@@ -2,10 +2,13 @@
 ArchdudeWhatsNew:Register("Craftonomics", {
 	title = "Craftonomics",
 	icon = "Interface\\Icons\\INV_Hammer_20",
-	version = "5.0.0",
+	version = "5.0.1",
 	seen = "CraftonomicsWhatsNew",
 	saved = { "CraftonomicsDB", "CraftonomicsCharDB" },
 	changes = {
+		{ "5.0.1",
+			"|cffffd100New logo:|r Craftonomics has a new logo. It shows on the button on the side of the auction house window and, on WoW Forever, on the Best crafts tab.",
+		},
 		{ "5.0.0",
 			"|cffffd100Craft Profit is now Craftonomics.|r Several addons on CurseForge have almost the same name, and on WoW Forever Craft Profit couldn't be installed together with two of them. The new name ends the mix-ups. Everything works as before; only the name changed, also where it shows in buttons and options, like |cffffd100Use Craftonomics Reagents|r.",
 			"|cffffd100Commands:|r |cffffd100/craftprofit|r is now |cffffd100/craftonomics|r, or |cffffd100/cn|r for short.",
@@ -65,12 +68,6 @@ ArchdudeWhatsNew:Register("Craftonomics", {
 			"|cffffd100Column names in the Sell list:|r |cffffd100Item|r, |cffffd100Price|r, |cffffd100Sale rate|r and |cffffd100Amount|r above the list. Craft Profit's auction house window is a little wider and taller to fit them.",
 			"|cffffd100Not first in My auctions:|r an auction says |cffffd100Not first|r when nobody asks less than you, but others at your price are listed before yours, and its line says how many, like |cffffd1005 before yours at this price|r. Undercut auctions also say how many come before them. A |cffffd100+|r after the number means there are more than that. |cffffd100Cancel next undercut|r leaves Not first auctions alone.",
 			"Removed: the Sell tab's own list of what the picked item is listed for, with the picked item's line above it. It showed up when the game's sell page wasn't showing the item. The game's sell page still lists them, and the price is still filled in from the lowest one.",
-		},
-		{ "4.2.0",
-			"|cffffd100Auctionator or Craft Profit at the auction house:|r with Auctionator installed, you choose which of the two you use there, on the new |cffffd100Auction house|r options page. |cffffd100At the auction house, use|r sets it for everything at once. Under it, |cffffd100Shop with|r, |cffffd100Sell with|r, |cffffd100Cancel with|r and |cffffd100Price with|r set each part on its own, and the first one reads |cffffd100Custom|r while they differ. Craft Profit's window only has the tabs for the parts set to Craft Profit.",
-			"Changed: with Auctionator installed, everything starts on Auctionator, so Craft Profit's window and its button on the auction house are gone until you pick Craft Profit under |cffffd100At the auction house, use|r. If you already had Craft Profit under |cffffd100Shop with|r, everything starts on Craft Profit. Without Auctionator nothing changes: Craft Profit does all of it.",
-			"Changed: |cffffd100Shop with|r, |cffffd100Open at the auction house|r and |cffffd100Default posting time|r moved from the Shopping list options page to the Auction house page.",
-			"Fixed: typing in the search box of the game's options could show the error \"AddOn 'CraftProfit' tried to call the protected function 'IsUserOAuthed()'\". Craft Profit's option buttons, like |cffffd100Clear|r, are no longer found by that search; its checkboxes and dropdowns still are.",
 		},
 	},
 })
