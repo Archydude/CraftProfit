@@ -25,7 +25,9 @@ local FRAME_BUDGET_MS = 4
 -- }
 local rows
 local byItem -- itemID -> the rows that make it (a few items have two recipes)
-local run -- the pricing in progress or finished: { done, total, finished }
+-- The pricing in progress or finished: { done, total, finished, buy and keep = what
+-- it prices with (see priceRow) }.
+local run
 local deadline = 0 -- when this frame's share of the pricing runs out
 
 local function pauseIfDue()
@@ -90,6 +92,10 @@ end
 -- a material costs (see Prices.Buy), `keep` the share of a sale the auction house
 -- leaves you.
 local function priceRow(row, buy, keep)
+	-- The item's own name, once the game has loaded it. Some prices need the item
+	-- loaded too, so it's priced again then (see AllRecipes.ItemArrived).
+	local name = ns.Format.ItemName(row.itemID)
+	if name then row.name = name else C_Item.RequestLoadItemDataByID(row.itemID) end
 	row.each = ns.Prices.Sale(row.link, row.itemID)
 	row.gross, row.cost, row.net, row.saleRate, row.soldPerDay = nil, nil, nil, nil, nil
 	-- Without a price the window leaves it out, so there's nothing more to ask.
@@ -105,9 +111,6 @@ local function priceRow(row, buy, keep)
 	row.net = row.cost and row.gross - row.cost
 	row.saleRate = ns.Prices.SaleRate(row.link)
 	row.soldPerDay = ns.Prices.SoldPerDay(row.link)
-	-- The item's own name, once the game has it (see AllRecipes.NameArrived).
-	local name = ns.Format.ItemName(row.itemID)
-	if name then row.name = name else C_Item.RequestLoadItemDataByID(row.itemID) end
 end
 
 local function priceAll(this)
@@ -124,6 +127,8 @@ local function priceAll(this)
 		return price or nil
 	end
 	local keep = ns.db.ahCut and (1 - ns.AH_CUT) or 1
+	-- Kept for the recipes priced again when their item loads.
+	this.buy, this.keep = buy, keep
 	for index, row in ipairs(rows) do
 		priceRow(row, buy, keep)
 		this.done = index
@@ -159,18 +164,19 @@ function AllRecipes.Rows()
 	return run and run.finished and rows or nil
 end
 
--- The game has loaded an item: its recipes go by its name from here on. True
--- when that changed a name.
-function AllRecipes.NameArrived(itemID)
+-- The game has loaded an item: its recipes go by its name from here on, and one
+-- that had no price is priced again, since some prices need the item loaded.
+-- True when it's an item of these recipes: its name, color or price may show
+-- differently now.
+function AllRecipes.ItemArrived(itemID)
 	local same = byItem and byItem[itemID]
-	local name = same and ns.Format.ItemName(itemID)
-	if not name then return false end
-	local changed = false
+	if not same then return false end
+	local name = ns.Format.ItemName(itemID)
 	for _, row in ipairs(same) do
-		changed = changed or row.name ~= name
-		row.name = name
+		if name then row.name = name end
+		if not row.each and run and run.buy then priceRow(row, run.buy, run.keep) end
 	end
-	return changed
+	return true
 end
 
 -- Stops pricing and lets the recipes go: the window closed.

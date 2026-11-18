@@ -393,7 +393,7 @@ local function onPriced(pricing)
 	if pricing.finished then
 		AllRecipesWindow.Render()
 	else
-		empty:SetText(format(PRICING, pricing.total > 0 and pricing.done / pricing.total * 100 or 0))
+		empty:SetText(format(PRICING, pricing.total > 0 and math.floor(pricing.done / pricing.total * 100) or 0))
 	end
 end
 
@@ -468,6 +468,9 @@ local function create()
 	searchBox:SetSize(220, 20)
 	searchBox:SetPoint("TOPLEFT", SIDE + 6, -(FILTERS_TOP + 2))
 	searchBox:SetAutoFocus(false)
+	-- The template's own fonts are smaller than the rest of the window's text.
+	searchBox:SetFontObject("GameFontHighlight")
+	if searchBox.Instructions then searchBox.Instructions:SetFontObject("GameFontDisable") end
 	searchBox:HookScript("OnTextChanged", refresh)
 
 	professionDropdown = CreateFrame("DropdownButton", nil, frame, "WowStyle1DropdownTemplate")
@@ -490,10 +493,12 @@ local function create()
 	-- Item names arrive from the game after first use.
 	frame:RegisterEvent("GET_ITEM_INFO_RECEIVED")
 	frame:SetScript("OnEvent", function(_, _, itemID)
-		if ns.AllRecipes.NameArrived(itemID) then refresh() end
+		if ns.AllRecipes.ItemArrived(itemID) then refresh() end
 	end)
-	-- Only the packed recipes stay when it closes.
+	-- Only the packed recipes stay when it closes. Hidden with the whole interface
+	-- (Alt+Z, a cinematic), it's still open and keeps them.
 	frame:SetScript("OnHide", function()
+		if frame:IsShown() then return end
 		ns.AllRecipes.Release()
 		scrollBox:SetDataProvider(CreateDataProvider({}))
 		GameTooltip:Hide()
