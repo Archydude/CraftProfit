@@ -273,7 +273,8 @@ What's on Craft Profit's own shopping lists: each list under its name, every mat
 ### Sell tab
 Everything in your bags that can be auctioned, with what one sells for and how many you have. The price is your price addon's (or Craft Profit's own scan's), and shows **-** when there's none. With TSM, a column between them shows TSM's sale rate: the share of the item's auctions that sell.
 
-- **Sections:** your **Favorites** first, then **Your crafts** (items your Best crafts lists know you make), then a section for each kind of item. Each section's name shows how many lines it has. Click a name to fold the section away, and drag it up or down to change the order.
+- **One list:** your favorites come first, marked with a star, then everything else.
+- **Sort:** click a column's name (Item, Price, Sale rate, Amount) to sort by it, and click again to reverse. Items with no price or no sale rate go last.
 - **Search:** type part of a name in the box above the list.
 - **Right-click** an item to add it to your favorites or hide it from the list. A line at the bottom says how many are hidden; click it to list them, and right-click one to bring it back.
 - **Click** an item to pick it, or right-click it in your bags (or drag it onto the game's sell page). With the window on another tab, that switches it to Sell. The list scrolls to it. The price starts at the lowest listing, and the amount at all you have. When a vendor pays more than the lowest listing, the price is left empty and the tab says so. Gear is priced from listings of its own item level.

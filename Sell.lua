@@ -1,9 +1,7 @@
 -- Craft Profit: the Sell tab of its auction house window (see ShoppingList.lua).
--- It lists what's in your bags that can be auctioned: your favorites, your own
--- crafts, then the rest by the game's kind of item. A section's name folds it
--- away, dragging it moves the section up or down, and a right-click on an item
--- makes it a favorite or hides it. A click on a column's name sorts every
--- section by that column, and another click reverses it. Pick
+-- It lists what's in your bags that can be auctioned, your favorites first. A
+-- right-click on an item makes it a favorite or hides it. A click on a column's
+-- name sorts the list by that column, and another click reverses it. Pick
 -- one to see what it's listed for, set the price, amount and how long it lasts,
 -- and post it. Every auction is posted by your own click on Post. The game's own
 -- sell page is filled in with the same item, price, amount and duration, so its
@@ -30,7 +28,6 @@ local SEARCH_HEIGHT = 20 -- the search box over the bag list,
 local SEARCH_ROOM = 26   -- and the room it takes with the gap under it
 local ROW_HEIGHT, BAG_ROWS = 24, 13
 local ICON_SIZE = 20     -- a bag line's item icon
-local FOLD_SIZE = 14     -- the plus or minus before a section's name
 local PRICE_WIDTH = 76   -- the column of prices before it
 local RATE_WIDTH = 62    -- TSM's sale rate between them, as wide as its "Sale rate" header; only with TSM
 local HEADER_ROOM = 18   -- the columns' names over the bag list
@@ -58,11 +55,8 @@ local DURATIONS = ns.AUCTION_DURATIONS
 local AWAY_TEXT = "Open the auction house to sell from here."
 local EMPTY_TEXT = "Nothing in your bags can be auctioned."
 local NO_MATCH_TEXT = "Nothing in your bags matches that."
--- The list's first two sections, and the one for an item whose kind the game doesn't say.
--- The rest are named after the game's kinds of item (Consumable, Tradeskill...).
-local FAVORITES, CRAFTS, OTHER = "Favorites", "Your crafts", "Other"
--- A section name's sign: folded away, or open.
-local FOLDED_ICON, OPEN_ICON = "Interface\\Buttons\\UI-PlusButton-Up", "Interface\\Buttons\\UI-MinusButton-Up"
+-- A favorite's mark before its name: the auction house's star, or else a gold one.
+local FAVORITE_ATLAS = "auctionhouse-icon-favorite"
 local PICK_TEXT = "Pick something from the list to sell it."
 
 local panel, body, away, emptyText
@@ -96,8 +90,6 @@ local filter = ""
 -- The columns' names over the bag list, by what each sorts by: "name", "price",
 -- "rate" (only with TSM) and "amount".
 local headers = {}
--- Items your saved Best crafts scans say you craft: itemID -> true.
-local crafts
 local scanTries = 0
 -- The key of the item this tab put on the game's own sell page, while it's there.
 local nativeKey
@@ -125,16 +117,6 @@ end
 local function vendorPays(link)
 	local _, _, _, _, _, _, _, _, _, _, price = C_Item.GetItemInfo(link)
 	return price
-end
-
-local function myCrafts()
-	local ids = {}
-	for _, recipe in ipairs(ns.Scans.Mine()) do
-		for _, output in pairs(recipe.outputs) do
-			if output.itemID then ids[output.itemID] = true end
-		end
-	end
-	return ids
 end
 
 ---------------------------------------------------------------------------
@@ -580,13 +562,6 @@ local function matches(entry)
 	return filter == "" or plainName(entry):lower():find(filter, 1, true) ~= nil
 end
 
--- The section a line is in: a favorite is only there, not also under its kind.
-local function sectionOf(entry)
-	if ns.db.sellFavorites[entry.itemID] then return FAVORITES end
-	if entry.craft then return CRAFTS end
-	return entry.kind or OTHER
-end
-
 ---------------------------------------------------------------------------
 -- Sorting by a column
 ---------------------------------------------------------------------------
@@ -622,7 +597,7 @@ local function byName(a, b)
 	return a.key < b.key
 end
 
--- Puts a section's lines in the sorted column's order. `values` is each line's
+-- Puts lines in the sorted column's order. `values` is each line's
 -- price, sale rate or amount (line -> value), read before the sorting, so the
 -- price addon is never asked while two lines are compared; nil when the list
 -- goes by name. A line without a value goes last whichever way the column is
@@ -708,129 +683,37 @@ local function setSort(key)
 	drawBags()
 end
 
--- The list as it's shown: its sections in order ({ name, entries }, the lines in
--- the sorted column's order), and the hidden items, sorted the same way. The
--- sections are in the order you dragged them into; until you do, and for a
--- section that's new since, it's favorites, your crafts, then the kinds by name.
--- What the search box doesn't ask for is left out of both.
-local function sections()
-	local named, list, hidden = {}, {}, {}
+-- The list as it's shown: your favorites first, then the rest, each in the sorted
+-- column's order, and the hidden items, sorted the same way. What the search box
+-- doesn't ask for is left out of both.
+local function shownLines()
+	local favorites, rest, hidden = {}, {}, {}
 	local key, ascending = sortOrder()
 	local read = SORT_VALUES[key]
 	local values = read and {} or nil
 	for _, entry in ipairs(entries) do
-		if not matches(entry) then
-			-- searched away
-		else
+		if matches(entry) then
 			if values then values[entry] = read(entry) end
 			if ns.db.sellHidden[entry.itemID] then
 				hidden[#hidden + 1] = entry
+			elseif ns.db.sellFavorites[entry.itemID] then
+				favorites[#favorites + 1] = entry
 			else
-				local name = sectionOf(entry)
-				local section = named[name]
-				if not section then
-					section = { name = name, entries = {} }
-					named[name] = section
-					list[#list + 1] = section
-				end
-				section.entries[#section.entries + 1] = entry
+				rest[#rest + 1] = entry
 			end
 		end
 	end
-	for _, section in ipairs(list) do sortLines(section.entries, values, ascending) end
+	sortLines(favorites, values, ascending)
+	sortLines(rest, values, ascending)
 	sortLines(hidden, values, ascending)
-	local order, first = ns.db.sellOrder, { [FAVORITES] = 1, [CRAFTS] = 2 }
-	local function place(name)
-		return tIndexOf(order, name) or (#order + (first[name] or 3))
-	end
-	table.sort(list, function(a, b)
-		local placeA, placeB = place(a.name), place(b.name)
-		if placeA ~= placeB then return placeA < placeB end
-		return a.name < b.name
-	end)
+	local list = favorites
+	for _, entry in ipairs(rest) do list[#list + 1] = entry end
 	return list, hidden
-end
-
--- Whether a section is folded away. A search shows what it finds anyway.
-local function folded(name)
-	return filter == "" and ns.db.sellFolded[name] == true
-end
-
----------------------------------------------------------------------------
--- Dragging a section to another place
----------------------------------------------------------------------------
-
--- The section whose name is being dragged, while the mouse button is down.
-local dragging
-local dragWatch = CreateFrame("Frame")
-
--- The section the mouse is over: its name's line or any of its items.
-local function sectionUnderMouse()
-	local found
-	bagBox:ForEachFrame(function(row)
-		if row.data and row.data.section and row:IsMouseOver() then found = row.data.section end
-	end)
-	return found
-end
-
--- While dragging: the section it would land on is lit.
-local function markDrop()
-	local target = dragging and sectionUnderMouse()
-	if target == dragging then target = nil end
-	bagBox:ForEachFrame(function(row)
-		if row.drop then row.drop:SetShown(target ~= nil and row.data ~= nil and row.data.section == target) end
-	end)
-end
-
--- Puts one section where another is: above it when it came from below, under
--- it when it came from above. The order is first written down as it is now.
-local function moveSection(moved, target)
-	local order = ns.db.sellOrder
-	if #order == 0 then order[1], order[2] = FAVORITES, CRAFTS end
-	for _, section in ipairs((sections())) do
-		if not tContains(order, section.name) then order[#order + 1] = section.name end
-	end
-	local from, to = tIndexOf(order, moved), tIndexOf(order, target)
-	if not (from and to) then return end
-	table.remove(order, from)
-	table.insert(order, to, moved)
-end
-
-local function startDrag(row)
-	dragging = row.data.header
-	GameTooltip:SetOwner(row, "ANCHOR_CURSOR")
-	GameTooltip:SetText("Move " .. dragging, 1, 1, 1)
-	GameTooltip:AddLine(Color("simulated", "Drop it on the section it goes next to"))
-	GameTooltip:Show()
-	dragWatch:SetScript("OnUpdate", markDrop)
-end
-
--- The mouse button is up: the section moves, if it's over another one.
-local function stopDrag()
-	if not dragging then return end
-	local moved, target = dragging, sectionUnderMouse()
-	dragging = nil
-	dragWatch:SetScript("OnUpdate", nil)
-	GameTooltip:Hide()
-	if target and target ~= moved then moveSection(moved, target) end
-	drawBags()
-end
-
--- The tab went away mid-drag: nothing moves.
-local function cancelDrag()
-	dragging = nil
-	dragWatch:SetScript("OnUpdate", nil)
 end
 
 -- The line after `key` in the list as it's shown, or the one before it at the end.
 local function neighbor(key)
-	local list, hidden = sections()
-	local shown = {}
-	for _, section in ipairs(list) do
-		if not folded(section.name) then
-			for _, entry in ipairs(section.entries) do shown[#shown + 1] = entry end
-		end
-	end
+	local shown, hidden = shownLines()
 	if showHidden then
 		for _, entry in ipairs(hidden) do shown[#shown + 1] = entry end
 	end
@@ -840,17 +723,7 @@ local function neighbor(key)
 end
 
 local function bagTooltip(row)
-	if dragging then return end -- the tooltip is saying what's being moved
-	local data = row.data
-	if data and data.header then
-		GameTooltip:SetOwner(row, "ANCHOR_RIGHT")
-		GameTooltip:SetText(data.header, 1, 1, 1)
-		GameTooltip:AddLine(Color("simulated", data.folded and "Click: open it" or "Click: fold it away"))
-		GameTooltip:AddLine(Color("simulated", "Drag: move it up or down the list"))
-		GameTooltip:Show()
-		return
-	end
-	local entry = data and data.entry
+	local entry = row.data and row.data.entry
 	if not entry then return end
 	GameTooltip:SetOwner(row, "ANCHOR_RIGHT")
 	GameTooltip:SetBagItem(entry.bag, entry.slot)
@@ -891,14 +764,6 @@ local function bagClick(row, mouseButton)
 		drawBags()
 		return
 	end
-	if data.header then
-		-- A section's name folds it away or opens it again. A search shows everything it finds.
-		if filter == "" then
-			ns.db.sellFolded[data.header] = not ns.db.sellFolded[data.header] or nil
-			drawBags()
-		end
-		return
-	end
 	local entry = data.entry
 	if not entry then return end
 	if mouseButton == "RightButton" then
@@ -923,17 +788,6 @@ local function createBagRow(row)
 	row.highlight = row:CreateTexture(nil, "HIGHLIGHT")
 	row.highlight:SetAllPoints()
 	row.highlight:SetColorTexture(1, 1, 1, 0.08)
-	-- On the section a dragged one would land on.
-	row.drop = row:CreateTexture(nil, "BACKGROUND", nil, 2)
-	row.drop:SetAllPoints()
-	row.drop:SetColorTexture(0.3, 0.6, 1, 0.25)
-	row.drop:Hide()
-	-- Under a section's name.
-	row.rule = row:CreateTexture(nil, "ARTWORK")
-	row.rule:SetHeight(1)
-	row.rule:SetPoint("BOTTOMLEFT", 4, 3)
-	row.rule:SetPoint("BOTTOMRIGHT", -4, 3)
-	row.rule:SetColorTexture(1, 0.82, 0, 0.3)
 	row.icon = row:CreateTexture(nil, "ARTWORK")
 	row.icon:SetSize(ICON_SIZE, ICON_SIZE)
 	row.icon:SetPoint("LEFT", 6, 0)
@@ -954,14 +808,7 @@ local function createBagRow(row)
 	row.text:SetWordWrap(false)
 	row:SetScript("OnClick", bagClick)
 	row:SetScript("OnEnter", bagTooltip)
-	row:SetScript("OnLeave", function()
-		if not dragging then GameTooltip:Hide() end
-	end)
-	-- Only a section's name is dragged (see drawBag).
-	row:SetScript("OnDragStart", function(self)
-		if self.data and self.data.header then startDrag(self) end
-	end)
-	row:SetScript("OnDragStop", stopDrag)
+	row:SetScript("OnLeave", GameTooltip_Hide)
 end
 
 -- The item's name in its rarity's color with its quality after it, or plain for
@@ -979,21 +826,24 @@ local function bagName(entry, plain)
 	return name .. (quality and (" " .. quality) or "")
 end
 
+-- A favorite's star, to go before its name.
+local function favoriteMark()
+	if C_Texture.GetAtlasInfo(FAVORITE_ATLAS) then return format("|A:%s:14:14|a ", FAVORITE_ATLAS) end
+	return Color("heading", "* ")
+end
+
+-- One line of the list: an item, or the line at the bottom that says how many
+-- items are hidden.
 local function drawBag(row, data)
 	if not row.text then createBagRow(row) end
 	row.data = data
 	local entry = data.entry
 	row.picked:SetShown(entry ~= nil and selected ~= nil and selected.key == entry.key)
 	row.stripe:SetShown(data.stripe == true)
-	row.rule:SetShown(data.header ~= nil)
-	row.drop:Hide()
-	-- A section's name can be dragged; an item's line can't, so a click on it is never taken for a drag.
-	if data.header then row:RegisterForDrag("LeftButton") else row:RegisterForDrag() end
-	-- An item's line and a section's name both have a sign, a text and a number.
-	local columns = entry ~= nil or data.header ~= nil
-	row.icon:SetShown(columns)
-	row.count:SetShown(columns)
-	row.price:SetShown(entry ~= nil) -- only an item has one
+	-- Only an item has an icon, an amount and a price.
+	row.icon:SetShown(entry ~= nil)
+	row.count:SetShown(entry ~= nil)
+	row.price:SetShown(entry ~= nil)
 	-- TSM's sale rate has its column only with TSM; without it the price sits by the amount.
 	local rated = hasRates()
 	row.rate:SetShown(entry ~= nil and rated)
@@ -1003,31 +853,18 @@ local function drawBag(row, data)
 	row.price:ClearAllPoints()
 	row.price:SetPoint("RIGHT", rated and row.rate or row.count, "LEFT", -COLUMN_GAP, 0)
 	row.text:ClearAllPoints()
-	if columns then
+	if entry then
 		row.text:SetPoint("LEFT", row.icon, "RIGHT", 6, 0)
-		row.text:SetPoint("RIGHT", entry and row.price or row.count, "LEFT", -6, 0)
+		row.text:SetPoint("RIGHT", row.price, "LEFT", -6, 0)
 	else
 		row.text:SetPoint("LEFT", 6, 0)
 		row.text:SetPoint("RIGHT", -6, 0)
 	end
-	if data.header then
-		row.text:SetFontObject("GameFontNormal")
-		row.text:SetText(data.header)
-		row.icon:SetTexture(data.folded and FOLDED_ICON or OPEN_ICON)
-		row.icon:SetTexCoord(0, 1, 0, 1)
-		row.icon:SetSize(FOLD_SIZE, FOLD_SIZE)
-		row.icon:SetDesaturated(false)
-		row.icon:SetAlpha(1)
-		row.count:SetText(Color("muted", tostring(data.count)))
-	elseif data.toggle then
-		row.text:SetFontObject("GameFontHighlight")
+	if data.toggle then
 		row.text:SetText(Color("muted", showHidden and "Don't list the hidden items"
 			or format("%d hidden. Click to list them.", data.count)))
 	else
-		row.text:SetFontObject("GameFontHighlight")
 		row.icon:SetTexture(entry.icon or C_Item.GetItemIconByID(entry.itemID))
-		row.icon:SetTexCoord(0.08, 0.92, 0.08, 0.92) -- without the icon's own border
-		row.icon:SetSize(ICON_SIZE, ICON_SIZE)
 		row.icon:SetDesaturated(data.hidden == true)
 		row.icon:SetAlpha(data.hidden and 0.6 or 1)
 		local count = BreakUpLargeNumbers(entry.count)
@@ -1037,7 +874,7 @@ local function drawBag(row, data)
 			row.text:SetText(Color("muted", bagName(entry, true)))
 			row.count:SetText(Color("muted", count))
 		else
-			row.text:SetText(bagName(entry))
+			row.text:SetText((ns.db.sellFavorites[entry.itemID] and favoriteMark() or "") .. bagName(entry))
 			row.count:SetText(count)
 		end
 		row.price:SetText(price and ns.Format.Money(price) or Color("muted", "-"))
@@ -1047,35 +884,29 @@ local function drawBag(row, data)
 		row.rate:SetText(rate and ns.Format.SaleRate(rate) or Color("muted", "-"))
 		row.rate:SetAlpha(data.hidden and 0.6 or 1)
 	end
-	if GameTooltip:IsOwned(row) and not dragging then
-		if entry or data.header then bagTooltip(row) else GameTooltip:Hide() end
+	if GameTooltip:IsOwned(row) then
+		if entry then bagTooltip(row) else GameTooltip:Hide() end
 	end
 end
 
--- Each section under its name (with how many lines it has, and none of them when
--- it's folded away), then the hidden items if they're listed.
+-- Your favorites, then the rest, then the hidden items if they're listed.
 drawBags = function()
-	local list, hidden = sections()
-	local rows, found = {}, #hidden
-	-- Every other line of a section is striped, starting again under each section's name.
-	local function add(lines, isHidden, sectionName)
-		for index, entry in ipairs(lines) do
-			rows[#rows + 1] = { entry = entry, hidden = isHidden, stripe = index % 2 == 0, section = sectionName }
-		end
-	end
-	for _, section in ipairs(list) do
-		found = found + #section.entries
-		local isFolded = folded(section.name)
-		rows[#rows + 1] = { header = section.name, folded = isFolded, count = #section.entries, section = section.name }
-		if not isFolded then add(section.entries, nil, section.name) end
+	local list, hidden = shownLines()
+	local rows = {}
+	for index, entry in ipairs(list) do
+		rows[#rows + 1] = { entry = entry, stripe = index % 2 == 0 }
 	end
 	if #hidden > 0 then
 		rows[#rows + 1] = { toggle = true, count = #hidden }
-		if showHidden then add(hidden, true) end
+		if showHidden then
+			for index, entry in ipairs(hidden) do
+				rows[#rows + 1] = { entry = entry, hidden = true, stripe = index % 2 == 0 }
+			end
+		end
 	end
 	bagBox:SetDataProvider(CreateDataProvider(rows), ScrollBoxConstants.RetainScrollPosition)
 	emptyText:SetText(#entries == 0 and EMPTY_TEXT or NO_MATCH_TEXT)
-	emptyText:SetShown(found == 0)
+	emptyText:SetShown(#list + #hidden == 0)
 end
 
 local function postedText(this)
@@ -1085,7 +916,6 @@ end
 -- Reads the bags again. The picked item stays picked while you still have it;
 -- once it's gone (posted, most likely) the next line is picked.
 local function scan()
-	crafts = crafts or myCrafts()
 	local after = selected and neighbor(selected.key)
 	entries, byKey = {}, {}
 	local unknown = false
@@ -1104,8 +934,7 @@ local function scan()
 						local entry = byKey[key]
 						if not entry then
 							entry = { key = key, itemID = info.itemID, link = info.hyperlink, commodity = commodity,
-								bag = bag, slot = slot, count = 0, craft = crafts[info.itemID] or false, icon = info.iconFileID,
-								kind = select(2, C_Item.GetItemInfoInstant(info.itemID)),
+								bag = bag, slot = slot, count = 0, icon = info.iconFileID,
 								name = C_Item.GetItemNameByID(info.itemID) or "" }
 							byKey[key] = entry
 							entries[#entries + 1] = entry
@@ -1260,13 +1089,9 @@ adopt = function(key)
 	local entry = byKey[key]
 	if not entry then return end
 	-- You picked it from your bags, so it shows in the list whatever was hiding it:
-	-- a search it doesn't match, its section folded away, or the hidden items not listed.
+	-- a search it doesn't match, or the hidden items not listed.
 	if not matches(entry) then searchBox:SetText("") end
-	if ns.db.sellHidden[entry.itemID] then
-		showHidden = true
-	else
-		ns.db.sellFolded[sectionOf(entry)] = nil
-	end
+	if ns.db.sellHidden[entry.itemID] then showHidden = true end
 	choose(entry)
 end
 
@@ -1291,7 +1116,7 @@ local function refresh()
 	body:SetShown(open)
 	away:SetShown(not open)
 	if open then
-		crafts, scanTries = nil, 0
+		scanTries = 0
 		guarded(followPages)
 		if not selected then choose(nil) end
 		scan()
@@ -1530,7 +1355,6 @@ function Sell.Create(parent, width)
 	panel:SetScript("OnShow", refresh)
 	panel:SetScript("OnHide", function()
 		Search.Drop(OWNER)
-		cancelDrag()
 		GameTooltip:Hide()
 	end)
 	return panel
