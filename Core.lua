@@ -156,6 +156,15 @@ SlashCmdList.CRAFTPROFIT = function(msg)
 		ns.LedgerWindow.Toggle()
 		return
 	end
+	if command == "recipes" then
+		-- Every profession's recipes and how they sell, on WoW Forever.
+		if ns.AllRecipesWindow then
+			ns.AllRecipesWindow.Toggle()
+		else
+			ns.Shopping.Say("The All recipes window is only on WoW Forever.")
+		end
+		return
+	end
 	if command == "shop" or command == "sell" or command == "auctions" or command == "prices" then
 		-- The auction house window, on its Shopping list, Sell, My auctions or Prices tab.
 		ns.ShoppingList.Toggle(command)

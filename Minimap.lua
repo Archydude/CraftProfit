@@ -95,6 +95,8 @@ local function openMenu()
 			root:CreateButton("Shopping list", function() ns.ShoppingList.Show("shop") end)
 		end
 		root:CreateButton("Ledger", ns.LedgerWindow.Show)
+		-- Every profession's recipes and how they sell, on WoW Forever.
+		if ns.AllRecipesWindow then root:CreateButton("All recipes", ns.AllRecipesWindow.Show) end
 		local strategies = root:CreateButton("Crafting strategy")
 		for _, strategy in ipairs(ns.STRATEGIES) do
 			local key = strategy[1]
