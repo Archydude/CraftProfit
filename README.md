@@ -44,6 +44,7 @@ The panel reads top to bottom: the expected profit or loss, what comes in (the s
 - Concentration on the crafting page: with it off and able to raise the rank, a line under the sale price shows what it takes, the rank it makes and the gold that rank adds, with the concentration icon, e.g. **38 [icon] makes [rank 3] +95g**. With it on, the line shows what the craft uses. Either way it says **not enough** when you're short.
 - A lower rank is never worth more than a better one: when rank 3 is listed higher than rank 5 sells for, nobody buys it at that price, so it's priced as rank 5 sells and the panel's notes say so. The Best crafts list counts it the same way.
 - With TSM, a line under the sale price shows how well the item sells: the share of its auctions that sell, colored from red to green. On an alt using saved TSM prices it shows how many sell a day in your region instead.
+- With TSM, a **Trend** line shows how far the item's market value is from its historical price, like **-20%** in red or **+14%** in green: the number TSM's own tooltip shows beside its market value. Not on an alt using saved TSM prices, which don't carry it.
 - Vendor-sold materials (vials, thread...) use the vendor price.
 - For recipes that make a varying amount, the average is used.
 - Materials without any price are shown in red. Profit is then too high, so take it with a grain of salt.
@@ -163,6 +164,7 @@ Click the **Best crafts** tab, next to the profession window's own tabs (from an
 - **Listed:** how many were up for sale the last time Auctionator saw them, in grey when that was 3 days ago or more. Needs Auctionator; without it, **-**.
 - **Sells/day** (with TSM): how many sell per day across your region, on average.
 - **Sale rate** (with TSM): the share of an item's auctions that sell, across your region, colored from red for one that hardly sells to green for one that always does. Click its header to sort by it.
+- **Trend** (with TSM, off by default, pick it with the columns below): how far the item's market value is from its historical price: **-20%** in red means it's 20% below it, **+14%** in green that it's 14% above. It's the number TSM's own tooltip shows beside its market value, whatever TSM price you picked for pricing. Click its header to sort by it. On WoW Forever it shows by default.
 - **You sold** (without TSM, in place of Sells/day): how many your characters sold on the auction house in the last 14 days, counted from the auction house's mail each time you open your mailbox. It starts counting with this version, so it fills in over the first two weeks. With TSM, it's in each row's tooltip instead.
 - **Three dots:** the row's menu, also on a right-click anywhere on the row. **Shop for 1 craft** adds what's missing for one craft, **Shop for more crafts** picks how many, **Pin to top** keeps the recipe above the rest, and **Ignore** hides it (see below). Shopping buys the qualities the row is priced with.
 - **Icons:** a pin at the start of a pinned recipe's row. After the name, the rank it's priced at, the first-craft icon when crafting it the first time gives profession knowledge, and a watch when it's on cooldown. A long name is cut short so they always show.
@@ -224,6 +226,7 @@ Item tooltips get a few lines on what the item is worth, each with its own optio
 - **Vendor Sell:** what a vendor pays you for one.
 - **The auction price,** named after where it comes from: **TSM Market Value** (or the other TSM price you picked for crafted items) or **Auctionator**. For a stack in your bags, a **For (x20)** line gives the whole stack.
 - **TSM Sale Rate** (with TSM): the share of the item's auctions that sell, across your region. On WoW Forever your region is one server, so it's your own market.
+- **TSM Trend** (with TSM): how far the item's market value is from its historical price, like **-20%** in red or **+14%** in green. It's the number TSM's own tooltip shows beside its market value, whatever TSM price you picked for pricing.
 - **AH Deposit 12h / 24h / 48h** (on WoW Forever, **2h / 8h / 24h**): what posting it costs, for the whole stack when it's in your bags. You get the deposit back when the item sells and lose it when it doesn't, so a deposit close to the price shows it's hardly worth posting.
 
 Items you can't post, like soulbound ones, show only their vendor prices. On characters using TSM prices saved for alts, the auction price is the saved price's own line instead.
@@ -240,6 +243,7 @@ Craft Profit works on WoW Forever: the panel, Best crafts, the shopping list and
 - **Per skill-up:** in Best crafts (in Gold/day's place, which stays in each row's tooltip) and on the panel, what one skill point costs with a recipe at your skill: the materials, minus what the item is worth back (its auction price after the cut, or what a vendor pays if that's more), divided by the chance a craft gives a skill-up. Orange recipes always give one; yellow and green ones less often the closer they get to grey; grey ones never, and show **-** in Best crafts (the panel leaves the line out for them). A recipe that makes gold shows **Free**: its skill points cost nothing. Click its header to sort cheapest first: the free ones first, surest skill-up first, then the rest from the cheapest. Hover a row, or look at the panel, for the recipe's color and chance.
 - **Chance:** in Best crafts, next to Per skill-up, the chance a craft gives a skill-up at your skill, in the recipe's color (orange, yellow, green); grey recipes show **-**. Click its header to put the surest skill-ups first.
 - **Sale rate** (with TSM): in Best crafts, in place of Sells/day and Listed (both still in each row's tooltip), the share of an item's auctions that sell. Forever's region is one server, so it's your own market: a high rate means it sells, a low one that most auctions expire. Click its header to sort by it.
+- **Trend** (with TSM): in Best crafts, next to Sale rate, how far the item's market value on your realm is from its historical price, like **-20%** or **+14%**. Click its header to sort by it, or right-click a header to hide it.
 - **Vendor reagents** (thread, flux, vials, dyes, salt, spices and more) cost their vendor price even before your price addon has seen a vendor sell them.
 - Amounts show the two biggest coins, like **1s 4c** or **4g 12s**.
 
@@ -414,7 +418,7 @@ Click the gear on the panel (or Craft Profit options in the gear menu under the 
 | Show it for | All your characters (default) or this character only. |
 | Show its concentration | Adds the concentration when the best rank needs it. On by default. |
 | Saved characters: Forget... | Pick a character you deleted, renamed or moved to take it off Craft Rank tooltips and the Best crafts list. |
-| Show vendor buy price / vendor sell price / auction price / AH deposit / sale rate | Each turns one line on item tooltips on or off: Vendor Buy, Vendor Sell, the auction price (with the stack's), the AH deposit, TSM's sale rate (see [Prices on item tooltips](#prices-on-item-tooltips)). All on by default. |
+| Show vendor buy price / vendor sell price / auction price / AH deposit / sale rate / trend | Each turns one line on item tooltips on or off: Vendor Buy, Vendor Sell, the auction price (with the stack's), the AH deposit, TSM's sale rate, TSM's trend (see [Prices on item tooltips](#prices-on-item-tooltips)). All on by default. |
 | Show saved TSM prices | On characters using TSM prices saved for alts: the saved price on item tooltips. On by default. |
 
 ## Notes

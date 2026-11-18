@@ -41,6 +41,14 @@ function Format.SaleRate(rate)
 	return format("|cff%02x%02x%02x%.0f%%|r", mix(1), mix(2), mix(3), rate * 100)
 end
 
+-- TSM's trend (-20 for 20% below the historical price, see Prices.Trend) as
+-- "-20%" in red, or "+14%" in green from zero up: TSM's own colors, with a sign
+-- where TSM draws an arrow.
+function Format.Trend(trend)
+	if trend < 0 then return ns.Color("loss", format("%.0f%%", trend)) end
+	return ns.Color("profit", format("%s%.0f%%", trend > 0 and "+" or "", trend))
+end
+
 -- `text` in the color of the item's rarity (green, blue, purple...), or as it is
 -- while the game hasn't loaded the item.
 function Format.RarityColored(itemID, text)
