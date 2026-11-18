@@ -256,6 +256,26 @@ function Prices.SaleRate(link)
 	return value and value / 1000
 end
 
+-- Whether TSM's trend can be shown at all: only with TSM loaded on this
+-- character (saved TSM prices don't carry the historical price).
+function Prices.HasTrend()
+	return TSM_API ~= nil and TSM_API.GetCustomPriceValue ~= nil
+end
+
+-- How far an item's market value on your realm is from its historical price,
+-- from TSM, in whole percent (-20 for 20% below it), or nil without TSM or
+-- either price. The number TSM's own tooltip shows beside its market value,
+-- rounded the same way, whatever TSM price type prices are taken from here.
+function Prices.Trend(link)
+	if not (TSM_API and TSM_API.GetCustomPriceValue) then return end
+	local ok, itemString = pcall(TSM_API.ToItemString, link)
+	if not (ok and itemString) then return end
+	local market = tsmValue("dbmarket", itemString)
+	local historical = market and tsmValue("dbhistorical", itemString)
+	if not historical then return end
+	return math.floor((market - historical) * 100 / historical + 0.5)
+end
+
 -- How many days ago Auctionator last saw an item on the auction house (0 is
 -- today), or false when it's over three weeks or never. nil when prices don't
 -- come from Auctionator (TSM keeps its own data).

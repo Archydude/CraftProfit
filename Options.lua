@@ -483,6 +483,11 @@ function Options.Create()
 		"On item tooltips, with TSM: TSM Sale Rate, the share of the item's auctions that sell" ..
 		(quality and ", across your region." or ". On WoW Forever your region is one server, so it's your own market.") ..
 		" A high rate means it sells; a low one that most auctions expire.\n\nNot on items you can't post, like soulbound ones.")
+	checkbox("tipTrend", "Show trend",
+		"On item tooltips, with TSM: TSM Trend, how far the item's market value" .. (quality and "" or " on your realm") ..
+		" is from its historical price. -20% means it's 20% below it, +14% that it's 14% above. It's the number " ..
+		"TSM's own tooltip shows beside its market value, whatever TSM price you picked for pricing.\n\n" ..
+		"Not on items you can't post, like soulbound ones.")
 	checkbox("priceTooltip", "Show saved TSM prices",
 		"On characters without TSM that use TSM prices saved by another character (see Save TSM prices for alts, " ..
 		"on the main page): one line with the item's price, as Craft Profit prices it, and whose " ..

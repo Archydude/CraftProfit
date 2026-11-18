@@ -51,7 +51,7 @@ local STALE_SCAN_DAYS = 7  -- other characters' saved scans this old or older sh
 -- forever: true shows it only on WoW Forever, false only off it (Per skill-up
 -- takes Gold/day's place there). saleRate: false hides it where TSM's sale rate
 -- takes its place (WoW Forever with TSM, see Prices.ShowsSaleRate). needsRate:
--- only with TSM loaded, which is where the sale rate comes from.
+-- only with TSM loaded, which is where the sale rate and the trend come from.
 -- The demand column is TSM's Sells/day, or without TSM, You sold.
 -- Of the columns that can show, you pick which do (right-click a header, see
 -- columnsMenu): offByDefault ones start hidden, and fixed ones always show.
@@ -60,6 +60,8 @@ local COLUMNS = {
 	{ key = "sold", width = 64, header = "You sold", sort = "sold", needsTSM = false },
 	{ key = "perDay", width = 64, header = "Sells/day", sort = "perDay", needsTSM = true, saleRate = false },
 	{ key = "saleRate", width = 64, header = "Sale rate", sort = "saleRate", needsRate = true },
+	-- Starts hidden off WoW Forever, where the list has more columns to fit.
+	{ key = "trend", width = 56, header = "Trend", sort = "trend", needsRate = true, offByDefault = ns.QUALITY_CRAFTING },
 	{ key = "listed", width = 46, header = "Listed", sort = "listed", saleRate = false },
 	{ key = "gold", width = 74, header = "Gold/day", sort = "gold", forever = false },
 	{ key = "perPoint", width = 96, goldWidth = 56, header = "Per point", sort = "perPoint", forever = false,
@@ -89,6 +91,10 @@ local HEADER_TIPS = {
 	saleRate = "Of the auctions posted for this item, the share that sells, from TSM: a high rate means it sells, a "
 		.. "low one that most expire. " .. (ns.QUALITY_CRAFTING and "It counts your whole region, not just your realm."
 			or "On WoW Forever your region is one server, so this is your own market."),
+	trend = "How far the item's market value" .. (ns.QUALITY_CRAFTING and "" or " on your realm")
+		.. " is from its historical price, from TSM: -20% means it's "
+		.. "20% below it, +14% that it's 14% above. It's the number TSM's own tooltip shows beside its market value, "
+		.. "whatever TSM price you picked for pricing.",
 	sold = format("How many your characters sold on the auction house in the last %d days, from the auction "
 		.. "house's mail. Counts sales from when you first opened your mailbox with this version.", ns.Sales.DAYS),
 	perPoint = "What each concentration point earns with this recipe: how much more a craft makes when you "
@@ -151,6 +157,7 @@ local SORT_VALUES = {
 	sold = function(row) return row.itemName and row.sold or nil end,
 	perDay = function(row) return row.soldPerDay end,
 	saleRate = function(row) return row.saleRate end,
+	trend = function(row) return row.trend end,
 	-- Free skill points first, the surest of those first (as -chance), then the cheapest.
 	skillup = function(row)
 		local s = row.skillup
@@ -478,6 +485,10 @@ local function rowTooltip(tip, row)
 				row.saleRate and ns.Format.SaleRate(row.saleRate) or Color("muted", "-"))
 		end
 	end
+	if ns.Prices.HasTrend() then
+		addPair(tip, ns.QUALITY_CRAFTING and "Trend (TSM)" or "Trend on your realm (TSM)",
+			row.trend and ns.Format.Trend(row.trend) or Color("muted", "-"))
+	end
 	local daily = goldPerDay(row)
 	if daily then addPair(tip, "Gold per day", signedMoney(daily)) end
 	if row.skillup then
@@ -686,6 +697,7 @@ local function drawRow(button, row)
 	button.cells.listed:SetText((row.listed and (row.listedAge or 0) < STALE_DAYS) and listed or Color("muted", listed))
 	button.cells.perDay:SetText(row.soldPerDay and perDayText(row.soldPerDay) or Color("muted", "-"))
 	button.cells.saleRate:SetText(row.saleRate and ns.Format.SaleRate(row.saleRate) or Color("muted", "-"))
+	button.cells.trend:SetText(row.trend and ns.Format.Trend(row.trend) or Color("muted", "-"))
 	button.cells.sold:SetText(not row.itemName and Color("muted", "-")
 		or row.sold > 0 and tostring(row.sold) or Color("muted", "0"))
 end

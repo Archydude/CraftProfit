@@ -1039,6 +1039,11 @@ local function drawDemand(output)
 		local text = perDay and (perDay < 10 and format("%.1f", perDay) or BreakUpLargeNumbers(math.floor(perDay + 0.5)))
 		addRow("Sells per day " .. Color("muted", "(TSM)"), text or Color("muted", "-"))
 	end
+	-- How far its market value is from its historical price, as TSM's tooltip shows it.
+	if ns.Prices.HasTrend() then
+		local trend = ns.Prices.Trend(output.link)
+		addRow("Trend " .. Color("muted", "(TSM)"), trend and ns.Format.Trend(trend) or Color("muted", "-"))
+	end
 end
 
 -- WoW Forever: what a skill point costs with this recipe, with its color and chance.

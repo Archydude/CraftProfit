@@ -358,7 +358,7 @@ end
 -- kept: market ones (prices, Listed, Sells/day) until a new scan or an option
 -- changes, and ones that follow what you own until your bags change. See
 -- BestCrafts.Reprice.
-local materialPrice, salePrice, market -- market: link -> { listed, listedAge, soldPerDay }
+local materialPrice, salePrice, market -- market: link -> { listed, listedAge, soldPerDay, saleRate, trend }
 local effectiveCost, buyCost
 -- Rows priced so far: entry -> row (see priceEntry).
 local priced = setmetatable({}, { __mode = "k" })
@@ -398,6 +398,7 @@ local function marketOf(link)
 		found.listed, found.listedAge = ns.Prices.Listed(link)
 		found.soldPerDay = ns.Prices.SoldPerDay(link)
 		found.saleRate = ns.Prices.HasSaleRate() and ns.Prices.SaleRate(link) or nil
+		found.trend = ns.Prices.Trend(link)
 		market[link] = found
 	end
 	return found
@@ -573,7 +574,7 @@ local function priceEntry(entry)
 	if row.output then
 		local found = marketOf(row.output.link)
 		row.listed, row.listedAge, row.soldPerDay = found.listed, found.listedAge, found.soldPerDay
-		row.saleRate = found.saleRate
+		row.saleRate, row.trend = found.saleRate, found.trend
 	end
 
 	-- WoW Forever: what a skill point costs with it. The game only knows your skill
