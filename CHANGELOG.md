@@ -1,5 +1,16 @@
 # Changelog
 
+## 4.7.0
+- **All recipes (WoW Forever):** a new window with every profession's recipes that make something you can trade, whether or not one of your characters knows them. Each one shows what its materials cost, in red, the **Gross Profit** and **Net Profit** of one craft at today's prices, and with TSM the **TSM Sale Rate** and **Sold per Day**, so you can see what's selling. Open it from the minimap button's right-click menu or with `/craftprofit recipes`.
+- **Search and filter it:** search by item, recipe or **material**, so **Copper Bar** lists everything made from Copper Bars. Pick a profession, and click **Filters** for **Only profitable**, a **Min Net Profit** in gold, silver and copper, and a lowest and highest **TSM Sale Rate**. The filters are remembered.
+- **Sort it by up to three columns:** click a header to sort by it, then Shift-click a second and a third. Their names turn gold, light blue and light green.
+- **Skill:** a column with the skill each recipe needs, in orange. The game doesn't say it for recipes a trainer teaches; those show the skill where the recipe turns yellow, in yellow.
+- **Trend (with TSM):** how far an item's market value is from its historical price, like **-20%** in red or **+14%** in green: the number TSM's own tooltip shows beside its market value. It's a **TSM Trend** line on item tooltips (turn it off with **Show trend** on the Tooltips options page), a **Trend** line on the panel, and a **Trend** column in Best crafts. That column shows by default on WoW Forever; on Retail, pick it under Columns.
+- **Sort the Sell list:** click **Item**, **Price**, **Sale rate** or **Amount** above the Sell tab's list to sort by it, and click again to reverse. Items with no price or no sale rate go last.
+- Changed: the Sell list is one list. Its sections (Your crafts, and one for each kind of item) are gone, with their folding and dragging. Your favorites still come first, marked with a star.
+- **Open the panel yourself:** a **Craft Profit** button at the top of the profession window opens and closes the panel. Untick **Open with the profession window**, at the bottom of the panel or in the options, and the panel stays closed until you click that button.
+- The minimap button's menu has an icon on its Shopping list, Ledger and All recipes lines.
+
 ## 4.6.0
 - **Crafts box:** on the crafting page, a **Crafts** box over the profit sets how many crafts the panel is for. Type a number and the profit, the sale price, your materials and what they cost, the **Shopping list** button and the concentration line all follow it. The profit shows **x10** after its name. The box goes back to 1 when you pick another recipe. It's each craft at today's prices, times the number, so buying or selling a lot at once can make it less.
 - **The game's amount box follows it:** the amount box next to Create gets the same number, up to what you can make with the materials you have, so Create makes that many.

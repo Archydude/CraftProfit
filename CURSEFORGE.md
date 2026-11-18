@@ -39,25 +39,22 @@ Craft Profit answers in gold: **profit or loss?** A panel next to your professio
 - **Patron orders** priced and crafted right in Blizzard's Patron tab
 
 ### Crafts and orders
-The sale price at the rank you'll get, minus the 5% cut and your materials. On orders: the commission, minus the materials **you** supply, plus sellable rewards. With concentration on, the **concentration strategy** picks the materials: cheapest, least concentration or most **gold per point**. The **Crafts** box shows it all for any number of crafts, and fills the game's amount box.
+The sale price at the rank you'll get, minus the 5% cut and your materials. On orders: the commission, minus the materials **you** supply, plus sellable rewards. With concentration on, the **concentration strategy** picks the materials: cheapest, least concentration or most **gold per point**. The **Crafts** box shows it all for any number of crafts.
 
 ### What should I craft?
-**Best crafts** lists every recipe you know, most profitable first. Search by item or **material**. With TSM, a **sale rate** column shows what really sells.
-
-### Did it pay off?
-The **Ledger** is your crafting history: what each item cost, sold for and really made.
+**Best crafts** lists every recipe you know, most profitable first. Search by item or **material**. With TSM, **sale rate** and **trend** columns show what really sells.
 
 ### At the auction house
-**Shopping list**: a click on a material shows it with the amount to buy. **Sell**: your bags with a price and TSM sale rate on every item, and the lowest price filled in. **My auctions**: see which are undercut or not first, and cancel them. With Auctionator, choose which of the two does each.
+**Shopping list**: click a material to see it with the amount to buy. **Sell**: your bags with a price and TSM sale rate on every item, sorted by any column, and the lowest price filled in. **My auctions**: see which are undercut or not first, and cancel them. With Auctionator, choose which of the two does each.
 
 ### Patron orders
 Blizzard's Patron tab shows each order's **expected profit**, **rewards** and missing **materials**. **Next order** works through them.
 
 ### WoW Forever
-Best crafts shows what a **skill point** costs with each recipe, and the **chance** of one. **Craft myself** prices materials you can make at what crafting them costs, and **Cheapest way** crafts or buys each one, whichever costs less.
+**All recipes** lists every profession's recipes that make something you can sell, known or not, with each craft's profit and, with TSM, how well the item sells. Best crafts shows what a **skill point** costs with each recipe. **Craft myself** prices materials you can make at what crafting them costs, and **Cheapest way** crafts or buys each one, whichever costs less.
 
 ### Item tooltips
-Vendor prices, the auction price, TSM's **sale rate** and the **AH deposit**.
+Vendor prices, the auction price, TSM's **sale rate** and **trend**, and the **AH deposit**.
 
 ### Good to know
 - **TSM prices for alts** that keep TSM turned off.
@@ -72,11 +69,11 @@ Vendor prices, the auction price, TSM's **sale rate** and the **AH deposit**.
 
 ## B. Upload File form
 
-**File:** `dist\CraftProfit-4.6.0.zip`
+**File:** `dist\CraftProfit-4.7.0.zip`
 
 **Display name**
 ```
-Craft Profit 4.6.0
+Craft Profit 4.7.0
 ```
 
 **Release type:** `Release`
@@ -85,6 +82,17 @@ Craft Profit 4.6.0
 
 **Changelog** (paste only the newest part; paste older parts too if they never went up)
 ```markdown
+4.7.0
+- **All recipes (WoW Forever):** a new window with every profession's recipes that make something you can trade, whether or not one of your characters knows them. Each one shows what its materials cost, in red, the **Gross Profit** and **Net Profit** of one craft at today's prices, and with TSM the **TSM Sale Rate** and **Sold per Day**, so you can see what's selling. Open it from the minimap button's right-click menu or with `/craftprofit recipes`.
+- **Search and filter it:** search by item, recipe or **material**, so **Copper Bar** lists everything made from Copper Bars. Pick a profession, and click **Filters** for **Only profitable**, a **Min Net Profit** in gold, silver and copper, and a lowest and highest **TSM Sale Rate**. The filters are remembered.
+- **Sort it by up to three columns:** click a header to sort by it, then Shift-click a second and a third. Their names turn gold, light blue and light green.
+- **Skill:** a column with the skill each recipe needs, in orange. The game doesn't say it for recipes a trainer teaches; those show the skill where the recipe turns yellow, in yellow.
+- **Trend (with TSM):** how far an item's market value is from its historical price, like **-20%** in red or **+14%** in green: the number TSM's own tooltip shows beside its market value. It's a **TSM Trend** line on item tooltips (turn it off with **Show trend** on the Tooltips options page), a **Trend** line on the panel, and a **Trend** column in Best crafts. That column shows by default on WoW Forever; on Retail, pick it under Columns.
+- **Sort the Sell list:** click **Item**, **Price**, **Sale rate** or **Amount** above the Sell tab's list to sort by it, and click again to reverse. Items with no price or no sale rate go last.
+- Changed: the Sell list is one list. Its sections (Your crafts, and one for each kind of item) are gone, with their folding and dragging. Your favorites still come first, marked with a star.
+- **Open the panel yourself:** a **Craft Profit** button at the top of the profession window opens and closes the panel. Untick **Open with the profession window**, at the bottom of the panel or in the options, and the panel stays closed until you click that button.
+- The minimap button's menu has an icon on its Shopping list, Ledger and All recipes lines.
+
 4.6.0
 - **Crafts box:** on the crafting page, a **Crafts** box over the profit sets how many crafts the panel is for. Type a number and the profit, the sale price, your materials and what they cost, the **Shopping list** button and the concentration line all follow it. The profit shows **x10** after its name. The box goes back to 1 when you pick another recipe. It's each craft at today's prices, times the number, so buying or selling a lot at once can make it less.
 - **The game's amount box follows it:** the amount box next to Create gets the same number, up to what you can make with the materials you have, so Create makes that many.

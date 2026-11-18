@@ -15,6 +15,8 @@ Craft Profit tells you, in gold, whether a craft or a crafting order makes or lo
 
 - **Ledger:** your crafting history in its own window: what you crafted, what sold, your orders and what you bought, and how each item did against its forecast.
 
+- **All recipes (WoW Forever):** a window with every profession's recipes, known or not, with what one craft makes and, with TSM, how well the item sells (see [All recipes](#all-recipes)).
+
 - **Shopping list:** adds what you're short of, for one or more crafts or for every patron order at once, to Craft Profit's own shopping list, an Auctionator shopping list, or a TSM search to copy. Craft Profit's list and the Auctionator list check materials off as you get them.
 
 - **Auction house window:** Craft Profit's own window beside the auction house: your shopping list, selling from your bags, your auctions with the undercut ones marked, and a price scan of its own.
@@ -49,6 +51,7 @@ The panel reads top to bottom: the expected profit or loss, what comes in (the s
 - For recipes that make a varying amount, the average is used.
 - Materials without any price are shown in red. Profit is then too high, so take it with a grain of salt.
 - Drag the panel to move it. It remembers where you put it.
+- A **Craft Profit** button at the top of the profession window opens and closes the panel. The panel's last line, **Open with the profession window**, says whether it opens by itself: untick it and the panel stays closed until you click that button.
 
 ### More than one craft
 On the crafting page, the **Crafts** box over the profit sets how many crafts the panel is for. Type a number, up to 999, and the panel follows it:
@@ -247,6 +250,19 @@ Craft Profit works on WoW Forever: the panel, Best crafts, the shopping list and
 - **Vendor reagents** (thread, flux, vials, dyes, salt, spices and more) cost their vendor price even before your price addon has seen a vendor sell them.
 - Amounts show the two biggest coins, like **1s 4c** or **4g 12s**.
 
+### All recipes
+A window with every profession's recipes that make something you can trade, whether or not one of your characters knows them, so you can see what's worth making and what's selling. Open it from the minimap button's right-click menu or with `/craftprofit recipes`. It prices every recipe when it opens, which takes a moment.
+
+Every recipe is priced as if you bought all its materials (at a vendor when one sells them, otherwise on the auction house) and sold what one craft makes, at today's prices. A recipe that makes a varying number of items counts the average.
+
+- **Columns:** the item, its profession, **Skill**, **Materials** (what they cost, in red), **Gross Profit** (what one craft's items sell for after the auction house cut), **Net Profit** (Gross Profit minus Materials), and with TSM, **TSM Sale Rate** and **Sold per Day**. Hover a row for its materials and what each costs.
+- **Skill:** the skill the recipe needs, in orange. The game only says that for recipes learned from a recipe item (a pattern, plans, a schematic). For a recipe a trainer teaches, it's the skill where the recipe turns yellow, in yellow: you can learn it by then, often a little sooner.
+- **Sort:** click a column's name to sort by it, and again to reverse. Shift-click another to sort by that one second, and one more third. Their names turn gold, light blue and light green. It starts on what sells most a day, or the most Net Profit without TSM.
+- **Search:** type part of an item's, a recipe's or a **material's** name, so **Copper Bar** lists everything made from Copper Bars. The dropdown on the right shows one profession.
+- **Filters:** **Only profitable** (Net Profit above zero), **Min Net Profit** in gold, silver and copper, and a lowest and highest **TSM Sale Rate** in percent (with TSM). The button says how many are on, **Clear** empties them, and they're remembered.
+- **Left out:** items that are bound when picked up, enchants that make no item, and items with no auction price. The line at the bottom says how many have no price.
+- Without TSM it shows profit only: the sale rate and sold per day are TSM's.
+
 ## Auction house window
 Craft Profit has its own window at the auction house. It opens beside the game's auction house window, and a button with Craft Profit's logo on that window's right edge opens and closes it. It has up to four tabs: **Shopping list**, **Sell**, **My auctions** and **Prices**.
 
@@ -307,7 +323,7 @@ At the auction house, `/craftprofit sell`, `/craftprofit auctions` and `/craftpr
 
 ## Minimap button
 - **Click:** opens the profession window of the profession you opened last, on its Best crafts list. Click again to close the list.
-- **Right-click:** a menu to open any of your professions' Best crafts, Craft Profit's shopping list (when you use it), the Ledger, switch the crafting strategy, or open the options.
+- **Right-click:** a menu to open any of your professions' Best crafts, Craft Profit's shopping list (when you use it), the Ledger, All recipes (on WoW Forever), switch the crafting strategy, or open the options.
 - **Hover:** this session's total and your luck.
 - Drag it around the minimap. It's also in the minimap's addon menu, and works with minimap button collectors.
 - Hide it with **Show minimap button** in the options, or type `/craftprofit minimap` (type it again to bring it back).
@@ -372,6 +388,7 @@ Click the gear on the panel (or Craft Profit options in the gear menu under the 
 | Show on the crafting page / on crafting orders | Turn the panel on or off for each page. WoW Forever has no crafting orders. |
 | Panel size | Size of the whole panel, 60% to 150%. |
 | Show amounts down to | Gold, silver (default) or copper. Not on WoW Forever, which always shows the two biggest coins. |
+| Open with the profession window | The panel opens by itself when you pick a recipe. Off: it stays closed until you click the **Craft Profit** button at the top of the profession window, which opens and closes the panel either way. Also at the bottom of the panel. On by default. |
 | Lock panel position | Stops the panel from being dragged. |
 | Panel position: Reset | Puts the panel back next to the profession window. |
 | Animate procs | On by default. Not on WoW Forever. |
