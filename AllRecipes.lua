@@ -1,11 +1,19 @@
--- Craft Profit: every profession's recipes on WoW Forever, priced as if you
--- bought the materials and sold what a craft makes, whether or not a character of
--- yours knows the recipe. An enchant makes nothing to sell: it has only what its
--- materials cost. For the All recipes window (AllRecipesWindow.lua). The
--- recipes come from Data\ForeverRecipes.lua; they're unpacked and priced a few at
--- a time while the window is open, and let go when it closes.
+-- Craft Profit: every profession's recipes, priced as if you bought the
+-- materials and sold what a craft makes, whether or not a character of yours
+-- knows the recipe. For the All recipes window (AllRecipesWindow.lua). The recipes
+-- are unpacked and priced a few at a time while the window is open, and let go
+-- when it closes.
+--
+-- WoW Forever: all of them at once, from Data\ForeverRecipes.lua, which has what
+-- each takes and makes. An enchant makes nothing to sell there: it has only what
+-- its materials cost.
+--
+-- Retail: one expansion at a time, from Data\RetailRecipes.lua, which only says
+-- which recipes there are: the game says what each takes and makes. A recipe with
+-- ranks is priced at its highest rank with the best materials, or at its lowest
+-- with the cheapest (ns.db.recipesRank): nobody's skill is there to say which rank
+-- a craft would come out at.
 local _, ns = ...
-if ns.QUALITY_CRAFTING then return end
 
 local AllRecipes = {}
 ns.AllRecipes = AllRecipes
@@ -17,7 +25,12 @@ local FRAME_BUDGET_MS = 4
 --   recipeID, itemID, link = the item as price addons are asked about it (an
 --   enchant, which makes no item, has neither, and enchant = true),
 --   made = how many one craft makes (the average, for recipes that make a range),
---   professionID, profession = its name, materials = { { itemID, qty } ... },
+--   professionID, profession = its name, materials = { { itemID, qty } ... }
+--   (on Retail a material that comes in several also has options = their item IDs,
+--   lowest quality first, and qualities = true when they're one material's
+--   qualities; itemID is then the one the craft is priced with),
+--   rank = the rank it's priced at, and highest = whether that's its highest (Retail,
+--   rank nil for a recipe without ranks),
 --   recipeName, name = the item's (the recipe's until the game has loaded it),
 --   required = the skill the recipe needs (nil for one a trainer teaches: the game
 --   data doesn't have it), yellow and grey = the skills where it turns yellow and
@@ -44,8 +57,12 @@ local function pauseIfDue()
 	if debugprofilestop() > deadline then coroutine.yield() end
 end
 
--- A profession's name, in the game's language when the data has it.
+-- A profession's name, in the game's language when the game or the data has it.
 function AllRecipes.ProfessionName(professionID)
+	if ns.QUALITY_CRAFTING then
+		local name = C_TradeSkillUI.GetTradeSkillDisplayName and C_TradeSkillUI.GetTradeSkillDisplayName(professionID)
+		return name and name ~= "" and name or ns.RECIPE_PROFESSIONS[professionID]
+	end
 	local names = ns.RECIPE_PROFESSION_NAMES[GetLocale()]
 	return names and names[professionID] or ns.RECIPE_PROFESSIONS[professionID]
 end
@@ -53,11 +70,40 @@ end
 -- The professions with recipes here: { { id, name } ... }, by name.
 function AllRecipes.Professions()
 	local list = {}
-	for professionID in pairs(ns.ALL_RECIPES) do
+	for professionID in pairs(ns.RECIPE_PROFESSIONS) do
 		list[#list + 1] = { id = professionID, name = AllRecipes.ProfessionName(professionID) }
 	end
 	table.sort(list, function(a, b) return a.name < b.name end)
 	return list
+end
+
+-- Retail: the expansions with recipes: { { id, name } ... }, newest first. The
+-- name is the game's own for the expansion, in its language.
+function AllRecipes.Expansions()
+	local list = {}
+	for id, name in pairs(ns.RECIPE_EXPANSIONS or {}) do
+		list[#list + 1] = { id = id, name = _G["EXPANSION_NAME" .. id] or name }
+	end
+	table.sort(list, function(a, b) return a.id > b.id end)
+	return list
+end
+
+-- Retail: the expansion whose recipes the window lists: the one you picked, or
+-- the newest.
+function AllRecipes.Expansion()
+	local picked = ns.db.recipesExpansion
+	if picked and ns.RETAIL_RECIPES[picked] then return picked end
+	local newest
+	for id in pairs(ns.RETAIL_RECIPES) do
+		if not newest or id > newest then newest = id end
+	end
+	return newest
+end
+
+-- Retail: whether recipes with ranks are priced at their highest rank with the
+-- best materials (otherwise at their lowest, with the cheapest).
+function AllRecipes.Highest()
+	return ns.db.recipesRank ~= "lowest"
 end
 
 -- One line of the data ("recipe:item:made:skill needed:material.count,...") as a row, or nil.
@@ -84,6 +130,73 @@ local function unpackRecipe(text, professionID, profession)
 		professionID = professionID, profession = profession, materials = materials,
 		required = required, yellow = yellow, grey = grey, skill = required or yellow,
 		recipeName = recipeName, name = recipeName or "?" }
+end
+
+-- Retail: the item a recipe makes at a rank (nil for a recipe without ranks):
+-- link and itemID, or nil. An enchant makes its scroll.
+local function retailOutput(recipeID, name, scroll, qualityIDs, rank)
+	if scroll then
+		local link, itemID = ns.Blizzard.ScrollAt(recipeID, name, rank)
+		-- The scrolls can have fewer ranks than the game says the recipe has.
+		if not itemID then link, itemID = ns.Blizzard.ScrollAt(recipeID, name) end
+		return link, itemID
+	end
+	local ok, output = pcall(C_TradeSkillUI.GetRecipeOutputItemData, recipeID, {}, nil, rank and qualityIDs[rank])
+	if ok and output and output.hyperlink and (output.itemID or 0) > 0 then return output.hyperlink, output.itemID end
+end
+
+-- Retail: one recipe as a row, from what the game says about it, or nil when it
+-- makes nothing to sell. `highest`: see AllRecipes.Highest.
+local function retailRow(recipeID, professionID, profession, highest)
+	local schematic = C_TradeSkillUI.GetRecipeSchematic(recipeID, false)
+	if not schematic then return end
+	local scroll = ns.Blizzard.MakesScroll(recipeID)
+	if scroll then
+		schematic = ns.Blizzard.ScrollSchematic(schematic)
+	elseif schematic.recipeType ~= Enum.TradeskillRecipeType.Item then
+		return
+	end
+
+	local qualityIDs = C_TradeSkillUI.GetQualitiesForRecipe(recipeID)
+	local ranks = qualityIDs and #qualityIDs or 0
+	local rank = ranks > 1 and (highest and ranks or 1) or nil
+	local link, itemID = retailOutput(recipeID, schematic.name, scroll, qualityIDs, rank)
+	if not itemID then return end
+
+	-- What it needs: every required slot, with all the items that can fill it.
+	local materials = {}
+	for _, slot in ipairs(schematic.reagentSlotSchematics or {}) do
+		if slot.required then
+			local options = {}
+			for _, reagent in ipairs(slot.reagents or {}) do
+				if reagent.itemID then options[#options + 1] = reagent.itemID end
+			end
+			if #options > 0 then
+				materials[#materials + 1] = { itemID = options[1], qty = slot.quantityRequired or 1,
+					options = #options > 1 and options or nil,
+					qualities = #options > 1 and ns.Blizzard.IsQualitySlot(slot) or nil }
+			end
+		end
+	end
+
+	local name = schematic.name
+	return { recipeID = recipeID, itemID = itemID, link = link, enchant = false,
+		made = ((schematic.quantityMin or 1) + (schematic.quantityMax or 1)) / 2,
+		professionID = professionID, profession = profession, materials = materials,
+		rank = rank, highest = highest, recipeName = name, name = name or "?" }
+end
+
+-- Retail: which of a material's items a craft is priced with: the best quality at
+-- the highest rank, and otherwise the cheapest (the first while none has a price).
+local function pickMaterial(material, buy, highest)
+	local options = material.options
+	if highest and material.qualities then return options[#options] end
+	local cheapest, lowest
+	for _, itemID in ipairs(options) do
+		local price = buy(itemID)
+		if price and (not lowest or price < lowest) then cheapest, lowest = itemID, price end
+	end
+	return cheapest or options[1]
 end
 
 -- A material's name in lower case, or nil until the game has loaded it (it's
@@ -113,26 +226,49 @@ function AllRecipes.UsesMaterial(row, search)
 	return false
 end
 
--- Unpacks every recipe. They only count once all are there: a pricing dropped
--- halfway leaves nothing behind.
-local function unpackAll()
+-- Unpacks every recipe: all of WoW Forever's, or on Retail the shown expansion's,
+-- asking the game about each (`this` is the pricing: it's told how far that is).
+-- They only count once all are there: a pricing dropped halfway leaves nothing
+-- behind.
+local function unpackAll(this)
 	local list, items = {}, {}
-	for professionID, packed in pairs(ns.ALL_RECIPES) do
-		local profession = AllRecipes.ProfessionName(professionID)
-		for _, text in ipairs(packed) do
-			local row = unpackRecipe(text, professionID, profession)
-			if row then
-				list[#list + 1] = row
-				if row.itemID then
-					local same = items[row.itemID]
-					if not same then
-						same = {}
-						items[row.itemID] = same
-					end
-					same[#same + 1] = row
-				end
+	local function add(row)
+		if not row then return end
+		list[#list + 1] = row
+		if row.itemID then
+			local same = items[row.itemID]
+			if not same then
+				same = {}
+				items[row.itemID] = same
 			end
-			pauseIfDue()
+			same[#same + 1] = row
+		end
+	end
+	if ns.QUALITY_CRAFTING then
+		local packed = ns.RETAIL_RECIPES[AllRecipes.Expansion()] or {}
+		local highest = AllRecipes.Highest()
+		-- Asking the game is the first half of the work, pricing the second.
+		local count = 0
+		for _, recipes in pairs(packed) do
+			count = count + select(2, recipes:gsub("%d+", "")) -- how many recipes the text has
+		end
+		this.total = 2 * count
+		for professionID, recipes in pairs(packed) do
+			local profession = AllRecipes.ProfessionName(professionID)
+			for recipeID in recipes:gmatch("%d+") do
+				add(retailRow(tonumber(recipeID), professionID, profession, highest))
+				this.done = this.done + 1
+				pauseIfDue()
+			end
+		end
+		this.scanned = count
+	else
+		for professionID, packed in pairs(ns.ALL_RECIPES) do
+			local profession = AllRecipes.ProfessionName(professionID)
+			for _, text in ipairs(packed) do
+				add(unpackRecipe(text, professionID, profession))
+				pauseIfDue()
+			end
 		end
 	end
 	rows, byItem, materialNames = list, items, {}
@@ -143,6 +279,7 @@ end
 local function priceMaterials(row, buy)
 	local cost, unpriced = 0, 0
 	for _, material in ipairs(row.materials) do
+		if material.options then material.itemID = pickMaterial(material, buy, row.highest) end
 		materialName(material.itemID) -- asked for now, so the search has it by the time you type
 		local price = buy(material.itemID)
 		if price then cost = cost + price * material.qty else unpriced = unpriced + 1 end
@@ -172,8 +309,10 @@ local function priceRow(row, buy, keep)
 end
 
 local function priceAll(this)
-	if not rows then unpackAll() end
-	this.total = #rows
+	if not rows then unpackAll(this) end
+	-- On Retail, asking the game about each recipe came first and counts too.
+	local scanned = this.scanned or 0
+	this.total = scanned + #rows
 	-- Most materials are in many recipes: each is asked about once. False is "no price".
 	local known = {}
 	local function buy(itemID)
@@ -189,7 +328,7 @@ local function priceAll(this)
 	this.buy, this.keep = buy, keep
 	for index, row in ipairs(rows) do
 		priceRow(row, buy, keep)
-		this.done = index
+		this.done = scanned + index
 		pauseIfDue()
 	end
 end

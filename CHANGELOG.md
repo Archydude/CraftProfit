@@ -1,5 +1,13 @@
 # Changelog
 
+## 4.8.0
+- **All recipes on Retail:** the All recipes window now works on Retail too. It lists every profession's recipes that make something you can trade, whether or not one of your characters knows them, with what the materials cost, the **Gross Profit** and **Net Profit** of one craft, and with TSM the **TSM Sale Rate** and **Sold per Day**. Open it from the minimap button's right-click menu or with `/craftprofit recipes`.
+- **One expansion at a time:** on Retail, a dropdown picks the expansion, starting on the newest.
+- **Pick the rank:** on Retail, recipes with ranks are priced at their **highest rank with the best materials**, or at their **lowest rank with the cheapest**. Nobody's skill is there to say which rank a craft would come out at, so you choose. The rank shows after each item's name. Multicraft, resourcefulness and concentration aren't counted, and an enchant is priced as the scroll it makes.
+- **Enchants in All recipes (WoW Forever):** the window lists every enchant too, with the skill it needs and what its materials cost. An enchant makes nothing to sell there, so it has no profit or sale rate, and the profit and sale rate filters leave it out.
+- Fixed: on WoW Forever, enchants showed a question mark in Best crafts and counted an Enchanting Vellum they don't use, so the panel and Best crafts had their cost 10 silver too high and the shopping list asked for a vellum. They now show a scroll and cost what their materials cost. Their profit shows a dash, and **Per skill-up** is their materials alone.
+- Fixed: clicking **Next order** on the Patron tab as fast as you can could leave a step hanging. The button now greys out for a moment after each click and each time its step changes.
+
 ## 4.7.0
 - **All recipes (WoW Forever):** a new window with every profession's recipes that make something you can trade, whether or not one of your characters knows them. Each one shows what its materials cost, in red, the **Gross Profit** and **Net Profit** of one craft at today's prices, and with TSM the **TSM Sale Rate** and **Sold per Day**, so you can see what's selling. Open it from the minimap button's right-click menu or with `/craftprofit recipes`.
 - **Search and filter it:** search by item, recipe or **material**, so **Copper Bar** lists everything made from Copper Bars. Pick a profession, and click **Filters** for **Only profitable**, a **Min Net Profit** in gold, silver and copper, and a lowest and highest **TSM Sale Rate**. The filters are remembered.

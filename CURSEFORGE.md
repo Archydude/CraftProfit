@@ -33,6 +33,7 @@ Craft Profit answers in gold: **profit or loss?** A panel next to your professio
 
 - **Expected profit** on every craft, procs included
 - **Best crafts**: every recipe ranked by profit, across all your characters
+- **All recipes**: every profession's recipes, known or not
 - **Ledger**: your crafts, sales, orders and purchases against the forecast
 - **Auction house window**: shopping list, selling, cancelling undercut auctions
 - **No price addon needed**: its own price scan, or **TradeSkillMaster** and **Auctionator** prices
@@ -44,6 +45,8 @@ The sale price at the rank you'll get, minus the 5% cut and your materials. On o
 ### What should I craft?
 **Best crafts** lists every recipe you know, most profitable first. Search by item or **material**. With TSM, **sale rate** and **trend** columns show what really sells.
 
+**All recipes** lists every profession's sellable recipes, known or not, with each craft's profit and, with TSM, how well it sells. On Retail: one expansion at a time, at the rank you pick.
+
 ### At the auction house
 **Shopping list**: click a material to see it with the amount to buy. **Sell**: your bags with a price and TSM sale rate on every item, sorted by any column, and the lowest price filled in. **My auctions**: see which are undercut or not first, and cancel them. With Auctionator, choose which of the two does each.
 
@@ -51,7 +54,7 @@ The sale price at the rank you'll get, minus the 5% cut and your materials. On o
 Blizzard's Patron tab shows each order's **expected profit**, **rewards** and missing **materials**. **Next order** works through them.
 
 ### WoW Forever
-**All recipes** lists every profession's recipes that make something you can sell, known or not, with each craft's profit and, with TSM, how well the item sells. Best crafts shows what a **skill point** costs with each recipe. **Craft myself** prices materials you can make at what crafting them costs, and **Cheapest way** crafts or buys each one, whichever costs less.
+Best crafts shows what a **skill point** costs with each recipe. **Craft myself** prices materials you can make at what crafting them costs, and **Cheapest way** crafts or buys each one, whichever costs less.
 
 ### Item tooltips
 Vendor prices, the auction price, TSM's **sale rate** and **trend**, and the **AH deposit**.
@@ -69,11 +72,11 @@ Vendor prices, the auction price, TSM's **sale rate** and **trend**, and the **A
 
 ## B. Upload File form
 
-**File:** `dist\CraftProfit-4.7.0.zip`
+**File:** `dist\CraftProfit-4.8.0.zip`
 
 **Display name**
 ```
-Craft Profit 4.7.0
+Craft Profit 4.8.0
 ```
 
 **Release type:** `Release`
@@ -82,6 +85,14 @@ Craft Profit 4.7.0
 
 **Changelog** (paste only the newest part; paste older parts too if they never went up)
 ```markdown
+4.8.0
+- **All recipes on Retail:** the All recipes window now works on Retail too. It lists every profession's recipes that make something you can trade, whether or not one of your characters knows them, with what the materials cost, the **Gross Profit** and **Net Profit** of one craft, and with TSM the **TSM Sale Rate** and **Sold per Day**. Open it from the minimap button's right-click menu or with `/craftprofit recipes`.
+- **One expansion at a time:** on Retail, a dropdown picks the expansion, starting on the newest.
+- **Pick the rank:** on Retail, recipes with ranks are priced at their **highest rank with the best materials**, or at their **lowest rank with the cheapest**. Nobody's skill is there to say which rank a craft would come out at, so you choose. The rank shows after each item's name. Multicraft, resourcefulness and concentration aren't counted, and an enchant is priced as the scroll it makes.
+- **Enchants in All recipes (WoW Forever):** the window lists every enchant too, with the skill it needs and what its materials cost. An enchant makes nothing to sell there, so it has no profit or sale rate, and the profit and sale rate filters leave it out.
+- Fixed: on WoW Forever, enchants showed a question mark in Best crafts and counted an Enchanting Vellum they don't use, so the panel and Best crafts had their cost 10 silver too high and the shopping list asked for a vellum. They now show a scroll and cost what their materials cost. Their profit shows a dash, and **Per skill-up** is their materials alone.
+- Fixed: clicking **Next order** on the Patron tab as fast as you can could leave a step hanging. The button now greys out for a moment after each click and each time its step changes.
+
 4.7.0
 - **All recipes (WoW Forever):** a new window with every profession's recipes that make something you can trade, whether or not one of your characters knows them. Each one shows what its materials cost, in red, the **Gross Profit** and **Net Profit** of one craft at today's prices, and with TSM the **TSM Sale Rate** and **Sold per Day**, so you can see what's selling. Open it from the minimap button's right-click menu or with `/craftprofit recipes`.
 - **Search and filter it:** search by item, recipe or **material**, so **Copper Bar** lists everything made from Copper Bars. Pick a profession, and click **Filters** for **Only profitable**, a **Min Net Profit** in gold, silver and copper, and a lowest and highest **TSM Sale Rate**. The filters are remembered.

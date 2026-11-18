@@ -1190,19 +1190,24 @@ local function nextTooltip(self)
 	GameTooltip:Show()
 end
 
--- Clicks closer together than this are ignored: the game drops some requests
--- that come too fast, and needs a moment to show the last step's result.
-local NEXT_DELAY = 0.5
-local lastNext = 0
+-- The button rests this long, greyed out, after a click and whenever its step
+-- changes (the game just answered the last one): the game drops requests that
+-- come too fast, so clicking as fast as you can could leave a step hanging.
+local NEXT_REST = 0.25
+local restUntil = 0
+local offered -- the order and step the button last offered, as "orderID step"
+
+local function restNext()
+	restUntil = GetTime() + NEXT_REST
+	-- Drawn again once the rest is over, to light the button up again.
+	C_Timer.After(NEXT_REST + 0.01, function() Patron.QueueRedraw(true) end)
+end
 
 local function doNext()
-	local now = GetTime()
-	if now - lastNext < NEXT_DELAY then return end
-	lastNext = now
+	if GetTime() < restUntil then return end
+	restNext()
 	local row, step = nextAction()
 	if row then ns.Craft.Do(row, step) end
-	-- Drawn again once the game has caught up, in case nothing else redraws it.
-	C_Timer.After(NEXT_DELAY, function() Patron.QueueRedraw(true) end)
 end
 
 local function drawNextButton()
@@ -1215,9 +1220,15 @@ local function drawNextButton()
 		width = math.max(width, nextButton:GetFontString():GetUnboundedStringWidth())
 	end
 	local row, step = nextAction()
+	-- A new step to offer: it can't be clicked right away.
+	local offer = row and (row.order.orderID .. " " .. step) or nil
+	if offer ~= offered then
+		offered = offer
+		if offer then restNext() end
+	end
 	nextButton:SetText(row and NEXT_LABELS[step] or NEXT_IDLE)
 	nextButton:SetSize(width + 32, 22)
-	nextButton:SetEnabled(row ~= nil)
+	nextButton:SetEnabled(row ~= nil and GetTime() >= restUntil)
 	if GameTooltip:IsOwned(nextButton) then nextTooltip(nextButton) end
 end
 

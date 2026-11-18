@@ -155,12 +155,8 @@ SlashCmdList.CRAFTPROFIT = function(msg)
 		return
 	end
 	if command == "recipes" then
-		-- Every profession's recipes and how they sell, on WoW Forever.
-		if ns.AllRecipesWindow then
-			ns.AllRecipesWindow.Toggle()
-		else
-			ns.Shopping.Say("The All recipes window is only on WoW Forever.")
-		end
+		-- Every profession's recipes and how they sell.
+		ns.AllRecipesWindow.Toggle()
 		return
 	end
 	if command == "shop" or command == "sell" or command == "auctions" or command == "prices" then

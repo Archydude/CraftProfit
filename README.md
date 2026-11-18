@@ -15,7 +15,7 @@ Craft Profit tells you, in gold, whether a craft or a crafting order makes or lo
 
 - **Ledger:** your crafting history in its own window: what you crafted, what sold, your orders and what you bought, and how each item did against its forecast.
 
-- **All recipes (WoW Forever):** a window with every profession's recipes, known or not, with what one craft makes and, with TSM, how well the item sells (see [All recipes](#all-recipes)).
+- **All recipes:** a window with every profession's recipes, known or not, with what one craft makes and, with TSM, how well the item sells (see [All recipes](#all-recipes)).
 
 - **Shopping list:** adds what you're short of, for one or more crafts or for every patron order at once, to Craft Profit's own shopping list, an Auctionator shopping list, or a TSM search to copy. Craft Profit's list and the Auctionator list check materials off as you get them.
 
@@ -132,7 +132,7 @@ On the **Patron** orders tab, Blizzard's order list shows Craft Profit's columns
 
 **Craft from the list:** a ready order gets a craft button in its Actions. Each click does the next step of that order, and its icon shows which: a scroll to **start** it, a hammer to **craft** it with the qualities picked (and concentration, if its minimum quality needs it), a watch while it's crafting, then coins to **complete** it and collect the rewards. The game asks for a click for each step, and only one order can be started at a time, so while one is in progress only that order has the button, and its Materials say **Started**, **Crafting...** or **Crafted**. Chat confirms each step, and says so if the game turns one down (the recipe needs an anvil nearby, say). When a craft procs resourcefulness, the bonus gold pops up from that order's profit and the list's border flashes gold, as on the panel (the same options turn the animation and the coin sound off).
 
-**Next order:** the button at the right end under the list does the same for you, one click per step, without looking for the order. It finishes the order you've started, then starts the most profitable order you have everything for. Its label says what the click does: **Start next order**, **Craft order** or **Complete order**. Once the profitable orders are done, it goes on to the ones that lose gold, smallest loss first, for their knowledge or other rewards; turn off **Next order: include orders that lose gold** in the gear menu or the options to stop after the profitable ones. Hover it to see which order the click is for, and its profit. It's greyed out while the game is still finishing a step, and when no order is ready (the tooltip says why).
+**Next order:** the button at the right end under the list does the same for you, one click per step, without looking for the order. It finishes the order you've started, then starts the most profitable order you have everything for. Its label says what the click does: **Start next order**, **Craft order** or **Complete order**. Once the profitable orders are done, it goes on to the ones that lose gold, smallest loss first, for their knowledge or other rewards; turn off **Next order: include orders that lose gold** in the gear menu or the options to stop after the profitable ones. Hover it to see which order the click is for, and its profit. It's greyed out while the game is still finishing a step, for a moment after each click and each new step, and when no order is ready (the tooltip says why).
 
 Above the list, next to the order tabs:
 - **Add profitable** adds what you're missing for every order that makes a profit and whose minimum quality you can reach.
@@ -245,22 +245,26 @@ Craft Profit works on WoW Forever: the panel, Best crafts, the shopping list and
   - **Cheapest way:** a mix of the two. Each material you know the recipe for is crafted or bought, whichever costs less, at every step down, so the craft makes the most profit. A material with no auction house price is crafted, and one that costs the same either way is bought. The shopping list buys what that takes, and only the materials that come out as crafted get the hammer.
 - **Per skill-up:** in Best crafts (in Gold/day's place, which stays in each row's tooltip) and on the panel, what one skill point costs with a recipe at your skill: the materials, minus what the item is worth back (its auction price after the cut, or what a vendor pays if that's more), divided by the chance a craft gives a skill-up. Orange recipes always give one; yellow and green ones less often the closer they get to grey; grey ones never, and show **-** in Best crafts (the panel leaves the line out for them). A recipe that makes gold shows **Free**: its skill points cost nothing. Click its header to sort cheapest first: the free ones first, surest skill-up first, then the rest from the cheapest. Hover a row, or look at the panel, for the recipe's color and chance.
 - **Chance:** in Best crafts, next to Per skill-up, the chance a craft gives a skill-up at your skill, in the recipe's color (orange, yellow, green); grey recipes show **-**. Click its header to put the surest skill-ups first.
+- **Enchants** make nothing to sell on Forever, which has no vellums or enchant scrolls. In Best crafts an enchant shows a scroll, what its materials cost and what a skill point costs with it, and a dash for its profit.
 - **Sale rate** (with TSM): in Best crafts, in place of Sells/day and Listed (both still in each row's tooltip), the share of an item's auctions that sell. Forever's region is one server, so it's your own market: a high rate means it sells, a low one that most auctions expire. Click its header to sort by it.
 - **Trend** (with TSM): in Best crafts, next to Sale rate, how far the item's market value on your realm is from its historical price, like **-20%** or **+14%**. Click its header to sort by it, or right-click a header to hide it.
 - **Vendor reagents** (thread, flux, vials, dyes, salt, spices and more) cost their vendor price even before your price addon has seen a vendor sell them.
 - Amounts show the two biggest coins, like **1s 4c** or **4g 12s**.
 
-### All recipes
+## All recipes
 A window with every profession's recipes that make something you can trade, whether or not one of your characters knows them, so you can see what's worth making and what's selling. Open it from the minimap button's right-click menu or with `/craftprofit recipes`. It prices every recipe when it opens, which takes a moment.
 
 Every recipe is priced as if you bought all its materials (at a vendor when one sells them, otherwise on the auction house) and sold what one craft makes, at today's prices. A recipe that makes a varying number of items counts the average.
 
-- **Columns:** the item, its profession, **Skill**, **Materials** (what they cost, in red), **Gross Profit** (what one craft's items sell for after the auction house cut), **Net Profit** (Gross Profit minus Materials), and with TSM, **TSM Sale Rate** and **Sold per Day**. Hover a row for its materials and what each costs.
-- **Skill:** the skill the recipe needs, in orange. The game only says that for recipes learned from a recipe item (a pattern, plans, a schematic). For a recipe a trainer teaches, it's the skill where the recipe turns yellow, in yellow: you can learn it by then, often a little sooner.
+- **Columns:** the item, its profession, **Skill** (WoW Forever), **Materials** (what they cost, in red), **Gross Profit** (what one craft's items sell for after the auction house cut), **Net Profit** (Gross Profit minus Materials), and with TSM, **TSM Sale Rate** and **Sold per Day**. Hover a row for its materials and what each costs.
+- **Expansion** (Retail): the dropdown shows one expansion's recipes at a time, starting on the newest. Picking another prices its recipes, which takes a moment.
+- **Rank** (Retail): nobody's skill is there to say which rank a craft would come out at, so you pick. **Highest rank, best materials** (default) prices each recipe at its highest rank with the best quality of every material; a skilled crafter often reaches that rank with cheaper materials. **Lowest rank, cheapest materials** prices it at its lowest rank. The rank shows after the item's name. Multicraft, resourcefulness and concentration aren't counted, and an enchant is priced as the scroll it makes, with its vellum.
+- **Skill** (WoW Forever): the skill the recipe needs, in orange. The game only says that for recipes learned from a recipe item (a pattern, plans, a schematic). For a recipe a trainer teaches, it's the skill where the recipe turns yellow, in yellow: you can learn it by then, often a little sooner.
+- **Enchants** (WoW Forever): an enchant makes nothing to sell there, so it's listed under its own name with a scroll, its skill and what its materials cost, and a dash for the rest. The profit and sale rate filters leave enchants out.
 - **Sort:** click a column's name to sort by it, and again to reverse. Shift-click another to sort by that one second, and one more third. Their names turn gold, light blue and light green. It starts on what sells most a day, or the most Net Profit without TSM.
 - **Search:** type part of an item's, a recipe's or a **material's** name, so **Copper Bar** lists everything made from Copper Bars. The dropdown on the right shows one profession.
 - **Filters:** **Only profitable** (Net Profit above zero), **Min Net Profit** in gold, silver and copper, and a lowest and highest **TSM Sale Rate** in percent (with TSM). The button says how many are on, **Clear** empties them, and they're remembered.
-- **Left out:** items that are bound when picked up, enchants that make no item, and items with no auction price. The line at the bottom says how many have no price.
+- **Left out:** items that are bound when picked up, and items with no auction price. The line at the bottom says how many have no price. On Retail, also recipes that belong to no expansion, like weapon illusions.
 - Without TSM it shows profit only: the sale rate and sold per day are TSM's.
 
 ## Auction house window
@@ -323,7 +327,7 @@ At the auction house, `/craftprofit sell`, `/craftprofit auctions` and `/craftpr
 
 ## Minimap button
 - **Click:** opens the profession window of the profession you opened last, on its Best crafts list. Click again to close the list.
-- **Right-click:** a menu to open any of your professions' Best crafts, Craft Profit's shopping list (when you use it), the Ledger, All recipes (on WoW Forever), switch the crafting strategy, or open the options.
+- **Right-click:** a menu to open any of your professions' Best crafts, Craft Profit's shopping list (when you use it), the Ledger, All recipes, switch the crafting strategy, or open the options.
 - **Hover:** this session's total and your luck.
 - Drag it around the minimap. It's also in the minimap's addon menu, and works with minimap button collectors.
 - Hide it with **Show minimap button** in the options, or type `/craftprofit minimap` (type it again to bring it back).

@@ -1,9 +1,9 @@
--- Craft Profit: the All recipes window, on WoW Forever. Every profession's
--- recipes with what a craft would make at today's prices and how the item sells,
--- whether or not a character of yours knows the recipe (see AllRecipes.lua). An
+-- Craft Profit: the All recipes window. Every profession's recipes with what a
+-- craft would make at today's prices and how the item sells, whether or not a
+-- character of yours knows the recipe (see AllRecipes.lua). On WoW Forever an
 -- enchant, which makes nothing to sell, is listed with what its materials cost.
+-- On Retail it lists one expansion at a time, at the rank you pick.
 local _, ns = ...
-if ns.QUALITY_CRAFTING then return end
 
 local AllRecipesWindow = {}
 ns.AllRecipesWindow = AllRecipesWindow
@@ -46,11 +46,25 @@ local FILTERS_BACKDROP = {
 	insets = { left = 4, right = 4, top = 4, bottom = 4 },
 }
 local HOW = "Every recipe is priced as if you bought all its materials and sold what one craft makes, at "
-	.. "today's prices, whether or not one of your characters knows it.\n\nAn enchant makes nothing to sell: it's "
-	.. "listed with what its materials cost.\n\nLeft out: items that are bound when picked up, and items with no "
-	.. "auction price. A recipe that makes a varying number of items counts the average."
+	.. "today's prices, whether or not one of your characters knows it.\n\n"
+	.. (ns.QUALITY_CRAFTING
+		and "Nobody's skill is there to say which rank a craft would come out at, so you pick: the highest rank "
+			.. "with the best materials, or the lowest rank with the cheapest. A skilled crafter often reaches the "
+			.. "highest rank with cheaper materials than that. Multicraft, resourcefulness and concentration aren't "
+			.. "counted. An enchant is priced as the scroll it makes.\n\n"
+		or "An enchant makes nothing to sell: it's listed with what its materials cost.\n\n")
+	.. "Left out: items that are bound when picked up, and items with no auction price. A recipe that makes a "
+	.. "varying number of items counts the average."
+-- Retail: the ranks recipes can be priced at (ns.db.recipesRank).
+local RANK_CHOICES = {
+	{ "highest", "Highest rank, best materials" },
+	{ "lowest", "Lowest rank, cheapest materials" },
+}
+local EXPANSION_WIDTH = 190 -- the expansion dropdown: room for "Wrath of the Lich King"
+local RANK_WIDTH = 250      -- the rank dropdown: room for "Lowest rank, cheapest materials"
 
 local frame, scrollBox, footer, empty, searchBox, professionDropdown
+local expansionDropdown, rankDropdown -- Retail only
 -- The Filters button beside the search box and the box it opens, with what's in
 -- it: Only profitable, the lowest net profit's gold, silver and copper boxes, and
 -- the lowest and highest TSM sale rate.
@@ -121,6 +135,7 @@ local COLUMNS = {
 	{ key = "profession", header = "Profession", tip = "The profession the recipe belongs to.", width = 120,
 		sort = "profession", left = true, ascending = true, text = function(row) return row.profession end },
 	{ key = "skill", header = "Skill", width = 48, sort = "skill", ascending = true, text = skillText,
+		shown = function() return not ns.QUALITY_CRAFTING end, -- Retail's recipes don't go by a skill number
 		tip = "The profession skill the recipe needs, in orange. The game only says that for recipes learned from "
 			.. "a recipe item (a pattern, plans, a schematic...).\n\nFor a recipe a trainer teaches, it's the skill where "
 			.. "the recipe turns yellow, in yellow: you can learn it by then, often a little sooner." },
@@ -239,10 +254,15 @@ end
 ---------------------------------------------------------------------------
 
 -- "Bronze Bar x2": the item, and how many when one craft makes more than one.
--- An enchant goes by its own name.
+-- An enchant goes by its own name. On Retail the rank it's priced at follows.
 local function nameText(row)
 	if row.enchant then return row.name end
 	local text = ns.Format.RarityColored(row.itemID, row.name)
+	if row.rank then
+		-- Asked once for each row; false when the game has no icon for it.
+		if row.rankIcon == nil then row.rankIcon = ns.Blizzard.ItemQualityMarkup(row.recipeID, row.rank) or false end
+		if row.rankIcon then text = text .. " " .. row.rankIcon end
+	end
 	if row.made == 1 then return text end
 	return text .. " " .. Color("muted", "x" .. tostring(row.made))
 end
@@ -260,6 +280,10 @@ local function showRowTooltip(button)
 		GameTooltip:AddLine(format("%s (%s)", row.recipeName, row.profession), 1, 1, 1)
 	else
 		GameTooltip:AddLine(row.profession, 1, 1, 1)
+	end
+	if row.rank then
+		addPair("Priced at", (row.rankIcon or ("rank " .. row.rank))
+			.. (row.highest and ", best materials" or ", cheapest materials"))
 	end
 	-- The skill it needs when the game says, then where it turns yellow, green and grey.
 	if row.required then addPair("Skill needed", ns.Skillups.Colored("orange", tostring(row.required))) end
@@ -478,6 +502,10 @@ function AllRecipesWindow.Render()
 	columns = shownColumns()
 	drawHeaders()
 	professionDropdown:GenerateMenu()
+	if expansionDropdown then
+		expansionDropdown:GenerateMenu()
+		rankDropdown:GenerateMenu()
+	end
 	drawFilters()
 	local rows = ns.AllRecipes.Rows()
 	if not rows then return end
@@ -534,6 +562,48 @@ local function professionMenu(_, root)
 			AllRecipesWindow.Render()
 		end)
 	end
+end
+
+-- Retail: another expansion or rank was picked. The recipes are let go, and the
+-- game is asked about the new ones, which are then priced.
+local function reload()
+	showInstead(format(PRICING, 0))
+	ns.AllRecipes.Release()
+	ns.AllRecipes.Price(onPriced)
+	AllRecipesWindow.Render()
+end
+
+local function expansionMenu(_, root)
+	for _, expansion in ipairs(ns.AllRecipes.Expansions()) do
+		root:CreateRadio(expansion.name, function() return ns.AllRecipes.Expansion() == expansion.id end, function()
+			if ns.AllRecipes.Expansion() == expansion.id then return end
+			ns.db.recipesExpansion = expansion.id
+			reload()
+		end)
+	end
+end
+
+local function rankMenu(_, root)
+	for _, choice in ipairs(RANK_CHOICES) do
+		local key = choice[1]
+		root:CreateRadio(choice[2], function() return ns.AllRecipes.Highest() == (key == "highest") end, function()
+			if ns.AllRecipes.Highest() == (key == "highest") then return end
+			ns.db.recipesRank = key
+			reload()
+		end)
+	end
+end
+
+-- Retail: the expansion and rank dropdowns, left of the profession's.
+local function createRetailDropdowns()
+	expansionDropdown = CreateFrame("DropdownButton", nil, frame, "WowStyle1DropdownTemplate")
+	expansionDropdown:SetWidth(EXPANSION_WIDTH)
+	expansionDropdown:SetPoint("RIGHT", professionDropdown, "LEFT", -8, 0)
+	expansionDropdown:SetupMenu(expansionMenu)
+	rankDropdown = CreateFrame("DropdownButton", nil, frame, "WowStyle1DropdownTemplate")
+	rankDropdown:SetWidth(RANK_WIDTH)
+	rankDropdown:SetPoint("RIGHT", expansionDropdown, "LEFT", -8, 0)
+	rankDropdown:SetupMenu(rankMenu)
 end
 
 local function showNote(self)
@@ -790,6 +860,7 @@ local function create()
 	professionDropdown:SetWidth(170)
 	professionDropdown:SetPoint("TOPRIGHT", -SIDE, -FILTERS_TOP)
 	professionDropdown:SetupMenu(professionMenu)
+	if ns.QUALITY_CRAFTING then createRetailDropdowns() end
 
 	createFilters()
 	createList()
