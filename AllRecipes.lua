@@ -17,6 +17,10 @@ local FRAME_BUDGET_MS = 4
 --   made = how many one craft makes (the average, for recipes that make a range),
 --   professionID, profession = its name, materials = { { itemID, qty } ... },
 --   recipeName, name = the item's (the recipe's until the game has loaded it),
+--   required = the skill the recipe needs (nil for one a trainer teaches: the game
+--   data doesn't have it), yellow and grey = the skills where it turns yellow and
+--   grey (nil when the data has neither), skill = what the Skill column shows and
+--   sorts by: required, or else yellow,
 --   -- once priced:
 --   each = what one item sells for (nil without a price), gross = what a craft's
 --   items sell for after the auction house cut, cost = the materials (nil when one
@@ -25,6 +29,9 @@ local FRAME_BUDGET_MS = 4
 -- }
 local rows
 local byItem -- itemID -> the rows that make it (a few items have two recipes)
+-- Every material's name in lower case, for the search: itemID -> name, or false
+-- until the game has loaded the item.
+local materialNames
 -- The pricing in progress or finished: { done, total, finished, buy and keep = what
 -- it prices with (see priceRow) }.
 local run
@@ -50,19 +57,53 @@ function AllRecipes.Professions()
 	return list
 end
 
--- One line of the data ("recipe:item:made:material.count,...") as a row, or nil.
+-- One line of the data ("recipe:item:made:skill needed:material.count,...") as a row, or nil.
 local function unpackRecipe(text, professionID, profession)
-	local recipeID, itemID, made, packed = text:match("^(%d+):(%d+):([%d.]+):(.+)$")
+	local recipeID, itemID, made, required, packed = text:match("^(%d+):(%d+):([%d.]+):(%d+):(.+)$")
 	if not recipeID then return end
 	local materials = {}
 	for material, qty in packed:gmatch("(%d+)%.(%d+)") do
 		materials[#materials + 1] = { itemID = tonumber(material), qty = tonumber(qty) }
 	end
-	recipeID, itemID = tonumber(recipeID), tonumber(itemID)
+	recipeID, itemID, required = tonumber(recipeID), tonumber(itemID), tonumber(required)
+	if required == 0 then required = nil end
+	-- Where it turns yellow and grey, from the skill-up data (Data\Forever.lua).
+	local colors = ns.SKILLUPS and ns.SKILLUPS[recipeID]
+	local yellow, grey = colors and colors[1], colors and colors[2]
+	if yellow == 0 then yellow = nil end
+	if grey == 0 then grey = nil end
 	local recipeName = C_Spell.GetSpellName(recipeID)
 	return { recipeID = recipeID, itemID = itemID, link = "item:" .. itemID, made = tonumber(made),
 		professionID = professionID, profession = profession, materials = materials,
+		required = required, yellow = yellow, grey = grey, skill = required or yellow,
 		recipeName = recipeName, name = recipeName or "?" }
+end
+
+-- A material's name in lower case, or nil until the game has loaded it (it's
+-- asked to, and AllRecipes.ItemArrived hears when it has).
+local function materialName(itemID)
+	local name = materialNames[itemID]
+	if name then return name end
+	name = C_Item.GetItemNameByID(itemID)
+	if name then
+		name = name:lower()
+		materialNames[itemID] = name
+		return name
+	end
+	if materialNames[itemID] == nil then
+		materialNames[itemID] = false
+		C_Item.RequestLoadItemDataByID(itemID)
+	end
+end
+
+-- Whether one of the recipe's materials has `search` (lower case) in its name.
+function AllRecipes.UsesMaterial(row, search)
+	if not materialNames then return false end
+	for _, material in ipairs(row.materials) do
+		local name = materialName(material.itemID)
+		if name and name:find(search, 1, true) then return true end
+	end
+	return false
 end
 
 -- Unpacks every recipe. They only count once all are there: a pricing dropped
@@ -85,7 +126,7 @@ local function unpackAll()
 			pauseIfDue()
 		end
 	end
-	rows, byItem = list, items
+	rows, byItem, materialNames = list, items, {}
 end
 
 -- Fills in what a recipe costs and makes at today's prices. `buy` is what buying
@@ -102,6 +143,7 @@ local function priceRow(row, buy, keep)
 	if not row.each then return end
 	local cost, unpriced = 0, 0
 	for _, material in ipairs(row.materials) do
+		materialName(material.itemID) -- asked for now, so the search has it by the time you type
 		local price = buy(material.itemID)
 		if price then cost = cost + price * material.qty else unpriced = unpriced + 1 end
 	end
@@ -166,11 +208,16 @@ end
 
 -- The game has loaded an item: its recipes go by its name from here on, and one
 -- that had no price is priced again, since some prices need the item loaded.
--- True when it's an item of these recipes: its name, color or price may show
--- differently now.
+-- A material's name is there for the search from here on. True when it's an item
+-- or a material of these recipes: its name, color or price may show differently
+-- now, or the search may find it.
 function AllRecipes.ItemArrived(itemID)
+	local isMaterial = false
+	if materialNames and materialNames[itemID] == false then
+		isMaterial = materialName(itemID) ~= nil
+	end
 	local same = byItem and byItem[itemID]
-	if not same then return false end
+	if not same then return isMaterial end
 	local name = ns.Format.ItemName(itemID)
 	for _, row in ipairs(same) do
 		if name then row.name = name end
@@ -181,5 +228,5 @@ end
 
 -- Stops pricing and lets the recipes go: the window closed.
 function AllRecipes.Release()
-	run, rows, byItem = nil, nil, nil
+	run, rows, byItem, materialNames = nil, nil, nil, nil
 end

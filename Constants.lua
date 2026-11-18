@@ -46,7 +46,8 @@ ns.Colors = {
 	heading = "ffffd100",   -- the game's gold
 	missing = "ffffaa33",
 	good = "ff88ff88",
-	secondSort = "ff66ccff", -- the header of the column a list sorts by second
+	secondSort = "ff66ccff", -- the header of the column a list sorts by second: light blue
+	thirdSort = "ff88ff88",  -- and third: light green
 }
 
 function ns.Color(key, text)
@@ -88,9 +89,13 @@ ns.DEFAULTS = {
 	auctionTab = "sell",       -- the tab it was last on at the auction house: "shop" | "sell" | "auctions" | "prices"
 	sellDuration = 0,          -- how long auctions posted from the Sell tab last, by the game's number for it (0: not chosen yet, so the game's own choice)
 	sellDefault = "last",      -- what a newly picked item starts on: "last" | "1" | "2" | "3" (see ns.SELL_DEFAULT_CHOICES)
-	sellSort = "name",         -- the column the Sell tab's list is sorted by, inside each section: "name" | "price" | "rate" | "amount"
+	sellSort = "name",         -- the column the Sell tab's list is sorted by: "name" | "price" | "rate" | "amount"
 	sellSortAscending = true,  -- and whether that's A to Z or lowest first
 	patronList = true,    -- Craft Profit's columns, buttons and footer on the Patron tab's order list
+	recipesProfitable = false, -- the All recipes window lists only the recipes that make gold
+	recipesMinNet = false,     -- only the ones whose net profit is at least this, in copper (false: any),
+	recipesRateMin = false,    -- and only the ones whose TSM sale rate is at least this, in percent (false: any),
+	recipesRateMax = false,    -- and at most this
 	patronSort = false,   -- the Patron tab sorted by profit: "desc" | "asc", or false for Blizzard's sort
 	concentrationFor = "profit", -- patron orders that need concentration get it by: "profit" | "knowledge", or "none" of it
 	concentrationStrategy = "cheapest", -- where concentration is spent, the qualities picked: "cheapest" | "least" concentration | most "gold" per point

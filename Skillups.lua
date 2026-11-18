@@ -18,6 +18,11 @@ local COLORS = {
 	grey = "ff808080",
 }
 
+-- `text` in a recipe color: "orange", "yellow", "green" or "grey".
+function Skillups.Colored(color, text)
+	return format("|c%s%s|r", COLORS[color] or COLORS.grey, text)
+end
+
 -- The game's own color for a recipe, from its difficulty, or nil.
 local function gameColor(recipeID)
 	local difficulty = Enum.TradeskillRelativeDifficulty
