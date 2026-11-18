@@ -1,6 +1,7 @@
 -- Craft Profit: every profession's recipes on WoW Forever, priced as if you
 -- bought the materials and sold what a craft makes, whether or not a character of
--- yours knows the recipe. For the All recipes window (AllRecipesWindow.lua). The
+-- yours knows the recipe. An enchant makes nothing to sell: it has only what its
+-- materials cost. For the All recipes window (AllRecipesWindow.lua). The
 -- recipes come from Data\ForeverRecipes.lua; they're unpacked and priced a few at
 -- a time while the window is open, and let go when it closes.
 local _, ns = ...
@@ -13,7 +14,8 @@ ns.AllRecipes = AllRecipes
 local FRAME_BUDGET_MS = 4
 
 -- Every recipe while the window is open: {
---   recipeID, itemID, link = the item as price addons are asked about it,
+--   recipeID, itemID, link = the item as price addons are asked about it (an
+--   enchant, which makes no item, has neither, and enchant = true),
 --   made = how many one craft makes (the average, for recipes that make a range),
 --   professionID, profession = its name, materials = { { itemID, qty } ... },
 --   recipeName, name = the item's (the recipe's until the game has loaded it),
@@ -25,7 +27,8 @@ local FRAME_BUDGET_MS = 4
 --   each = what one item sells for (nil without a price), gross = what a craft's
 --   items sell for after the auction house cut, cost = the materials (nil when one
 --   has no price), unpriced = how many of them have none, net = gross - cost,
---   saleRate and soldPerDay = TSM's (nil without),
+--   saleRate and soldPerDay = TSM's (nil without). An enchant has only cost and
+--   unpriced,
 -- }
 local rows
 local byItem -- itemID -> the rows that make it (a few items have two recipes)
@@ -67,13 +70,17 @@ local function unpackRecipe(text, professionID, profession)
 	end
 	recipeID, itemID, required = tonumber(recipeID), tonumber(itemID), tonumber(required)
 	if required == 0 then required = nil end
+	-- Item 0: an enchant, which makes no item.
+	local enchant = itemID == 0
+	if enchant then itemID = nil end
 	-- Where it turns yellow and grey, from the skill-up data (Data\Forever.lua).
 	local colors = ns.SKILLUPS and ns.SKILLUPS[recipeID]
 	local yellow, grey = colors and colors[1], colors and colors[2]
 	if yellow == 0 then yellow = nil end
 	if grey == 0 then grey = nil end
 	local recipeName = C_Spell.GetSpellName(recipeID)
-	return { recipeID = recipeID, itemID = itemID, link = "item:" .. itemID, made = tonumber(made),
+	return { recipeID = recipeID, itemID = itemID, link = itemID and "item:" .. itemID, enchant = enchant,
+		made = tonumber(made),
 		professionID = professionID, profession = profession, materials = materials,
 		required = required, yellow = yellow, grey = grey, skill = required or yellow,
 		recipeName = recipeName, name = recipeName or "?" }
@@ -116,12 +123,14 @@ local function unpackAll()
 			local row = unpackRecipe(text, professionID, profession)
 			if row then
 				list[#list + 1] = row
-				local same = items[row.itemID]
-				if not same then
-					same = {}
-					items[row.itemID] = same
+				if row.itemID then
+					local same = items[row.itemID]
+					if not same then
+						same = {}
+						items[row.itemID] = same
+					end
+					same[#same + 1] = row
 				end
-				same[#same + 1] = row
 			end
 			pauseIfDue()
 		end
@@ -129,18 +138,9 @@ local function unpackAll()
 	rows, byItem, materialNames = list, items, {}
 end
 
--- Fills in what a recipe costs and makes at today's prices. `buy` is what buying
--- a material costs (see Prices.Buy), `keep` the share of a sale the auction house
--- leaves you.
-local function priceRow(row, buy, keep)
-	-- The item's own name, once the game has loaded it. Some prices need the item
-	-- loaded too, so it's priced again then (see AllRecipes.ItemArrived).
-	local name = ns.Format.ItemName(row.itemID)
-	if name then row.name = name else C_Item.RequestLoadItemDataByID(row.itemID) end
-	row.each = ns.Prices.Sale(row.link, row.itemID)
-	row.gross, row.cost, row.net, row.saleRate, row.soldPerDay = nil, nil, nil, nil, nil
-	-- Without a price the window leaves it out, so there's nothing more to ask.
-	if not row.each then return end
+-- Fills in what a recipe's materials cost at today's prices: cost and unpriced.
+-- `buy` is what buying a material costs (see Prices.Buy).
+local function priceMaterials(row, buy)
 	local cost, unpriced = 0, 0
 	for _, material in ipairs(row.materials) do
 		materialName(material.itemID) -- asked for now, so the search has it by the time you type
@@ -149,6 +149,22 @@ local function priceRow(row, buy, keep)
 	end
 	row.unpriced = unpriced
 	row.cost = unpriced == 0 and cost or nil
+end
+
+-- Fills in what a recipe costs and makes at today's prices. `keep` is the share
+-- of a sale the auction house leaves you.
+local function priceRow(row, buy, keep)
+	row.each, row.gross, row.cost, row.net, row.saleRate, row.soldPerDay = nil, nil, nil, nil, nil, nil
+	-- An enchant makes nothing to sell: only its materials have a price.
+	if row.enchant then return priceMaterials(row, buy) end
+	-- The item's own name, once the game has loaded it. Some prices need the item
+	-- loaded too, so it's priced again then (see AllRecipes.ItemArrived).
+	local name = ns.Format.ItemName(row.itemID)
+	if name then row.name = name else C_Item.RequestLoadItemDataByID(row.itemID) end
+	row.each = ns.Prices.Sale(row.link, row.itemID)
+	-- Without a price the window leaves it out, so there's nothing more to ask.
+	if not row.each then return end
+	priceMaterials(row, buy)
 	row.gross = row.each * row.made * keep
 	row.net = row.cost and row.gross - row.cost
 	row.saleRate = ns.Prices.SaleRate(row.link)

@@ -29,8 +29,9 @@ ns.RECIPE_PROFESSION_NAMES = {
 }
 
 -- Profession -> its recipes that make an item that can be traded, each as
--- "recipe spell:item made:how many one craft makes:material.count,material.count...".
--- A recipe that makes a range has the average.
+-- "recipe spell:item made:how many one craft makes:skill needed:material.count,material.count...".
+-- A recipe that makes a range has the average. The skill needed is 0 when the game data doesn't have it
+-- (recipes a trainer teaches). Enchanting also has its enchants, which make no item: item 0.
 ns.ALL_RECIPES = {
 	[129] = { -- First Aid
 		"3275:1251:1:0:2589.1", -- Linen Bandage
@@ -1597,11 +1598,142 @@ ns.ALL_RECIPES = {
 		"1319165:21720:5:275:15992.1,8170.1", -- Large Yellow Rocket Cluster
 	},
 	[333] = { -- Enchanting
+		"7418:0:1:0:247786.1", -- Enchant Bracer - Inferior Stamina
+		"7420:0:1:0:10940.1", -- Enchant Chest - Inferior Stamina
+		"7426:0:1:0:10938.1", -- Enchant Chest - Minor Absorption
+		"7428:0:1:0:10938.1", -- Enchant Bracer - Minor Deflect
+		"7443:0:1:20:10938.1", -- Enchant Chest - Minor Intellect
+		"7454:0:1:0:10940.1,10938.1", -- Enchant Cloak - Minor Resistance
+		"7457:0:1:0:10940.2", -- Enchant Bracer - Minor Stamina
+		"7745:0:1:0:10940.1,10978.1", -- Enchant 2H Weapon - Minor Impact
+		"7748:0:1:0:10940.1,10938.1", -- Enchant Chest - Lesser Stamina
+		"7766:0:1:60:10938.1", -- Enchant Bracer - Minor Spirit
+		"7771:0:1:90:10940.2", -- Enchant Cloak - Minor Protection
+		"7776:0:1:80:10938.2", -- Enchant Chest - Lesser Intellect
+		"7779:0:1:0:10940.1,10938.2", -- Enchant Bracer - Minor Agility
+		"7782:0:1:80:10940.3", -- Enchant Bracer - Minor Strength
+		"7786:0:1:90:10940.2,10939.1", -- Enchant Weapon - Minor Beastslayer
+		"7788:0:1:0:10940.1,10938.1,10978.1", -- Enchant Weapon - Minor Striking
+		"7793:0:1:100:10938.4", -- Enchant 2H Weapon - Lesser Intellect
+		"7857:0:1:0:10940.2,10998.1", -- Enchant Chest - Stamina
+		"7859:0:1:120:10998.1", -- Enchant Bracer - Lesser Spirit
+		"7861:0:1:0:6371.1,10998.1", -- Enchant Cloak - Lesser Fire Resistance
+		"7863:0:1:125:10940.4", -- Enchant Boots - Minor Stamina
+		"7867:0:1:125:10940.3,10998.1", -- Enchant Boots - Minor Agility
+		"13378:0:1:0:10998.1,10940.1", -- Enchant Shield - Minor Stamina
+		"13380:0:1:110:10998.1,10940.3", -- Enchant 2H Weapon - Lesser Spirit
+		"13419:0:1:110:10998.1", -- Enchant Cloak - Minor Agility
+		"13421:0:1:0:10940.3,10978.1", -- Enchant Cloak - Lesser Protection
+		"13464:0:1:115:10940.1,10978.1", -- Enchant Shield - Lesser Protection
+		"13485:0:1:0:10998.1,10940.2", -- Enchant Shield - Lesser Spirit
+		"13501:0:1:0:11083.1", -- Enchant Bracer - Lesser Stamina
+		"13503:0:1:0:11083.1,11084.1", -- Enchant Weapon - Lesser Striking
+		"13522:0:1:135:10998.1,6048.1", -- Enchant Cloak - Lesser Shadow Resistance
+		"13529:0:1:0:11083.1,11084.1", -- Enchant 2H Weapon - Lesser Impact
+		"13536:0:1:140:11083.1", -- Enchant Bracer - Lesser Strength
+		"13538:0:1:0:10940.1,10998.1,11084.1", -- Enchant Chest - Lesser Absorption
+		"13607:0:1:0:11082.1", -- Enchant Chest - Intellect
+		"13612:0:1:145:11083.1,2772.1", -- Enchant Gloves - Mining
+		"13617:0:1:145:11083.1,3356.1", -- Enchant Gloves - Herbalism
+		"13620:0:1:145:11083.1,6370.1", -- Enchant Gloves - Fishing
+		"13622:0:1:0:11082.1", -- Enchant Bracer - Lesser Intellect
+		"13626:0:1:0:10998.1,11083.1,11084.1", -- Enchant Chest - Minor Stats
+		"13631:0:1:0:11134.1", -- Enchant Shield - Lesser Stamina
+		"13635:0:1:0:11138.1,11083.1", -- Enchant Cloak - Defense
+		"13637:0:1:0:11083.1", -- Enchant Boots - Lesser Agility
+		"13640:0:1:0:11083.2", -- Enchant Chest - Greater Stamina
+		"13642:0:1:0:11134.1", -- Enchant Bracer - Spirit
+		"13644:0:1:0:11083.2", -- Enchant Boots - Lesser Stamina
+		"13646:0:1:170:11134.1,11083.1", -- Enchant Bracer - Lesser Deflection
+		"13648:0:1:0:11083.3", -- Enchant Bracer - Stamina
+		"13653:0:1:175:5637.1,11138.1", -- Enchant Weapon - Lesser Beastslayer
+		"13655:0:1:175:7067.1,11138.1", -- Enchant Weapon - Lesser Elemental Slayer
+		"13657:0:1:0:11134.1,7068.1", -- Enchant Cloak - Fire Resistance
+		"13659:0:1:0:11134.1,11137.1", -- Enchant Shield - Spirit
+		"13661:0:1:0:11137.1", -- Enchant Bracer - Strength
+		"13663:0:1:0:11134.1", -- Enchant Chest - Greater Intellect
+		"13687:0:1:190:11134.2", -- Enchant Boots - Lesser Spirit
+		"13689:0:1:195:11135.1,11137.1,11139.1", -- Enchant Shield - Lesser Block
+		"13693:0:1:0:11135.1,11139.1", -- Enchant Weapon - Striking
+		"13695:0:1:0:11137.2,11139.1", -- Enchant 2H Weapon - Impact
+		"13698:0:1:200:11137.1,7392.1", -- Enchant Gloves - Skinning
+		"13700:0:1:0:11135.1,11137.1,11139.1", -- Enchant Chest - Lesser Stats
+		"13746:0:1:0:11137.1", -- Enchant Cloak - Greater Defense
+		"13794:0:1:0:11174.1", -- Enchant Cloak - Resistance
+		"13815:0:1:0:11137.1", -- Enchant Gloves - Agility
+		"13817:0:1:210:11137.2", -- Enchant Shield - Stamina
+		"13822:0:1:0:11174.1", -- Enchant Bracer - Intellect
+		"13836:0:1:0:11137.2", -- Enchant Boots - Stamina
+		"13841:0:1:215:11137.2,6037.1", -- Enchant Gloves - Advanced Mining
+		"13846:0:1:220:11174.1,11137.1", -- Enchant Bracer - Greater Spirit
+		"13858:0:1:0:11137.3", -- Enchant Chest - Superior Stamina
+		"13868:0:1:225:11137.2,8838.1", -- Enchant Gloves - Advanced Herbalism
+		"13882:0:1:225:11174.1", -- Enchant Cloak - Lesser Agility
+		"13887:0:1:0:11174.1,11137.2", -- Enchant Gloves - Strength
+		"13890:0:1:0:11177.1,7909.1,11174.1", -- Enchant Boots - Minor Speed
+		"13898:0:1:265:11177.2,7078.1", -- Enchant Weapon - Fiery Weapon
+		"13905:0:1:0:11174.2,11176.1", -- Enchant Shield - Greater Spirit
+		"13915:0:1:230:11177.1,11176.1,9224.1", -- Enchant Weapon - Demonslaying
+		"13917:0:1:0:11175.1", -- Enchant Chest - Superior Intellect
+		"13931:0:1:235:11174.2,11176.1", -- Enchant Bracer - Deflection
+		"13933:0:1:235:11178.1,3829.1", -- Enchant Shield - Frost Resistance
+		"13935:0:1:0:11175.1", -- Enchant Boots - Agility
+		"13937:0:1:0:11178.1,11176.1", -- Enchant 2H Weapon - Greater Impact
+		"13939:0:1:0:11176.1,11174.2", -- Enchant Bracer - Greater Strength
+		"13941:0:1:0:11178.1,11176.1,11175.1", -- Enchant Chest - Stats
+		"13943:0:1:0:11178.1,11175.1", -- Enchant Weapon - Greater Striking
+		"13945:0:1:245:11176.3", -- Enchant Bracer - Greater Stamina
+		"13947:0:1:250:11178.1,11176.2", -- Enchant Gloves - Riding Skill
+		"13948:0:1:0:11178.1,8153.1", -- Enchant Gloves - Minor Haste
 		"14293:11287:1:0:4470.1,10938.1", -- Lesser Magic Wand
 		"14807:11288:1:0:4470.1,10938.2", -- Greater Magic Wand
 		"14809:11289:1:0:11291.1,11134.1", -- Lesser Mystic Wand
 		"17180:12655:1:0:12359.1,11176.3", -- Enchanted Thorium (Enchanted Thorium Bar)
 		"17181:12810:1:0:8170.1,16202.1", -- Enchanted Leather
+		"20008:0:1:255:16202.2", -- Enchant Bracer - Greater Intellect
+		"20009:0:1:270:16202.2,11176.7", -- Enchant Bracer - Superior Spirit
+		"20010:0:1:295:16204.6,16203.6", -- Enchant Bracer - Superior Strength
+		"20011:0:1:300:16204.15", -- Enchant Bracer - Superior Stamina
+		"20012:0:1:270:16202.2,16204.2", -- Enchant Gloves - Greater Agility
+		"20013:0:1:295:16203.4,16204.4", -- Enchant Gloves - Greater Strength
+		"20014:0:1:265:16202.1,7077.1,7075.1,7079.1,7081.1,7972.1", -- Enchant Cloak - Greater Resistance
+		"20015:0:1:285:16204.8", -- Enchant Cloak - Superior Defense
+		"20016:0:1:280:16203.2,16204.4", -- Enchant Shield - Superior Spirit
+		"20017:0:1:265:11176.6", -- Enchant Shield - Greater Stamina
+		"20020:0:1:260:11176.6", -- Enchant Boots - Greater Stamina
+		"20023:0:1:295:16203.8", -- Enchant Boots - Greater Agility
+		"20024:0:1:275:16203.2,16202.1", -- Enchant Boots - Spirit
+		"20025:0:1:300:14344.4,16204.15,16203.10", -- Enchant Chest - Greater Stats
+		"20026:0:1:275:16204.6,14343.1", -- Enchant Chest - Major Stamina
+		"20028:0:1:290:16203.3,14343.1", -- Enchant Chest - Major Intellect
+		"20029:0:1:285:14343.4,7080.1,7082.1,13467.1", -- Enchant Weapon - Icy Chill
+		"20030:0:1:295:14344.4,16204.10", -- Enchant 2H Weapon - Superior Impact
+		"20031:0:1:300:14344.2,16203.10", -- Enchant Weapon - Superior Striking
+		"20032:0:1:300:14344.6,12808.6,12803.6", -- Enchant Weapon - Lifestealing
+		"20033:0:1:295:14344.4,12808.4", -- Enchant Weapon - Unholy Weapon
+		"20034:0:1:300:14344.4,12811.2", -- Enchant Weapon - Crusader
+		"20035:0:1:300:16203.12,14344.2", -- Enchant 2H Weapon - Major Spirit
+		"20036:0:1:300:16203.12,14344.2", -- Enchant 2H Weapon - Major Intellect
+		"21931:0:1:190:11135.1,11137.1,11139.1,3819.1", -- Enchant Weapon - Winter's Might
+		"22749:0:1:300:14344.4,16203.12,7078.4,7080.4,7082.4,13926.2", -- Enchant Weapon - Spell Power
+		"22750:0:1:300:14344.4,16203.8,12803.6,7080.6,12811.1", -- Enchant Weapon - Healing Power
+		"23799:0:1:290:14344.6,16203.6,16204.4,7076.2", -- Enchant Weapon - Strength
+		"23800:0:1:290:14344.6,16203.6,16204.4,7082.2", -- Enchant Weapon - Agility
+		"23801:0:1:290:16204.16,16203.4,7080.2", -- Enchant Bracer - Mana Regeneration
+		"23802:0:1:300:14344.2,16204.20,16203.4,12803.6", -- Enchant Bracer - Healing Power
+		"23803:0:1:300:14344.10,16203.8,16204.15", -- Enchant Weapon - Mighty Spirit
+		"23804:0:1:300:14344.15,16203.12,16204.20", -- Enchant Weapon - Mighty Intellect
+		"25072:0:1:300:20725.4,14344.6,18512.8", -- Enchant Gloves - Threat
+		"25073:0:1:300:20725.3,14344.10,12808.6", -- Enchant Gloves - Shadow Power
+		"25074:0:1:300:20725.3,14344.10,7080.4", -- Enchant Gloves - Frost Power
+		"25078:0:1:300:20725.2,14344.10,7078.4", -- Enchant Gloves - Fire Power
+		"25079:0:1:300:20725.3,14344.8,12811.1", -- Enchant Gloves - Healing Power
+		"25080:0:1:300:20725.3,14344.8,7082.4", -- Enchant Gloves - Superior Agility
+		"25081:0:1:300:20725.3,14344.8,7078.4", -- Enchant Cloak - Greater Fire Resistance
+		"25082:0:1:300:20725.2,14344.8,12803.4", -- Enchant Cloak - Greater Nature Resistance
+		"25083:0:1:300:20725.3,14344.8,13468.2", -- Enchant Cloak - Stealth
+		"25084:0:1:300:20725.4,14344.6,11754.2", -- Enchant Cloak - Subtlety
+		"25086:0:1:300:20725.3,14344.8,12809.8", -- Enchant Cloak - Dodge
 		"25124:20744:1:5:10940.1,17034.1,3371.1", -- Minor Wizard Oil
 		"25125:20745:1:150:11083.1,17034.2,3372.1", -- Minor Mana Oil
 		"25126:20746:1:200:11137.1,17035.2,3372.1", -- Lesser Wizard Oil
@@ -1609,24 +1741,71 @@ ns.ALL_RECIPES = {
 		"25128:20750:1:275:16204.3,4625.2,8925.1", -- Wizard Oil
 		"25129:20749:1:300:14344.2,4625.3,18256.1", -- Brilliant Wizard Oil
 		"25130:20748:1:300:14344.2,8831.3,18256.1", -- Brilliant Mana Oil
+		"27837:0:1:290:14344.10,16203.6,16204.14,7082.4", -- Enchant 2H Weapon - Agility
+		"435481:0:1:225:11174.4,5637.2,11177.2", -- Enchant Weapon - Dismantle
+		"435903:0:1:225:11177.1,11176.2", -- Enchant Chest - Retricutioner
 		"439134:217287:1:0:11291.1,11135.1,11137.1", -- Greater Mystic Wand
 		"448624:220792:1:120:4470.1,10940.4", -- Scroll of Spatial Mending
 		"463869:228980:1:275:16204.2,4625.1,8925.1", -- Conductive Shield Coating
+		"463871:0:1:300:14344.4,16203.12,7078.4,7080.4,7076.1,12811.1", -- Enchant Shield - Law of Nature
 		"471400:232611:1:300:8151.3,8152.3,14344.2,18256.1", -- Magnificent Trollshine
+		"1213622:0:1:300:20725.2,14344.5,13180.5,12735.2", -- Enchant Gloves - Holy Power
+		"1213626:0:1:300:20725.2,14344.5,12753.2", -- Enchant Gloves - Arcane Power
+		"1217189:0:1:0:14344.2,16204.20,16203.4,7080.2,7078.2,7082.2", -- Enchant Bracer - Spell Power
+		"1219577:0:1:300:20725.2,16204.18,7082.2", -- Enchant Off-Hand - Superior Intellect
+		"1219578:0:1:300:20725.2,16204.18,7080.2", -- Enchant Off-Hand - Excellent Spirit
+		"1219579:0:1:300:14344.6,16204.18,7082.1,7080.1", -- Enchant Off-Hand - Wisdom
+		"1219580:0:1:300:20725.3,16204.24,12938.1,8831.6", -- Enchant 2H Weapon - Spellblasting
+		"1219581:0:1:300:14344.6,16204.18,7076.2", -- Enchant Shield - Excellent Stamina
+		"1219587:0:1:300:16203.3,16204.9,7078.1", -- Enchant Cloak - Agility
+		"1220623:0:1:300:14344.5,16204.15,12938.1", -- Enchant Shield - Critical Strike
+		"1220624:0:1:300:16203.3,16204.9,12808.12,8831.2", -- Enchant Bracer - Greater Spellpower
 		"1230643:279976:1:0:4470.1,10940.1", -- Enchanted Lute
+		"1231128:0:1:280:14344.5,12811.2,20725.2,12938.1", -- Enchant Weapon - Grand Crusader
+		"1231139:0:1:280:14344.10,12811.4,20725.4,12938.1", -- Enchant 2H Weapon - Grand Arcanist
+		"1231164:0:1:280:14344.6,12811.3,20725.2,12938.1", -- Enchant Weapon - Grand Sorcerer
+		"1232172:0:1:280:14344.10,12811.6,20725.4,12938.1", -- Enchant 2H Weapon - Grand Inquisitor
 		"1245320:247786:3:0:10940.1", -- Dust to Motes (Mote of Magic)
 		"1245321:247789:1:0:4470.1,247786.1", -- Novice's Practice Wand
+		"1248458:0:1:70:10938.1", -- Enchant Bracer - Minor Intellect
+		"1248459:0:1:90:10938.2", -- Enchant Bracer - Minor Healing Power
+		"1248460:0:1:140:11134.1", -- Enchant Bracer - Lesser Agility
 		"1248461:249144:1:185:11174.1,11176.1,11291.1", -- Twisted Nether Wand
+		"1248497:0:1:190:11137.1", -- Enchant Bracer - Agility
+		"1248498:0:1:205:11134.2", -- Enchant Bracer - Lesser Healing Power
+		"1248500:0:1:240:11176.3,11174.1", -- Enchant Bracer - Greater Agility
 		"1248505:249232:1:245:16202.1,11176.1,11291.1", -- Lesser Eternal Wand
 		"1248509:249234:1:215:11174.2,11137.1,11291.1", -- Dreambough Wand
+		"1248510:0:1:210:11137.2,11139.1,11174.1", -- Enchant 2H Weapon - Lesser Agility
+		"1248511:0:1:220:11137.1,11139.1,11174.2", -- Enchant 2H Weapon - Lesser Strength
 		"1248515:249237:1:275:16203.2,16204.1,11291.1", -- Greater Eternal Wand
+		"1248528:0:1:250:11176.2,15407.1", -- Enchant Gloves - Advanced Skinning
+		"1248599:0:1:295:16204.3,16203.3,14344.1", -- Enchant Bracer - Superior Agility
+		"1248607:0:1:300:248819.4,16203.6,7076.4,12808.4,20725.4,248820.2", -- Enchant 2H Weapon - Mighty Spell Power
+		"1248636:0:1:300:248819.4,16203.6,249726.4,249274.4,20725.4,248820.4", -- Enchant 2H Weapon - Mighty Healing Power
+		"1248640:0:1:300:20725.4,16203.8,7076.4", -- Enchant Gloves - Superior Strength
+		"1248645:0:1:300:20725.2,14344.5,248822.4", -- Enchant Gloves - Natural Power
+		"1248661:0:1:300:16203.10", -- Enchant Bracer - Superior Intellect
+		"1248665:0:1:300:14344.3", -- Enchant Bracer - Superior Deflection
+		"1248668:0:1:290:14344.8,16203.10,16204.8,12363.4", -- Enchant 2H Weapon - Strength
+		"1248757:0:1:140:10940.10,11084.4,11082.4,249391.4,249399.4", -- Enchant Weapon - Insight
+		"1248760:0:1:140:11083.6,11084.4,11082.6,249391.4,2775.4", -- Enchant Weapon - Recovery
+		"1248805:0:1:140:11083.8,11084.6,11082.2,249409.4,249410.4", -- Enchant Weapon - Revelation
+		"1249019:0:1:210:11175.4,11178.4,11176.10,249410.4,249425.4", -- Enchant Necklace - Strength
+		"1249057:0:1:210:11175.5,11178.3,11176.8,249409.4,249430.4", -- Enchant Necklace - Spell Power
+		"1249058:0:1:210:11175.3,11178.5,11176.4,249391.4,249424.4", -- Enchant Necklace - Healing Power
+		"1249059:0:1:210:11175.2,11178.8,11176.6,249410.4,249430.4", -- Enchant Necklace - Agility
+		"1249060:0:1:210:11175.8,11178.2,11176.2,249409.4,249430.4", -- Enchant Necklace - Deflection
+		"1249071:0:1:220:11176.10,11175.4,11178.2", -- Enchant Chest - Absorption
 		"1263056:279985:1:140:11137.2,11174.1", -- Arcane Salvager
 		"1263082:279987:1:300:273128.1,14344.2,16203.4", -- Arcane Forge
+		"1294054:0:1:295:248822.1,14343.2,16204.12,16202.4", -- Enchant Gloves - Lotus Claw
 		"1306520:279246:1:300:274030.2,20725.1,14344.6,16202.5", -- Torch of Light
 		"1306521:279247:1:300:274030.1,20725.1,16203.2,16204.12", -- Steadfast Libram
 		"1306522:279248:1:300:274030.1,20725.1,16203.2,16204.12", -- Libram of Infusion
 		"1306523:279249:1:300:274030.1,20725.1,16203.2,16204.12", -- Totem of Urgency
 		"1306524:279250:1:300:274030.1,20725.1,16203.2,16204.12", -- Idol of Swiftness
 		"1306525:279251:1:300:274030.1,20725.1,16203.2,16204.12", -- Idol of the Ursine Twins
+		"1328948:0:1:280:11178.2,11176.8,11175.2,12361.1", -- Enchant Boots - Speed
 	},
 }

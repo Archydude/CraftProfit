@@ -408,12 +408,13 @@ function Blizzard.FormConcentrationCost(recipeID, schematic, transaction, advice
 end
 
 -- Enchants have no item for the game to name, but on a vellum they make a scroll
--- to sell (see EnchantScrolls.lua).
+-- to sell (see EnchantScrolls.lua). WoW Forever has neither vellums nor scrolls:
+-- an enchant makes nothing to sell there.
 
 -- Whether a recipe makes a scroll. With `transaction` (the form's), not when the
 -- form has something other than a vellum to enchant.
 function Blizzard.MakesScroll(recipeID, transaction)
-	if not ns.ENCHANT_SCROLLS[recipeID] then return false end
+	if not ns.QUALITY_CRAFTING or not ns.ENCHANT_SCROLLS[recipeID] then return false end
 	local target = transaction and transaction:GetEnchantAllocation()
 	return not target or target:GetItemID() == ns.VELLUM_ITEM
 end

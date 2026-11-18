@@ -425,8 +425,10 @@ local function rowTooltip(tip, row)
 		end
 	elseif row.quality and entry.maxRank > 1 then
 		addPair(tip, "Sells for", Color("warning", "no price at " .. rankIcon(row, row.quality)))
-	else
+	elseif row.output then
 		addPair(tip, "Sells for", Color("warning", "no auction price"))
+	else
+		addPair(tip, "Sells for", Color("muted", "nothing to sell"))
 	end
 
 	tip:AddLine(" ")
@@ -654,7 +656,8 @@ local function drawRow(button, row)
 	button.actions:SetPoint("LEFT", button, "LEFT", layout.actions.x, 0)
 
 	local entry = row.entry
-	button.icon:SetTexture(row.output and C_Item.GetItemIconByID(row.output.itemID) or entry.icon)
+	-- A recipe that makes no item (an enchant on WoW Forever) gets a scroll.
+	button.icon:SetTexture(row.output and C_Item.GetItemIconByID(row.output.itemID) or ns.SCROLL_ICON)
 	local name = row.itemName or entry.name or "?"
 	local tags = {}
 	if row.quality and entry.maxRank > 1 then tags[#tags + 1] = rankIcon(row, row.quality) end
@@ -665,9 +668,11 @@ local function drawRow(button, row)
 	local tagText = table.concat(tags, " ")
 	button.tags:SetText(tagText)
 	local nameCell = button.cells.name
-	-- In its rarity's color; grey when ignored or without a price.
+	-- In its rarity's color; grey when ignored or without a price. An enchant that
+	-- makes no item has no price to miss: it stays white.
 	button.pin:SetText(isPinned(row) and pinMarkup() or "")
-	nameCell:SetText((row.profit and not ignored) and ns.Format.RarityColored(row.output and row.output.itemID, name)
+	nameCell:SetText(((row.profit or not row.output) and not ignored)
+		and ns.Format.RarityColored(row.output and row.output.itemID, name)
 		or Color("muted", name))
 	-- The name takes what the icons leave, and is cut short with "..." past that.
 	local tagWidth = tagText ~= "" and (button.tags:GetUnboundedStringWidth() + TAG_GAP) or 0
@@ -679,7 +684,7 @@ local function drawRow(button, row)
 	if profit then
 		button.cells.profit:SetText(signedMoney(profit))
 	else
-		button.cells.profit:SetText(Color("muted", "No price"))
+		button.cells.profit:SetText(Color("muted", row.output and "No price" or "-"))
 	end
 	button.cells.plain:SetText(row.profit and signedMoney(row.profit) or Color("muted", "-"))
 	local procs = row.profit and row.procs and row.procs.total

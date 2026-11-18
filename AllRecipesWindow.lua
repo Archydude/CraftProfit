@@ -1,6 +1,7 @@
 -- Craft Profit: the All recipes window, on WoW Forever. Every profession's
 -- recipes with what a craft would make at today's prices and how the item sells,
--- whether or not a character of yours knows the recipe (see AllRecipes.lua).
+-- whether or not a character of yours knows the recipe (see AllRecipes.lua). An
+-- enchant, which makes nothing to sell, is listed with what its materials cost.
 local _, ns = ...
 if ns.QUALITY_CRAFTING then return end
 
@@ -26,7 +27,7 @@ local SORT_ARROW_SIZE = 10
 local INFO_ICON = "Interface\\Common\\help-i"
 local REFRESH_DELAY = 0.2   -- redraws are batched this long
 local PRICING = "Pricing every recipe... %d%%"
-local NO_PRICES = "None of these recipes' items has an auction price yet.\nPrices: %s"
+local NO_PRICES = "None of these recipes' items or materials has a price yet.\nPrices: %s"
 local NO_MATCH = "Nothing matches the search and the filters."
 local CHECK_SIZE = 24       -- the Only profitable checkbox
 local FILTERS_BUTTON_WIDTH = 96 -- the Filters button: room for "Filters (3)"
@@ -45,9 +46,9 @@ local FILTERS_BACKDROP = {
 	insets = { left = 4, right = 4, top = 4, bottom = 4 },
 }
 local HOW = "Every recipe is priced as if you bought all its materials and sold what one craft makes, at "
-	.. "today's prices, whether or not one of your characters knows it.\n\nLeft out: items that are bound when "
-	.. "picked up, enchants that make no item, and items with no auction price. A recipe that makes a varying "
-	.. "number of items counts the average."
+	.. "today's prices, whether or not one of your characters knows it.\n\nAn enchant makes nothing to sell: it's "
+	.. "listed with what its materials cost.\n\nLeft out: items that are bound when picked up, and items with no "
+	.. "auction price. A recipe that makes a varying number of items counts the average."
 
 local frame, scrollBox, footer, empty, searchBox, professionDropdown
 -- The Filters button beside the search box and the box it opens, with what's in
@@ -114,7 +115,8 @@ local function grossTip()
 end
 
 local COLUMNS = {
-	{ key = "name", header = "Item", tip = "What the recipe makes, with how many when one craft makes more than one.",
+	{ key = "name", header = "Item", tip = "What the recipe makes, with how many when one craft makes more than one. "
+		.. "An enchant goes by its own name.",
 		sort = function(row) return row.name:lower() end, ascending = true },
 	{ key = "profession", header = "Profession", tip = "The profession the recipe belongs to.", width = 120,
 		sort = "profession", left = true, ascending = true, text = function(row) return row.profession end },
@@ -237,7 +239,9 @@ end
 ---------------------------------------------------------------------------
 
 -- "Bronze Bar x2": the item, and how many when one craft makes more than one.
+-- An enchant goes by its own name.
 local function nameText(row)
+	if row.enchant then return row.name end
 	local text = ns.Format.RarityColored(row.itemID, row.name)
 	if row.made == 1 then return text end
 	return text .. " " .. Color("muted", "x" .. tostring(row.made))
@@ -251,7 +255,7 @@ local function showRowTooltip(button)
 	local row = button.row
 	if not row then return end
 	GameTooltip:SetOwner(button, "ANCHOR_RIGHT")
-	GameTooltip:SetText(ns.Format.RarityColored(row.itemID, row.name))
+	GameTooltip:SetText(row.enchant and row.name or ns.Format.RarityColored(row.itemID, row.name))
 	if row.recipeName and row.recipeName ~= row.name then
 		GameTooltip:AddLine(format("%s (%s)", row.recipeName, row.profession), 1, 1, 1)
 	else
@@ -273,6 +277,11 @@ local function showRowTooltip(button)
 	end
 	GameTooltip:AddLine(" ")
 	addPair("Materials", row.cost and costText(row) or Color("warning", "not all priced"))
+	if row.enchant then
+		GameTooltip:AddLine("An enchant makes nothing to sell.", 0.6, 0.6, 0.6, true)
+		GameTooltip:Show()
+		return
+	end
 	addPair(row.made == 1 and "Sells for" or format("Sells for (%s x %s)", tostring(row.made), Money(row.each)),
 		Money(row.each * row.made))
 	if ns.db.ahCut then
@@ -328,7 +337,7 @@ local function drawRow(button, row)
 		cell:SetText(i == 1 and nameText(row) or column.text(row))
 	end
 	button.stripe:SetShown(row.stripe == true)
-	button.icon:SetTexture(C_Item.GetItemIconByID(row.itemID))
+	button.icon:SetTexture(row.itemID and C_Item.GetItemIconByID(row.itemID) or ns.SCROLL_ICON)
 end
 
 ---------------------------------------------------------------------------
@@ -398,12 +407,13 @@ local function drawHeaders()
 	end
 end
 
--- The recipes with a price that the profession, the search and the filters leave,
--- and how many recipes have no price at all. The search looks in the item's name, the
--- recipe's, and the names of its materials.
+-- The recipes with a price, and the enchants, that the profession, the search and
+-- the filters leave; how many recipes' items have no price at all; and whether
+-- anything has a price. The search looks in the item's name, the recipe's, and the
+-- names of its materials.
 local function inView(rows)
 	local search = searchBox:GetText():lower()
-	local list, unpriced = {}, 0
+	local list, unpriced, anyPrice = {}, 0, false
 	local profitable = ns.db.recipesProfitable
 	-- The lowest net profit, in copper.
 	local netMin = ns.db.recipesMinNet or nil
@@ -424,7 +434,8 @@ local function inView(rows)
 		return true
 	end
 	for _, row in ipairs(rows) do
-		if not row.each then
+		if row.each or row.cost then anyPrice = true end
+		if not row.each and not row.enchant then
 			unpriced = unpriced + 1
 		elseif not passes(row) then
 			-- filtered away
@@ -435,7 +446,7 @@ local function inView(rows)
 			list[#list + 1] = row
 		end
 	end
-	return list, unpriced
+	return list, unpriced, anyPrice
 end
 
 -- What TSM would add, for the footer; nil with TSM loaded.
@@ -470,13 +481,13 @@ function AllRecipesWindow.Render()
 	drawFilters()
 	local rows = ns.AllRecipes.Rows()
 	if not rows then return end
-	local list, unpriced = inView(rows)
+	local list, unpriced, anyPrice = inView(rows)
 	local priced = #rows - unpriced
 	sortRows(list)
 	for index, row in ipairs(list) do row.stripe = index % 2 == 0 end
 	footer:SetText(footerText(#list, priced, unpriced))
 	if #list == 0 then
-		showInstead(priced == 0 and format(NO_PRICES, ns.Prices.SourceLabel()) or NO_MATCH)
+		showInstead(anyPrice and NO_MATCH or format(NO_PRICES, ns.Prices.SourceLabel()))
 		return
 	end
 	empty:Hide()

@@ -60,7 +60,10 @@ end
 -- The item a craft makes at a quality: { link, itemID }, or nil.
 local function outputAt(recipeID, reagents, qualityID)
 	local ok, output = pcall(C_TradeSkillUI.GetRecipeOutputItemData, recipeID, reagents, nil, qualityID)
-	if ok and output and output.hyperlink then return { link = output.hyperlink, itemID = output.itemID } end
+	-- An enchant can have a link without an item behind it: that's nothing to sell.
+	if ok and output and output.hyperlink and (output.itemID or 0) > 0 then
+		return { link = output.hyperlink, itemID = output.itemID }
+	end
 end
 
 -- The scroll an enchant makes at a rank: { link, itemID }, or nil.
@@ -82,14 +85,18 @@ end
 --   character, scanned = whose saved scan it's from, and when (Scans.lua), nil from the game,
 -- }, or nil for recipes that don't make an item. Enchants count as the scroll
 -- they make, with their vellum as one more slot (see Blizzard.ScrollSchematic).
+-- WoW Forever has no scrolls: a recipe that makes nothing but takes materials
+-- (an enchant) is kept there, with no outputs, for what its materials cost.
 local function scanRecipe(recipeID, info, professionID)
 	local schematic = C_TradeSkillUI.GetRecipeSchematic(recipeID, false)
 	if not schematic then return end
 	local scroll = ns.Blizzard.MakesScroll(recipeID)
+	local makesItem = true
 	if scroll then
 		schematic = ns.Blizzard.ScrollSchematic(schematic)
 	elseif schematic.recipeType ~= Enum.TradeskillRecipeType.Item then
-		return
+		if ns.QUALITY_CRAFTING then return end
+		makesItem = false
 	end
 	local qualityIDs = info.supportsQualities and info.qualityIDs or nil
 	if qualityIDs and #qualityIDs == 0 then qualityIDs = nil end
@@ -142,14 +149,15 @@ local function scanRecipe(recipeID, info, professionID)
 		local output
 		if scroll then
 			output = scrollAt(recipeID, info.name, rank)
-		else
+		elseif makesItem then
 			output = outputAt(recipeID, firstReagents, qualityIDs and qualityIDs[rank])
 		end
 		entry.outputs[rank] = output
 		if output and ns.Prices.Sale(output.link, output.itemID) then anyPrice = true end
 	end
 	pauseIfDue()
-	if not next(entry.outputs) then return end
+	-- Nothing to sell: only WoW Forever keeps it, when it takes materials.
+	if not next(entry.outputs) and (ns.QUALITY_CRAFTING or (#entry.slots == 0 and #entry.others == 0)) then return end
 
 	local answer -- one of the game's answers, for your proc chances
 	for _, mix in ipairs(mixes) do
@@ -579,10 +587,12 @@ local function priceEntry(entry)
 
 	-- WoW Forever: what a skill point costs with it. The game only knows your skill
 	-- for the profession window that's open, so only its fresh scan has one.
-	if ns.SKILLUPS and entry.character == nil and row.output then
+	-- An enchant, which makes nothing to sell, costs its materials.
+	if ns.SKILLUPS and entry.character == nil then
 		local schematic = entry.schematic
 		local made = ((schematic.quantityMin or 1) + (schematic.quantityMax or 1)) / 2
-		local cost, chance, color = ns.Skillups.Cost(entry.recipeID, row.cost or 0, row.sale, row.output.itemID, made)
+		local cost, chance, color = ns.Skillups.Cost(entry.recipeID, row.cost or 0, row.sale,
+			row.output and row.output.itemID, made)
 		if color then row.skillup = { cost = cost, chance = chance, color = color } end
 	end
 	return row

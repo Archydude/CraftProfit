@@ -113,8 +113,12 @@ local function unpackRecipe(text, professionID, character, scanned)
 		outputs = {}, slots = {}, others = {}, options = {},
 	}
 
+	-- WoW Forever has no enchant scrolls or vellums, but older saved scans have
+	-- each enchant's: they're read without them.
+	local noScroll = not ns.QUALITY_CRAFTING and ns.ENCHANT_SCROLLS[recipeID] ~= nil
+
 	local fields = split(lines[2], "\t")
-	for i = 1, #fields - 2, 3 do
+	for i = 1, noScroll and 0 or #fields - 2, 3 do
 		entry.outputs[tonumber(fields[i])] = { itemID = tonumber(fields[i + 1]), link = fields[i + 2] }
 	end
 
@@ -144,8 +148,10 @@ local function unpackRecipe(text, professionID, character, scanned)
 			local parts = numbers(packed)
 			local itemIDs = {}
 			for i = 4, #parts do itemIDs[#itemIDs + 1] = parts[i] end
-			entry.others[#entry.others + 1] = { slotIndex = parts[1], qty = parts[2], itemIDs = itemIDs, basic = parts[3] == 1 }
-			addSlot(parts[1], parts[2], itemIDs)
+			if not (noScroll and itemIDs[1] == ns.VELLUM_ITEM) then
+				entry.others[#entry.others + 1] = { slotIndex = parts[1], qty = parts[2], itemIDs = itemIDs, basic = parts[3] == 1 }
+				addSlot(parts[1], parts[2], itemIDs)
+			end
 		end
 	end
 

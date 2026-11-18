@@ -553,7 +553,9 @@ local function drawHeader(model, sub, link)
 	local icon = header.icon
 	local itemID = link and C_Item.GetItemInfoInstant(link)
 	icon.link = link
-	icon.texture:SetTexture((itemID and C_Item.GetItemIconByID(itemID)) or model.icon or "Interface\\Icons\\INV_Hammer_20")
+	-- Without an item: the recipe's own picture, or on WoW Forever (an enchant) a scroll.
+	icon.texture:SetTexture((itemID and C_Item.GetItemIconByID(itemID))
+		or (ns.QUALITY_CRAFTING and ns.RecipeIcon(model.icon)) or ns.SCROLL_ICON)
 	local quality = link and C_Item.GetItemQualityByID(link)
 	local color = quality and ITEM_QUALITY_COLORS[quality]
 	if color then
@@ -1089,10 +1091,12 @@ end
 -- WoW Forever: what a skill point costs with this recipe, with its color and chance.
 -- Not for a grey recipe: it gives no skill-ups, so there's nothing to say.
 local function drawSkillup(model)
+	-- An enchant makes nothing to sell: its skill point costs the materials.
 	local output = model.output
-	if not (ns.SKILLUPS and output and model.recipeID) then return end
-	local sale = output.sale and (output.sale - (output.ahCut or 0))
-	local cost, chance, color = ns.Skillups.Cost(model.recipeID, model.cost or 0, sale, output.itemID, output.made)
+	if not (ns.SKILLUPS and model.recipeID and model.kind == "craft") then return end
+	local sale = output and output.sale and (output.sale - (output.ahCut or 0))
+	local cost, chance, color = ns.Skillups.Cost(model.recipeID, model.cost or 0, sale,
+		output and output.itemID, output and output.made)
 	if not color or color == "grey" or not (chance and chance > 0) then return end
 	addRow("Per skill-up  " .. Color("muted", "(") .. ns.Skillups.ChanceText(chance, color) .. Color("muted", ")"),
 		ns.Skillups.CostText(cost))
