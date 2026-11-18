@@ -11,6 +11,12 @@ local format = string.format
 
 local NAME = "CraftProfit" -- the button's name with LibDBIcon
 local ICON = "Interface\\Icons\\INV_Hammer_20"
+-- The menu's own lines each start with an icon, like its profession lines: a bag
+-- for the shopping list, the Ledger's book (as on the Best crafts list), and a
+-- recipe scroll for All recipes.
+local SHOPPING_ICON = "Interface\\Icons\\INV_Misc_Bag_10"
+local LEDGER_ICON = "Interface\\Icons\\INV_Misc_Book_09"
+local RECIPES_ICON = "Interface\\Icons\\INV_Scroll_06"
 -- Degrees around the minimap where the button starts, away from where the other
 -- addons in this folder start theirs (160, 200, 220).
 local START_POSITION = 250
@@ -83,20 +89,27 @@ local function toggleBestCrafts()
 	openBestCrafts(profession.skillLine)
 end
 
+-- A menu line's text with an icon before it.
+local function withIcon(icon, text)
+	return format("|T%s:16|t %s", icon, text)
+end
+
 local function openMenu()
 	MenuUtil.CreateContextMenu(UIParent, function(_, root)
 		root:CreateTitle("Craft Profit")
 		for _, profession in ipairs(professions()) do
-			root:CreateButton(format("|T%s:16|t %s: Best crafts", profession.icon, profession.name),
+			root:CreateButton(withIcon(profession.icon, profession.name .. ": Best crafts"),
 				function() openBestCrafts(profession.skillLine) end)
 		end
 		-- Craft Profit's own shopping list, when that's what you shop with or it has something on it.
 		if ns.Shopping.ListTarget() == "own" or ns.Shopping.OwnHasItems() then
-			root:CreateButton("Shopping list", function() ns.ShoppingList.Show("shop") end)
+			root:CreateButton(withIcon(SHOPPING_ICON, "Shopping list"), function() ns.ShoppingList.Show("shop") end)
 		end
-		root:CreateButton("Ledger", ns.LedgerWindow.Show)
+		root:CreateButton(withIcon(LEDGER_ICON, "Ledger"), ns.LedgerWindow.Show)
 		-- Every profession's recipes and how they sell, on WoW Forever.
-		if ns.AllRecipesWindow then root:CreateButton("All recipes", ns.AllRecipesWindow.Show) end
+		if ns.AllRecipesWindow then
+			root:CreateButton(withIcon(RECIPES_ICON, "All recipes"), ns.AllRecipesWindow.Show)
+		end
 		local strategies = root:CreateButton("Crafting strategy")
 		for _, strategy in ipairs(ns.STRATEGIES) do
 			local key = strategy[1]
