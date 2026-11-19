@@ -1,0 +1,12 @@
+# Images: only logos are kept (any file with "logo" in its name).
+# Game textures (.tga, .blp) are part of the addon and stay tracked.
+*.png
+*.jpg
+*.jpeg
+*.gif
+*.webp
+*.bmp
+*.svg
+*.psd
+!*logo*
+!*Logo*
