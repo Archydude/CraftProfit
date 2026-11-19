@@ -42,15 +42,15 @@ Craftonomics, formerly **Craft Profit**, answers in gold: **profit or loss?** A 
 - **Patron orders** priced and crafted right in Blizzard's Patron tab
 
 ### Crafts and orders
-The sale price at the rank you'll get, minus the 5% cut and your materials. On orders: the commission, minus the materials **you** supply, plus sellable rewards. With concentration on, the **concentration strategy** picks the materials: cheapest, least concentration or most **gold per point**. The **Crafts** box shows it all for any number of crafts.
+The sale price at the rank you'll get, minus the 5% cut and your materials. On orders: the commission, minus the materials **you** supply, plus sellable rewards. With concentration on, the **concentration strategy** picks the materials: cheapest, least concentration or most **gold per point**. The **Crafts** box shows it all for any number of crafts, and a checkbox prices **vendor-sold materials** at the vendor or the auction house.
 
 ### What should I craft?
 **Best crafts** lists every recipe you know, most profitable first. Search by item or **material**. With TSM, **sale rate** and **trend** columns show what really sells.
 
-**All recipes** lists every profession's sellable recipes, known or not, with each craft's profit and, with TSM, how well it sells. On Retail: one expansion at a time, at the rank you pick.
+**All recipes** lists every profession's sellable recipes with each craft's profit and, with TSM, sale rate. On Retail: one expansion at a time, at the rank you pick.
 
 ### At the auction house
-**Shopping list**: click a material to see it with the amount to buy. **Sell**: your bags with a price and TSM sale rate on every item, sorted by any column, and the lowest price filled in. **My auctions**: see which are undercut or not first, and cancel them. With Auctionator, choose which of the two does each.
+**Shopping list**: click a material to see it with the amount to buy. **Sell**: your bags with a price and TSM sale rate on every item, sortable, the lowest price filled in. **My auctions**: see which are undercut and cancel them. With Auctionator, choose which of the two does each.
 
 ### Patron orders
 Blizzard's Patron tab shows each order's **expected profit**, **rewards** and missing **materials**. **Next order** works through them.
@@ -75,18 +75,21 @@ Vendor prices, the auction price, TSM's **sale rate** and **trend**, and the **A
 ## B. Upload File form
 
 **Files:** two, each uploaded with only its own game versions (why is in [UPLOADING.md](../UPLOADING.md)). The display name, release type and changelog are the same for both.
-- `dist\Craftonomics-5.0.1-retail.zip`: Retail `12.1.5`
-- `dist\Craftonomics-5.0.1-forever.zip`: WoW Forever `1.60.1`
+- `dist\Craftonomics-5.1.0-retail.zip`: Retail `12.1.5`
+- `dist\Craftonomics-5.1.0-forever.zip`: WoW Forever `1.60.1`
 
 **Display name**
 ```
-Craftonomics 5.0.1
+Craftonomics 5.1.0
 ```
 
 **Release type:** `Release`
 
 **Changelog** (paste only the newest part; paste older parts too if they never went up)
 ```markdown
+5.1.0
+- **Buy vendor items on the auction house, on the panel:** the option is now also a checkbox on the panel, under the crafting strategy, so you can switch it without opening the options. Ticked, materials a vendor sells (thread, flux, vials...) are priced at the auction house and go on the shopping list. Unticked, they're priced at the vendor. It shows on the crafting page and on crafting orders you bring materials to.
+
 5.0.1
 - **New logo:** Craftonomics has a new logo. It shows on the button on the side of the auction house window and, on WoW Forever, on the Best crafts tab.
 

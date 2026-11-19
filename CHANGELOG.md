@@ -1,5 +1,8 @@
 # Changelog
 
+## 5.1.0
+- **Buy vendor items on the auction house, on the panel:** the option is now also a checkbox on the panel, under the crafting strategy, so you can switch it without opening the options. Ticked, materials a vendor sells (thread, flux, vials...) are priced at the auction house and go on the shopping list. Unticked, they're priced at the vendor. It shows on the crafting page and on crafting orders you bring materials to.
+
 ## 5.0.1
 - **New logo:** Craftonomics has a new logo. It shows on the button on the side of the auction house window and, on WoW Forever, on the Best crafts tab.
 

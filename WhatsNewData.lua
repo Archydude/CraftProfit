@@ -2,10 +2,13 @@
 ArchdudeWhatsNew:Register("Craftonomics", {
 	title = "Craftonomics",
 	icon = "Interface\\Icons\\INV_Hammer_20",
-	version = "5.0.1",
+	version = "5.1.0",
 	seen = "CraftonomicsWhatsNew",
 	saved = { "CraftonomicsDB", "CraftonomicsCharDB" },
 	changes = {
+		{ "5.1.0",
+			"|cffffd100Buy vendor items on the auction house, on the panel:|r the option is now also a checkbox on the panel, under the crafting strategy, so you can switch it without opening the options. Ticked, materials a vendor sells (thread, flux, vials...) are priced at the auction house and go on the shopping list. Unticked, they're priced at the vendor. It shows on the crafting page and on crafting orders you bring materials to.",
+		},
 		{ "5.0.1",
 			"|cffffd100New logo:|r Craftonomics has a new logo. It shows on the button on the side of the auction house window and, on WoW Forever, on the Best crafts tab.",
 		},
@@ -62,12 +65,6 @@ ArchdudeWhatsNew:Register("Craftonomics", {
 		},
 		{ "4.3.1",
 			"Fixed: after you opened Craft Profit's options, the game's own options could show the error \"AddOn 'CraftProfit' tried to call the protected function 'IsUserOAuthed()'\".",
-		},
-		{ "4.3.0",
-			"|cffffd100Sale rate in the Sell list:|r with TSM, every item in the Sell tab's list shows TSM's sale rate, the share of its auctions that sell, between its price and its amount.",
-			"|cffffd100Column names in the Sell list:|r |cffffd100Item|r, |cffffd100Price|r, |cffffd100Sale rate|r and |cffffd100Amount|r above the list. Craft Profit's auction house window is a little wider and taller to fit them.",
-			"|cffffd100Not first in My auctions:|r an auction says |cffffd100Not first|r when nobody asks less than you, but others at your price are listed before yours, and its line says how many, like |cffffd1005 before yours at this price|r. Undercut auctions also say how many come before them. A |cffffd100+|r after the number means there are more than that. |cffffd100Cancel next undercut|r leaves Not first auctions alone.",
-			"Removed: the Sell tab's own list of what the picked item is listed for, with the picked item's line above it. It showed up when the game's sell page wasn't showing the item. The game's sell page still lists them, and the price is still filled in from the lowest one.",
 		},
 	},
 })

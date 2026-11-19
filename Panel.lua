@@ -363,43 +363,64 @@ local function addCraftsRow()
 	craftsBoxUsed = true
 end
 
--- The panel's last line: a checkbox for whether it opens by itself with the
--- profession window (the "Open with the profession window" option).
-local AUTO_ROW, AUTO_CHECK = 24, 22
-local autoCheck, autoCheckUsed
+-- The panel's checkboxes, by the setting they turn on and off, made the first
+-- time they're needed, and the ones this drawing shows (the rest are hidden after it).
+local CHECK_ROW, CHECK_SIZE = 24, 22
+local checks, checksUsed = {}, {}
 
-local function createAutoCheck()
-	local check = CreateFrame("CheckButton", nil, frame, "UICheckButtonTemplate")
-	check:SetSize(AUTO_CHECK, AUTO_CHECK)
-	check:SetFrameLevel(frame:GetFrameLevel() + 3)
-	check:SetScript("OnClick", function(self) ns.Options.Set("panelAuto", self:GetChecked() == true) end)
-	check:SetScript("OnEnter", function(self)
-		GameTooltip:SetOwner(self, "ANCHOR_LEFT")
-		GameTooltip:SetText("Open with the profession window")
-		GameTooltip:AddLine("The panel opens by itself when you pick a recipe.", 1, 1, 1, true)
-		GameTooltip:AddLine("Off: it stays closed until you click the Craftonomics button at the top of the "
-			.. "profession window. That button opens and closes the panel either way.", 0.53, 0.53, 0.53, true)
-		GameTooltip:Show()
-	end)
-	check:SetScript("OnLeave", GameTooltip_Hide)
-	return check
+-- A row with a checkbox for the setting `key` and `label` after it.
+-- `tooltip(GameTooltip)` fills its tooltip.
+local function addCheckRow(key, label, tooltip)
+	local check = checks[key]
+	if not check then
+		check = CreateFrame("CheckButton", nil, frame, "UICheckButtonTemplate")
+		check:SetSize(CHECK_SIZE, CHECK_SIZE)
+		check:SetFrameLevel(frame:GetFrameLevel() + 3)
+		check:SetScript("OnClick", function(self) ns.Options.Set(key, self:GetChecked() == true) end)
+		check:SetScript("OnEnter", function(self)
+			GameTooltip:SetOwner(self, "ANCHOR_LEFT")
+			tooltip(GameTooltip)
+			GameTooltip:Show()
+		end)
+		check:SetScript("OnLeave", GameTooltip_Hide)
+		checks[key] = check
+	end
+	local top = -Layout.PAD_TOP - contentHeight
+	local row = addRow(label)
+	row.left:ClearAllPoints()
+	row.left:SetPoint("LEFT", frame, "TOPLEFT", Layout.PAD_SIDE + CHECK_SIZE, top - CHECK_ROW / 2)
+	row.left:SetWidth(Layout.WIDTH - 2 * Layout.PAD_SIDE - CHECK_SIZE)
+	contentHeight = contentHeight - math.max(Layout.LINE_HEIGHT, math.ceil(row.left:GetStringHeight()) + 3) + CHECK_ROW
+	check:ClearAllPoints()
+	check:SetPoint("LEFT", frame, "TOPLEFT", Layout.PAD_SIDE - 4, top - CHECK_ROW / 2)
+	check:SetChecked(ns.db[key] == true)
+	-- The label is clickable too, like Blizzard's.
+	check:SetHitRectInsets(0, -(row.left:GetStringWidth() + 2), 0, 0)
+	check:Show()
+	checksUsed[key] = true
 end
 
+-- The panel's last line: whether it opens by itself with the profession window
+-- (the "Open with the profession window" option).
 local function addAutoRow()
-	autoCheck = autoCheck or createAutoCheck()
-	local top = -Layout.PAD_TOP - contentHeight
-	local row = addRow(Color("muted", "Open with the profession window"))
-	row.left:ClearAllPoints()
-	row.left:SetPoint("LEFT", frame, "TOPLEFT", Layout.PAD_SIDE + AUTO_CHECK, top - AUTO_ROW / 2)
-	row.left:SetWidth(Layout.WIDTH - 2 * Layout.PAD_SIDE - AUTO_CHECK)
-	contentHeight = contentHeight - math.max(Layout.LINE_HEIGHT, math.ceil(row.left:GetStringHeight()) + 3) + AUTO_ROW
-	autoCheck:ClearAllPoints()
-	autoCheck:SetPoint("LEFT", frame, "TOPLEFT", Layout.PAD_SIDE - 4, top - AUTO_ROW / 2)
-	autoCheck:SetChecked(ns.db.panelAuto == true)
-	-- The label is clickable too, like Blizzard's.
-	autoCheck:SetHitRectInsets(0, -(row.left:GetStringWidth() + 2), 0, 0)
-	autoCheck:Show()
-	autoCheckUsed = true
+	addCheckRow("panelAuto", Color("muted", "Open with the profession window"), function(tip)
+		tip:SetText("Open with the profession window")
+		tip:AddLine("The panel opens by itself when you pick a recipe.", 1, 1, 1, true)
+		tip:AddLine("Off: it stays closed until you click the Craftonomics button at the top of the "
+			.. "profession window. That button opens and closes the panel either way.", 0.53, 0.53, 0.53, true)
+	end)
+end
+
+-- Whether materials a vendor sells are bought on the auction house (the "Buy
+-- vendor items on the auction house" option), under the crafting strategy.
+local function addVendorRow()
+	addCheckRow("vendorOnAH", "Buy vendor items on the auction house", function(tip)
+		tip:SetText("Buy vendor items on the auction house")
+		tip:AddLine("Materials a vendor sells (thread, flux, vials...) are priced at their auction house price and go "
+			.. "on the shopping list.", 1, 1, 1, true)
+		tip:AddLine("Off: they're priced at the vendor, and the shopping list says in chat to buy them there. Also in "
+			.. "the options.", 0.53, 0.53, 0.53, true)
+	end)
 end
 
 -- "1 craft" or "10 crafts": what this drawing's numbers are for.
@@ -1139,6 +1160,7 @@ local function drawCraft(model)
 				.. "recipe. The rank comes from your crafting strategy."
 			or nil)
 	end
+	addVendorRow()
 	drawBest(model)
 	drawProcs(model)
 	drawFooter(model)
@@ -1199,6 +1221,7 @@ local function drawOrder(model)
 	if #model.materials > 0 and not model.isRecraft then
 		addGap()
 		addOrderChoices(model)
+		addVendorRow()
 	end
 	drawBest(model)
 	if #model.materials == 0 then
@@ -1294,8 +1317,9 @@ function Panel.Render()
 		return
 	end
 	rowCount, dividerCount, bandCount, contentHeight, profitRow, procRow = 0, 0, 0, 0, nil, nil
-	rowButtonUsed, craftsBoxUsed, autoCheckUsed = false, false, false
+	rowButtonUsed, craftsBoxUsed = false, false
 	wipe(dropdownsUsed)
+	wipe(checksUsed)
 	-- The Crafts box is for the recipe it was typed on: another one starts at 1.
 	local crafting = model ~= nil and model.kind == "craft"
 	if crafting and model.key ~= craftsKey then
@@ -1325,7 +1349,9 @@ function Panel.Render()
 	for i = bandCount + 1, #bands do bands[i]:Hide() end
 	if rowButton and not rowButtonUsed then rowButton:Hide() end
 	if craftsBox and not craftsBoxUsed then craftsBox:Hide() end
-	if autoCheck and not autoCheckUsed then autoCheck:Hide() end
+	for key, check in pairs(checks) do
+		if not checksUsed[key] then check:Hide() end
+	end
 	for name, dropdown in pairs(dropdowns) do
 		if not dropdownsUsed[name] then dropdown:Hide() end
 	end

@@ -204,7 +204,7 @@ function Options.Create()
 		"Materials a vendor sells (thread, flux, vials...) are priced at their auction house price and go on the " ..
 		"shopping list.\n\nOff: they're priced at the vendor, and the shopping list says in chat to buy them there.\n\n" ..
 		"When the auction house asks more than a vendor, the tooltips of what's missing say so, and so does chat " ..
-		"when the shopping list gets it.")
+		"when the shopping list gets it.\n\nAlso on the panel when a recipe is open.")
 	checkbox("ahCut", format("Subtract auction house cut (%d%%)", ns.AH_CUT * 100),
 		"The auction house keeps 5% of every sale.")
 

@@ -2,7 +2,7 @@
 ## Title: Craftonomics
 ## Notes: Your profit or loss on every craft and crafting order, a Best crafts tab of what's worth crafting, a Ledger of how it really went, and its own auction house window. Works alone or with TSM and Auctionator. Type /craftonomics for options. Formerly Craft Profit.
 ## Author: Archdude
-## Version: 5.0.1
+## Version: 5.1.0
 ## OptionalDeps: TradeSkillMaster, Auctionator, CraftProfit
 ## SavedVariables: CraftonomicsDB, CraftonomicsWhatsNew
 ## SavedVariablesPerCharacter: CraftonomicsCharDB
