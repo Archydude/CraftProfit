@@ -230,7 +230,7 @@ Item tooltips get a few lines on what the item is worth, each with its own optio
 - **Vendor Buy:** what a vendor charges for one, for items a vendor sells, once your price addon has seen one sell it. On WoW Forever, common crafting reagents are always known.
 - **Vendor Sell:** what a vendor pays you for one.
 - **The auction price,** named after where it comes from: **TSM Market Value** (or the other TSM price you picked for crafted items) or **Auctionator**.
-- **TSM Lowest vs Market** (with TSM): how far the item's lowest auction is from its market value, with a hint: **Buy -18%** in green when it's 3% or more below, **Sell +12%** in light blue when it's 3% or more above, **Even** in between. Only while someone has an auction up.
+- **TSM Lowest vs Market** (with TSM): how far the item's lowest auction is from its market value, with a hint: **Cheap -18%** in green when it's 3% or more below, **Expensive +12%** in light blue when it's 3% or more above, **Even** in between. Only while someone has an auction up.
 - **TSM Sale Rate** (with TSM): the share of the item's auctions that sell, across your region. On WoW Forever it counts every ruleset of your region together (Normal, PvP...), not just yours.
 - **TSM Trend** (with TSM): how far the item's market value is from its historical price, like **-20%** in red or **+14%** in green. It's the number TSM's own tooltip shows beside its market value, whatever TSM price you picked for pricing.
 - **AH Deposit 12h / 24h / 48h** (on WoW Forever, **2h / 8h / 24h**): what posting one costs. You get the deposit back when the item sells and lose it when it doesn't, so a deposit close to the price shows it's hardly worth posting.

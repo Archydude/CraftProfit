@@ -1,5 +1,8 @@
 # Changelog
 
+## 5.2.1
+- Changed: the **TSM Lowest vs Market** line on item tooltips now says **Cheap** or **Expensive** instead of Buy or Sell, like **Cheap -18%** or **Expensive +12%**.
+
 ## 5.2.0
 - **Lowest vs market on item tooltips:** with TSM, a **TSM Lowest vs Market** line shows how far the item's lowest auction is from its market value, with a hint: **Buy -18%** in green when it's 3% or more below, **Sell +12%** in light blue when it's 3% or more above, and **Even** in between. It shows while someone has an auction up. Turn it off with **Show lowest vs market** on the Tooltips options page.
 - **Whole stack on Shift:** for a stack in your bags, item tooltips now show the amounts for one. Hold **Shift** to see what the whole stack sells for at a vendor and on the auction house, and its AH deposit.

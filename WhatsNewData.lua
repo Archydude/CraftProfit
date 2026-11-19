@@ -2,10 +2,13 @@
 ArchdudeWhatsNew:Register("Craftonomics", {
 	title = "Craftonomics",
 	icon = "Interface\\Icons\\INV_Hammer_20",
-	version = "5.2.0",
+	version = "5.2.1",
 	seen = "CraftonomicsWhatsNew",
 	saved = { "CraftonomicsDB", "CraftonomicsCharDB" },
 	changes = {
+		{ "5.2.1",
+			"Changed: the |cffffd100TSM Lowest vs Market|r line on item tooltips now says |cffffd100Cheap|r or |cffffd100Expensive|r instead of Buy or Sell, like |cffffd100Cheap -18%|r or |cffffd100Expensive +12%|r.",
+		},
 		{ "5.2.0",
 			"|cffffd100Lowest vs market on item tooltips:|r with TSM, a |cffffd100TSM Lowest vs Market|r line shows how far the item's lowest auction is from its market value, with a hint: |cffffd100Buy -18%|r in green when it's 3% or more below, |cffffd100Sell +12%|r in light blue when it's 3% or more above, and |cffffd100Even|r in between. It shows while someone has an auction up. Turn it off with |cffffd100Show lowest vs market|r on the Tooltips options page.",
 			"|cffffd100Whole stack on Shift:|r for a stack in your bags, item tooltips now show the amounts for one. Hold |cffffd100Shift|r to see what the whole stack sells for at a vendor and on the auction house, and its AH deposit.",
@@ -61,12 +64,6 @@ ArchdudeWhatsNew:Register("Craftonomics", {
 			"|cffffd100Rewards with no price:|r on a crafting order, a reward that can be sold but has no price gets its own line saying |cffffd100no price|r, instead of sitting with the rewards that don't sell.",
 			"|cffffd100Empty Best crafts list:|r it now says why it's empty: with |cffffd100Use what I own|r, you have every material for none of the recipes, or nothing matches the search and the filter.",
 			"Fixed: a white line from the crafting window's quality bar showed through the Best crafts list.",
-		},
-		{ "4.4.0",
-			"|cffffd100A new look for the panel:|r the crafted item's icon and the recipe's name lead the panel, with what it makes under them. The profit or loss stands in a box of its own, green for a profit and red for a loss. Section headings have a gold line under them, every other material is on a faint stripe, and the session line sits in a strip at the bottom.",
-			"|cffffd100Sale rate in color:|r TSM's sale rate is colored by how well the item sells, from red for one that hardly sells, through yellow, to green for one that always does. That goes for the panel, Best crafts, the Sell list and item tooltips.",
-			"|cffffd100Sale rate on Retail:|r with TSM, Best crafts has a |cffffd100Sale rate|r column beside Sells/day, and the panel shows the sale rate in place of sells per day. On Retail it counts your whole region. Alts on saved TSM prices keep sells per day, which is what those carry.",
-			"|cffffd100Open a material's recipe (WoW Forever):|r with |cffffd100Craft myself|r, a material you craft yourself has a hammer after its name on the panel, in place of the word \"crafted\". Click it to open its recipe, in its own profession's window when it belongs to another profession.",
 		},
 	},
 })

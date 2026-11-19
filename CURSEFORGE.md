@@ -59,7 +59,7 @@ Blizzard's Patron tab shows each order's **expected profit**, **rewards** and mi
 Best crafts shows what a **skill point** costs with each recipe. **Craft myself** prices materials you can make at what crafting them costs, and **Cheapest way** crafts or buys each one, whichever costs less.
 
 ### Item tooltips
-Vendor prices, the auction price and the **AH deposit**, plus with TSM the **sale rate**, **trend** and a **Buy** or **Sell** hint from the lowest auction against the market value. Hold **Shift** on a stack for the whole stack's amounts.
+Vendor prices, the auction price and the **AH deposit**, plus with TSM the **sale rate**, **trend** and whether the lowest auction is **cheap** or **expensive** against the market value. Hold **Shift** on a stack for the whole stack's amounts.
 
 ### Good to know
 - **TSM prices for alts** that keep TSM turned off.
@@ -77,18 +77,21 @@ This addon was made with AI.
 ## B. Upload File form
 
 **Files:** two, each uploaded with only its own game versions (why is in [UPLOADING.md](../UPLOADING.md)). The display name, release type and changelog are the same for both.
-- `dist\Craftonomics-5.2.0-retail.zip`: Retail `12.1.5`
-- `dist\Craftonomics-5.2.0-forever.zip`: WoW Forever `1.60.1`
+- `dist\Craftonomics-5.2.1-retail.zip`: Retail `12.1.5`
+- `dist\Craftonomics-5.2.1-forever.zip`: WoW Forever `1.60.1`
 
 **Display name**
 ```
-Craftonomics 5.2.0
+Craftonomics 5.2.1
 ```
 
 **Release type:** `Release`
 
 **Changelog** (paste only the newest part; paste older parts too if they never went up)
 ```markdown
+5.2.1
+- Changed: the **TSM Lowest vs Market** line on item tooltips now says **Cheap** or **Expensive** instead of Buy or Sell, like **Cheap -18%** or **Expensive +12%**.
+
 5.2.0
 - **Lowest vs market on item tooltips:** with TSM, a **TSM Lowest vs Market** line shows how far the item's lowest auction is from its market value, with a hint: **Buy -18%** in green when it's 3% or more below, **Sell +12%** in light blue when it's 3% or more above, and **Even** in between. It shows while someone has an auction up. Turn it off with **Show lowest vs market** on the Tooltips options page.
 - **Whole stack on Shift:** for a stack in your bags, item tooltips now show the amounts for one. Hold **Shift** to see what the whole stack sells for at a vendor and on the auction house, and its AH deposit.

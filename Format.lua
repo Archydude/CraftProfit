@@ -54,12 +54,13 @@ end
 local EVEN_PERCENT = 3
 
 -- The lowest auction against the market value (-18 for 18% below it, see
--- Prices.LowestVsMarket) as "Buy -18%" in green when it's well below, "Sell +12%"
--- in light blue when it's well above, or "Even +2%" in white in between.
+-- Prices.LowestVsMarket) as "Cheap -18%" in green when it's well below,
+-- "Expensive +12%" in light blue when it's well above, or "Even +2%" in white in
+-- between.
 function Format.LowestVsMarket(percent)
 	local signed = format("%s%.0f%%", percent > 0 and "+" or "", percent)
-	if percent <= -EVEN_PERCENT then return ns.Color("buy", "Buy " .. signed) end
-	if percent >= EVEN_PERCENT then return ns.Color("sell", "Sell " .. signed) end
+	if percent <= -EVEN_PERCENT then return ns.Color("cheap", "Cheap " .. signed) end
+	if percent >= EVEN_PERCENT then return ns.Color("expensive", "Expensive " .. signed) end
 	return "Even " .. signed
 end
 

@@ -1,7 +1,7 @@
 -- Craftonomics: item tooltips show what a vendor charges and pays for the item,
 -- what it sells for with the price you picked (TSM's price type, or Auctionator),
 -- TSM's sale rate and trend, its lowest auction against its market value (with a
--- Buy or Sell hint), and the auction house deposit for posting it, so you can tell
+-- Cheap or Expensive hint), and the auction house deposit for posting it, so you can tell
 -- whether it's worth putting up. Each line has its own option.
 local _, ns = ...
 

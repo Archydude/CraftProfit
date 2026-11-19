@@ -60,8 +60,8 @@ ns.Colors = {
 	good = "ff88ff88",
 	secondSort = "ff66ccff", -- the header of the column a list sorts by second: light blue
 	thirdSort = "ff88ff88",  -- and third: light green
-	buy = "ff33ff33",        -- tooltips' lowest auction well below market value
-	sell = "ff66ccff",       -- and well above it
+	cheap = "ff33ff33",      -- tooltips' lowest auction well below market value
+	expensive = "ff66ccff",  -- and well above it
 }
 
 function ns.Color(key, text)
@@ -134,7 +134,7 @@ ns.DEFAULTS = {
 	tipDeposit = true,
 	tipSaleRate = true,   -- item tooltips: TSM's sale rate
 	tipTrend = true,      -- item tooltips: TSM's trend (market value against historical price)
-	tipLowest = true,     -- item tooltips: TSM's lowest auction against its market value, with Buy or Sell
+	tipLowest = true,     -- item tooltips: TSM's lowest auction against its market value, with Cheap or Expensive
 	rankConcentration = true, -- add the concentration that rank takes
 	rankCharacters = "all", -- whose ranks: "all" your characters | "current" one
 	bestSort = "profit",  -- the Best crafts list's sort: "profit" | "plain" | "procs" | "cost" | "gold" | "perPoint" | "listed" | "sold" | "crafter" | "name"

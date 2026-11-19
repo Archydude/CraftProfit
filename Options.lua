@@ -498,8 +498,8 @@ function Options.Create()
 	checkbox("tipLowest", "Show lowest vs market",
 		"On item tooltips, with TSM: TSM Lowest vs Market, how far the item's lowest auction" ..
 		(quality and "" or " on your realm") .. " is from its market value, with a hint:\n\n" ..
-		"Buy -18%: the lowest auction is 18% below the market value, so it's cheap to buy now.\n" ..
-		"Sell +12%: it's 12% above, so yours can sell for more than usual.\n" ..
+		"Cheap -18%: the lowest auction is 18% below the market value.\n" ..
+		"Expensive +12%: it's 12% above it.\n" ..
 		"Even: within 3% of the market value.\n\n" ..
 		"Only while someone has an auction up. Not on items you can't post, like soulbound ones.")
 	checkbox("priceTooltip", "Show saved TSM prices",
