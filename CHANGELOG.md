@@ -1,5 +1,10 @@
 # Changelog
 
+## 5.2.0
+- **Lowest vs market on item tooltips:** with TSM, a **TSM Lowest vs Market** line shows how far the item's lowest auction is from its market value, with a hint: **Buy -18%** in green when it's 3% or more below, **Sell +12%** in light blue when it's 3% or more above, and **Even** in between. It shows while someone has an auction up. Turn it off with **Show lowest vs market** on the Tooltips options page.
+- **Whole stack on Shift:** for a stack in your bags, item tooltips now show the amounts for one. Hold **Shift** to see what the whole stack sells for at a vendor and on the auction house, and its AH deposit.
+- Fixed: on WoW Forever, the sale rate's description said it's your own server's market. TSM's sale rate counts every ruleset of your region together (Normal, PvP...), and the Tooltips options and the Best crafts column now say so.
+
 ## 5.1.0
 - **Buy vendor items on the auction house, on the panel:** the option is now also a checkbox on the panel, under the crafting strategy, so you can switch it without opening the options. Ticked, materials a vendor sells (thread, flux, vials...) are priced at the auction house and go on the shopping list. Unticked, they're priced at the vendor. It shows on the crafting page and on crafting orders you bring materials to.
 

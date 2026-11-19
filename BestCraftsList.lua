@@ -90,7 +90,7 @@ local HEADER_TIPS = {
 	perDay = "How many sell per day across your region, on average, from TSM.",
 	saleRate = "Of the auctions posted for this item, the share that sells, from TSM: a high rate means it sells, a "
 		.. "low one that most expire. " .. (ns.QUALITY_CRAFTING and "It counts your whole region, not just your realm."
-			or "On WoW Forever your region is one server, so this is your own market."),
+			or "On WoW Forever it counts every ruleset of your region together (Normal, PvP...), not just yours."),
 	trend = "How far the item's market value" .. (ns.QUALITY_CRAFTING and "" or " on your realm")
 		.. " is from its historical price, from TSM: -20% means it's "
 		.. "20% below it, +14% that it's 14% above. It's the number TSM's own tooltip shows beside its market value, "

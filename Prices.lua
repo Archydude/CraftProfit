@@ -232,9 +232,9 @@ function Prices.SoldPerDay(link)
 end
 
 -- Whether TSM's region sale rate takes the place of Sells/day and Listed (in the
--- Best crafts list and on the panel): on WoW Forever, where a region is one
--- server, so it's your own market, and only with TSM loaded. Elsewhere the sale
--- rate shows beside them (see Prices.HasSaleRate).
+-- Best crafts list and on the panel): on WoW Forever, and only with TSM loaded.
+-- There TSM's sale rate pools every ruleset of the region (Normal, PvP...) into one
+-- number. Elsewhere the sale rate shows beside them (see Prices.HasSaleRate).
 function Prices.ShowsSaleRate()
 	return not ns.QUALITY_CRAFTING and TSM_API ~= nil and TSM_API.GetCustomPriceValue ~= nil
 end
@@ -274,6 +274,19 @@ function Prices.Trend(link)
 	local historical = market and tsmValue("dbhistorical", itemString)
 	if not historical then return end
 	return math.floor((market - historical) * 100 / historical + 0.5)
+end
+
+-- How far an item's lowest auction on your realm is from its market value, from
+-- TSM, in whole percent (-18 for 18% below it), or nil without TSM or either
+-- price (no lowest auction when nobody has one up).
+function Prices.LowestVsMarket(link)
+	if not (TSM_API and TSM_API.GetCustomPriceValue) then return end
+	local ok, itemString = pcall(TSM_API.ToItemString, link)
+	if not (ok and itemString) then return end
+	local market = tsmValue("dbmarket", itemString)
+	local lowest = market and tsmValue("dbminbuyout", itemString)
+	if not lowest then return end
+	return math.floor((lowest - market) * 100 / market + 0.5)
 end
 
 -- How many days ago Auctionator last saw an item on the auction house (0 is

@@ -1,7 +1,8 @@
 -- Craftonomics: item tooltips show what a vendor charges and pays for the item,
 -- what it sells for with the price you picked (TSM's price type, or Auctionator),
--- TSM's sale rate and trend, and the auction house deposit for posting it, so you
--- can tell whether it's worth putting up. Each line has its own option.
+-- TSM's sale rate and trend, its lowest auction against its market value (with a
+-- Buy or Sell hint), and the auction house deposit for posting it, so you can tell
+-- whether it's worth putting up. Each line has its own option.
 local _, ns = ...
 
 local format = string.format
@@ -75,10 +76,15 @@ local function sourceName(from)
 	return "TSM " .. (TSM_NAMES[ns.db.saleSource] or ns.db.saleSource)
 end
 
+-- The tooltip that last showed a stack, so holding or letting go of Shift can
+-- redraw it with or without the whole stack's amounts.
+local stackOn
+
 local function onItem(tooltip, data)
 	local db = ns.db
 	if not db or not C_AuctionHouse then return end
-	if not (db.tipVendorBuy or db.tipVendorSell or db.tipAuction or db.tipDeposit or db.tipSaleRate or db.tipTrend) then
+	if not (db.tipVendorBuy or db.tipVendorSell or db.tipAuction or db.tipDeposit or db.tipSaleRate or db.tipTrend
+		or db.tipLowest) then
 		return
 	end
 	local itemID = data and data.id
@@ -91,7 +97,10 @@ local function onItem(tooltip, data)
 	-- A recipe's tooltip also shows the item it makes, and on a vendor the game can
 	-- hand back that item's link instead of the recipe's: price the recipe itself.
 	if link and C_Item.GetItemInfoInstant(link) ~= itemID then link = nil end
-	local qty = location and C_Item.GetStackCount(location) or 1
+	local count = location and C_Item.GetStackCount(location) or 1
+	if count > 1 then stackOn = tooltip end
+	-- A stack in your bags shows the whole stack's amounts only while Shift is held.
+	local qty = (count > 1 and IsShiftKeyDown()) and count or 1
 	local stack = qty > 1 and format(" (x%d)", qty) or ""
 
 	-- What a vendor charges for one (nil when no vendor sells it, or nobody knows),
@@ -109,7 +118,11 @@ local function onItem(tooltip, data)
 	-- How far its market value is from its historical price, from TSM (nil without TSM).
 	local trend
 	if postable and db.tipTrend then trend = ns.Prices.Trend(link or ("item:" .. itemID)) end
-	if not (vendorBuy or vendorSell or price or list or rate or trend) then return end
+	-- How far its lowest auction is from its market value, from TSM (nil without
+	-- TSM, or with no auction up).
+	local lowest
+	if postable and db.tipLowest then lowest = ns.Prices.LowestVsMarket(link or ("item:" .. itemID)) end
+	if not (vendorBuy or vendorSell or price or list or rate or trend or lowest) then return end
 
 	tooltip:AddLine(" ")
 	if vendorBuy then tooltip:AddDoubleLine("Vendor Buy", money(vendorBuy), 1, 0.82, 0, 1, 1, 1) end
@@ -123,6 +136,9 @@ local function onItem(tooltip, data)
 	end
 	if rate then tooltip:AddDoubleLine("TSM Sale Rate", ns.Format.SaleRate(rate), 1, 0.82, 0, 1, 1, 1) end
 	if trend then tooltip:AddDoubleLine("TSM Trend", ns.Format.Trend(trend), 1, 0.82, 0, 1, 1, 1) end
+	if lowest then
+		tooltip:AddDoubleLine("TSM Lowest vs Market", ns.Format.LowestVsMarket(lowest), 1, 0.82, 0, 1, 1, 1)
+	end
 	if list then
 		tooltip:AddDoubleLine("AH Deposit " .. table.concat(DURATIONS, " / ") .. stack, table.concat(list, " / "),
 			1, 0.82, 0, 1, 1, 1)
@@ -130,3 +146,14 @@ local function onItem(tooltip, data)
 end
 
 TooltipDataProcessor.AddTooltipPostCall(Enum.TooltipDataType.Item, onItem)
+
+-- Shift pressed or let go over a stack: draw its tooltip again.
+local shiftWatch = CreateFrame("Frame")
+shiftWatch:RegisterEvent("MODIFIER_STATE_CHANGED")
+shiftWatch:SetScript("OnEvent", function(_, _, key)
+	if key ~= "LSHIFT" and key ~= "RSHIFT" then return end
+	local tooltip = stackOn
+	if not (tooltip and tooltip:IsShown() and tooltip.RefreshData) then return end
+	stackOn = nil
+	tooltip:RefreshData()
+end)

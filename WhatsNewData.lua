@@ -2,10 +2,15 @@
 ArchdudeWhatsNew:Register("Craftonomics", {
 	title = "Craftonomics",
 	icon = "Interface\\Icons\\INV_Hammer_20",
-	version = "5.1.0",
+	version = "5.2.0",
 	seen = "CraftonomicsWhatsNew",
 	saved = { "CraftonomicsDB", "CraftonomicsCharDB" },
 	changes = {
+		{ "5.2.0",
+			"|cffffd100Lowest vs market on item tooltips:|r with TSM, a |cffffd100TSM Lowest vs Market|r line shows how far the item's lowest auction is from its market value, with a hint: |cffffd100Buy -18%|r in green when it's 3% or more below, |cffffd100Sell +12%|r in light blue when it's 3% or more above, and |cffffd100Even|r in between. It shows while someone has an auction up. Turn it off with |cffffd100Show lowest vs market|r on the Tooltips options page.",
+			"|cffffd100Whole stack on Shift:|r for a stack in your bags, item tooltips now show the amounts for one. Hold |cffffd100Shift|r to see what the whole stack sells for at a vendor and on the auction house, and its AH deposit.",
+			"Fixed: on WoW Forever, the sale rate's description said it's your own server's market. TSM's sale rate counts every ruleset of your region together (Normal, PvP...), and the Tooltips options and the Best crafts column now say so.",
+		},
 		{ "5.1.0",
 			"|cffffd100Buy vendor items on the auction house, on the panel:|r the option is now also a checkbox on the panel, under the crafting strategy, so you can switch it without opening the options. Ticked, materials a vendor sells (thread, flux, vials...) are priced at the auction house and go on the shopping list. Unticked, they're priced at the vendor. It shows on the crafting page and on crafting orders you bring materials to.",
 		},
@@ -62,9 +67,6 @@ ArchdudeWhatsNew:Register("Craftonomics", {
 			"|cffffd100Sale rate in color:|r TSM's sale rate is colored by how well the item sells, from red for one that hardly sells, through yellow, to green for one that always does. That goes for the panel, Best crafts, the Sell list and item tooltips.",
 			"|cffffd100Sale rate on Retail:|r with TSM, Best crafts has a |cffffd100Sale rate|r column beside Sells/day, and the panel shows the sale rate in place of sells per day. On Retail it counts your whole region. Alts on saved TSM prices keep sells per day, which is what those carry.",
 			"|cffffd100Open a material's recipe (WoW Forever):|r with |cffffd100Craft myself|r, a material you craft yourself has a hammer after its name on the panel, in place of the word \"crafted\". Click it to open its recipe, in its own profession's window when it belongs to another profession.",
-		},
-		{ "4.3.1",
-			"Fixed: after you opened Craft Profit's options, the game's own options could show the error \"AddOn 'CraftProfit' tried to call the protected function 'IsUserOAuthed()'\".",
 		},
 	},
 })

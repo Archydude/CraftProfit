@@ -474,25 +474,34 @@ function Options.Create()
 		"On item tooltips: Vendor Buy, what a vendor charges for one. Only for items a vendor sells, once your " ..
 		"price addon has seen one sell it" .. (quality and "." or " (common crafting reagents are always known)."))
 	checkbox("tipVendorSell", "Show vendor sell price",
-		"On item tooltips: Vendor Sell, what a vendor pays you for one.")
+		"On item tooltips: Vendor Sell, what a vendor pays you for one. For a stack in your bags, hold Shift to " ..
+		"also see what the whole stack sells for.")
 	checkbox("tipAuction", "Show auction price",
 		"On item tooltips: what the item sells for on the auction house, with the price you picked (the TSM " ..
-		"price for crafted items on the main page, or Auctionator's). For a stack in your bags, also what the " ..
-		"whole stack sells for.\n\nNot on items you can't post, like soulbound ones.")
+		"price for crafted items on the main page, or Auctionator's). For a stack in your bags, hold Shift to " ..
+		"also see what the whole stack sells for.\n\nNot on items you can't post, like soulbound ones.")
 	checkbox("tipDeposit", "Show AH deposit",
 		"On item tooltips: the auction house deposit for posting the item for " ..
-		(quality and "12, 24 or 48" or "2, 8 or 24") .. " hours, for the whole " ..
-		"stack when it's in your bags. You get it back when the item sells and lose it when it doesn't, so a " ..
-		"deposit near the price means it's hardly worth posting.\n\nNot on items you can't post, like soulbound ones.")
+		(quality and "12, 24 or 48" or "2, 8 or 24") .. " hours, for one, or for the whole " ..
+		"stack in your bags while you hold Shift. You get it back when the item sells and lose it when it " ..
+		"doesn't, so a deposit near the price means it's hardly worth posting.\n\nNot on items you can't post, like soulbound ones.")
 	checkbox("tipSaleRate", "Show sale rate",
 		"On item tooltips, with TSM: TSM Sale Rate, the share of the item's auctions that sell" ..
-		(quality and ", across your region." or ". On WoW Forever your region is one server, so it's your own market.") ..
+		(quality and ", across your region."
+			or ". On WoW Forever it counts every ruleset of your region together (Normal, PvP...), not just yours.") ..
 		" A high rate means it sells; a low one that most auctions expire.\n\nNot on items you can't post, like soulbound ones.")
 	checkbox("tipTrend", "Show trend",
 		"On item tooltips, with TSM: TSM Trend, how far the item's market value" .. (quality and "" or " on your realm") ..
 		" is from its historical price. -20% means it's 20% below it, +14% that it's 14% above. It's the number " ..
 		"TSM's own tooltip shows beside its market value, whatever TSM price you picked for pricing.\n\n" ..
 		"Not on items you can't post, like soulbound ones.")
+	checkbox("tipLowest", "Show lowest vs market",
+		"On item tooltips, with TSM: TSM Lowest vs Market, how far the item's lowest auction" ..
+		(quality and "" or " on your realm") .. " is from its market value, with a hint:\n\n" ..
+		"Buy -18%: the lowest auction is 18% below the market value, so it's cheap to buy now.\n" ..
+		"Sell +12%: it's 12% above, so yours can sell for more than usual.\n" ..
+		"Even: within 3% of the market value.\n\n" ..
+		"Only while someone has an auction up. Not on items you can't post, like soulbound ones.")
 	checkbox("priceTooltip", "Show saved TSM prices",
 		"On characters without TSM that use TSM prices saved by another character (see Save TSM prices for alts, " ..
 		"on the main page): one line with the item's price, as Craftonomics prices it, and whose " ..

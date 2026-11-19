@@ -49,6 +49,20 @@ function Format.Trend(trend)
 	return ns.Color("profit", format("%s%.0f%%", trend > 0 and "+" or "", trend))
 end
 
+-- How far the lowest auction can be from the market value and still count as
+-- about the same, in percent.
+local EVEN_PERCENT = 3
+
+-- The lowest auction against the market value (-18 for 18% below it, see
+-- Prices.LowestVsMarket) as "Buy -18%" in green when it's well below, "Sell +12%"
+-- in light blue when it's well above, or "Even +2%" in white in between.
+function Format.LowestVsMarket(percent)
+	local signed = format("%s%.0f%%", percent > 0 and "+" or "", percent)
+	if percent <= -EVEN_PERCENT then return ns.Color("buy", "Buy " .. signed) end
+	if percent >= EVEN_PERCENT then return ns.Color("sell", "Sell " .. signed) end
+	return "Even " .. signed
+end
+
 -- `text` in the color of the item's rarity (green, blue, purple...), or as it is
 -- while the game hasn't loaded the item.
 function Format.RarityColored(itemID, text)
