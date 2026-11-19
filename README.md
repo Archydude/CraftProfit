@@ -453,3 +453,6 @@ Click the gear on the panel (or Craftonomics options in the gear menu under the 
 - With Craftonomics' own price scan, the footers show the scan's age the same way. The chat reminder only comes when you've turned off **Scan when I open the auction house**, since otherwise a new scan is about to start.
 - A big Blizzard update to the profession window or the auction house may need a Craftonomics update too.
 - After an update, a What's New window shows what changed since the version you had. Tick **Don't show this after updates** to stop it opening, for all the addons that use it. Type `/whatsnew` to see the latest changes, or to turn it back on.
+
+## Made with AI
+This addon was made with AI.

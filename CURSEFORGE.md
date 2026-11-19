@@ -65,6 +65,8 @@ Vendor prices, the auction price and the **AH deposit**, plus with TSM the **sal
 - **TSM prices for alts** that keep TSM turned off.
 - Type **/craftonomics** for options.
 
+This addon was made with AI.
+
 **Feedback and bug reports are welcome** in the comments.
 ```
 ---
