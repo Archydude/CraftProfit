@@ -1,5 +1,7 @@
--- Craftonomics: the Ledger window. Overview, every craft, how each item did, from the
--- records in Ledger.lua. They're unpacked when it opens and let go when it closes.
+-- Craftonomics: the Ledger window. What your crafting made: three totals, where
+-- the gold you put into materials went, three things that stand out, and one row
+-- for each item, which opens on its crafts. A second tab has what you bought. From
+-- the records in Ledger.lua: they're unpacked when it opens and let go when it closes.
 local _, ns = ...
 
 local LedgerWindow = {}
@@ -12,20 +14,51 @@ local WIDTH, HEIGHT = 1240, 660
 local SIDE = 12             -- window edge to its content
 local FILTERS_TOP = 30      -- window top to the filters
 local TILES_TOP = 62        -- window top to the totals
-local TILE_HEIGHT = 54
+local TILE_WIDTH, TILE_HEIGHT = 200, 64
 local TILE_GAP = 6
-local INSET_TOP = 124       -- window top to the table's box
+local CARDS_TOP = TILES_TOP + TILE_HEIGHT + TILE_GAP -- window top to the three things that stand out
+local CARD_HEIGHT = 46
+local INSET_TOP = CARDS_TOP + CARD_HEIGHT + 8        -- window top to the list's box on Crafting,
+local INSET_TOP_BOUGHT = TILES_TOP + TILE_HEIGHT + 8 -- and on Purchases, which has no such things
 local INSET_PAD = 8         -- that box's edge to what's in it
 local SCROLLBAR_ROOM = 20
-local CHART_HEIGHT = 104
 local HEADER_HEIGHT = 22
 local ROW_HEIGHT = 24
 local ICON_SIZE = 20
+local TOGGLE_SIZE = 14      -- the plus or minus in front of an item that opens
 local CELL_GAP = 8
 local TAB_PADDING = 16      -- room beside a tab's label, so it's never cut short
-local TAB_KEYS = { "overview", "crafts", "items", "bought" }
-local TAB_LABELS = { "Overview", "Crafts", "Performance", "Purchased" }
-local TILE_LABELS = { "Profit so far", "Sold for", "Spent on materials", "Forecast off by", "Not sold yet" }
+local TAB_KEYS = { "items", "bought" }
+local TAB_LABELS = { "Crafting", "Purchases" }
+local TILE_LABELS = {
+	items = { "Profit so far", "Waiting to sell", "If it all sells" },
+	bought = { "Spent", "Against your price", "Resale profit" },
+}
+local FLOW_BAR_HEIGHT = 12  -- the bar of where the materials' gold went
+local UNDER_FORECAST = 0.10 -- from this far under its forecast, an item's row says so
+local SLOW_DAYS = 3         -- an item with nothing sold after this many days isn't selling
+local PLUS, MINUS = "Interface\\Buttons\\UI-PlusButton-Up", "Interface\\Buttons\\UI-MinusButton-Up"
+local WHITE = "Interface\\Buttons\\WHITE8X8"
+-- The parts of that bar, left to right: what flowOf calls it, its name, its color
+-- and what its tooltip says.
+local FLOW_PARTS = {
+	{ key = "sold", name = "Sold", color = { 0.30, 0.72, 0.36 },
+		tip = "In items that sold, and in orders, which are paid when they're done." },
+	{ key = "waiting", name = "Waiting to sell", color = { 0.93, 0.62, 0.15 },
+		tip = "In items you crafted that haven't sold or been used yet." },
+	{ key = "used", name = "Used in your crafts", color = { 0.55, 0.55, 0.55 },
+		tip = "In items you crafted and then used as materials in your other crafts." },
+	{ key = "gone", name = "Gone", color = { 0.42, 0.30, 0.30 },
+		tip = "In items you used yourself, destroyed, mailed, traded or wrote off: gone without a sale, so no profit "
+			.. "or loss is counted for them." },
+}
+-- The three things that stand out: each one's name, its color, and what it says
+-- with nothing to show.
+local CARDS = {
+	{ title = "Best earner", color = "good", none = "Nothing has made a profit yet" },
+	{ title = "Not selling", color = "missing", none = "Nothing is waiting with none sold" },
+	{ title = "Furthest under its forecast", color = "loss", none = "Nothing sold under its forecast" },
+}
 local SORT_ARROW_ATLAS = "auctionhouse-ui-sortarrow"
 local SORT_ARROW_FILE = "Interface\\Buttons\\UI-SortArrow"
 local SORT_ARROW_SIZE = 10
@@ -37,11 +70,6 @@ local EXPORT_BACKDROP = {
 	insets = { left = 4, right = 4, top = 4, bottom = 4 },
 }
 local REFRESH_DELAY = 0.2   -- redraws are batched this long
-local MAX_BARS = 90         -- the chart's bars; longer ranges share a bar between days
-local BAR_WIDTH = 18        -- at most, so a few days don't make wide blocks
-local CHART_LABEL_ROOM = 20 -- under the bars, for the dates
-local CHART_TOP_ROOM = 8    -- over the tallest bar
-local MISSES_SHOWN = 5      -- items on the Overview's "furthest below forecast"
 local DAY = 86400
 local RANGES = { { 7, "Last 7 days" }, { 30, "Last 30 days" }, { 90, "Last 90 days" } }
 local KIND_SHORT = { craft = "Regular", patron = "Patron", personal = "Personal", guild = "Guild", public = "Public" }
@@ -57,13 +85,13 @@ local NO_MATCH = "Nothing matches the filters."
 local NO_COST = "Crafted while the Craftonomics panel wasn't showing this recipe, so what its materials cost isn't known. It's left out of profit."
 local MATCH_NOTE = "A sale counts toward your oldest unsold craft of that item and rank, so one craft's result is an estimate. Totals are what really sold."
 
-local frame, scrollBox, headerBar, footer, empty, chart, searchBox, exportFrame
-local tiles, headers, bars = {}, {}, {}
+local frame, scrollBox, headerBar, footer, empty, searchBox, exportFrame, flow
+local tiles, headers, cards = {}, {}, {}
 local rangeDropdown, characterDropdown, professionDropdown, kindDropdown
-local tab = "overview"
+local tab = "items"
 local characterFilter, professionFilter, kindFilter -- nil for all
-local sorts = { crafts = { key = "time", ascending = false }, items = { key = "earned", ascending = false },
-	bought = { key = "spent", ascending = false } }
+local sorts = { items = { key = "earned", ascending = false }, bought = { key = "spent", ascending = false } }
+local expanded = {} -- the items whose crafts show under them: their key -> true
 local crafts, other, bought -- unpacked while the window is open
 local stale = false -- new records came in: unpack again at the next redraw
 local refreshQueued = false
@@ -75,10 +103,6 @@ end
 local function plainMoney(amount, color)
 	if not amount or amount == 0 then return Color("muted", "-") end
 	return color and Color(color, Money(amount)) or Money(amount)
-end
-
-local function signedOrDash(amount)
-	return amount and signedMoney(amount) or Color("muted", "-")
 end
 
 -- What procs added, or a dash for crafts from before it was saved.
@@ -131,14 +155,14 @@ local function midnight()
 	return time(today)
 end
 
--- When the range starts: whole days, today being the last, like the chart's bars.
+-- When the range starts: whole days, today being the last.
 local function rangeStart()
 	return midnight() - (ns.db.ledgerRange - 1) * DAY
 end
 
--- What's being searched for. The Overview has no search box, so nothing there.
+-- What's being searched for.
 local function searchText()
-	return tab == "overview" and "" or searchBox:GetText():lower()
+	return searchBox:GetText():lower()
 end
 
 -- The crafts the filters leave, oldest first.
@@ -171,28 +195,6 @@ local function boughtInView()
 	return list
 end
 
--- Totals for each value of craft[field], biggest profit first; names are worked out by `label`.
-local function groupRows(list, field, label)
-	local groups, order = {}, {}
-	for _, craft in ipairs(list) do
-		local value = craft[field] or "?"
-		if not groups[value] then
-			groups[value] = {}
-			order[#order + 1] = value
-		end
-		local group = groups[value]
-		group[#group + 1] = craft
-	end
-	local rows = {}
-	for _, value in ipairs(order) do
-		local row = ns.Ledger.Summarize(groups[value])
-		row.label = label and label(value) or value
-		rows[#rows + 1] = row
-	end
-	table.sort(rows, function(a, b) return a.earned > b.earned end)
-	return rows
-end
-
 local function addHeading(rows, text)
 	rows[#rows + 1] = { heading = text }
 end
@@ -201,35 +203,6 @@ local function addAll(rows, list)
 	for _, row in ipairs(list) do rows[#rows + 1] = row end
 end
 
-local function overviewRows(list)
-	local rows = {}
-	if SHOWS_TYPES then
-		addHeading(rows, "By type")
-		addAll(rows, groupRows(list, "kind", function(kind) return ns.Ledger.KINDS[kind] or kind end))
-	end
-	addHeading(rows, "By profession")
-	addAll(rows, groupRows(list, "profession"))
-	addHeading(rows, "By character")
-	addAll(rows, groupRows(list, "character", ns.Ranks.CharacterName))
-
-	local missed = {}
-	for _, item in ipairs(ns.Ledger.Items(list)) do
-		local off = ns.Ledger.Off(item)
-		if off and off < 0 then
-			item.off = off
-			item.label = nameOf(item) .. rankMarkup(item)
-				.. (SHOWS_TYPES and (" " .. Color("muted", KIND_SHORT[item.kind] or item.kind)) or "")
-			missed[#missed + 1] = item
-		end
-	end
-	if #missed > 0 then
-		table.sort(missed, function(a, b) return a.actual - a.forecast < b.actual - b.forecast end)
-		addHeading(rows, "Furthest below forecast")
-		for i = 1, math.min(MISSES_SHOWN, #missed) do rows[#rows + 1] = missed[i] end
-	end
-
-	return rows
-end
 
 -- The months from before the days kept in full, newest first. Only their totals
 -- are left, so there's nothing to filter them by.
@@ -238,21 +211,21 @@ local function monthRows()
 	for _, totals in ipairs(ns.Ledger.Months()) do
 		local year, month = totals.month:match("^(%d+)-(%d+)$")
 		local label = year and date("%B %Y", time({ year = tonumber(year), month = tonumber(month), day = 1, hour = 12 }))
-		rows[#rows + 1] = { label = label or totals.month, crafts = totals.crafts, items = totals.items, unsold = 0, pending = 0,
-			expected = 0, actual = 0, forecast = 0, earned = totals.profit }
+		rows[#rows + 1] = { label = label or totals.month, month = true, items = totals.items, earned = totals.profit }
 	end
 	return rows
 end
 
 ---------------------------------------------------------------------------
--- Columns: the first is the name; the others are key, header, width, text and,
--- for sorting, sort (what it sorts by; rows' field or function)
+-- What the crafts in view add up to
 ---------------------------------------------------------------------------
 
 local function craftStatus(craft)
 	if craft.kind ~= "craft" then return Color("good", "Paid") end
 	if not craft.itemID then return Color("muted", "Nothing to sell") end
+	if craft.left == 0 and craft.sold + craft.used == 0 then return Color("muted", "Gone") end
 	if craft.left == 0 then
+		if craft.sold > 0 and craft.vendored == craft.sold then return Color("good", "Sold to a vendor") end
 		if craft.sold > 0 then return Color("good", craft.used > 0 and "Sold and used" or "Sold") end
 		return Color("good", "Used")
 	end
@@ -260,13 +233,158 @@ local function craftStatus(craft)
 	return Color("missing", "Not sold yet")
 end
 
--- For sorting by status: what still needs selling comes first.
-local function statusOrder(craft)
-	if craft.kind ~= "craft" then return 1 end
-	if not craft.itemID then return 0 end
-	if craft.left == 0 then return 2 end
-	return craft.sold + craft.used > 0 and 3 or 4
+
+-- Where the gold put into materials went, for the crafts in view: sold (in items
+-- that sold, and in orders, which are paid when done), waiting (in items not sold
+-- or used yet), used (in items that went into your own crafts) and gone (in items
+-- that left you without a sale). And ifAll: the profit still to come if what's
+-- waiting sells for what it was worth when crafted.
+local function flowOf(list)
+	local parts = { sold = 0, waiting = 0, used = 0, gone = 0, ifAll = 0 }
+	for _, craft in ipairs(list) do
+		if not craft.noCost and craft.qty > 0 then
+			if craft.kind == "craft" and craft.itemID then
+				local share = craft.cost / craft.qty
+				parts.sold = parts.sold + share * craft.sold
+				parts.used = parts.used + share * craft.used
+				parts.gone = parts.gone + share * craft.gone
+				parts.waiting = parts.waiting + share * craft.left
+				if craft.unit > 0 then parts.ifAll = parts.ifAll + (craft.unit - share) * craft.left end
+			else
+				parts.sold = parts.sold + craft.cost
+			end
+		end
+	end
+	return parts
 end
+
+-- How many whole days an item's oldest craft with some left has waited.
+local function daysWaiting(item)
+	local oldest
+	for _, craft in ipairs(item.made) do
+		if craft.left > 0 and (not oldest or craft.t < oldest) then oldest = craft.t end
+	end
+	return oldest and math.floor((time() - oldest) / DAY) or 0
+end
+
+-- What became of the ones that are gone without a sale: "40 used, 22 given away".
+local function goneWords(of)
+	local words = {}
+	if of.consumed > 0 then words[#words + 1] = BreakUpLargeNumbers(of.consumed) .. " used" end
+	if of.given > 0 then words[#words + 1] = BreakUpLargeNumbers(of.given) .. " given away" end
+	if of.written > 0 then words[#words + 1] = BreakUpLargeNumbers(of.written) .. " written off" end
+	return table.concat(words, ", ")
+end
+
+-- How an item is going, in a few words, and where that sorts (what needs a look
+-- comes first).
+local function itemStatus(item)
+	if item.kind ~= "craft" then return Color("good", "Paid"), 0 end
+	if not item.itemID then return Color("muted", "Nothing to sell"), 0 end
+	local sold, used, left = BreakUpLargeNumbers(item.sold), BreakUpLargeNumbers(item.used), BreakUpLargeNumbers(item.unsold)
+	if item.unsold == 0 and item.sold + item.used == 0 then return Color("muted", "Gone: " .. goneWords(item)), 1 end
+	if item.sold == 0 and item.used > 0 then
+		return Color("muted", item.unsold > 0 and format("Material: %s used in your crafts, %s left", used, left)
+			or format("Material: %s used in your crafts", used)), 1
+	end
+	local off = ns.Ledger.Off(item)
+	local under = off and off <= -UNDER_FORECAST and format("%.0f%% under its forecast", -off * 100)
+	if item.unsold == 0 then
+		if item.vendored == item.sold then return Color("good", "Sold to a vendor"), 2 end
+		if under then return Color("loss", "Sold out, " .. under), 5 end
+		return Color("good", "Sold out"), 2
+	end
+	if item.sold == 0 then
+		local worth = item.pending > 0 and (", worth " .. Money(item.pending)) or ""
+		local days = daysWaiting(item)
+		if days >= SLOW_DAYS then return Color("missing", format("Not selling for %d days%s", days, worth)), 6 end
+		return Color("missing", "Waiting to sell" .. worth), 4
+	end
+	if under then return Color("loss", under), 5 end
+	local gone = format("%s of %s sold", sold, BreakUpLargeNumbers(item.items))
+	if item.sold + item.used >= item.unsold then return Color("good", "Selling well: " .. gone), 3 end
+	return "Selling: " .. gone, 3
+end
+
+-- One row per item, rank and type of craft in view (see Ledger.Items), each with
+-- its key, how it's going (status) and where that sorts (statusOrder). Crafts that
+-- made nothing to sell get a row for their recipe.
+local function itemsOf(list)
+	local items = ns.Ledger.Items(list)
+	local recipes = {}
+	for _, craft in ipairs(list) do
+		if not craft.itemID then
+			local key = format("r%d:%s", craft.recipeID, craft.kind)
+			local group = recipes[key]
+			if not group then
+				group = { key = key, recipeID = craft.recipeID, rank = 0, kind = craft.kind, made = {} }
+				recipes[key] = group
+				items[#items + 1] = group
+			end
+			group.made[#group.made + 1] = craft
+		end
+	end
+	for _, group in pairs(recipes) do
+		for key, value in pairs(ns.Ledger.Summarize(group.made)) do group[key] = value end
+	end
+	for _, item in ipairs(items) do
+		item.key = item.key or format("%d:%d:%s", item.itemID, item.rank, item.kind)
+		item.status, item.statusOrder = itemStatus(item)
+	end
+	return items
+end
+
+-- The rows of the list: every item, and under an open one its crafts, newest
+-- first (the ones of the same minute as one).
+local function withCrafts(items)
+	local rows = {}
+	for _, item in ipairs(items) do
+		rows[#rows + 1] = item
+		if expanded[item.key] then
+			local made = ns.Ledger.Merge(item.made)
+			table.sort(made, function(a, b) return a.t > b.t end)
+			for _, craft in ipairs(made) do
+				craft.detail = true
+				rows[#rows + 1] = craft
+			end
+		end
+	end
+	return rows
+end
+
+-- The three things that stand out among the items: the one that made the most,
+-- the one with the most gold waiting and none sold, and the one furthest under
+-- its forecast. Each can be nil.
+local function standouts(items)
+	local best, stuck, miss
+	for _, item in ipairs(items) do
+		if item.earned > 0 and (not best or item.earned > best.earned) then best = item end
+		if item.kind == "craft" and item.itemID and item.sold == 0 and item.used == 0 and item.unsold > 0
+			and (not stuck or item.pending > stuck.pending) then
+			stuck = item
+		end
+		local off = ns.Ledger.Off(item)
+		if off and off < 0 and (not miss or item.actual - item.forecast < miss.actual - miss.forecast) then miss = item end
+	end
+	return best, stuck, miss
+end
+
+-- An item's name as a row shows it: in its rarity's color, with its rank, and on
+-- Retail the type of craft when it isn't a regular one.
+local function itemName(row)
+	local name = row.itemID and ns.Format.RarityColored(row.itemID, nameOf(row)) or nameOf(row)
+	if SHOWS_TYPES and row.kind and row.kind ~= "craft" then
+		return name .. rankMarkup(row) .. " " .. Color("muted", KIND_SHORT[row.kind] or row.kind)
+	end
+	return name .. rankMarkup(row)
+end
+
+---------------------------------------------------------------------------
+-- Columns: the first is the name; the others are key, header, width, text and,
+-- for sorting, sort (what it sorts by; rows' field or function). left: its text
+-- starts at the left. On Crafting a row is an item, one of an open item's crafts
+-- (detail), or a month's totals (month).
+---------------------------------------------------------------------------
 
 -- Paying under your price source is the good direction.
 local function vsMarketText(row)
@@ -274,55 +392,41 @@ local function vsMarketText(row)
 	return Color(row.vsMarket <= 0 and "profit" or "loss", format("%+.0f%%", row.vsMarket * 100))
 end
 
+-- How many are gone without a sale: used in your crafts, used yourself, destroyed,
+-- given away or written off. With these, Made is Sold plus Gone plus Left.
+local function goneCount(row)
+	return (row.used or 0) + (row.gone or 0)
+end
+
+-- A dash while nothing of it has sold or been used, and for a craft whose
+-- materials cost isn't known.
+local function profitText(row)
+	if row.month then return signedMoney(row.earned) end
+	if row.noCost or (row.unknown and row.unknown == row.crafts) then return Color("muted", "-") end
+	if row.earned == 0 and (row.sold or 0) + (row.used or 0) == 0 then return Color("muted", "-") end
+	return signedMoney(row.earned)
+end
+
 local COLUMNS = {
-	overview = {
-		{ key = "name", header = "" },
-		{ key = "crafts", header = "Crafts", width = 60, text = function(row) return count(row.crafts) end },
-		{ key = "items", header = "Items", width = 60, text = function(row) return count(row.items) end },
-		{ key = "unsold", header = "Unsold", width = 60, text = function(row) return count(row.unsold) end },
-		{ key = "pending", header = "Unsold value", width = 110, text = function(row) return plainMoney(row.pending) end },
-		{ key = "expected", header = "Forecast", width = 110, text = function(row)
-			return (row.expected or 0) ~= 0 and signedMoney(row.expected) or Color("muted", "-") end },
-		{ key = "off", header = "Off by", width = 60, text = function(row) return offText(ns.Ledger.Off(row)) end },
-		{ key = "earned", header = "Profit so far", width = 120, text = function(row) return signedMoney(row.earned) end },
-	},
-	crafts = {
-		{ key = "name", header = "Item", sort = function(row) return nameOf(row):lower() end },
-		{ key = "time", header = "When", width = 96, sort = "t", text = function(row) return date("%b %d %H:%M", row.t) end },
-		{ key = "crafter", header = "Crafter", width = 84, sort = "character",
-			text = function(row) return ns.Ranks.CharacterName(row.character or "?") end },
-		{ key = "kind", header = "Type", width = 60, sort = "kind", text = function(row) return KIND_SHORT[row.kind] or row.kind end },
-		{ key = "qty", header = "Made", width = 44, sort = "qty", text = function(row) return count(row.qty) end },
-		{ key = "status", header = "Status", width = 96, sort = statusOrder, text = craftStatus },
-		{ key = "forecast", header = "Forecast", width = 104, sort = "expected", text = function(row)
-			return row.expected ~= 0 and signedMoney(row.expected) or Color("muted", "-") end },
-		{ key = "procs", header = "Procs", width = 76, sort = "procGain",
-			text = function(row) return procsText(row.hasProcs and row.procGain or nil) end },
-		{ key = "earned", header = "Profit so far", width = 110, sort = "earned", text = function(row)
-			return row.noCost and Color("muted", "-") or signedMoney(row.earned) end },
-	},
 	items = {
 		{ key = "name", header = "Item", sort = function(row) return nameOf(row):lower() end },
-		{ key = "kind", header = "Type", width = 54, sort = "kind", text = function(row) return KIND_SHORT[row.kind] or row.kind end },
-		{ key = "items", header = "Made", width = 38, sort = "items", text = function(row) return count(row.items) end },
-		{ key = "sold", header = "Sold", width = 38, sort = "sold", text = function(row) return count(row.sold) end },
-		{ key = "used", header = "Used", width = 38, sort = "used", text = function(row) return count(row.used) end },
-		{ key = "unitForecast", header = "Forecast each", width = 84, sort = "unitForecast",
-			text = function(row) return signedOrDash(row.unitForecast) end },
-		{ key = "unitCost", header = "Cost each", width = 68, sort = "unitCost",
-			text = function(row) return plainMoney(row.unitCost, "loss") end },
-		{ key = "unitSold", header = "Sold each", width = 68, sort = "unitSold",
-			text = function(row) return plainMoney(row.unitSold) end },
-		{ key = "unitProcs", header = "Procs each", width = 68, sort = "unitProcs",
-			text = function(row) return procsText(row.unitProcs) end },
-		{ key = "unitProfit", header = "Profit each", width = 68, sort = "unitProfit",
-			text = function(row) return signedOrDash(row.unitProfit) end },
-		{ key = "off", header = "Off by", width = 50, sort = function(row) return ns.Ledger.Off(row) end,
-			text = function(row) return offText(ns.Ledger.Off(row)) end },
-		{ key = "margin", header = "Margin", width = 50, sort = "margin", text = function(row) return marginText(row.margin) end },
-		{ key = "days", header = "Days to sell", width = 72, sort = "days", text = function(row)
-			return row.days and format("%.1f", row.days) or Color("muted", "-") end },
-		{ key = "earned", header = "Profit so far", width = 96, sort = "earned", text = function(row) return signedMoney(row.earned) end },
+		{ key = "items", header = "Made", width = 60, sort = "items",
+			text = function(row) return count(row.detail and row.qty or row.items) end },
+		{ key = "sold", header = "Sold", width = 60, sort = "sold",
+			text = function(row) return row.month and Color("muted", "-") or count(row.sold) end },
+		{ key = "gone", header = "Gone", width = 60, sort = goneCount,
+			text = function(row) return row.month and Color("muted", "-") or count(goneCount(row)) end },
+		{ key = "unsold", header = "Left", width = 60, sort = "unsold",
+			text = function(row)
+				if row.month then return Color("muted", "-") end
+				return count(row.detail and row.left or row.unsold)
+			end },
+		{ key = "earned", header = "Profit", width = 120, sort = "earned", text = profitText },
+		{ key = "status", header = "How it's going", width = 340, left = true, sort = "statusOrder",
+			text = function(row)
+				if row.month then return "" end
+				return row.detail and craftStatus(row) or row.status
+			end },
 	},
 	bought = {
 		{ key = "name", header = "Item", sort = function(row) return nameOf(row):lower() end },
@@ -337,17 +441,9 @@ local COLUMNS = {
 			return row.resaleProfit and signedMoney(row.resaleProfit) or Color("muted", "-") end },
 	},
 }
--- Columns WoW Forever has nothing for (see SHOWS_TYPES and SHOWS_PROCS).
-local HIDDEN = {}
-if not SHOWS_TYPES then HIDDEN.kind = true end
-if not SHOWS_PROCS then HIDDEN.procs, HIDDEN.unitProcs = true, true end
-for _, columns in pairs(COLUMNS) do
-	for i = #columns, 1, -1 do
-		if HIDDEN[columns[i].key] then table.remove(columns, i) end
-	end
-end
 
--- Where each column sits in a row `width` wide; the name takes what the others leave.
+-- Where each column sits in a row `width` wide; the name takes what the others
+-- leave. On Crafting it starts after the plus that opens an item.
 local function columnPlaces(columns, width)
 	local places, right = {}, width - 4
 	for i = #columns, 2, -1 do
@@ -355,14 +451,13 @@ local function columnPlaces(columns, width)
 		places[i] = { x = right - column.width, width = column.width }
 		right = right - column.width - CELL_GAP
 	end
-	local nameX = 4 + ICON_SIZE + 6
+	local nameX = 4 + (tab == "items" and TOGGLE_SIZE + 4 or 0) + ICON_SIZE + 6
 	places[1] = { x = nameX, width = right - nameX }
 	return places
 end
 
 local function sortRows(rows)
 	local sort = sorts[tab]
-	if not sort then return end
 	local valueOf
 	for _, column in ipairs(COLUMNS[tab]) do
 		if column.key == sort.key then valueOf = column.sort end
@@ -374,7 +469,7 @@ local function sortRows(rows)
 	table.sort(rows, function(a, b)
 		local av, bv = read(a), read(b)
 		if (av == nil) ~= (bv == nil) then return av ~= nil end
-		if av == bv or av == nil then return (a.t or 0) > (b.t or 0) end
+		if av == bv or av == nil then return (a.earned or 0) > (b.earned or 0) end
 		if sort.ascending then return av < bv end
 		return av > bv
 	end)
@@ -388,13 +483,31 @@ local function addPair(left, right)
 	GameTooltip:AddDoubleLine(left, right, 1, 1, 1, 1, 1, 1)
 end
 
+-- What became of the ones that didn't sell at auction.
+local function addGone(of)
+	if (of.vendored or 0) > 0 then addPair("Of those sold, to a vendor", of.vendored) end
+	if (of.consumed or 0) > 0 then addPair("Used yourself or destroyed", of.consumed) end
+	if (of.given or 0) > 0 then addPair("Mailed, traded or put in the guild bank", of.given) end
+	if (of.written or 0) > 0 then addPair("Written off", of.written) end
+end
+
+-- The game's own tooltip of an item (with what price addons add to it), or just
+-- the name of a craft that made no item. Then a heading for what the Ledger adds:
+-- only what the row doesn't already show.
+local function startTooltip(entry)
+	if entry.itemID then
+		GameTooltip:SetItemByID(entry.itemID)
+	else
+		GameTooltip:SetText(nameOf(entry))
+	end
+	GameTooltip:AddLine(" ")
+	GameTooltip:AddLine("In your Ledger", 1, 0.82, 0)
+end
+
+-- One of an open item's crafts. When, who, how many and the profit are in its row.
 local function craftTooltip(craft)
-	GameTooltip:SetText(nameOf(craft) .. rankMarkup(craft))
-	addPair("Crafted", date("%b %d %Y, %H:%M", craft.t))
-	addPair("Crafter", ns.Ranks.CharacterName(craft.character or "?"))
+	startTooltip(craft)
 	if SHOWS_TYPES then addPair("Type", ns.Ledger.KINDS[craft.kind] or craft.kind) end
-	if craft.count > 1 then addPair("Crafts", craft.count) end
-	addPair("Made", craft.qty)
 	addPair("Materials cost", craft.noCost and Color("muted", "Not known") or Money(craft.cost))
 	if craft.noCost then
 		-- No forecast either.
@@ -410,16 +523,15 @@ local function craftTooltip(craft)
 	if craft.kind == "craft" and craft.itemID then
 		if craft.unit > 0 then addPair("Worth each when crafted", Money(craft.unit)) end
 		if craft.sold > 0 then
-			addPair("Sold", format("%d for %s", craft.sold, Money(craft.money)))
+			addPair("Sold for", Money(craft.money))
 			addPair("Sold each", Money(craft.money / craft.sold))
 		end
 		if craft.used > 0 then addPair("Used in your crafts", craft.used) end
 		if craft.usedAtCost > 0 then addPair("Of those, counted at their cost", craft.usedAtCost) end
-		if craft.left > 0 then addPair("Not sold yet", craft.left) end
+		addGone(craft)
 	elseif craft.kind ~= "craft" then
 		if not craft.noCost then addPair("Paid", Money(craft.money)) end
 	end
-	if not craft.noCost then addPair("Profit so far", signedMoney(craft.earned)) end
 	GameTooltip:AddLine(" ")
 	if craft.noCost then
 		GameTooltip:AddLine(NO_COST, 1, 0.82, 0, true)
@@ -428,20 +540,22 @@ local function craftTooltip(craft)
 	GameTooltip:AddLine(MATCH_NOTE, 0.53, 0.53, 0.53, true)
 end
 
+-- An item. How many were made, sold, gone and left, and the profit, are in its row.
 local function itemTooltip(item)
-	GameTooltip:SetText(nameOf(item) .. rankMarkup(item))
+	startTooltip(item)
 	if SHOWS_TYPES then addPair("Type", ns.Ledger.KINDS[item.kind] or item.kind) end
-	addPair("Made", item.items)
-	addPair("Sold", item.sold)
-	if item.used > 0 then addPair("Used in your crafts", item.used) end
-	addPair("Not sold yet", item.unsold)
 	addPair("Materials cost", Money(item.cost))
-	if item.pending > 0 then addPair("Unsold value when crafted", Money(item.pending)) end
+	if item.unitCost then addPair("Cost each", Money(item.unitCost)) end
 	if item.unitPrice then
 		addPair(item.kind == "craft" and "Expected sale price each" or "Expected pay each", Money(item.unitPrice))
 	end
-	addPair("Profit so far", signedMoney(item.earned))
+	if item.unitSold then addPair("Sold each", Money(item.unitSold)) end
+	if item.unitProfit then addPair("Profit each", signedMoney(item.unitProfit)) end
 	if item.margin then addPair("Margin on what sold", marginText(item.margin)) end
+	if item.days then addPair("Days to sell", format("%.1f", item.days)) end
+	if item.used > 0 then addPair("Used in your crafts", item.used) end
+	addGone(item)
+	if item.pending > 0 then addPair("Worth when crafted, what's left", Money(item.pending)) end
 	if item.forecast ~= 0 then
 		addPair("Forecast for what's done", signedMoney(item.forecast))
 		if item.unitProcs and SHOWS_PROCS then addPair("Procs added", procsText(item.procs)) end
@@ -449,31 +563,71 @@ local function itemTooltip(item)
 	end
 end
 
+-- Something you bought. What you paid and resold it for is in its row.
 local function boughtTooltip(row)
-	GameTooltip:SetText(nameOf(row) .. rankMarkup(row))
-	addPair("Purchased", row.qty)
-	addPair("From", row.source == "vendor" and "Vendors" or "The auction house")
-	addPair("Spent", Money(row.spent))
-	addPair("Paid each", Money(row.unitPaid))
-	if row.unitMarket then addPair("Your price source then", Money(row.unitMarket)) end
-	if row.resold > 0 then
-		addPair("Resold", format("%d for %s", row.resold, Money(row.resoldMoney)))
-		addPair("Resale profit", signedMoney(row.resaleProfit))
-	end
+	startTooltip(row)
+	addPair("Bought from", row.source == "vendor" and "Vendors" or "The auction house")
 end
 
 local function showRowTooltip(button)
 	local row = button.row
-	if tab == "overview" or row.heading then return end
+	if not row or row.heading or row.month then return end
 	GameTooltip:SetOwner(button, "ANCHOR_RIGHT")
-	if tab == "crafts" then
-		craftTooltip(row)
-	elseif tab == "items" then
-		itemTooltip(row)
-	else
+	if tab == "bought" then
 		boughtTooltip(row)
+	elseif row.detail then
+		craftTooltip(row)
+	else
+		itemTooltip(row)
+		GameTooltip:AddLine(" ")
+		GameTooltip:AddLine(expanded[row.key] and "Click: hide its crafts" or "Click: show its crafts", 0.6, 0.6, 0.6)
+		if row.itemID and row.kind == "craft" then
+			GameTooltip:AddLine("Right-click: write off what's left", 0.6, 0.6, 0.6)
+		end
 	end
 	GameTooltip:Show()
+end
+
+-- How many of an item, of its rank and type, are on record as left in all,
+-- whatever time the filters show.
+local function leftInAll(item)
+	local left = 0
+	for _, craft in ipairs(crafts or {}) do
+		if craft.itemID == item.itemID and craft.rank == item.rank and craft.kind == item.kind then left = left + craft.left end
+	end
+	return left
+end
+
+-- An item's right-click menu: write off what's left of it (you don't have it any
+-- more, and it didn't sell), or take its write-offs back.
+local function showItemMenu(button, item)
+	local left = leftInAll(item)
+	MenuUtil.CreateContextMenu(button, function(_, root)
+		root:CreateTitle(nameOf(item))
+		local writeOff = root:CreateButton(left > 0 and format("Write off the %s left", BreakUpLargeNumbers(left))
+			or "Nothing left to write off", function()
+			ns.Ledger.WriteOff({ { itemID = item.itemID, qty = left, rank = item.rank } })
+		end)
+		writeOff:SetEnabled(left > 0)
+		if item.written > 0 then
+			root:CreateButton("Take its write-offs back", function() ns.Ledger.TakeBack(item.itemID) end)
+		end
+	end)
+end
+
+-- A click on an item opens it on its crafts, or closes it again. A right-click
+-- has its menu.
+local function onRowClick(button, mouseButton)
+	local row = button.row
+	if tab ~= "items" or not (row and row.key) then return end
+	if mouseButton == "RightButton" then
+		GameTooltip:Hide()
+		if row.itemID and row.kind == "craft" then showItemMenu(button, row) end
+		return
+	end
+	expanded[row.key] = not expanded[row.key] or nil
+	GameTooltip:Hide()
+	LedgerWindow.Render()
 end
 
 local function createRow(button)
@@ -481,13 +635,19 @@ local function createRow(button)
 	local highlight = button:CreateTexture(nil, "HIGHLIGHT")
 	highlight:SetAllPoints()
 	highlight:SetColorTexture(1, 1, 1, 0.08)
+	button.toggle = button:CreateTexture(nil, "ARTWORK")
+	button.toggle:SetSize(TOGGLE_SIZE, TOGGLE_SIZE)
+	button.toggle:SetPoint("LEFT", 4, 0)
 	button.icon = button:CreateTexture(nil, "ARTWORK")
 	button.icon:SetSize(ICON_SIZE, ICON_SIZE)
-	button.icon:SetPoint("LEFT", 4, 0)
 	button.icon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
 	button.stripe = button:CreateTexture(nil, "BACKGROUND")
 	button.stripe:SetAllPoints()
 	button.stripe:SetColorTexture(1, 1, 1, 0.035)
+	-- Behind an open item's crafts, so they read as part of it.
+	button.shade = button:CreateTexture(nil, "BACKGROUND")
+	button.shade:SetAllPoints()
+	button.shade:SetColorTexture(0, 0, 0, 0.32)
 	button.rule = button:CreateTexture(nil, "ARTWORK")
 	button.rule:SetHeight(1)
 	button.rule:SetPoint("BOTTOMLEFT", 4, 1)
@@ -495,6 +655,8 @@ local function createRow(button)
 	button.rule:SetColorTexture(1, 0.82, 0, 0.3)
 	button:SetScript("OnEnter", showRowTooltip)
 	button:SetScript("OnLeave", GameTooltip_Hide)
+	button:RegisterForClicks("LeftButtonUp", "RightButtonUp")
+	button:SetScript("OnClick", onRowClick)
 end
 
 local function cellOf(button, index)
@@ -519,7 +681,7 @@ local function drawRow(button, row)
 		cell:ClearAllPoints()
 		cell:SetPoint("LEFT", button, "LEFT", places[i].x, 0)
 		cell:SetWidth(places[i].width)
-		cell:SetJustifyH(i == 1 and "LEFT" or "RIGHT")
+		cell:SetJustifyH((i == 1 or column.left) and "LEFT" or "RIGHT")
 		if row.heading then
 			cell:SetText("")
 		elseif i > 1 then
@@ -527,11 +689,15 @@ local function drawRow(button, row)
 		end
 	end
 
+	local opens = tab == "items" and row.key ~= nil
 	button.stripe:SetShown(row.stripe == true)
+	button.shade:SetShown(row.detail == true)
 	button.rule:SetShown(row.heading ~= nil)
+	button.toggle:SetShown(opens)
+	if opens then button.toggle:SetTexture(expanded[row.key] and MINUS or PLUS) end
 	local first = button.cells[1]
-	local hasItem = row.itemID ~= nil
-	button.icon:SetShown(hasItem)
+	local hasIcon = row.itemID ~= nil and not row.detail
+	button.icon:SetShown(hasIcon)
 	if row.heading then
 		first:ClearAllPoints()
 		first:SetPoint("LEFT", button, "LEFT", 4, 0)
@@ -539,85 +705,18 @@ local function drawRow(button, row)
 		first:SetText(Color("heading", row.heading))
 	elseif row.label then
 		first:SetText(row.label)
+	elseif row.detail then
+		-- One of an open item's crafts: when, who, and how many crafts it stands for.
+		first:SetText(Color("muted", date("%b %d %H:%M", row.t)) .. "   " .. ns.Ranks.CharacterName(row.character or "?")
+			.. (row.count > 1 and Color("muted", format("   %d crafts", row.count)) or ""))
 	else
-		first:SetText(ns.Format.RarityColored(row.itemID, nameOf(row)) .. rankMarkup(row))
+		first:SetText(itemName(row))
 	end
-	if hasItem then button.icon:SetTexture(C_Item.GetItemIconByID(row.itemID)) end
-end
-
----------------------------------------------------------------------------
--- The chart: profit by the day it was crafted
----------------------------------------------------------------------------
-
-local function barOf(index)
-	local bar = bars[index]
-	if not bar then
-		bar = CreateFrame("Frame", nil, chart)
-		bar:EnableMouse(true)
-		bar.fill = bar:CreateTexture(nil, "ARTWORK")
-		bar:SetScript("OnEnter", function(self)
-			GameTooltip:SetOwner(self, "ANCHOR_TOP")
-			GameTooltip:SetText(self.label)
-			GameTooltip:AddLine(signedMoney(self.amount), 1, 1, 1)
-			GameTooltip:Show()
-		end)
-		bar:SetScript("OnLeave", GameTooltip_Hide)
-		bars[index] = bar
+	if hasIcon then
+		button.icon:ClearAllPoints()
+		button.icon:SetPoint("LEFT", button, "LEFT", places[1].x - ICON_SIZE - 6, 0)
+		button.icon:SetTexture(C_Item.GetItemIconByID(row.itemID))
 	end
-	return bar
-end
-
-local function drawChart(list)
-	for _, bar in ipairs(bars) do bar:Hide() end
-	-- Whole days by your clock, so a bar is the day its date says. Dates are read
-	-- at noon, which a clock change can't push into the day before or after.
-	local today = midnight()
-	local noon = today + DAY / 2
-	local days = ns.db.ledgerRange
-	local perBar = math.max(math.ceil(days / MAX_BARS), 1)
-	local total = math.ceil(days / perBar)
-	local amounts = {}
-	for _, craft in ipairs(list) do
-		local daysBack = craft.t >= today and 0 or math.ceil((today - craft.t) / DAY)
-		local back = math.floor(daysBack / perBar)
-		local index = total - math.min(back, total - 1)
-		amounts[index] = (amounts[index] or 0) + craft.earned
-	end
-	-- The zero line sits as low as the losses allow, so the bars get all the height.
-	local highest, lowest = 0, 0
-	for _, amount in pairs(amounts) do
-		highest, lowest = math.max(highest, amount), math.min(lowest, amount)
-	end
-	local spread = math.max(highest - lowest, 1)
-
-	local width, height = chart:GetWidth(), chart:GetHeight() - CHART_LABEL_ROOM - CHART_TOP_ROOM
-	local slot = width / total
-	local zero = -lowest / spread * height
-	chart.zero:ClearAllPoints()
-	chart.zero:SetPoint("LEFT", chart, "BOTTOMLEFT", 0, CHART_LABEL_ROOM + zero)
-	chart.zero:SetPoint("RIGHT", chart, "BOTTOMRIGHT", 0, CHART_LABEL_ROOM + zero)
-	chart.top:SetText(highest > 0 and format("Best %s: %s", perBar == 1 and "day" or "stretch", signedMoney(highest)) or "")
-	for index = 1, total do
-		local amount = amounts[index]
-		if amount then
-			local bar = barOf(index)
-			local size = math.max(math.abs(amount) / spread * height, 1)
-			bar:ClearAllPoints()
-			bar:SetSize(math.max(slot - 2, 1), height)
-			bar:SetPoint("BOTTOMLEFT", chart, "BOTTOMLEFT", (index - 1) * slot + 1, CHART_LABEL_ROOM)
-			bar.fill:ClearAllPoints()
-			bar.fill:SetSize(math.min(math.max(slot - 2, 1), BAR_WIDTH), size)
-			bar.fill:SetPoint(amount >= 0 and "BOTTOM" or "TOP", bar, "BOTTOM", 0, zero)
-			if amount >= 0 then bar.fill:SetColorTexture(0.3, 0.72, 0.36, 0.95) else bar.fill:SetColorTexture(0.82, 0.3, 0.28, 0.95) end
-			local last = noon - (total - index) * perBar * DAY
-			bar.label = perBar == 1 and date("%b %d", last)
-				or format("%s - %s", date("%b %d", last - (perBar - 1) * DAY), date("%b %d", last))
-			bar.amount = amount
-			bar:Show()
-		end
-	end
-	chart.first:SetText(date("%b %d", noon - (days - 1) * DAY))
-	chart.last:SetText(Color("muted", "Today"))
 end
 
 ---------------------------------------------------------------------------
@@ -659,19 +758,20 @@ local function drawHeaders()
 			header = createHeader()
 			headers[i] = header
 		end
+		local left = i == 1 or column.left
 		header:ClearAllPoints()
 		header:SetPoint("BOTTOMLEFT", scrollBox, "TOPLEFT", places[i].x, 0)
 		header:SetSize(places[i].width, HEADER_HEIGHT)
-		header.sortKey = sort and column.sort and column.key or nil
-		header.text:SetJustifyH(i == 1 and "LEFT" or "RIGHT")
-		local sorted = sort and sort.key == column.key
+		header.sortKey = column.sort and column.key or nil
+		header.text:SetJustifyH(left and "LEFT" or "RIGHT")
+		local sorted = sort.key == column.key
 		header.text:SetText(sorted and Color("heading", column.header) or column.header)
-		header.arrow:SetShown(sorted == true)
+		header.arrow:SetShown(sorted)
 		if sorted then
 			if sort.ascending then header.arrow:SetTexCoord(0, 1, 1, 0) else header.arrow:SetTexCoord(0, 1, 0, 1) end
 			header.arrow:ClearAllPoints()
 			local textWidth = header.text:GetStringWidth()
-			if i == 1 then
+			if left then
 				header.arrow:SetPoint("LEFT", header, "LEFT", textWidth + 3, 0)
 			else
 				header.arrow:SetPoint("RIGHT", header, "RIGHT", -textWidth - 3, 0)
@@ -681,34 +781,116 @@ local function drawHeaders()
 	end
 end
 
-local function drawTiles(total, spent)
+-- One of the three totals: its number, a line under it, and what its tooltip says.
+local function setTile(index, value, sub, note)
+	local tile = tiles[index]
+	tile.label = TILE_LABELS[tab][index]
+	tile.name:SetText(tile.label)
+	tile.value:SetText(value)
+	tile.sub:SetText(Color("muted", sub))
+	tile.note = note
+end
+
+-- Crafting's totals: the profit so far, what's waiting to sell, and the profit
+-- if that sells too.
+local function drawTiles(total, parts)
 	local off = ns.Ledger.Off(total)
-	local values = {
-		signedMoney(total.earned),
-		Money(total.money),
-		Color("loss", Money(total.cost)),
-		offText(off),
-		Money(total.pending),
-	}
-	local notes = {
+	setTile(1, signedMoney(total.earned),
+		format("%s sold for %s", BreakUpLargeNumbers(total.sold), Money(total.money)),
 		"Orders when they're done, regular crafts as they sell, each minus its materials."
 			.. (total.unknown > 0 and format("\n\n%s crafts are left out: they were crafted while the Craftonomics panel wasn't showing their recipe, so what their materials cost isn't known.",
-				BreakUpLargeNumbers(total.unknown)) or ""),
-		format("%s items: what sold on the auction house, after its cut, and what orders paid.", BreakUpLargeNumbers(total.sold)),
-		"What the materials in these crafts were worth when you crafted them, whether you bought or gathered them."
-			.. (spent and format("\n\nPurchased in this time: %s. That isn't added on top, or what you buy and then use would count twice.",
-				Money(spent)) or ""),
-		off and (SHOWS_PROCS
-			and format("Leaving procs out, what's done made %s, against a forecast of %s. Procs added %s.",
-				signedMoney(total.actual), signedMoney(total.forecast), procsText(total.procs))
-			or format("What's done made %s, against a forecast of %s.", signedMoney(total.actual),
-				signedMoney(total.forecast)))
-			or "Nothing to compare yet: this fills in as things sell.",
-		format("%s items, at what they were worth when crafted.", BreakUpLargeNumbers(total.unsold)),
-	}
-	for index, tile in ipairs(tiles) do
-		tile.value:SetText(values[index])
-		tile.note = notes[index]
+				BreakUpLargeNumbers(total.unknown)) or "")
+			.. (off and (SHOWS_PROCS
+				and format("\n\nAgainst the forecast: leaving procs out, what's done made %s, forecast %s. Procs added %s.",
+					signedMoney(total.actual), signedMoney(total.forecast), procsText(total.procs))
+				or format("\n\nAgainst the forecast: what's done made %s, forecast %s.", signedMoney(total.actual),
+					signedMoney(total.forecast))) or ""))
+	setTile(2, Money(total.pending),
+		format("%s items, at their price when crafted", BreakUpLargeNumbers(total.unsold)),
+		"What you crafted and haven't sold or used yet, at what it was worth when you crafted it.")
+	setTile(3, signedMoney(total.earned + parts.ifAll), "profit so far, plus what's waiting",
+		"The profit so far, plus what the items still waiting would make if they sell for what they were worth when "
+			.. "you crafted them, minus their materials. Items with no price then aren't counted.")
+end
+
+-- Purchases' totals: what you spent, how that compares with your price source at
+-- the time, and what you made reselling.
+local function drawBoughtTiles(rows)
+	local spent, qty, paid, worth, resale, resold = 0, 0, 0, 0, 0, 0
+	for _, row in ipairs(rows) do
+		spent, qty = spent + row.spent, qty + row.qty
+		paid, worth = paid + row.marketPaid, worth + row.marketWorth
+		resale, resold = resale + (row.resaleProfit or 0), resold + row.resold
+	end
+	setTile(1, spent > 0 and Color("loss", Money(spent)) or Color("muted", "-"),
+		format("%s items bought", BreakUpLargeNumbers(qty)),
+		"What you paid on the auction house and to vendors in this time. It isn't added to what your crafts' "
+			.. "materials cost, or what you buy and then use would count twice.")
+	local against = worth > 0 and (paid - worth) / worth
+	setTile(2, against and Color(against <= 0 and "profit" or "loss", format("%+.0f%%", against * 100)) or Color("muted", "-"),
+		"what you paid, against your price then",
+		"What you paid for the items that had a price at the time, against that price. Under it is the good direction.")
+	setTile(3, resold > 0 and signedMoney(resale) or Color("muted", "-"),
+		format("%s resold", BreakUpLargeNumbers(resold)),
+		"A sale no craft of yours explains counts toward what you bought of that item: this is what those sold for, "
+			.. "minus what you paid for them.")
+end
+
+-- The bar of where the gold put into materials went, with what each part is
+-- under it.
+local function drawFlow(parts)
+	local all = parts.sold + parts.waiting + parts.used + parts.gone
+	flow.title:SetText(all > 0 and format("Where the %s you put into materials went", Money(all))
+		or "Where the gold you put into materials went")
+	flow.none:SetShown(all == 0)
+	local x, legend = 0, {}
+	for index, part in ipairs(FLOW_PARTS) do
+		local amount = parts[part.key]
+		local segment = flow.segments[index]
+		local size = all > 0 and amount / all * flow.barWidth or 0
+		segment:SetShown(size >= 1)
+		if size >= 1 then
+			segment:ClearAllPoints()
+			segment:SetPoint("LEFT", flow.bar, "LEFT", x, 0)
+			segment:SetSize(size, FLOW_BAR_HEIGHT)
+			x = x + size
+		end
+		segment.amount, segment.share = amount, all > 0 and amount / all or 0
+		local color = part.color
+		legend[index] = format("|T%s:10:10:0:0:8:8:0:8:0:8:%d:%d:%d|t %s %s", WHITE, math.floor(color[1] * 255),
+			math.floor(color[2] * 255), math.floor(color[3] * 255), part.name,
+			amount > 0 and Money(amount) or Color("muted", "-"))
+	end
+	flow.legend:SetText(all > 0 and table.concat(legend, "    ") or "")
+end
+
+-- The three things that stand out, each an item with a few words on it. A click
+-- on one shows only that item, opened on its crafts.
+local function drawCards(items)
+	local best, stuck, miss = standouts(items)
+	local picks = { best or false, stuck or false, miss or false }
+	local words = {}
+	if best then
+		words[1] = signedMoney(best.earned) .. Color("muted", format(", %s of %s sold", BreakUpLargeNumbers(best.sold),
+			BreakUpLargeNumbers(best.items)))
+	end
+	if stuck then
+		local days = daysWaiting(stuck)
+		words[2] = Color("muted", days >= 1 and format("%s made, none sold in %d days", BreakUpLargeNumbers(stuck.items), days)
+			or format("%s made, none sold yet", BreakUpLargeNumbers(stuck.items)))
+	end
+	if miss then
+		words[3] = Color("loss", format("%.0f%% under", -ns.Ledger.Off(miss) * 100)) .. Color("muted", " its forecast")
+	end
+	for index, card in ipairs(cards) do
+		local item = picks[index] or nil
+		card.item = item
+		if item then
+			local icon = item.itemID and C_Item.GetItemIconByID(item.itemID)
+			card.text:SetText((icon and format("|T%s:16|t ", icon) or "") .. itemName(item) .. "    " .. words[index])
+		else
+			card.text:SetText(Color("muted", CARDS[index].none))
+		end
 	end
 end
 
@@ -735,52 +917,59 @@ function LedgerWindow.Render()
 		stale = false
 		crafts, other, bought = ns.Ledger.Load()
 	end
-	local list = inView()
-	local total = ns.Ledger.Summarize(list)
-	local purchases = boughtInView()
-	-- Purchases have no profession or type, so with one picked there's no sum.
-	local spent = not (professionFilter or kindFilter) and 0 or nil
-	if spent then
-		for _, entry in ipairs(purchases) do spent = spent + entry.spent end
-	end
-	drawTiles(total, spent)
-	footer:SetText(Color("muted", format("%s crafts, %s items · Prices: %s", BreakUpLargeNumbers(total.crafts),
-		BreakUpLargeNumbers(total.items), ns.Prices.SourceLabel())))
-	local overview = tab == "overview"
-	chart:SetShown(overview)
-	searchBox:SetShown(not overview)
-	scrollBox:SetPoint("TOPLEFT", frame.Inset, "TOPLEFT", INSET_PAD,
-		-(INSET_PAD + HEADER_HEIGHT + (overview and CHART_HEIGHT or 0)))
+	local crafting = tab == "items"
 	PanelTemplates_SetTab(frame, tIndexOf(TAB_KEYS, tab))
 	-- The selected tab's label uses a smaller font: a width measured then would cut
 	-- it short once another tab is picked, so all of them measure again each time.
 	for _, button in ipairs(frame.Tabs) do PanelTemplates_TabResize(button, TAB_PADDING) end
+	-- Purchases has no bar and no things that stand out: its list starts higher.
+	flow:SetShown(crafting)
+	for _, card in ipairs(cards) do card:SetShown(crafting) end
+	frame.Inset:SetPoint("TOPLEFT", SIDE - 4, -(crafting and INSET_TOP or INSET_TOP_BOUGHT))
+
 	local rows
-	if overview then
-		drawChart(list)
-		rows = #list > 0 and overviewRows(list) or {}
-		if not (characterFilter or professionFilter or kindFilter) then
+	if crafting then
+		local list = inView()
+		local total = ns.Ledger.Summarize(list)
+		local parts = flowOf(list)
+		local items = itemsOf(list)
+		drawTiles(total, parts)
+		drawFlow(parts)
+		drawCards(items)
+		sortRows(items)
+		rows = withCrafts(items)
+		-- The months before the days kept in full have nothing to filter them by.
+		if not (characterFilter or professionFilter or kindFilter) and searchText() == "" then
 			local months = monthRows()
 			if #months > 0 then
 				addHeading(rows, "More than 90 days ago, by month")
 				addAll(rows, months)
 			end
 		end
-	elseif tab == "crafts" then
-		rows = ns.Ledger.Merge(list)
-		sortRows(rows)
-	elseif tab == "items" then
-		rows = ns.Ledger.Items(list)
-		sortRows(rows)
+		footer:SetText(Color("muted", format("%s crafts, %s items · Prices: %s", BreakUpLargeNumbers(total.crafts),
+			BreakUpLargeNumbers(total.items), ns.Prices.SourceLabel())))
 	else
+		local purchases = boughtInView()
 		rows = ns.Ledger.BoughtItems(purchases)
+		drawBoughtTiles(rows)
 		sortRows(rows)
+		footer:SetText(Color("muted", format("%s purchases · Prices: %s", BreakUpLargeNumbers(#purchases),
+			ns.Prices.SourceLabel())))
 	end
 	-- Nothing recorded yet, or nothing the filters leave.
-	local any = #(tab == "bought" and (bought or {}) or crafts or {}) > 0
-	empty:SetText(any and NO_MATCH or (tab == "bought" and NO_BOUGHT or NO_CRAFTS))
+	local any = #(crafting and (crafts or {}) or bought or {}) > 0
+	empty:SetText(any and NO_MATCH or (crafting and NO_CRAFTS or NO_BOUGHT))
 	empty:SetShown(#rows == 0)
-	for index, row in ipairs(rows) do row.stripe = index % 2 == 0 and not row.heading end
+	local striped = 0
+	for _, row in ipairs(rows) do
+		-- An open item's crafts have their own shade, and don't count for the stripes.
+		if row.heading or row.detail then
+			row.stripe = false
+		else
+			striped = striped + 1
+			row.stripe = striped % 2 == 0
+		end
+	end
 	scrollBox:SetDataProvider(CreateDataProvider(rows), ScrollBoxConstants.RetainScrollPosition)
 	drawHeaders()
 	rangeDropdown:GenerateMenu()
@@ -856,6 +1045,42 @@ StaticPopupDialogs.CRAFTONOMICS_CLEAR_LEDGER = {
 	whileDead = true,
 	hideOnEscape = true,
 }
+
+-- Asks first, saying how many it found (see checkOwned).
+StaticPopupDialogs.CRAFTONOMICS_CHECK_LEDGER = {
+	text = "%s",
+	button1 = "Write off",
+	button2 = CANCEL,
+	OnAccept = function(_, list) ns.Ledger.WriteOff(list) end,
+	timeout = 0,
+	whileDead = true,
+	hideOnEscape = true,
+}
+
+-- The Check what I have button: finds what's on record as left of this
+-- character's crafts but isn't with it any more, and offers to write it off.
+local function checkOwned()
+	local list, total = ns.Ledger.Missing()
+	if total == 0 then
+		ns.Shopping.Say("Ledger: everything on record as left of this character's crafts is still with it.")
+		return
+	end
+	local name = ns.Ranks.CharacterName(select(2, ns.Ranks.Me()) or "?")
+	StaticPopup_Show("CRAFTONOMICS_CHECK_LEDGER", format("%s items of %s kinds are on record as left, but %s doesn't "
+		.. "have them: not in bags or bank, and not put on the auction house these last days.\n\nWrite them off? They "
+		.. "leave Waiting to sell, and no profit or loss is counted for them. An item's right-click menu takes its "
+		.. "write-offs back.", BreakUpLargeNumbers(total), BreakUpLargeNumbers(#list), name), nil, list)
+end
+
+local function showCheckTip(self)
+	GameTooltip:SetOwner(self, "ANCHOR_TOP")
+	GameTooltip:SetText("Check what I have")
+	GameTooltip:AddLine("Compares what's on record as left of this character's crafts with what it really has, in "
+		.. "bags and bank and on the auction house, and offers to write off the rest: what you used, sold to a "
+		.. "vendor, mailed or traded before the Ledger kept track of that.", 1, 1, 1, true)
+	GameTooltip:AddLine("Only this character's crafts are checked: log in on each crafter for theirs.", 0.6, 0.6, 0.6, true)
+	GameTooltip:Show()
+end
 
 local function showExport()
 	if not exportFrame then
@@ -989,33 +1214,41 @@ local function createTabs()
 	PanelTemplates_SetNumTabs(frame, #TAB_LABELS)
 end
 
+-- A dark box with a gold line along its top, as the totals and the things that
+-- stand out have.
+local function addBox(region)
+	local back = region:CreateTexture(nil, "BACKGROUND")
+	back:SetAllPoints()
+	back:SetColorTexture(0, 0, 0, 0.45)
+	local edge = region:CreateTexture(nil, "ARTWORK")
+	edge:SetHeight(2)
+	edge:SetPoint("TOPLEFT")
+	edge:SetPoint("TOPRIGHT")
+	edge:SetColorTexture(1, 0.82, 0, 0.5)
+end
+
 local function createTiles()
-	local count = #TILE_LABELS
-	local width = (WIDTH - 2 * SIDE - (count - 1) * TILE_GAP) / count
-	for index, label in ipairs(TILE_LABELS) do
+	for index = 1, 3 do
 		local tile = CreateFrame("Frame", nil, frame)
-		tile:SetSize(width, TILE_HEIGHT)
-		tile:SetPoint("TOPLEFT", SIDE + (index - 1) * (width + TILE_GAP), -TILES_TOP)
-		local back = tile:CreateTexture(nil, "BACKGROUND")
-		back:SetAllPoints()
-		back:SetColorTexture(0, 0, 0, 0.45)
-		local edge = tile:CreateTexture(nil, "ARTWORK")
-		edge:SetHeight(2)
-		edge:SetPoint("TOPLEFT")
-		edge:SetPoint("TOPRIGHT")
-		edge:SetColorTexture(1, 0.82, 0, 0.5)
-		local name = tile:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-		name:SetPoint("TOPLEFT", 10, -9)
-		name:SetText(label)
+		tile:SetSize(TILE_WIDTH, TILE_HEIGHT)
+		tile:SetPoint("TOPLEFT", SIDE + (index - 1) * (TILE_WIDTH + TILE_GAP), -TILES_TOP)
+		addBox(tile)
+		tile.name = tile:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+		tile.name:SetPoint("TOPLEFT", 10, -7)
 		tile.value = tile:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
-		tile.value:SetPoint("BOTTOMLEFT", 10, 8)
-		tile.value:SetPoint("BOTTOMRIGHT", -6, 8)
+		tile.value:SetPoint("TOPLEFT", 10, -23)
+		tile.value:SetPoint("RIGHT", -6, 0)
 		tile.value:SetJustifyH("LEFT")
 		tile.value:SetWordWrap(false)
 		tile.value:SetTextColor(1, 1, 1)
+		tile.sub = tile:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
+		tile.sub:SetPoint("BOTTOMLEFT", 10, 6)
+		tile.sub:SetPoint("RIGHT", -6, 0)
+		tile.sub:SetJustifyH("LEFT")
+		tile.sub:SetWordWrap(false)
 		tile:SetScript("OnEnter", function(self)
 			GameTooltip:SetOwner(self, "ANCHOR_BOTTOM")
-			GameTooltip:SetText(label)
+			GameTooltip:SetText(self.label)
 			GameTooltip:AddLine(self.note, 1, 1, 1, true)
 			GameTooltip:Show()
 		end)
@@ -1024,26 +1257,83 @@ local function createTiles()
 	end
 end
 
-local function createChart()
-	chart = CreateFrame("Frame", nil, frame)
-	chart:SetPoint("TOPLEFT", frame.Inset, "TOPLEFT", INSET_PAD, -INSET_PAD)
-	chart:SetPoint("TOPRIGHT", frame.Inset, "TOPRIGHT", -INSET_PAD, -INSET_PAD)
-	chart:SetHeight(CHART_HEIGHT - 8)
-	local back = chart:CreateTexture(nil, "BACKGROUND")
-	back:SetAllPoints()
-	back:SetColorTexture(0, 0, 0, 0.3)
-	chart.zero = chart:CreateTexture(nil, "BORDER")
-	chart.zero:SetColorTexture(1, 1, 1, 0.15)
-	chart.zero:SetHeight(1)
-	chart.top = chart:CreateFontString(nil, "OVERLAY", "GameFontDisable")
-	chart.top:SetPoint("TOPLEFT", 6, -4)
-	chart.first = chart:CreateFontString(nil, "OVERLAY", "GameFontDisable")
-	chart.first:SetPoint("BOTTOMLEFT", 6, 3)
-	chart.last = chart:CreateFontString(nil, "OVERLAY", "GameFontDisable")
-	chart.last:SetPoint("BOTTOMRIGHT", -6, 3)
-	local label = chart:CreateFontString(nil, "OVERLAY", "GameFontDisable")
-	label:SetPoint("BOTTOM", 0, 3)
-	label:SetText("Profit so far, by the day it was crafted")
+-- Right of the totals: the bar of where the gold put into materials went.
+local function createFlow()
+	local left = SIDE + 3 * (TILE_WIDTH + TILE_GAP)
+	flow = CreateFrame("Frame", nil, frame)
+	flow:SetPoint("TOPLEFT", left, -TILES_TOP)
+	flow:SetSize(WIDTH - SIDE - left, TILE_HEIGHT)
+	addBox(flow)
+	flow.title = flow:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+	flow.title:SetPoint("TOPLEFT", 10, -7)
+	flow.barWidth = WIDTH - SIDE - left - 20
+	flow.bar = CreateFrame("Frame", nil, flow)
+	flow.bar:SetPoint("TOPLEFT", 10, -27)
+	flow.bar:SetSize(flow.barWidth, FLOW_BAR_HEIGHT)
+	local ground = flow.bar:CreateTexture(nil, "BACKGROUND")
+	ground:SetAllPoints()
+	ground:SetColorTexture(1, 1, 1, 0.06)
+	flow.none = flow:CreateFontString(nil, "OVERLAY", "GameFontDisable")
+	flow.none:SetPoint("BOTTOMLEFT", 10, 6)
+	flow.none:SetText("Nothing crafted in this time.")
+	flow.legend = flow:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
+	flow.legend:SetPoint("BOTTOMLEFT", 10, 6)
+	flow.segments = {}
+	for index, part in ipairs(FLOW_PARTS) do
+		local segment = CreateFrame("Frame", nil, flow.bar)
+		segment:EnableMouse(true)
+		local fill = segment:CreateTexture(nil, "ARTWORK")
+		fill:SetAllPoints()
+		fill:SetColorTexture(part.color[1], part.color[2], part.color[3], 0.95)
+		segment:SetScript("OnEnter", function(self)
+			GameTooltip:SetOwner(self, "ANCHOR_BOTTOM")
+			GameTooltip:SetText(part.name)
+			GameTooltip:AddLine(format("%s of the gold you put into materials, %.0f%% of it.", Money(self.amount),
+				self.share * 100), 1, 1, 1, true)
+			GameTooltip:AddLine(part.tip, 0.6, 0.6, 0.6, true)
+			GameTooltip:Show()
+		end)
+		segment:SetScript("OnLeave", GameTooltip_Hide)
+		flow.segments[index] = segment
+	end
+end
+
+-- Under the totals: the three things that stand out.
+local function createCards()
+	local width = (WIDTH - 2 * SIDE - 2 * TILE_GAP) / 3
+	for index, about in ipairs(CARDS) do
+		local card = CreateFrame("Button", nil, frame)
+		card:SetSize(width, CARD_HEIGHT)
+		card:SetPoint("TOPLEFT", SIDE + (index - 1) * (width + TILE_GAP), -CARDS_TOP)
+		addBox(card)
+		local highlight = card:CreateTexture(nil, "HIGHLIGHT")
+		highlight:SetAllPoints()
+		highlight:SetColorTexture(1, 1, 1, 0.06)
+		local title = card:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
+		title:SetPoint("TOPLEFT", 10, -7)
+		title:SetText(Color(about.color, about.title))
+		card.text = card:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
+		card.text:SetPoint("BOTTOMLEFT", 10, 7)
+		card.text:SetPoint("RIGHT", -6, 0)
+		card.text:SetJustifyH("LEFT")
+		card.text:SetWordWrap(false)
+		card:SetScript("OnClick", function(self)
+			local item = self.item
+			if not item then return end
+			expanded[item.key] = true
+			searchBox:SetText(nameOf(item))
+		end)
+		card:SetScript("OnEnter", function(self)
+			if not self.item then return end
+			GameTooltip:SetOwner(self, "ANCHOR_BOTTOM")
+			itemTooltip(self.item)
+			GameTooltip:AddLine(" ")
+			GameTooltip:AddLine("Click: show only this item, with its crafts", 0.6, 0.6, 0.6)
+			GameTooltip:Show()
+		end)
+		card:SetScript("OnLeave", GameTooltip_Hide)
+		cards[index] = card
+	end
 end
 
 local function create()
@@ -1084,9 +1374,11 @@ local function create()
 
 	createTabs()
 	createTiles()
-	createChart()
+	createFlow()
+	createCards()
 
 	scrollBox = CreateFrame("Frame", nil, frame, "WowScrollBoxList")
+	scrollBox:SetPoint("TOPLEFT", frame.Inset, "TOPLEFT", INSET_PAD, -(INSET_PAD + HEADER_HEIGHT))
 	scrollBox:SetPoint("BOTTOMRIGHT", frame.Inset, "BOTTOMRIGHT", -SCROLLBAR_ROOM, INSET_PAD)
 	local scrollBar = CreateFrame("EventFrame", nil, frame, "MinimalScrollBar")
 	scrollBar:SetPoint("TOPLEFT", scrollBox, "TOPRIGHT", 6, 0)
@@ -1119,6 +1411,14 @@ local function create()
 	clear:SetPoint("RIGHT", export, "LEFT", -6, 0)
 	clear:SetScript("OnClick", function() StaticPopup_Show("CRAFTONOMICS_CLEAR_LEDGER") end)
 
+	local check = CreateFrame("Button", nil, frame, "UIPanelButtonTemplate")
+	check:SetText("Check what I have")
+	check:SetSize(check:GetFontString():GetUnboundedStringWidth() + 24, 22)
+	check:SetPoint("RIGHT", clear, "LEFT", -6, 0)
+	check:SetScript("OnClick", checkOwned)
+	check:SetScript("OnEnter", showCheckTip)
+	check:SetScript("OnLeave", GameTooltip_Hide)
+
 	footer = frame:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
 	footer:SetPoint("BOTTOMLEFT", SIDE + 4, 10)
 
@@ -1144,6 +1444,10 @@ end
 function LedgerWindow.Show()
 	if not frame then create() end
 	crafts, other, bought = ns.Ledger.Load()
+	-- It opens on the character you're on, when it has anything on record;
+	-- All characters is one pick away.
+	local _, mine = ns.Ranks.Me()
+	characterFilter = mine and tContains(distinct("character"), mine) and mine or nil
 	frame:Show()
 	LedgerWindow.Render()
 end

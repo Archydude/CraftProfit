@@ -1260,6 +1260,45 @@ local function drawDemand(output)
 	end
 end
 
+-- From this share of the profit, the auction house deposit is called high.
+local HIGH_DEPOSIT = 0.25
+-- With TSM's sale rate for the item, a high deposit only matters under this: an
+-- item that mostly sells gives its deposit back.
+local LOW_SALE_RATE = 0.60
+
+-- A warning when the auction house deposit for what the crafts shown make is high
+-- against their profit, and the item often doesn't sell: you only get a deposit
+-- back when the auction sells. For the duration the Sell tab is on, or the longest
+-- when none was picked. Without a sale rate to go by (no TSM, or it has none for
+-- the item), a high deposit is enough.
+local function drawDeposit(model)
+	local output = model.output
+	local profit = (model.procs and model.procs.total > 0 and model.expected or model.total or 0) * count
+	if not (output and output.itemID and output.sale) or profit <= 0 then return end
+	local durations = ns.AUCTION_DURATIONS
+	local duration = durations[ns.db.sellDuration] and ns.db.sellDuration or #durations
+	local qty = math.max(math.floor(output.made * count + 0.5), 1)
+	local deposit = ns.Prices.Deposit(output.itemID, duration, qty)
+	if not deposit or deposit < HIGH_DEPOSIT * profit then return end
+	local rate = ns.Prices.HasSaleRate() and ns.Prices.SaleRate(output.link) or nil
+	if rate and rate >= LOW_SALE_RATE then return end
+	local share = math.floor(deposit / profit * 100 + 0.5)
+	addRow(Color("missing", "High AH deposit ") .. Color("muted", format("(%s)", durations[duration])),
+		Color("missing", Money(deposit)), nil, nop, function(tip)
+			tip:SetText("High AH deposit")
+			tip:AddLine(format("Putting what %s make on the auction house for %s takes a deposit of %s. That's %d%% of "
+				.. "the profit.", craftsText(), durations[duration], Money(deposit), share), 1, 1, 1, true)
+			tip:AddLine("You get it back when the auction sells, and lose it when it runs out unsold.", 1, 1, 1, true)
+			if rate then
+				tip:AddLine("TSM's sale rate for it: " .. ns.Format.SaleRate(rate), 1, 1, 1)
+				tip:AddLine(format("Shown from %d%% of the profit, when the sale rate is under %d%%.", HIGH_DEPOSIT * 100,
+					LOW_SALE_RATE * 100), 0.53, 0.53, 0.53, true)
+			else
+				tip:AddLine(format("Shown from %d%% of the profit.", HIGH_DEPOSIT * 100), 0.53, 0.53, 0.53)
+			end
+		end)
+end
+
 -- WoW Forever: what a skill point costs with this recipe, with its color and chance.
 -- Not for a grey recipe: it gives no skill-ups, so there's nothing to say.
 local function drawSkillup(model)
@@ -1294,6 +1333,7 @@ local function drawCraft(model)
 			addRow(sells, Color("warning", "no price"))
 		end
 		drawDemand(output)
+		drawDeposit(model)
 		drawSkillup(model)
 		drawConcentration(model)
 	end

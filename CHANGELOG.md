@@ -1,5 +1,14 @@
 # Changelog
 
+## 5.5.0
+- **A new Ledger:** the Ledger window is rebuilt to show at a glance whether your crafting pays. Three totals at the top: **Profit so far**, **Waiting to sell** and **If it all sells**. A bar shows where the gold you put into materials went: sold, waiting to sell, used in your own crafts, or gone. Three highlights name your **best earner**, what's **not selling**, and what sold **furthest under its forecast**; click one to see only that item.
+- **One row per item:** how many you made and sold, how many are gone and how many are left, the profit, and **How it's going** in a few words, like **Selling well**, **Not selling for 5 days** or **28% under its forecast**. Click an item to open it on its crafts. The tabs are now **Crafting** and **Purchases**. Hovering an item shows the game's own tooltip of it, followed by the numbers the old Performance tab had.
+- **The Ledger knows where your crafts go:** something you crafted and then sold to a vendor counts as sold, for what the vendor paid. What you used, destroyed, mailed, traded or put in the guild bank counts as **Gone**, with no profit or loss, and no longer waits to sell forever.
+- **Check what I have:** a new button in the Ledger compares what's on record as left of your character's crafts with what it really has, and offers to write off the rest. Right-click an item to write off what's left of just that one, or to take its write-offs back. Run the check on each of your crafters.
+- The Ledger opens on the character you're on. **All characters** is in the dropdown.
+- **High AH deposit warning:** when the auction house deposit for what you're crafting is 25% or more of the profit, and with TSM the item's sale rate is under 60%, an orange **High AH deposit** line on the panel shows it. You only get a deposit back when the auction sells.
+- Removed from the Ledger: the daily chart and the totals by type, profession and character. The dropdowns at the top still filter by those.
+
 ## 5.4.0
 - **Craft button on the panel:** under your materials, at the right of the Shopping list button, a **Craft** button starts the crafts for the number in the **Crafts** box, as the game's Create button does. It says how many, like **Craft 5**, and when you can't craft it's greyed out and its tooltip says why.
 - **Have and need on materials:** each material now starts with how many you have of how many the crafts take, like **2/5**, in green when that's enough. A material you're short of is red, on a row tinted red.

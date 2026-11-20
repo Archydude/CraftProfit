@@ -93,6 +93,7 @@ events:SetScript("OnEvent", function(self, event, ...)
 		ns.SavedPrices.Init()
 		ns.Sales.Init()
 		ns.Ledger.Init()
+		if ns.Gone then ns.Gone.Init() end -- a file added while the game runs only loads after a restart
 		ns.Procs.Init()
 		ns.Minimap.Init()
 		ns.Options.Create()

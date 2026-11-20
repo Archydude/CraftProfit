@@ -36,13 +36,13 @@ Craftonomics, formerly **Craft Profit**, answers in gold: **profit or loss?** A 
 - **Expected profit** on every craft, procs included
 - **Best crafts**: every recipe ranked by profit, across all your characters
 - **All recipes**: every profession's recipes, as a list or a **trend heatmap**
-- **Ledger**: your crafts, sales, orders and purchases against the forecast
+- **Ledger**: your profit so far, what's waiting to sell and how each item is doing, with what you vendored, used or gave away counted
 - **Auction house window**: shopping list, selling, cancelling undercut auctions
 - **No price addon needed**: its own price scan, or **TradeSkillMaster** and **Auctionator** prices
 - **Patron orders** priced and crafted right in Blizzard's Patron tab
 
 ### Crafts and orders
-The sale price at the rank you'll get, minus the 5% cut and your materials. On orders: the commission, minus the materials **you** supply, plus sellable rewards. With concentration on, the **concentration strategy** picks the materials: cheapest, least concentration or most **gold per point**. The **Crafts** box shows it for any number of crafts and counts down as you craft. Materials show what you **have** of what you need, and a **Craft** button crafts from the panel.
+The sale price at the rank you'll get, minus the 5% cut and your materials. On orders: the commission, minus the materials **you** supply, plus sellable rewards. With concentration on, the **concentration strategy** picks the materials: cheapest, least concentration or most **gold per point**. The **Crafts** box shows it for any number of crafts. A warning shows when the **AH deposit** is high on an item that sells poorly. Materials show what you **have** of what you need, and a **Craft** button crafts from the panel.
 
 ### What should I craft?
 **Best crafts** lists every recipe you know, most profitable first. With TSM, **sale rate** and **trend** columns show what really sells.
@@ -53,13 +53,13 @@ The sale price at the rank you'll get, minus the 5% cut and your materials. On o
 **Shopping list**: click a material to see it with the amount to buy. **Sell**: your bags with a price and TSM sale rate on every item. **My auctions**: see which are undercut and cancel them.
 
 ### Patron orders
-Blizzard's Patron tab shows each order's **expected profit**, **rewards** and missing **materials**. **Next order** works through them.
+Blizzard's Patron tab shows each order's **expected profit**, **rewards** and missing **materials**.
 
 ### WoW Forever
-Best crafts shows what a **skill point** costs with each recipe. **Craft myself** prices materials you can make at what crafting them costs, and **Cheapest way** crafts or buys each, whichever is cheaper. Click such a material to open its recipe, then **Back** to return.
+Best crafts shows what a **skill point** costs with each recipe. **Craft myself** prices materials you can make at what crafting them costs, and **Cheapest way** crafts or buys each, whichever is cheaper.
 
 ### Item tooltips
-Vendor prices, the auction price and the **AH deposit**, plus with TSM the **sale rate**, **trend** and whether the lowest auction is **cheap** or **expensive** against the market value. Hold **Shift** on a stack for the whole stack's amounts.
+Vendor prices, the auction price and the **AH deposit**, plus with TSM the **sale rate**, **trend** and whether the lowest auction is **cheap** or **expensive** against the market value.
 
 ### Good to know
 - **TSM prices for alts** that keep TSM turned off.
@@ -77,18 +77,27 @@ This addon was made with AI.
 ## B. Upload File form
 
 **Files:** two, each uploaded with only its own game versions (why is in [UPLOADING.md](../UPLOADING.md)). The display name, release type and changelog are the same for both.
-- `dist\Craftonomics-5.4.0-retail.zip`: Retail `12.1.5`
-- `dist\Craftonomics-5.4.0-forever.zip`: WoW Forever `1.60.1`
+- `dist\Craftonomics-5.5.0-retail.zip`: Retail `12.1.5`
+- `dist\Craftonomics-5.5.0-forever.zip`: WoW Forever `1.60.1`
 
 **Display name**
 ```
-Craftonomics 5.4.0
+Craftonomics 5.5.0
 ```
 
 **Release type:** `Release`
 
 **Changelog** (paste only the newest part; paste older parts too if they never went up)
 ```markdown
+5.5.0
+- **A new Ledger:** the Ledger window is rebuilt to show at a glance whether your crafting pays. Three totals at the top: **Profit so far**, **Waiting to sell** and **If it all sells**. A bar shows where the gold you put into materials went: sold, waiting to sell, used in your own crafts, or gone. Three highlights name your **best earner**, what's **not selling**, and what sold **furthest under its forecast**; click one to see only that item.
+- **One row per item:** how many you made and sold, how many are gone and how many are left, the profit, and **How it's going** in a few words, like **Selling well**, **Not selling for 5 days** or **28% under its forecast**. Click an item to open it on its crafts. The tabs are now **Crafting** and **Purchases**. Hovering an item shows the game's own tooltip of it, followed by the numbers the old Performance tab had.
+- **The Ledger knows where your crafts go:** something you crafted and then sold to a vendor counts as sold, for what the vendor paid. What you used, destroyed, mailed, traded or put in the guild bank counts as **Gone**, with no profit or loss, and no longer waits to sell forever.
+- **Check what I have:** a new button in the Ledger compares what's on record as left of your character's crafts with what it really has, and offers to write off the rest. Right-click an item to write off what's left of just that one, or to take its write-offs back. Run the check on each of your crafters.
+- The Ledger opens on the character you're on. **All characters** is in the dropdown.
+- **High AH deposit warning:** when the auction house deposit for what you're crafting is 25% or more of the profit, and with TSM the item's sale rate is under 60%, an orange **High AH deposit** line on the panel shows it. You only get a deposit back when the auction sells.
+- Removed from the Ledger: the daily chart and the totals by type, profession and character. The dropdowns at the top still filter by those.
+
 5.4.0
 - **Craft button on the panel:** under your materials, at the right of the Shopping list button, a **Craft** button starts the crafts for the number in the **Crafts** box, as the game's Create button does. It says how many, like **Craft 5**, and when you can't craft it's greyed out and its tooltip says why.
 - **Have and need on materials:** each material now starts with how many you have of how many the crafts take, like **2/5**, in green when that's enough. A material you're short of is red, on a row tinted red.

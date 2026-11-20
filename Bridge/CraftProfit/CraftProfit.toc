@@ -2,7 +2,7 @@
 ## Title: Craftonomics: old Craft Profit settings
 ## Notes: Craft Profit is now called Craftonomics. This carries your Craft Profit settings and history over to it, and has nothing else in it. It goes away in a later update.
 ## Author: Archdude
-## Version: 5.4.0
+## Version: 5.5.0
 ## Group: Craftonomics
 ## SavedVariables: CraftProfitDB, CraftProfitWhatsNew
 ## SavedVariablesPerCharacter: CraftProfitCharDB

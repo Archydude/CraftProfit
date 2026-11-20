@@ -311,6 +311,8 @@ end
 
 local function onCraftResult(data)
 	if not data then return end
+	-- What this craft took from your bags is its materials, not something used up.
+	if ns.Gone then ns.Gone.Crafted() end
 	-- One fewer to go in the panel's Crafts box, when it's for this recipe.
 	ns.Panel.Crafted(started and started.recipeID)
 	local panel = ns.Panel.Frame()

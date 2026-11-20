@@ -15,6 +15,12 @@ local SEP = "\t"
 local PRICE_SLACK = 1      -- copper a sale's price may differ from what was posted
 local CRAFT_SLACK = 3600   -- seconds a sale may seem to come before its craft (a mail's time is rough)
 local MONEY_FLOOR = 1      -- rounding of the amounts saved, in copper
+local POST_DAYS = 3        -- an auction posted longer ago than this isn't on the auction house any more
+-- Why a craft of yours is gone without a sale, and which of a craft's counts that
+-- adds to: used yourself or destroyed (consumed), mailed, traded or put in the guild
+-- bank (given), or written off in the Ledger window (written). One sold to a vendor
+-- ("vendor") counts as sold instead.
+local GONE_BUCKETS = { used = "consumed", destroyed = "consumed", given = "given", written = "written" }
 
 -- Kinds of craft. "craft" sells later; an order counts as sold, for what it paid,
 -- when it's done.
@@ -42,6 +48,9 @@ Ledger.KIND_ORDER = { "craft", "patron", "personal", "guild", "public" }
 --             craft they went into counted them at what they cost to make
 --     bought: time, character, itemID, rank, qty, gold spent, market price of one
 --             then, "auction" or "vendor", item name
+--     gone:   time, character, itemID, qty, why (see GONE_BUCKETS, or "vendor"),
+--             gold a vendor paid, rank (0 for any): your own crafts that left you
+--             some other way than an auction or a craft
 --   months = "2026-10" -> { crafts, items, cost, profit, spent }, for days past KEEP_DAYS,
 --   seeded = the sales from before the ledger are in,
 -- }
@@ -128,9 +137,9 @@ local function parseBought(names, fields)
 end
 
 -- Everything in the saved days, unpacked and oldest first: crafts, sales, posts,
--- used, bought.
+-- used, bought, gone.
 function Ledger.Unpack(db)
-	local crafts, sales, posts, used, bought = {}, {}, {}, {}, {}
+	local crafts, sales, posts, used, bought, gone = {}, {}, {}, {}, {}, {}
 	local names = db.names
 	for _, day in pairs(db.days) do
 		eachLine(day.crafts, function(fields)
@@ -151,6 +160,10 @@ function Ledger.Unpack(db)
 				atCost = fields[4] == "1" }
 		end)
 		eachLine(day.bought, function(fields) bought[#bought + 1] = parseBought(names, fields) end)
+		eachLine(day.gone, function(fields)
+			gone[#gone + 1] = { t = tonumber(fields[1]), character = names[tonumber(fields[2])], itemID = tonumber(fields[3]),
+				qty = tonumber(fields[4]), reason = fields[5], money = tonumber(fields[6]) or 0, rank = tonumber(fields[7]) or 0 }
+		end)
 	end
 	local function byTime(a, b) return a.t < b.t end
 	table.sort(crafts, byTime)
@@ -158,7 +171,8 @@ function Ledger.Unpack(db)
 	table.sort(posts, byTime)
 	table.sort(used, byTime)
 	table.sort(bought, byTime)
-	return crafts, sales, posts, used, bought
+	table.sort(gone, byTime)
+	return crafts, sales, posts, used, bought, gone
 end
 
 ---------------------------------------------------------------------------
@@ -208,10 +222,13 @@ end
 -- Spreads sales and materials used over the crafts, oldest first. Each regular
 -- craft with an item gets left, sold, money (after the cut), used and soldDays.
 -- A sale no craft accounts for counts toward what you bought of it (resold and
--- resoldMoney on each purchase). Returns the crafts, oldest first, what sold with
--- neither on record ({ qty, money }), and the purchases, oldest first.
+-- resoldMoney on each purchase). What left you some other way comes off what's
+-- left too: sold to a vendor counts as sold (vendored), the rest as consumed, given
+-- or written (see GONE_BUCKETS), which add up to gone. Returns the crafts, oldest
+-- first, what sold with neither on record ({ qty, money }), the purchases, oldest
+-- first, and the posts, each with what's left of it unsold.
 function Ledger.Analyze(db)
-	local crafts, sales, posts, used, bought = Ledger.Unpack(db)
+	local crafts, sales, posts, used, bought, gone = Ledger.Unpack(db)
 	local byItem, byName, boughtByName = {}, {}, {}
 	for _, entry in ipairs(bought) do
 		entry.left, entry.resold, entry.resoldMoney = entry.qty, 0, 0
@@ -225,6 +242,7 @@ function Ledger.Analyze(db)
 	for _, craft in ipairs(crafts) do
 		craft.left, craft.sold, craft.money, craft.used, craft.soldDays = 0, 0, 0, 0, 0
 		craft.usedAtCost = 0
+		craft.vendored, craft.consumed, craft.given, craft.written = 0, 0, 0, 0
 		if craft.kind == "craft" and craft.itemID then
 			craft.left = craft.qty
 			local list = byItem[craft.itemID]
@@ -253,6 +271,10 @@ function Ledger.Analyze(db)
 		entry.isUsed = true
 		events[#events + 1] = entry
 	end
+	for _, entry in ipairs(gone) do
+		entry.isGone = true
+		events[#events + 1] = entry
+	end
 	table.sort(events, function(a, b) return a.t < b.t end)
 
 	local other = { qty = 0, money = 0 }
@@ -261,6 +283,20 @@ function Ledger.Analyze(db)
 			fromOldest(byItem[event.itemID], event.t, nil, event.qty, function(craft, amount)
 				craft.used = craft.used + amount
 				if event.atCost then craft.usedAtCost = craft.usedAtCost + amount end
+			end)
+		elseif event.isGone then
+			local each = event.money / event.qty
+			local bucket = GONE_BUCKETS[event.reason] or "written"
+			fromOldest(byItem[event.itemID], event.t + CRAFT_SLACK, event.rank, event.qty, function(craft, amount)
+				if event.reason == "vendor" then
+					-- Sold, for what the vendor paid.
+					craft.sold = craft.sold + amount
+					craft.vendored = craft.vendored + amount
+					craft.money = craft.money + each * amount
+					craft.soldDays = craft.soldDays + amount * math.max(event.t - craft.t, 0) / DAY
+				else
+					craft[bucket] = craft[bucket] + amount
+				end
 			end)
 		else
 			local post = findPost(posts, event)
@@ -290,6 +326,7 @@ function Ledger.Analyze(db)
 	-- out and so does what it's compared with. Older crafts only have the forecast
 	-- with procs, and hasProcs false.
 	for _, craft in ipairs(crafts) do
+		craft.gone = craft.consumed + craft.given + craft.written
 		craft.hasProcs = craft.plain ~= nil
 		local forecast, bonus = craft.plain or craft.forecast, craft.bonus or 0
 		if craft.kind == "craft" and craft.itemID then
@@ -334,7 +371,7 @@ function Ledger.Analyze(db)
 		-- the profit, not negative spending.
 		craft.cost = math.max(craft.cost, 0)
 	end
-	return crafts, other, bought
+	return crafts, other, bought, posts
 end
 
 -- One row per item and rank in `bought`: { itemID, rank, name, source, qty, spent,
@@ -374,16 +411,23 @@ function Ledger.BoughtItems(bought)
 end
 
 -- Totals for a list of crafts: { crafts, items, cost, earned, pending, unsold,
--- sold, money, expected, procs, actual, forecast, unknown }. Expected is the profit
+-- sold, money, expected, procs, actual, forecast, unknown, used, and gone with its
+-- parts vendored, consumed, given and written }. Expected is the profit
 -- forecast for all of them, procs what they really added; actual and forecast only
 -- count what's done, without procs, so they can be compared. Unknown is how many
 -- have no materials cost on record, and so no profit.
 function Ledger.Summarize(crafts)
 	local total = { crafts = 0, items = 0, cost = 0, earned = 0, pending = 0, unsold = 0, sold = 0, money = 0,
-		expected = 0, procs = 0, actual = 0, forecast = 0, unknown = 0, used = 0 }
+		expected = 0, procs = 0, actual = 0, forecast = 0, unknown = 0, used = 0,
+		gone = 0, vendored = 0, consumed = 0, given = 0, written = 0 }
 	for _, craft in ipairs(crafts) do
 		total.crafts = total.crafts + 1
 		total.used = total.used + craft.used
+		total.gone = total.gone + craft.gone
+		total.vendored = total.vendored + craft.vendored
+		total.consumed = total.consumed + craft.consumed
+		total.given = total.given + craft.given
+		total.written = total.written + craft.written
 		if craft.noCost then total.unknown = total.unknown + 1 end
 		total.items = total.items + craft.qty
 		total.cost = total.cost + craft.cost
@@ -428,7 +472,7 @@ function Ledger.Merge(crafts)
 			row.count = row.count + 1
 			row.unit = row.unit + craft.unit * craft.qty
 			for _, field in ipairs({ "qty", "cost", "forecast", "profit", "left", "sold", "money", "used", "usedAtCost", "soldDays", "earned", "pending",
-				"expected", "procGain" }) do
+				"expected", "procGain", "gone", "vendored", "consumed", "given", "written" }) do
 				row[field] = (row[field] or 0) + (craft[field] or 0)
 			end
 		end
@@ -443,7 +487,7 @@ end
 -- what's done; unitProcs only from crafts that saved it),
 -- unitPrice (the sale price or an order's pay expected), unitCost and unitSold, days
 -- (to sell, for regular crafts), and margin (the share of what sold that was profit,
--- 0.26 is 26%) }.
+-- 0.26 is 26%), and made = its crafts }.
 function Ledger.Items(crafts)
 	local groups, list = {}, {}
 	for _, craft in ipairs(crafts) do
@@ -497,7 +541,6 @@ function Ledger.Items(crafts)
 			group.unitPrice = soldForecast / total.sold
 			if costedMoney > 0 then group.margin = (costedMoney - soldCost) / costedMoney end
 		end
-		group.made = nil
 	end
 	return list
 end
@@ -603,6 +646,77 @@ function Ledger.RecordSale(sale)
 	local keep = ns.db.ahCut and (1 - ns.AH_CUT) or 1
 	append("sales", sale.t, indexOf(me()), sale.name, sale.qty, whole(sale.net or sale.money * keep),
 		whole(sale.money / sale.qty))
+	onChange()
+end
+
+-- Something you crafted left you some other way than an auction or a craft (see
+-- Gone.lua): `reason` is "vendor" (with what the vendor paid), "used", "destroyed",
+-- "given" or "written". `rank` when it's known which.
+function Ledger.RecordGone(itemID, qty, reason, money, rank)
+	if not (saved and saved.items[itemID]) or (qty or 0) <= 0 then return end
+	append("gone", time(), indexOf(me()), itemID, qty, reason, whole(money), rank or 0)
+	onChange()
+end
+
+-- Every item you've crafted: itemID -> its name. Not to be changed.
+function Ledger.CraftedItems()
+	return saved and saved.items or {}
+end
+
+-- What's on record as left of the crafts of the character you're on, but isn't
+-- with it any more: not in its bags or banks, and not posted on the auction house
+-- these last days. { { itemID, qty } ... }, and how many items that is.
+function Ledger.Missing()
+	if demo or not saved then return {}, 0 end
+	local crafts, _, _, posts = Ledger.Analyze(saved)
+	local mine, left, posted = me(), {}, {}
+	for _, craft in ipairs(crafts) do
+		if craft.character == mine and craft.left > 0 then left[craft.itemID] = (left[craft.itemID] or 0) + craft.left end
+	end
+	local since = time() - POST_DAYS * DAY
+	for _, post in ipairs(posts) do
+		if post.character == mine and post.t >= since and post.left > 0 then
+			posted[post.itemID] = (posted[post.itemID] or 0) + post.left
+		end
+	end
+	local list, total = {}, 0
+	for itemID, qty in pairs(left) do
+		local have = ns.Model.Owned(itemID) + (posted[itemID] or 0)
+		if qty > have then
+			list[#list + 1] = { itemID = itemID, qty = qty - have }
+			total = total + qty - have
+		end
+	end
+	return list, total
+end
+
+-- Writes off what's left of your crafts: `list` is { { itemID, qty, rank } ... }
+-- (see Ledger.Missing). They stop waiting to sell, with no profit or loss counted.
+function Ledger.WriteOff(list)
+	if demo or not saved then return end
+	local t, character = time(), indexOf(me())
+	for _, entry in ipairs(list) do
+		if entry.qty > 0 and saved.items[entry.itemID] then
+			append("gone", t, character, entry.itemID, entry.qty, "written", 0, entry.rank or 0)
+		end
+	end
+	onChange()
+end
+
+-- Takes an item's write-offs back: what was written off of it is left again.
+function Ledger.TakeBack(itemID)
+	if demo or not saved then return end
+	local id = tostring(itemID)
+	for _, day in pairs(saved.days) do
+		if day.gone then
+			local kept = {}
+			for line in day.gone:gmatch("[^\n]+") do
+				local fields = split(line)
+				if not (fields[3] == id and fields[5] == "written") then kept[#kept + 1] = line .. "\n" end
+			end
+			day.gone = #kept > 0 and table.concat(kept) or nil
+		end
+	end
 	onChange()
 end
 
@@ -806,6 +920,9 @@ function Ledger.ToggleDemo()
 		if back % 7 == 0 then add(t, "crafts", 2, 4, 0, 118, 0, 1, "personal", 0, 300000, 1000000, 1000000) end
 		add(t, "bought", 1, 2589, 0, 20, 400000 + back * 3000, 21000, "auction", "Linen Cloth")
 		if back % 4 == 0 then add(t, "bought", 2, 2320, 0, 5, 50000, 12000, "vendor", "Coarse Thread") end
+		-- Some potions get drunk, and now and then a few bolts go to a vendor.
+		if back % 5 == 0 then add(t + DAY / 2, "gone", 1, 118, 3, "used", 0, 0) end
+		if back % 9 == 0 then add(t + DAY / 2, "gone", 1, 2996, 2, "vendor", 2 * 40000, 0) end
 	end
 	return true
 end

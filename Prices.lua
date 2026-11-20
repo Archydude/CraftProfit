@@ -185,6 +185,15 @@ function Prices.Listed(link)
 	if ok then return count, age end
 end
 
+-- What putting `qty` of an item on the auction house costs as a deposit, for the
+-- game's duration number `duration`, in copper, or nil when the game won't say.
+-- You get it back when the auction sells, and lose it when it runs out unsold.
+function Prices.Deposit(itemID, duration, qty)
+	if not (C_AuctionHouse and C_AuctionHouse.CalculateCommodityDeposit) then return end
+	local ok, deposit = pcall(C_AuctionHouse.CalculateCommodityDeposit, itemID, duration, qty)
+	if ok and type(deposit) == "number" and deposit > 0 then return deposit end
+end
+
 -- Whether TSM is loaded, whatever the price addon option says (for its sales
 -- numbers), or another character's save of its prices is used here.
 function Prices.HasTSM()

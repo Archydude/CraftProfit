@@ -65,6 +65,8 @@ On the crafting page, the **Crafts** box over the profit sets how many crafts th
 - **Use Craftonomics materials:** how much more they make over that many crafts.
 - **The game's amount box** next to Create: it gets the same number, so Create makes that many. The game keeps it to what you can make with the materials you have, and recipes it only makes one at a time have no amount box.
 
+**High AH deposit:** when the auction house deposit for what the crafts make is 25% or more of their profit, and with TSM the item's sale rate is under 60%, a **High AH deposit** line in orange shows it, under the sale rate and trend, with the duration it's for (the one the Sell tab is on, or the longest). Hover it for its share of the profit. You get a deposit back when the auction sells and lose it when it runs out unsold, so on an item that sells poorly it can eat the profit.
+
 **Craft button:** under your materials, at the right of the Shopping list button, a **Craft** button starts the crafts without going back to the crafting window. It does what the game's Create button does, with the materials picked there, and says how many, like **Craft 5**. It's greyed out when the game's button is, and its tooltip then says why.
 
 The cost of a skill-up, how well the item sells, the procs of your last craft and the session line stay as they are. Each craft you finish takes one off the box, down to 1, so it shows how many are left to make and the materials are for those. The box goes back to 1 when you pick another recipe. Crafting orders don't have it: an order is one craft.
@@ -342,13 +344,16 @@ At the auction house, `/craftonomics sell`, `/craftonomics auctions` and `/craft
 
 ## Ledger
 
-Your crafting history in its own window: what you made, what sold, and how close the forecast was. Open it with the book button at the top of the panel, from the minimap button's right-click menu, or with `/craftonomics ledger`. It records from the moment you have this version, for all your characters.
+Your crafting history in its own window: whether it's making gold, where the gold went, and how each item is doing. Open it with the book button at the top of the panel, from the minimap button's right-click menu, or with `/craftonomics ledger`. It records from the moment you have this version, for all your characters.
 
-- **Overview:** totals by type (regular crafts, patron, personal, guild and public orders), by profession and by character, the items furthest below their forecast, and a chart of profit by the day it was crafted. Crafts from more than 90 days ago show at the bottom, one line per month, when no character, profession or type is picked.
-- **Crafts:** every craft with when, who, what type, how many, its status, the forecast and the profit so far. Hover a row for the details.
-- **Performance:** one row per item, rank and type of craft: how many you made, sold and used in your own crafts, the profit each was forecast to make without procs, what each cost in materials and sold for, what procs really added, what each really made, **Off by** (how far the result landed from the forecast, with procs left out of both), **Margin** (the share of what sold that was profit, after the cut and materials), how long sales took, and the profit so far. Orders fill in the same way, with what they paid as the sale.
-- **Purchased:** one row per item and rank: how many you bought, what you spent, what you paid each against your price source at the time, and what you resold and made on it.
-- **Filters:** time range, character, profession and type at the top, and a search box on Crafts, Performance and Purchased. Purchases have no profession or type, so those filters don't apply to them. **Export** gives you what's in view to paste into a spreadsheet: the purchases on Purchased, the crafts on the other tabs. **Clear** forgets the whole Ledger, for all your characters, after asking.
+- **Three totals** at the top: **Profit so far** (orders when they're done, regular crafts as they sell, minus their materials), **Waiting to sell** (what you crafted and haven't sold or used yet, at its price when crafted), and **If it all sells** (the profit so far plus what's waiting would make). Hover one for how it's worked out, with how the forecast did.
+- **Where the gold you put into materials went:** a bar beside the totals splits it into what's in items that **sold**, in items **waiting to sell**, in items you **used in your own crafts**, and in items that are **gone** without a sale. Hover a part for its share.
+- **Three things that stand out:** your **best earner**, the item that's **not selling** (the most gold waiting with none sold), and the one **furthest under its forecast**. Click one to see only that item.
+- **One row per item**, rank and type of craft: how many you **made** and **sold**, how many are **gone** without a sale and how many are **left**, the **profit**, and **How it's going** in a few words, like **Selling well**, **Waiting to sell, worth 2g 33s**, **Not selling for 5 days**, **28% under its forecast** or **Material: 5 used in your crafts**. Click a column's name to sort.
+- **Click an item to open it** on its crafts: when each was made, by whom, how many, what sold and its profit. Hover an item for the game's own tooltip of it, followed by what its row doesn't show: its cost, sale price and profit each, the margin, days to sell and how the forecast did.
+- Crafts from more than 90 days ago show at the bottom, one line per month, when no character, profession or type is picked and nothing is searched for.
+- **Purchases** tab: one row per item and rank: how many you bought, what you spent, what you paid each against your price source at the time, and what you resold and made on it. Its totals are what you spent, how that compares with your price then, and your resale profit.
+- **Filters:** time range, character, profession and type at the top, and a search box. The window opens on the character you're on; pick **All characters** for everyone. Purchases have no profession or type, so those filters don't apply to them. **Export** gives you what's in view to paste into a spreadsheet: the purchases on Purchases, every craft on Crafting. **Clear** forgets the whole Ledger, for all your characters, after asking.
 
 How the numbers work:
 
@@ -356,11 +361,13 @@ How the numbers work:
 - **Sales** come from your "Auction successful" mail, so open your mailbox for them to count, within the 30 days the mail lasts. A sale counts toward your oldest unsold craft of that item and rank, so one craft's result is an estimate; totals are what really sold.
 - **Ranks:** the mail only names the item, so Craftonomics also notes what you post, and uses the price to find the rank. If it can't tell, the sale goes to your oldest craft of any rank.
 - **Your own crafts used as materials** count as used, at what they were worth when crafted, not as unsold. With **Craft myself** or **Cheapest way** on WoW Forever, the craft they went into already counted them at what they cost to make, so they make no profit of their own: it's all in that craft.
-- **Materials cost** is what they were worth when you crafted, not what you paid for them, so profit says whether a craft is worth doing. **Spent on materials** adds these up, whether you bought or gathered them; what you really paid is on the **Purchased** tab.
+- **Materials cost** is what they were worth when you crafted, not what you paid for them, so profit says whether a craft is worth doing. The bar adds these up, whether you bought or gathered them; what you really paid is on the **Purchases** tab.
 - **Purchases** cover the auction house, through any addon, and materials from vendors. A sale no craft explains counts toward what you bought of that item.
-- **Not counted:** items you trade, vendor or equip stay under **Not sold yet**, and lost deposits on expired auctions aren't counted.
+- **Where your crafts go:** the Ledger notices when something you crafted leaves you without an auction. **Sold to a vendor** counts as sold, for what the vendor paid. **Used** (thrown, drunk, eaten, disenchanted), **destroyed**, **mailed**, **traded** or put in the **guild bank** counts as **Gone**, with no profit or loss. What you post on the auction house or put in your own banks hasn't left. Made is always Sold plus Gone plus Left; Gone also has what went into your own crafts.
+- **Crafts from before that was tracked** are still on record as left. **Check what I have** compares what's on record as left of the character you're on with what it really has, in bags and bank and on the auction house, and offers to write off the rest. Right-click an item to write off what's left of just that one, or to take its write-offs back. A write-off counts no profit or loss. The check only sees the character you're on, so run it on each crafter.
+- **Not counted:** gold you get in a trade, and lost deposits on expired auctions. Something you crafted and equipped still counts as left.
 - A craft made while the panel was hidden, or showed another recipe, has no forecast, and its materials cost isn't known. It shows **-** for profit and is left out of the totals' profit, but its sales still count.
-- Time ranges and the chart go by calendar day: **Last 7 days** is today and the 6 days before.
+- Time ranges go by calendar day: **Last 7 days** is today and the 6 days before.
 - The window shows each craft for 90 days; after that only its month's totals stay.
 
 ## TSM prices for alts
