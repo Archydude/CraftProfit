@@ -77,18 +77,22 @@ This addon was made with AI.
 ## B. Upload File form
 
 **Files:** two, each uploaded with only its own game versions (why is in [UPLOADING.md](../UPLOADING.md)). The display name, release type and changelog are the same for both.
-- `dist\Craftonomics-5.2.1-retail.zip`: Retail `12.1.5`
-- `dist\Craftonomics-5.2.1-forever.zip`: WoW Forever `1.60.1`
+- `dist\Craftonomics-5.2.2-retail.zip`: Retail `12.1.5`
+- `dist\Craftonomics-5.2.2-forever.zip`: WoW Forever `1.60.1`
 
 **Display name**
 ```
-Craftonomics 5.2.1
+Craftonomics 5.2.2
 ```
 
 **Release type:** `Release`
 
 **Changelog** (paste only the newest part; paste older parts too if they never went up)
 ```markdown
+5.2.2
+- Fixed: after you pressed Shift over an item's tooltip, right-clicking an item in your bags to use it, like a recipe, could fail with the error "AddOn 'Craftonomics' tried to call the protected function 'UNKNOWN()'".
+- Changed: in the bank, a stack's tooltip no longer changes while you hover it. Hold **Shift** first, then hover the stack, to see the whole stack's amounts. In your bags it still changes as you press Shift.
+
 5.2.1
 - Changed: the **TSM Lowest vs Market** line on item tooltips now says **Cheap** or **Expensive** instead of Buy or Sell, like **Cheap -18%** or **Expensive +12%**.
 

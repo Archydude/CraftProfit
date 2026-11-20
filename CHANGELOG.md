@@ -1,5 +1,9 @@
 # Changelog
 
+## 5.2.2
+- Fixed: after you pressed Shift over an item's tooltip, right-clicking an item in your bags to use it, like a recipe, could fail with the error "AddOn 'Craftonomics' tried to call the protected function 'UNKNOWN()'".
+- Changed: in the bank, a stack's tooltip no longer changes while you hover it. Hold **Shift** first, then hover the stack, to see the whole stack's amounts. In your bags it still changes as you press Shift.
+
 ## 5.2.1
 - Changed: the **TSM Lowest vs Market** line on item tooltips now says **Cheap** or **Expensive** instead of Buy or Sell, like **Cheap -18%** or **Expensive +12%**.
 

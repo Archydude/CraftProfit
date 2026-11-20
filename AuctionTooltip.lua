@@ -76,10 +76,6 @@ local function sourceName(from)
 	return "TSM " .. (TSM_NAMES[ns.db.saleSource] or ns.db.saleSource)
 end
 
--- The tooltip that last showed a stack, so holding or letting go of Shift can
--- redraw it with or without the whole stack's amounts.
-local stackOn
-
 local function onItem(tooltip, data)
 	local db = ns.db
 	if not db or not C_AuctionHouse then return end
@@ -98,8 +94,11 @@ local function onItem(tooltip, data)
 	-- hand back that item's link instead of the recipe's: price the recipe itself.
 	if link and C_Item.GetItemInfoInstant(link) ~= itemID then link = nil end
 	local count = location and C_Item.GetStackCount(location) or 1
-	if count > 1 then stackOn = tooltip end
 	-- A stack in your bags shows the whole stack's amounts only while Shift is held.
+	-- Nothing here redraws the tooltip when Shift changes: the game redraws a bag
+	-- item's tooltip several times a second by itself. Redrawing it from addon code
+	-- (tooltip:RefreshData()) was taken out in case it's what blocked using an item
+	-- from the bags ("tried to call the protected function" on a right-click).
 	local qty = (count > 1 and IsShiftKeyDown()) and count or 1
 	local stack = qty > 1 and format(" (x%d)", qty) or ""
 
@@ -146,14 +145,3 @@ local function onItem(tooltip, data)
 end
 
 TooltipDataProcessor.AddTooltipPostCall(Enum.TooltipDataType.Item, onItem)
-
--- Shift pressed or let go over a stack: draw its tooltip again.
-local shiftWatch = CreateFrame("Frame")
-shiftWatch:RegisterEvent("MODIFIER_STATE_CHANGED")
-shiftWatch:SetScript("OnEvent", function(_, _, key)
-	if key ~= "LSHIFT" and key ~= "RSHIFT" then return end
-	local tooltip = stackOn
-	if not (tooltip and tooltip:IsShown() and tooltip.RefreshData) then return end
-	stackOn = nil
-	tooltip:RefreshData()
-end)
