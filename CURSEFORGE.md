@@ -35,35 +35,32 @@ Craftonomics, formerly **Craft Profit**, answers in gold: **profit or loss?** A 
 
 - **Expected profit** on every craft, procs included
 - **Best crafts**: every recipe ranked by profit, across all your characters
+- **Profit on every recipe** in the game's own recipe list
 - **All recipes**: every profession's recipes, as a list or a **trend heatmap**
-- **Ledger**: your profit so far, what's waiting to sell and how each item is doing, with what you vendored, used or gave away counted
+- **Ledger**: your profit so far, what's waiting to sell and how each item is doing, with what you vendored, used, disenchanted or gave away counted
 - **Auction house window**: shopping list, selling, cancelling undercut auctions
 - **No price addon needed**: its own price scan, or **TradeSkillMaster** and **Auctionator** prices
-- **Patron orders** priced and crafted right in Blizzard's Patron tab
+- **Patron orders**: profit, rewards and missing materials in Blizzard's Patron tab, crafted from there
 
 ### Crafts and orders
-The sale price at the rank you'll get, minus the 5% cut and your materials. On orders: the commission, minus the materials **you** supply, plus sellable rewards. With concentration on, the **concentration strategy** picks the materials: cheapest, least concentration or most **gold per point**. The **Crafts** box shows it for any number of crafts. A warning shows when the **AH deposit** is high on an item that sells poorly. Materials show what you **have** of what you need, and a **Craft** button crafts from the panel.
+The sale price at the rank you'll get, minus the 5% cut and your materials. On orders: the commission, minus the materials **you** supply, plus sellable rewards. With concentration on, the **concentration strategy** picks the materials: cheapest, least concentration or most **gold per point**. The **Crafts** box shows it for any number of crafts. A warning shows when the **AH deposit** is high on an item that sells poorly, and for weapons and armor the panel shows the **disenchant value** and when disenchanting beats selling. Materials show what you **have** of what you need, and a **Craft** button crafts from the panel.
 
 ### What should I craft?
-**Best crafts** lists every recipe you know, most profitable first. With TSM, **sale rate** and **trend** columns show what really sells.
+With TSM, **Best crafts** has **sale rate** and **trend** columns that show what really sells.
 
 **All recipes** lists every profession's sellable recipes with each craft's profit. With TSM, switch it to a **heatmap**: tiles colored by price trend and sized by gold sold per day.
 
 ### At the auction house
-**Shopping list**: click a material to see it with the amount to buy. **Sell**: your bags with a price and TSM sale rate on every item. **My auctions**: see which are undercut and cancel them.
-
-### Patron orders
-Blizzard's Patron tab shows each order's **expected profit**, **rewards** and missing **materials**.
+**Shopping list**: click a material to see it with the amount to buy. **Sell**: a price and TSM sale rate on every item in your bags. **My auctions**: cancel the undercut ones.
 
 ### WoW Forever
-Best crafts shows what a **skill point** costs with each recipe. **Craft myself** prices materials you can make at what crafting them costs, and **Cheapest way** crafts or buys each, whichever is cheaper.
+Best crafts shows what a **skill point** costs. **Craft myself** prices materials you can make at what crafting them costs, and **Cheapest way** crafts or buys each, whichever is cheaper.
 
 ### Item tooltips
-Vendor prices, the auction price and the **AH deposit**, plus with TSM the **sale rate**, **trend** and whether the lowest auction is **cheap** or **expensive** against the market value.
+Vendor and auction prices and the **AH deposit**, plus with TSM the **sale rate**, **trend** and whether the lowest auction is **cheap** or **expensive**.
 
 ### Good to know
-- **TSM prices for alts** that keep TSM turned off.
-- Type **/craftonomics** for options.
+**TSM prices for alts** that keep TSM turned off. Type **/craftonomics** for options.
 
 This addon was made with AI.
 
@@ -77,18 +74,27 @@ This addon was made with AI.
 ## B. Upload File form
 
 **Files:** two, each uploaded with only its own game versions (why is in [UPLOADING.md](../UPLOADING.md)). The display name, release type and changelog are the same for both.
-- `dist\Craftonomics-5.5.0-retail.zip`: Retail `12.1.5`
-- `dist\Craftonomics-5.5.0-forever.zip`: WoW Forever `1.60.1`
+- `dist\Craftonomics-5.6.0-retail.zip`: Retail `12.1.5`
+- `dist\Craftonomics-5.6.0-forever.zip`: WoW Forever `1.60.1`
 
 **Display name**
 ```
-Craftonomics 5.5.0
+Craftonomics 5.6.0
 ```
 
 **Release type:** `Release`
 
 **Changelog** (paste only the newest part; paste older parts too if they never went up)
 ```markdown
+5.6.0
+- **Profit on the recipe list:** every recipe you know now shows what one craft makes at the right of its row in the profession window's own recipe list, green for a profit and red for a loss. It's the Best crafts list's profit, so it follows your crafting strategy. Grey with a **?** means a material has no price, so the profit is too high. The numbers take a moment to fill in the first time you open a profession. Turn it off with **Show profit on the recipe list** in the options.
+- **Disenchant value:** for a recipe that makes a weapon or armor, the panel shows what disenchanting it gives on average (**Disenchant value**) and what that leaves after the materials (**Profit if disenchanted**). When disenchanting makes more than selling, a **Disenchant advantage** line says how much more. The value comes from TSM or Auctionator. On WoW Forever, hover the lines for each material the item can disenchant into, with its chance and how many. Turn it off with **Show disenchant value** on the Panel options page.
+- **Disenchanting in the Ledger:** each material a disenchant gives you is on record as a craft, marked **from disenchanting**, and waits to sell like any other. When what you disenchanted was something you crafted, that item counts as used, and what it cost to make becomes the cost of the materials. Anything else you disenchant cost nothing to make, so all its materials sell for is profit.
+- **Market details:** the sale rate, the trend, the High AH deposit warning and the disenchant lines now sit together under a **Market details** heading at the bottom of the panel. Click the heading to close or open it; it stays as you left it.
+- **Sale proceeds and Material cost:** the panel's **Sells for** line (**Gross profit** on WoW Forever) is now **Sale proceeds**, with a **Material cost** line under it. On the crafting page, the materials' total moved there from the **Your materials** heading. The concentration and Per skill-up lines now come after your materials.
+- **Panel look:** a warmer, solid background and a softer profit box.
+- Changed: the **Open with the profession window** tick box is no longer at the bottom of the panel. The option is still in the options, on the Panel page.
+
 5.5.0
 - **A new Ledger:** the Ledger window is rebuilt to show at a glance whether your crafting pays. Three totals at the top: **Profit so far**, **Waiting to sell** and **If it all sells**. A bar shows where the gold you put into materials went: sold, waiting to sell, used in your own crafts, or gone. Three highlights name your **best earner**, what's **not selling**, and what sold **furthest under its forecast**; click one to see only that item.
 - **One row per item:** how many you made and sold, how many are gone and how many are left, the profit, and **How it's going** in a few words, like **Selling well**, **Not selling for 5 days** or **28% under its forecast**. Click an item to open it on its crafts. The tabs are now **Crafting** and **Purchases**. Hovering an item shows the game's own tooltip of it, followed by the numbers the old Performance tab had.

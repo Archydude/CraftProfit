@@ -246,11 +246,10 @@ function Options.Create()
 
 	checkbox("panelAuto", "Open with the profession window",
 		"The panel opens by itself when you pick a recipe. Off: it stays closed until you click the Craftonomics " ..
-		"button at the top of the profession window. That button opens and closes the panel either way.\n\n" ..
-		"Also at the bottom of the panel.")
+		"button at the top of the profession window. That button opens and closes the panel either way.")
 	checkbox("disenchant", "Show disenchant value",
 		"For a recipe that makes a weapon or armor: what disenchanting it gives on average, what that leaves after " ..
-		"the materials, and a green line when that's more than selling it makes.\n\n" ..
+		"the materials, and a Disenchant advantage line when that's more than selling it makes.\n\n" ..
 		"The value comes from TSM or Auctionator, whichever your prices come from. Without either, or when they " ..
 		"can't price what the item disenchants into, the lines don't show.")
 

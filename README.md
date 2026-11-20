@@ -43,33 +43,33 @@ Copy the `Craftonomics` folder to `World of Warcraft\_retail_\Interface\AddOns\`
 ## Use
 Open your profession and pick a recipe, or open a crafting order. The panel appears to the right of the window.
 
-The panel reads top to bottom: the expected profit or loss, what comes in (the sale price, or an order's commission and rewards), your materials with what they cost in all, then one line with this session's total and luck. Hover the **i** at the end of that line for the notes on how the numbers were worked out. Notes you need to see, like materials without a price or old prices, stay in sight.
+The panel reads top to bottom: the expected profit or loss, what comes in (the sale proceeds, or an order's commission and rewards) and what the materials cost, your materials, the market details, then one line with this session's total and luck. Hover the **i** at the end of that line for the notes on how the numbers were worked out. Notes you need to see, like materials without a price or old prices, stay in sight.
 
 - Materials are priced at the quality you actually put in the form. If a slot is empty (you don't own the material), or the form holds another quality because you're short of the one your crafting strategy picks (see below), it's priced at the strategy's quality, so the profit is for what you'd craft once you've bought it. On an order, it's priced at the quality the Patron tab picks for the order. A material you're short of has a cart button: click it to shop for just that material.
 - The sale price follows the quality you'll get, including concentration if you turn it on.
-- Concentration on the crafting page: with it off and able to raise the rank, a line under the sale price shows what it takes, the rank it makes and the gold that rank adds, with the concentration icon, e.g. **38 [icon] makes [rank 3] +95g**. With it on, the line shows what the craft uses. Either way it says **not enough** when you're short.
+- Concentration on the crafting page: with it off and able to raise the rank, a line under your materials shows what it takes, the rank it makes and the gold that rank adds, with the concentration icon, e.g. **38 [icon] makes [rank 3] +95g**. With it on, the line shows what the craft uses. Either way it says **not enough** when you're short.
 - A lower rank is never worth more than a better one: when rank 3 is listed higher than rank 5 sells for, nobody buys it at that price, so it's priced as rank 5 sells and the panel's notes say so. The Best crafts list counts it the same way.
-- With TSM, a line under the sale price shows how well the item sells: the share of its auctions that sell, colored from red to green. On an alt using saved TSM prices it shows how many sell a day in your region instead.
-- With TSM, a **Trend** line shows how far the item's market value is from its historical price, like **-20%** in red or **+14%** in green: the number TSM's own tooltip shows beside its market value. Not on an alt using saved TSM prices, which don't carry it.
+- With TSM, a line under **Market details** shows how well the item sells: the share of its auctions that sell, colored from red to green. On an alt using saved TSM prices it shows how many sell a day in your region instead.
+- With TSM, a **Trend** line under **Market details** shows how far the item's market value is from its historical price, like **-20%** in red or **+14%** in green: the number TSM's own tooltip shows beside its market value. Not on an alt using saved TSM prices, which don't carry it.
 - Vendor-sold materials (vials, thread...) use the vendor price. Tick **Buy vendor items on the auction house**, under the crafting strategy, to price them at the auction house and put them on the shopping list instead.
 - For recipes that make a varying amount, the average is used.
 - Materials without any price are shown in red. Profit is then too high, so take it with a grain of salt.
 - Drag the panel to move it. It remembers where you put it.
-- A **Craftonomics** button at the top of the profession window opens and closes the panel. The panel's last line, **Open with the profession window**, says whether it opens by itself: untick it and the panel stays closed until you click that button.
+- The **Craftonomics** button at the top of the profession window opens and closes the panel. Use the panel’s gear to change **Open with the profession window**.
 
 ### More than one craft
 On the crafting page, the **Crafts** box over the profit sets how many crafts the panel is for. Type a number, up to 999, and the panel follows it:
 
-- **The profit** (expected and without procs), with **x10** after its name, and the sale price.
-- **Your materials:** how many of each, what each costs, and what they cost in all. In front of each is how many you have of how many the crafts take, like **2/5**: green when that's enough, and red on a row tinted red when you're short.
+- **The profit** (expected and without procs), with **x10** after its name, the sale proceeds and the material cost.
+- **Your materials:** how many of each and what each costs. In front of each is how many you have of how many the crafts take, like **2/5**: green when that's enough, and red on a row tinted red when you're short.
 - **The Shopping list button**, the carts and what counts as missing: for that many crafts.
 - **Concentration:** what that many crafts take, with **not enough** when you have less.
 - **Use Craftonomics materials:** how much more they make over that many crafts.
 - **The game's amount box** next to Create: it gets the same number, so Create makes that many. The game keeps it to what you can make with the materials you have, and recipes it only makes one at a time have no amount box.
 
-**High AH deposit:** when the auction house deposit for what the crafts make is 25% or more of their profit, and with TSM the item's sale rate is under 60%, a **High AH deposit** line in orange shows it, under the sale rate and trend, with the duration it's for (the one the Sell tab is on, or the longest). Hover it for its share of the profit. You get a deposit back when the auction sells and lose it when it runs out unsold, so on an item that sells poorly it can eat the profit.
+**High AH deposit:** when the auction house deposit for what the crafts make is 25% or more of their profit, and with TSM the item's sale rate is under 60%, a **High AH deposit** line in orange shows it, under **Market details**, with the duration it's for (the one the Sell tab is on, or the longest). Hover it for its share of the profit. You get a deposit back when the auction sells and lose it when it runs out unsold, so on an item that sells poorly it can eat the profit.
 
-**Disenchant value:** for a recipe that makes a weapon or armor, a **Disenchant value** line shows what disenchanting what the crafts make gives on average, and **Profit if disenchanted** what that leaves after the materials. When that's more than selling makes, a green line says by how much. The value comes from TSM or Auctionator, whichever your prices come from; without either, or when they can't price what the item disenchants into, the lines don't show. It's an average: one item can give more or less. Procs aren't counted in the comparison. On WoW Forever, hovering the lines also lists each material the item can disenchant into, with its chance and how many.
+**Disenchant value:** for a recipe that makes a weapon or armor, a **Disenchant value** line under **Market details** shows what disenchanting what the crafts make gives on average, and **Profit if disenchanted** what that leaves after the materials. When that's more than selling makes, a **Disenchant advantage** line under the material cost says by how much. The value comes from TSM or Auctionator, whichever your prices come from; without either, or when they can't price what the item disenchants into, the lines don't show. It's an average: one item can give more or less. Procs aren't counted in the comparison. On WoW Forever, hovering the lines also lists each material the item can disenchant into, with its chance and how many.
 
 **Craft button:** under your materials, at the right of the Shopping list button, a **Craft** button starts the crafts without going back to the crafting window. It does what the game's Create button does, with the materials picked there, and says how many, like **Craft 5**. It's greyed out when the game's button is, and its tooltip then says why.
 
@@ -251,7 +251,7 @@ Items you can't post, like soulbound ones, show only their vendor prices. On cha
 Craftonomics works on WoW Forever: the panel, Best crafts, the shopping list and the Ledger. Forever's crafting has no ranks, procs, concentration or crafting orders, so everything about those stays out of sight there, options included. What's different:
 
 - **Best crafts** opens from a tab with Craftonomics' logo, under your profession tabs on the right of the profession window. Click it again to go back to your recipes.
-- **Net profit and Gross profit:** the panel's main line is **Net profit** (or **Net loss**): what the craft makes after the materials. Under it, **Gross profit** is what the item sells for after the auction house cut, before the materials.
+- **Net profit** or **Net loss** appears above the sale proceeds and material cost. When disenchanting pays more, **Disenchant advantage** shows how much more you can expect compared with selling. **Market details** has the sale rate, price trend, deposit warning and disenchant value. Click its heading to close or open it; it stays as you left it.
 - **Crafting strategy** says where the materials you're missing come from:
   - **Buy missing** (default): bought at their auction house price.
   - **Craft myself:** a material you know the recipe for costs what crafting it costs, down to what has to be bought (Copper Tube costs its Copper Bars and Weak Flux, and the bars their ore). The shopping list buys those instead, and the panel marks such materials with a hammer. Click one to open its recipe, in its own profession's window if it's another profession's. A **Back to** row then shows at the top of the panel: click it to return to the recipe you came from, so you can craft each material and jump back. The material's **Crafts** box starts on what you're short of for the crafts you were looking at (5 crafts that each take one, with 2 in your bags, opens it on 3), and going back puts the first recipe's number back. What you own counts once, at every step. Recipes from all this character's professions count, once you've opened that profession's Best crafts list, so Engineering can use your smelting.
@@ -413,8 +413,8 @@ Click the gear on the panel (or Craftonomics options in the gear menu under the 
 | Show on the crafting page / on crafting orders | Turn the panel on or off for each page. WoW Forever has no crafting orders. |
 | Panel size | Size of the whole panel, 60% to 150%. |
 | Show amounts down to | Gold, silver (default) or copper. Not on WoW Forever, which always shows the two biggest coins. |
-| Open with the profession window | The panel opens by itself when you pick a recipe. Off: it stays closed until you click the **Craftonomics** button at the top of the profession window, which opens and closes the panel either way. Also at the bottom of the panel. On by default. |
-| Show disenchant value | On by default. For a recipe that makes a weapon or armor, the panel shows what disenchanting it gives on average, what that leaves after the materials, and a green line when that's more than selling it makes. Needs TSM or Auctionator. |
+| Open with the profession window | Opens the panel when you pick a recipe. Turn it off to open the panel manually with the **Craftonomics** button at the top of the profession window. On by default. |
+| Show disenchant value | On by default. For a recipe that makes a weapon or armor, the panel shows what disenchanting it gives on average, what that leaves after the materials, and a **Disenchant advantage** line when that's more than selling it makes. Needs TSM or Auctionator. |
 | Lock panel position | Stops the panel from being dragged. |
 | Panel position: Reset | Puts the panel back next to the profession window. |
 | Animate procs | On by default. Not on WoW Forever. |

@@ -80,6 +80,7 @@ ns.DEFAULTS = {
 	orders = true,        -- show on crafting orders
 	listProfit = true,    -- each recipe's profit on its row of the game's recipe list
 	disenchant = true,    -- the panel's disenchant value for weapons and armor
+	marketOpen = true,    -- the panel's Market details are open (a click on their heading closes them)
 	locked = false,
 	scale = 1,
 	precision = "silver", -- smallest coin shown: "copper" | "silver" | "gold"

@@ -452,17 +452,6 @@ local function addCheckRow(key, label, tooltip)
 	checksUsed[key] = true
 end
 
--- The panel's last line: whether it opens by itself with the profession window
--- (the "Open with the profession window" option).
-local function addAutoRow()
-	addCheckRow("panelAuto", Color("muted", "Open with the profession window"), function(tip)
-		tip:SetText("Open with the profession window")
-		tip:AddLine("The panel opens by itself when you pick a recipe.", 1, 1, 1, true)
-		tip:AddLine("Off: it stays closed until you click the Craftonomics button at the top of the "
-			.. "profession window. That button opens and closes the panel either way.", 0.53, 0.53, 0.53, true)
-	end)
-end
-
 -- Whether materials a vendor sells are bought on the auction house (the "Buy
 -- vendor items on the auction house" option), under the crafting strategy.
 local function addVendorRow()
@@ -854,6 +843,8 @@ local function drawShoppingButton(model)
 		ns.Shopping.Click(model, button, menu, not menu and IsControlKeyDown(), forCrafts)
 	end
 	addButton(text, onClick, shoppingTooltip(model, target))
+	local face = rowButton:GetNormalTexture()
+	if face then face:SetDesaturated(missing == 0) end
 end
 
 -- The tooltip of a "saves" line: why the cheaper rank comes out ahead.
@@ -906,8 +897,8 @@ end
 local function drawMaterials(model)
 	if #model.materials == 0 then return drawActions(model) end
 	contentHeight = contentHeight + 2 * Layout.GAP
-	-- What they cost in all, on the heading.
-	addHeading("Your materials", Color(ns.AmountColor(-model.cost), Money(-model.cost * count)))
+	-- Orders show their material cost here. Crafts show it beside the sale proceeds.
+	addHeading("Your materials", model.kind == "order" and Color(ns.AmountColor(-model.cost), Money(-model.cost)) or nil)
 	local shownCheaper = {}
 	for index, material in ipairs(model.materials) do
 		local cart = materialCart(model, material)
@@ -943,7 +934,7 @@ local function drawMaterials(model)
 		local need, have = material.qty * count, ns.Model.Owned(material.itemID)
 		local short = have < need
 		local name = Item(material.itemID, need):gsub("^%d+x",
-			Color(short and "loss" or "profit", format("%d/%d", have, need)), 1)
+			Color(short and "loss" or "good", format("%d/%d", have, need)), 1)
 		addRow(name .. tag, amount, nil, onClick, tooltip, cart)
 		if short then
 			shortTint(top)
@@ -1064,7 +1055,7 @@ local function drawHeadline(model)
 			Color(ns.AmountColor(amount), Money(amount * count)), fonts.total, nop, expectedTooltip(model))
 		addRow(Color("muted", "Without procs"), Color("muted", Money(total * count)), nil, nop, expectedTooltip(model))
 	else
-		-- WoW Forever: "Net", next to the Gross profit line under it.
+		-- WoW Forever labels the result as net profit or loss.
 		local net = not ns.QUALITY_CRAFTING
 		local label = amount >= 0 and (net and "Net profit" or "Profit") or (net and "Net loss" or "Loss")
 		profitRow = addRow(label .. times,
@@ -1143,7 +1134,6 @@ local function drawFooter(model)
 			session.crafts, session.crafts == 1 and "" or "s", luck and (dot .. luck) or ""),
 			INFO_ICON, nil, ns.Results.ConfirmResetSession, footerTooltip(true, sessionNotes))
 	end
-	addAutoRow()
 	local band = addBand(top, contentHeight + Layout.PAD_BOTTOM - EDGE - top, EDGE)
 	gradient(band, "HORIZONTAL", { 0, 0, 0 }, 0.35, { 0, 0, 0 }, 0.35)
 end
@@ -1244,20 +1234,20 @@ end
 
 -- How well the item sells, from TSM: the share of its auctions that sell. On an
 -- alt with saved TSM prices, which don't carry that, how many sell a day in your region.
-local function drawDemand(output)
+local function drawDemand(output, marketRow)
 	if not output.link then return end
 	if ns.Prices.HasSaleRate() then
 		local rate = ns.Prices.SaleRate(output.link)
-		addRow("Sale rate " .. Color("muted", "(TSM)"), rate and ns.Format.SaleRate(rate) or Color("muted", "-"))
+		marketRow("Sale rate " .. Color("muted", "(TSM)"), rate and ns.Format.SaleRate(rate) or Color("muted", "-"))
 	elseif ns.Prices.HasTSM() then
 		local perDay = ns.Prices.SoldPerDay(output.link)
 		local text = perDay and (perDay < 10 and format("%.1f", perDay) or BreakUpLargeNumbers(math.floor(perDay + 0.5)))
-		addRow("Sells per day " .. Color("muted", "(TSM)"), text or Color("muted", "-"))
+		marketRow("Sells per day " .. Color("muted", "(TSM)"), text or Color("muted", "-"))
 	end
 	-- How far its market value is from its historical price, as TSM's tooltip shows it.
 	if ns.Prices.HasTrend() then
 		local trend = ns.Prices.Trend(output.link)
-		addRow("Trend " .. Color("muted", "(TSM)"), trend and ns.Format.Trend(trend) or Color("muted", "-"))
+		marketRow("Trend " .. Color("muted", "(TSM)"), trend and ns.Format.Trend(trend) or Color("muted", "-"))
 	end
 end
 
@@ -1272,7 +1262,7 @@ local LOW_SALE_RATE = 0.60
 -- back when the auction sells. For the duration the Sell tab is on, or the longest
 -- when none was picked. Without a sale rate to go by (no TSM, or it has none for
 -- the item), a high deposit is enough.
-local function drawDeposit(model)
+local function drawDeposit(model, marketRow)
 	local output = model.output
 	local profit = (model.procs and model.procs.total > 0 and model.expected or model.total or 0) * count
 	if not (output and output.itemID and output.sale) or profit <= 0 then return end
@@ -1284,7 +1274,7 @@ local function drawDeposit(model)
 	local rate = ns.Prices.HasSaleRate() and ns.Prices.SaleRate(output.link) or nil
 	if rate and rate >= LOW_SALE_RATE then return end
 	local share = math.floor(deposit / profit * 100 + 0.5)
-	addRow(Color("missing", "High AH deposit ") .. Color("muted", format("(%s)", durations[duration])),
+	marketRow(Color("missing", "High AH deposit ") .. Color("muted", format("(%s)", durations[duration])),
 		Color("missing", Money(deposit)), nil, nop, function(tip)
 			tip:SetText("High AH deposit")
 			tip:AddLine(format("Putting what %s make on the auction house for %s takes a deposit of %s. That's %d%% of "
@@ -1336,11 +1326,13 @@ local function drawDisenchant(model)
 		end
 		tip:AddLine("Procs aren't counted, in either.", 0.53, 0.53, 0.53, true)
 	end
-	addRow("Disenchant value " .. Color("muted", format("(%s)", DISENCHANT_SOURCES[source])), Money(value * count),
-		nil, nop, tooltip)
-	addRow((net >= 0 and "Profit" or "Loss") .. " if disenchanted", signedMoney(net * count), nil, nop, tooltip)
 	if better and better > 0 then
-		addRow(Color("good", format("Disenchanting makes %s more than selling", Money(better * count))), nil, nil, nop, tooltip)
+		addRow("Disenchant advantage", signedMoney(better * count), nil, nop, tooltip)
+	end
+	return function(marketRow)
+		marketRow("Disenchant value " .. Color("muted", format("(%s)", DISENCHANT_SOURCES[source])), Money(value * count),
+			nil, nop, tooltip)
+		marketRow((net >= 0 and "Profit" or "Loss") .. " if disenchanted", signedMoney(net * count), nil, nop, tooltip)
 	end
 end
 
@@ -1358,32 +1350,55 @@ local function drawSkillup(model)
 		ns.Skillups.CostText(cost))
 end
 
+-- Market details open and close with a click on their heading, and stay as you
+-- left them (open until you close them).
+local function toggleMarket(mouseButton)
+	if mouseButton ~= "LeftButton" then return end
+	ns.db.marketOpen = not ns.db.marketOpen
+	Panel.Refresh()
+end
+
+local function drawMarket(model, disenchantDetails)
+	local hasRows = false
+	local marketExpanded = ns.db.marketOpen
+	local function marketRow(...)
+		if not hasRows then
+			addGap()
+			local icon = marketExpanded and "UI-MinusButton-Up" or "UI-PlusButton-Up"
+			addRow("Market details", "|TInterface\\Buttons\\" .. icon .. ":16:16|t", fonts.heading, toggleMarket)
+			hasRows = true
+		end
+		if marketExpanded then addRow(...) end
+	end
+	drawDemand(model.output, marketRow)
+	drawDeposit(model, marketRow)
+	if disenchantDetails then disenchantDetails(marketRow) end
+end
+
 local function drawCraft(model)
 	local output = model.output
 	drawHeader(model, output and format("Makes %sx %s", output.qtyText, output.link), output and output.link)
 	drawBack(model)
 	drawHeadline(model)
+	local disenchantDetails
 	if output then
 		addGap()
-		-- WoW Forever calls it Gross profit, over the Net profit at the top.
-		local sells = ns.QUALITY_CRAFTING and "Sells for" or "Gross profit"
 		if output.sale then
-			-- One line, after the AH cut.
-			if output.ahCut then
-				addRow(sells .. cutNote(output.ahCut, output.sale, "AH cut"), Money((output.sale - output.ahCut) * count))
-			else
-				addRow(sells, Money(output.sale * count))
-			end
+			addRow("Sale proceeds" .. cutNote(output.ahCut, output.sale, "AH cut"),
+				Money((output.sale - (output.ahCut or 0)) * count))
 		else
-			addRow(sells, Color("warning", "no price"))
+			addRow("Sale proceeds", Color("warning", "no price"))
 		end
-		drawDemand(output)
-		drawDeposit(model)
-		drawDisenchant(model)
+	end
+	if #model.materials > 0 then addRow("Material cost", Money(-model.cost * count)) end
+	if output then
+		disenchantDetails = drawDisenchant(model)
+	end
+	drawMaterials(model)
+	if output then
 		drawSkillup(model)
 		drawConcentration(model)
 	end
-	drawMaterials(model)
 	-- Right above the blue row, which follows it. (Orders have their own rule.)
 	addGap()
 	addStrategyDropdown()
@@ -1401,6 +1416,7 @@ local function drawCraft(model)
 	addVendorRow()
 	drawBest(model)
 	drawProcs(model)
+	if output then drawMarket(model, disenchantDetails) end
 	drawFooter(model)
 end
 
