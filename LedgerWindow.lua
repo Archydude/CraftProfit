@@ -140,7 +140,7 @@ end
 local function rankMarkup(entry)
 	if not entry.rank or entry.rank == 0 then return "" end
 	local icon
-	if entry.recipeID and entry.recipeID > 0 then
+	if entry.recipeID and entry.recipeID > 0 and entry.recipeID ~= ns.Ledger.DISENCHANT then
 		icon = ns.Blizzard.ItemQualityMarkup(entry.recipeID, entry.rank)
 	elseif entry.itemID then
 		icon = ns.Blizzard.ReagentQualityMarkup(entry.itemID)
@@ -227,6 +227,7 @@ local function craftStatus(craft)
 	if craft.left == 0 then
 		if craft.sold > 0 and craft.vendored == craft.sold then return Color("good", "Sold to a vendor") end
 		if craft.sold > 0 then return Color("good", craft.used > 0 and "Sold and used" or "Sold") end
+		if craft.disenchanted == craft.used then return Color("good", "Disenchanted") end
 		return Color("good", "Used")
 	end
 	if craft.sold + craft.used > 0 then return format("%d of %d sold", craft.sold + craft.used, craft.qty) end
@@ -281,11 +282,15 @@ end
 local function itemStatus(item)
 	if item.kind ~= "craft" then return Color("good", "Paid"), 0 end
 	if not item.itemID then return Color("muted", "Nothing to sell"), 0 end
-	local sold, used, left = BreakUpLargeNumbers(item.sold), BreakUpLargeNumbers(item.used), BreakUpLargeNumbers(item.unsold)
+	local sold, left = BreakUpLargeNumbers(item.sold), BreakUpLargeNumbers(item.unsold)
 	if item.unsold == 0 and item.sold + item.used == 0 then return Color("muted", "Gone: " .. goneWords(item)), 1 end
 	if item.sold == 0 and item.used > 0 then
-		return Color("muted", item.unsold > 0 and format("Material: %s used in your crafts, %s left", used, left)
-			or format("Material: %s used in your crafts", used)), 1
+		-- What went into your crafts, and what you disenchanted.
+		local inCrafts, words = item.used - item.disenchanted, {}
+		if inCrafts > 0 then words[#words + 1] = format("Material: %s used in your crafts", BreakUpLargeNumbers(inCrafts)) end
+		if item.disenchanted > 0 then words[#words + 1] = BreakUpLargeNumbers(item.disenchanted) .. " disenchanted" end
+		if item.unsold > 0 then words[#words + 1] = left .. " left" end
+		return Color("muted", table.concat(words, ", ")), 1
 	end
 	local off = ns.Ledger.Off(item)
 	local under = off and off <= -UNDER_FORECAST and format("%.0f%% under its forecast", -off * 100)
@@ -376,6 +381,8 @@ local function itemName(row)
 	if SHOWS_TYPES and row.kind and row.kind ~= "craft" then
 		return name .. rankMarkup(row) .. " " .. Color("muted", KIND_SHORT[row.kind] or row.kind)
 	end
+	-- What a disenchant gave you says so.
+	if row.recipeID == ns.Ledger.DISENCHANT then return name .. rankMarkup(row) .. "  " .. Color("muted", "from disenchanting") end
 	return name .. rankMarkup(row)
 end
 
@@ -398,12 +405,13 @@ local function goneCount(row)
 	return (row.used or 0) + (row.gone or 0)
 end
 
--- A dash while nothing of it has sold or been used, and for a craft whose
--- materials cost isn't known.
+-- A dash while nothing of it has sold or been used for a profit of its own (what
+-- was disenchanted, or used at its cost, has its profit in what it went into),
+-- and for a craft whose materials cost isn't known.
 local function profitText(row)
 	if row.month then return signedMoney(row.earned) end
 	if row.noCost or (row.unknown and row.unknown == row.crafts) then return Color("muted", "-") end
-	if row.earned == 0 and (row.sold or 0) + (row.used or 0) == 0 then return Color("muted", "-") end
+	if row.earned == 0 and (row.sold or 0) + (row.used or 0) - (row.usedAtCost or 0) == 0 then return Color("muted", "-") end
 	return signedMoney(row.earned)
 end
 
@@ -507,8 +515,14 @@ end
 -- One of an open item's crafts. When, who, how many and the profit are in its row.
 local function craftTooltip(craft)
 	startTooltip(craft)
-	if SHOWS_TYPES then addPair("Type", ns.Ledger.KINDS[craft.kind] or craft.kind) end
-	addPair("Materials cost", craft.noCost and Color("muted", "Not known") or Money(craft.cost))
+	local disenchant = craft.recipeID == ns.Ledger.DISENCHANT
+	if disenchant then
+		addPair("Made by", "Disenchanting")
+	elseif SHOWS_TYPES then
+		addPair("Type", ns.Ledger.KINDS[craft.kind] or craft.kind)
+	end
+	addPair(disenchant and "Cost of what you disenchanted" or "Materials cost",
+		craft.noCost and Color("muted", "Not known") or Money(craft.cost))
 	if craft.noCost then
 		-- No forecast either.
 	elseif not SHOWS_PROCS then
@@ -528,6 +542,7 @@ local function craftTooltip(craft)
 		end
 		if craft.used > 0 then addPair("Used in your crafts", craft.used) end
 		if craft.usedAtCost > 0 then addPair("Of those, counted at their cost", craft.usedAtCost) end
+		if craft.disenchanted > 0 then addPair("Of those, disenchanted", craft.disenchanted) end
 		addGone(craft)
 	elseif craft.kind ~= "craft" then
 		if not craft.noCost then addPair("Paid", Money(craft.money)) end
@@ -554,6 +569,7 @@ local function itemTooltip(item)
 	if item.margin then addPair("Margin on what sold", marginText(item.margin)) end
 	if item.days then addPair("Days to sell", format("%.1f", item.days)) end
 	if item.used > 0 then addPair("Used in your crafts", item.used) end
+	if (item.disenchanted or 0) > 0 then addPair("Of those, disenchanted", item.disenchanted) end
 	addGone(item)
 	if item.pending > 0 then addPair("Worth when crafted, what's left", Money(item.pending)) end
 	if item.forecast ~= 0 then
@@ -707,8 +723,10 @@ local function drawRow(button, row)
 		first:SetText(row.label)
 	elseif row.detail then
 		-- One of an open item's crafts: when, who, and how many crafts it stands for.
+		local what = row.recipeID == ns.Ledger.DISENCHANT and "disenchant" or "craft"
+		local many = row.count > 1 and format("   %d %ss", row.count, what) or (what == "disenchant" and "   disenchant" or "")
 		first:SetText(Color("muted", date("%b %d %H:%M", row.t)) .. "   " .. ns.Ranks.CharacterName(row.character or "?")
-			.. (row.count > 1 and Color("muted", format("   %d crafts", row.count)) or ""))
+			.. Color("muted", many))
 	else
 		first:SetText(itemName(row))
 	end

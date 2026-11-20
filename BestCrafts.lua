@@ -27,8 +27,20 @@ local RESCAN_DELAY = 1
 -- }
 local scan
 local active -- the scan in progress (the same as scan, unless the last one is still shown)
-local onChange = nop -- called when the scan has something new to show
-local isWanted = function() return false end -- whether the list wants a scan now
+local watchers = {} -- who shows the scan: { changed, wanted } each (see BestCrafts.Watch)
+
+-- Called when the scan has something new to show.
+local function onChange()
+	for _, watcher in ipairs(watchers) do watcher.changed() end
+end
+
+-- Whether anything that shows the scan wants one now.
+local function isWanted()
+	for _, watcher in ipairs(watchers) do
+		if watcher.wanted() then return true end
+	end
+	return false
+end
 
 ---------------------------------------------------------------------------
 -- Scanning
@@ -318,9 +330,18 @@ function BestCrafts.Progress()
 end
 
 -- `changed()` runs whenever the scan has something new to show; `wanted()`
--- says whether the list is open, so changes to your skill scan again.
+-- says whether what shows it is open, so changes to your skill scan again.
 function BestCrafts.Watch(changed, wanted)
-	onChange, isWanted = changed, wanted
+	watchers[#watchers + 1] = { changed = changed, wanted = wanted }
+end
+
+-- Scans the profession shown, unless its scan is there already or under way.
+function BestCrafts.Ensure()
+	local professionID = shownProfession()
+	if not professionID then return end
+	if active and active.professionID == professionID then return end
+	if scan and scan.professionID == professionID and scan.finished then return end
+	BestCrafts.Scan()
 end
 
 ---------------------------------------------------------------------------
@@ -635,6 +656,30 @@ function BestCrafts.Rows()
 		for _, entry in ipairs(ns.Scans.Entries(scan.professionID)) do add(entry) end
 	end
 	return rows
+end
+
+-- The scan's entries by recipe, for BestCrafts.RowOf. Built again when the scan
+-- changes or has more recipes.
+local indexed, indexedCount, byRecipe
+
+-- One of this character's recipes as a list row (see priceEntry), while the
+-- profession window shows the profession that was scanned. Nil for a recipe the
+-- scan doesn't have (yet).
+function BestCrafts.RowOf(recipeID)
+	if not (scan and ns.Blizzard.IsOwnProfession() and shownProfession() == scan.professionID) then return end
+	if indexed ~= scan or indexedCount ~= #scan.recipes then
+		indexed, indexedCount, byRecipe = scan, #scan.recipes, {}
+		for _, entry in ipairs(scan.recipes) do byRecipe[entry.recipeID] = entry end
+	end
+	local entry = byRecipe[recipeID]
+	if not entry then return end
+	if not effectiveCost then BestCrafts.Reprice() end
+	local row = priced[entry]
+	if not row then
+		row = priceEntry(entry)
+		priced[entry] = row
+	end
+	return row
 end
 
 -- The rank-by-rank details for a row's tooltip: { rank, link, sale, listed } for

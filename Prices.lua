@@ -139,6 +139,76 @@ function Prices.Sale(link, itemID)
 	return (Prices.SaleFrom(link, itemID))
 end
 
+-- What disenchanting an item gives on average, in copper, and whose number it
+-- is: "tsm" or "auctionator". Only uncommon to epic weapons and armor can be
+-- disenchanted (TSM's number for anything else is what milling or prospecting
+-- it gives). Nil for the rest, without either addon, and when neither can price
+-- what it gives. Uses the full link so the item's level counts.
+function Prices.Disenchant(link)
+	local classID = link and select(6, C_Item.GetItemInfoInstant(link))
+	if classID ~= Enum.ItemClass.Weapon and classID ~= Enum.ItemClass.Armor then return end
+	local quality = C_Item.GetItemQualityByID(link)
+	if not quality or quality < Enum.ItemQuality.Uncommon or quality > Enum.ItemQuality.Epic then return end
+	if tsmAvailable() then
+		local ok, itemString = pcall(TSM_API.ToItemString, link)
+		local value = ok and itemString and tsmValue("destroy", itemString)
+		if value then return value, "tsm" end
+	end
+	local api = auctionatorAPI()
+	local value = api and auctionatorValue(api.GetDisenchantPriceByItemLink, link)
+	if value then return value, "auctionator" end
+end
+
+-- What an item disenchants into, from Craftonomics' own table (ns.DISENCHANTS,
+-- WoW Forever only), as lines like "80%  1-2 Strange Dust". Nil without a row for
+-- the item's kind, quality and level.
+local function ownDisenchants(link)
+	local classID = ns.DISENCHANTS and select(6, C_Item.GetItemInfoInstant(link))
+	local byQuality = classID and ns.DISENCHANTS[classID]
+	local rows = byQuality and byQuality[C_Item.GetItemQualityByID(link) or 0]
+	local level = rows and (C_Item.GetDetailedItemLevelInfo or GetDetailedItemLevelInfo)(link)
+	if not level then return end
+	for _, row in ipairs(rows) do
+		if level >= row[1] and level <= row[2] then
+			local lines = {}
+			for index = 3, #row do
+				local chance, fewest, most, itemID = unpack(row[index])
+				local name = ns.Format.ItemName(itemID)
+				if name then
+					name = ns.Format.RarityColored(itemID, name)
+				else
+					C_Item.RequestLoadItemDataByID(itemID)
+					name = "Loading..."
+				end
+				lines[#lines + 1] = string.format("|cffffffff%s%%|r  %s %s", tostring(chance),
+					fewest == most and tostring(fewest) or (fewest .. "-" .. most), name)
+			end
+			return lines
+		end
+	end
+end
+
+-- What an item disenchants into, as lines like "80%  1-2 Strange Dust": the
+-- chance of each material and how many it gives. From Craftonomics' own table on
+-- WoW Forever; for what that doesn't have, from Auctionator, which lists it
+-- where it shows it on its own tooltips. That isn't part of Auctionator's API,
+-- so a change on its side just means no list. Nil when neither has it.
+function Prices.DisenchantsInto(link)
+	local own = ownDisenchants(link)
+	if own then return own end
+	local list = Auctionator and Auctionator.Enchant and Auctionator.Enchant.GetDisenchantBreakdown
+	if not list then return end
+	local info = { C_Item.GetItemInfo(link) }
+	if #info == 0 then return end
+	local ok, lines = pcall(list, link, info)
+	if not ok or type(lines) ~= "table" then return end
+	local found = {}
+	for _, line in ipairs(lines) do
+		if type(line) == "string" then found[#found + 1] = strtrim(line) end
+	end
+	return #found > 0 and found or nil
+end
+
 -- Caps each rank's sale price at the price of every rank above it: nobody pays
 -- more for rank 3 than for a better rank 5, so a higher listing for rank 3 is one
 -- that doesn't sell. `sales` is rank -> price (nil without a price). Returns

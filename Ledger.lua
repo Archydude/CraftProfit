@@ -20,7 +20,14 @@ local POST_DAYS = 3        -- an auction posted longer ago than this isn't on th
 -- adds to: used yourself or destroyed (consumed), mailed, traded or put in the guild
 -- bank (given), or written off in the Ledger window (written). One sold to a vendor
 -- ("vendor") counts as sold instead.
-local GONE_BUCKETS = { used = "consumed", destroyed = "consumed", given = "given", written = "written" }
+local GONE_BUCKETS = { used = "consumed", destroyed = "consumed", given = "given", written = "written",
+	disenchanted = "consumed" } -- on record that way for a short while, before a disenchant became a craft
+
+-- The Disenchant spell: the recipe on record for what a disenchant gave (see
+-- Ledger.RecordDisenchant).
+Ledger.DISENCHANT = 13262
+-- Enchanting's number in the game, for its name.
+local ENCHANTING = 333
 
 -- Kinds of craft. "craft" sells later; an order counts as sold, for what it paid,
 -- when it's done.
@@ -41,7 +48,9 @@ Ledger.KIND_ORDER = { "craft", "patron", "personal", "guild", "public" }
 --             value of one item then, materials cost, forecast profit with average
 --             procs, profit at craft, forecast profit without procs, what procs really
 --             added (older crafts stop at profit at craft), 1 when the materials
---             cost isn't known (crafted with the panel on something else)
+--             cost isn't known (crafted with the panel on something else).
+--             What a disenchant gave is a craft too, with Ledger.DISENCHANT for
+--             its recipe and no forecasts
 --     sales:  time, character, item name, qty, gold after the cut, price of one
 --     posts:  time, character, itemID, rank, qty, price of one, item name
 --     used:   time, itemID, qty (your own crafts used up as materials), 1 when the
@@ -239,9 +248,12 @@ function Ledger.Analyze(db)
 		end
 		list[#list + 1] = entry
 	end
+	-- When you disenchanted: what was used up at that moment went into it.
+	local disenchants = {}
 	for _, craft in ipairs(crafts) do
+		if craft.recipeID == Ledger.DISENCHANT then disenchants[craft.t] = true end
 		craft.left, craft.sold, craft.money, craft.used, craft.soldDays = 0, 0, 0, 0, 0
-		craft.usedAtCost = 0
+		craft.usedAtCost, craft.disenchanted = 0, 0
 		craft.vendored, craft.consumed, craft.given, craft.written = 0, 0, 0, 0
 		if craft.kind == "craft" and craft.itemID then
 			craft.left = craft.qty
@@ -283,6 +295,7 @@ function Ledger.Analyze(db)
 			fromOldest(byItem[event.itemID], event.t, nil, event.qty, function(craft, amount)
 				craft.used = craft.used + amount
 				if event.atCost then craft.usedAtCost = craft.usedAtCost + amount end
+				if event.atCost and disenchants[event.t] then craft.disenchanted = craft.disenchanted + amount end
 			end)
 		elseif event.isGone then
 			local each = event.money / event.qty
@@ -411,18 +424,21 @@ function Ledger.BoughtItems(bought)
 end
 
 -- Totals for a list of crafts: { crafts, items, cost, earned, pending, unsold,
--- sold, money, expected, procs, actual, forecast, unknown, used, and gone with its
+-- sold, money, expected, procs, actual, forecast, unknown, used (with usedAtCost
+-- and disenchanted, which are part of it), and gone with its
 -- parts vendored, consumed, given and written }. Expected is the profit
 -- forecast for all of them, procs what they really added; actual and forecast only
 -- count what's done, without procs, so they can be compared. Unknown is how many
 -- have no materials cost on record, and so no profit.
 function Ledger.Summarize(crafts)
 	local total = { crafts = 0, items = 0, cost = 0, earned = 0, pending = 0, unsold = 0, sold = 0, money = 0,
-		expected = 0, procs = 0, actual = 0, forecast = 0, unknown = 0, used = 0,
+		expected = 0, procs = 0, actual = 0, forecast = 0, unknown = 0, used = 0, usedAtCost = 0, disenchanted = 0,
 		gone = 0, vendored = 0, consumed = 0, given = 0, written = 0 }
 	for _, craft in ipairs(crafts) do
 		total.crafts = total.crafts + 1
 		total.used = total.used + craft.used
+		total.usedAtCost = total.usedAtCost + craft.usedAtCost
+		total.disenchanted = total.disenchanted + craft.disenchanted
 		total.gone = total.gone + craft.gone
 		total.vendored = total.vendored + craft.vendored
 		total.consumed = total.consumed + craft.consumed
@@ -472,7 +488,7 @@ function Ledger.Merge(crafts)
 			row.count = row.count + 1
 			row.unit = row.unit + craft.unit * craft.qty
 			for _, field in ipairs({ "qty", "cost", "forecast", "profit", "left", "sold", "money", "used", "usedAtCost", "soldDays", "earned", "pending",
-				"expected", "procGain", "gone", "vendored", "consumed", "given", "written" }) do
+				"expected", "procGain", "gone", "vendored", "consumed", "given", "written", "disenchanted" }) do
 				row[field] = (row[field] or 0) + (craft[field] or 0)
 			end
 		end
@@ -655,6 +671,61 @@ end
 function Ledger.RecordGone(itemID, qty, reason, money, rank)
 	if not (saved and saved.items[itemID]) or (qty or 0) <= 0 then return end
 	append("gone", time(), indexOf(me()), itemID, qty, reason, whole(money), rank or 0)
+	onChange()
+end
+
+-- What one of an item you crafted cost to make, going by the oldest craft of it
+-- with some left, and whether that cost isn't known. Nil when none is left on
+-- record: then it wasn't one of your crafts.
+local function costToMake(itemID)
+	for _, craft in ipairs((Ledger.Analyze(saved))) do
+		if craft.itemID == itemID and craft.kind == "craft" and craft.left > 0 then
+			return craft.cost / craft.qty, craft.noCost or false
+		end
+	end
+end
+
+local function enchantingName()
+	local get = C_TradeSkillUI.GetProfessionInfoBySkillLineID
+	local ok, info = pcall(get or error, ENCHANTING)
+	local name = ok and info and info.professionName
+	return name and name ~= "" and name or "Enchanting"
+end
+
+-- You disenchanted something and got `loot` ({ { itemID, link, qty } ... }, see
+-- Gone.lua). Each material is on record as a craft of it, and waits to sell like
+-- any other. When what you disenchanted was a craft of yours (`sourceID`), that
+-- one went into them as their material: what it cost to make is what they cost,
+-- split by what each is worth. Anything else you disenchant cost nothing to make.
+function Ledger.RecordDisenchant(sourceID, loot)
+	if not saved or #loot == 0 then return end
+	local t = time()
+	local cost, unknown = 0, false
+	if sourceID and saved.items[sourceID] then
+		local each, noCost = costToMake(sourceID)
+		if each then
+			cost, unknown = each, noCost
+			-- Counted at what it cost to make: the profit is all in what it gave.
+			append("used", t, sourceID, 1, 1)
+		end
+	end
+	local keep = ns.db.ahCut and (1 - ns.AH_CUT) or 1
+	local worth, count = 0, 0
+	for _, item in ipairs(loot) do
+		local price = ns.Prices.Sale(item.link, item.itemID)
+		item.unit = price and price * keep or 0
+		worth = worth + item.unit * item.qty
+		count = count + item.qty
+	end
+	local character, profession = indexOf(me()), indexOf(enchantingName())
+	for _, item in ipairs(loot) do
+		local share = worth > 0 and item.unit * item.qty / worth or item.qty / count
+		local itemCost = cost * share
+		saved.items[item.itemID] = saved.items[item.itemID] or nameIn(item.link)
+		-- No forecasts: the panel had nothing to say about it.
+		append("crafts", t, character, profession, Ledger.DISENCHANT, item.itemID, rankOf(item.link, 0), item.qty, "craft",
+			whole(item.unit), whole(itemCost), 0, whole(item.unit * item.qty - itemCost), "", "", unknown and 1 or 0)
+	end
 	onChange()
 end
 

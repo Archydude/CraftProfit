@@ -1299,6 +1299,50 @@ local function drawDeposit(model)
 		end)
 end
 
+local DISENCHANT_SOURCES = { tsm = "TSM", auctionator = "Auctionator" }
+
+-- For a weapon or armor: what disenchanting what the crafts shown make gives on
+-- average, what that leaves after the materials, and a line when it's more than
+-- selling makes (procs aside, on both sides).
+local function drawDisenchant(model)
+	local output = model.output
+	if not (output and output.link and ns.db.disenchant) then return end
+	local each, source = ns.Prices.Disenchant(output.link)
+	if not each then return end
+	local value = each * output.made
+	local net = value - (model.cost or 0)
+	local selling = output.sale and (output.sale - (output.ahCut or 0))
+	local better = selling and value - selling
+	local function tooltip(tip)
+		tip:SetText("Disenchant value")
+		tip:AddLine(format("What disenchanting what %s make gives on average, at %s's prices. One item can give more "
+			.. "or less: disenchanting doesn't give the same every time.", craftsText(), DISENCHANT_SOURCES[source]),
+			1, 1, 1, true)
+		-- Each material it can give: its chance, and how many.
+		local into = ns.Prices.DisenchantsInto(output.link)
+		if into then
+			tip:AddLine(" ")
+			tip:AddLine("One item disenchants into", 1, 0.82, 0)
+			for _, line in ipairs(into) do tip:AddLine(line, 0.8, 0.8, 0.8) end
+			tip:AddLine(" ")
+		end
+		if not selling then
+			tip:AddLine("The item has no auction price to compare it with.", 0.53, 0.53, 0.53, true)
+		elseif better > 0 then
+			tip:AddLine(format("Selling it makes %s less.", Money(better * count)), 1, 1, 1, true)
+		elseif better < 0 then
+			tip:AddLine(format("Selling it makes %s more.", Money(-better * count)), 1, 1, 1, true)
+		end
+		tip:AddLine("Procs aren't counted, in either.", 0.53, 0.53, 0.53, true)
+	end
+	addRow("Disenchant value " .. Color("muted", format("(%s)", DISENCHANT_SOURCES[source])), Money(value * count),
+		nil, nop, tooltip)
+	addRow((net >= 0 and "Profit" or "Loss") .. " if disenchanted", signedMoney(net * count), nil, nop, tooltip)
+	if better and better > 0 then
+		addRow(Color("good", format("Disenchanting makes %s more than selling", Money(better * count))), nil, nil, nop, tooltip)
+	end
+end
+
 -- WoW Forever: what a skill point costs with this recipe, with its color and chance.
 -- Not for a grey recipe: it gives no skill-ups, so there's nothing to say.
 local function drawSkillup(model)
@@ -1334,6 +1378,7 @@ local function drawCraft(model)
 		end
 		drawDemand(output)
 		drawDeposit(model)
+		drawDisenchant(model)
 		drawSkillup(model)
 		drawConcentration(model)
 	end

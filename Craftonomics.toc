@@ -56,6 +56,7 @@ Scans.lua
 Chains.lua
 BestCrafts.lua
 BestCraftsList.lua
+RecipeProfit.lua
 LedgerWindow.lua
 AllRecipes.lua
 Heatmap.lua

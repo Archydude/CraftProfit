@@ -15,6 +15,8 @@ It was called **Craft Profit** up to version 4.8. On Retail your settings and hi
 
 - **Best crafts:** a tab with every recipe you know in a profession, or across all your characters, enchants as scrolls included, ranked by profit, with the profit with and without procs, what the materials cost, what each could make in a day, how many are listed and how many you've sold.
 
+- **Profit on the recipe list:** every recipe you know shows what one craft makes at the right of its row in the profession window's own recipe list, in green or red. It's the Best crafts list's profit, so it follows your crafting strategy. Grey with a **?** means a material has no price, so the profit is too high. The numbers take a moment to fill in the first time you open a profession.
+
 - **Ledger:** your crafting history in its own window: what you crafted, what sold, your orders and what you bought, and how each item did against its forecast.
 
 - **All recipes:** a window with every profession's recipes, known or not, with what one craft makes and, with TSM, how well the item sells (see [All recipes](#all-recipes)).
@@ -66,6 +68,8 @@ On the crafting page, the **Crafts** box over the profit sets how many crafts th
 - **The game's amount box** next to Create: it gets the same number, so Create makes that many. The game keeps it to what you can make with the materials you have, and recipes it only makes one at a time have no amount box.
 
 **High AH deposit:** when the auction house deposit for what the crafts make is 25% or more of their profit, and with TSM the item's sale rate is under 60%, a **High AH deposit** line in orange shows it, under the sale rate and trend, with the duration it's for (the one the Sell tab is on, or the longest). Hover it for its share of the profit. You get a deposit back when the auction sells and lose it when it runs out unsold, so on an item that sells poorly it can eat the profit.
+
+**Disenchant value:** for a recipe that makes a weapon or armor, a **Disenchant value** line shows what disenchanting what the crafts make gives on average, and **Profit if disenchanted** what that leaves after the materials. When that's more than selling makes, a green line says by how much. The value comes from TSM or Auctionator, whichever your prices come from; without either, or when they can't price what the item disenchants into, the lines don't show. It's an average: one item can give more or less. Procs aren't counted in the comparison. On WoW Forever, hovering the lines also lists each material the item can disenchant into, with its chance and how many.
 
 **Craft button:** under your materials, at the right of the Shopping list button, a **Craft** button starts the crafts without going back to the crafting window. It does what the game's Create button does, with the materials picked there, and says how many, like **Craft 5**. It's greyed out when the game's button is, and its tooltip then says why.
 
@@ -363,7 +367,8 @@ How the numbers work:
 - **Your own crafts used as materials** count as used, at what they were worth when crafted, not as unsold. With **Craft myself** or **Cheapest way** on WoW Forever, the craft they went into already counted them at what they cost to make, so they make no profit of their own: it's all in that craft.
 - **Materials cost** is what they were worth when you crafted, not what you paid for them, so profit says whether a craft is worth doing. The bar adds these up, whether you bought or gathered them; what you really paid is on the **Purchases** tab.
 - **Purchases** cover the auction house, through any addon, and materials from vendors. A sale no craft explains counts toward what you bought of that item.
-- **Where your crafts go:** the Ledger notices when something you crafted leaves you without an auction. **Sold to a vendor** counts as sold, for what the vendor paid. **Used** (thrown, drunk, eaten, disenchanted), **destroyed**, **mailed**, **traded** or put in the **guild bank** counts as **Gone**, with no profit or loss. What you post on the auction house or put in your own banks hasn't left. Made is always Sold plus Gone plus Left; Gone also has what went into your own crafts.
+- **Where your crafts go:** the Ledger notices when something you crafted leaves you without an auction. **Sold to a vendor** counts as sold, for what the vendor paid. **Used** (thrown, drunk, eaten), **destroyed**, **mailed**, **traded** or put in the **guild bank** counts as **Gone**, with no profit or loss. What you post on the auction house or put in your own banks hasn't left. Made is always Sold plus Gone plus Left; Gone also has what went into your own crafts.
+- **Disenchanting is a craft:** each material a disenchant gives you (dust, essences, shards) is on record as crafted, marked **from disenchanting**, and waits to sell like any other craft. When what you disenchanted was something you crafted, that item counts as used in your crafts, and what it cost to make becomes the cost of the materials, split between them by what each is worth. Anything else you disenchant, like a drop, cost nothing to make, so all its materials sell for is profit. If the Ledger couldn't see what a disenchant gave, the item just counts as used.
 - **Crafts from before that was tracked** are still on record as left. **Check what I have** compares what's on record as left of the character you're on with what it really has, in bags and bank and on the auction house, and offers to write off the rest. Right-click an item to write off what's left of just that one, or to take its write-offs back. A write-off counts no profit or loss. The check only sees the character you're on, so run it on each crafter.
 - **Not counted:** gold you get in a trade, and lost deposits on expired auctions. Something you crafted and equipped still counts as left.
 - A craft made while the panel was hidden, or showed another recipe, has no forecast, and its materials cost isn't known. It shows **-** for profit and is left out of the totals' profit, but its sales still count.
@@ -390,6 +395,7 @@ Click the gear on the panel (or Craftonomics options in the gear menu under the 
 |---|---|
 | Crafting strategy | What the crafting page crafts: Highest rank, cheapest materials (default), Use what I own, or Cheapest materials. On WoW Forever: Buy missing (default), Craft myself or Cheapest way. Also at the bottom of the Best crafts list. |
 | Count procs in profits | On by default. The Best crafts list ranks by what crafts make on average with procs. Also in the Best crafts list's Filter menu. Not on WoW Forever. |
+| Show profit on the recipe list | On by default. Every recipe you know shows what one craft makes on its row of the profession window's recipe list, with your crafting strategy. |
 | Show minimap button | On by default. Also `/craftonomics minimap`. |
 | Price addon | Automatic (TSM first, then Auctionator for anything TSM has no price for, then Craftonomics' own scan), TSM only, Auctionator only, or Craftonomics' scan only. |
 | Scan when I open the auction house | On by default. Craftonomics' own price scan starts by itself at the auction house, at most once an hour, and only while your prices come from that scan. Also on the Prices tab. |
@@ -408,6 +414,7 @@ Click the gear on the panel (or Craftonomics options in the gear menu under the 
 | Panel size | Size of the whole panel, 60% to 150%. |
 | Show amounts down to | Gold, silver (default) or copper. Not on WoW Forever, which always shows the two biggest coins. |
 | Open with the profession window | The panel opens by itself when you pick a recipe. Off: it stays closed until you click the **Craftonomics** button at the top of the profession window, which opens and closes the panel either way. Also at the bottom of the panel. On by default. |
+| Show disenchant value | On by default. For a recipe that makes a weapon or armor, the panel shows what disenchanting it gives on average, what that leaves after the materials, and a green line when that's more than selling it makes. Needs TSM or Auctionator. |
 | Lock panel position | Stops the panel from being dragged. |
 | Panel position: Reset | Puts the panel back next to the profession window. |
 | Animate procs | On by default. Not on WoW Forever. |

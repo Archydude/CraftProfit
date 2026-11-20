@@ -105,6 +105,7 @@ events:SetScript("OnEvent", function(self, event, ...)
 		ns.Best.Init()
 		ns.Craft.Init()
 		ns.BestCraftsList.Init()
+		if ns.RecipeProfit then ns.RecipeProfit.Init() end -- a new file: only there after a restart
 	end
 	if ns.Panel.Frame() then self:UnregisterEvent("ADDON_LOADED") end
 end)

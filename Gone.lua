@@ -1,10 +1,14 @@
 -- Craftonomics: notices when something you crafted leaves you some other way than
 -- an auction or a craft, so the Ledger stops counting it as waiting to sell. Sold
--- to a vendor, used (thrown, drunk, eaten, disenchanted...), destroyed, or given
--- away (mailed, traded, put in the guild bank). It counts what you have of every
--- item you've crafted each time your bags change, and what's gone since the last
--- count goes by what you were doing then. What you put on the auction house or in
--- your own banks hasn't left.
+-- to a vendor, used (thrown, drunk, eaten...), destroyed, or given away (mailed,
+-- traded, put in the guild bank). It counts what you have of every item you've
+-- crafted each time your bags change, and what's gone since the last count goes
+-- by what you were doing then. What you put on the auction house or in your own
+-- banks hasn't left.
+--
+-- A disenchant is a craft of its own: what it gave is read from the loot, and
+-- the Ledger records it as crafted (see Ledger.RecordDisenchant), out of the
+-- craft of yours that went with it, if one did.
 local _, ns = ...
 
 local Gone = {}
@@ -12,7 +16,8 @@ ns.Gone = Gone
 
 local SETTLE = 0.5      -- seconds after your bags change before they're counted
 local CRAFT_WINDOW = 2  -- seconds around a craft in which what goes is its materials
-local AFTER = 3         -- seconds after a trade or a destroy in which what goes is its doing
+local AFTER = 3         -- seconds after a trade, a destroy or a disenchant in which what goes is its doing
+local DISENCHANT = 13262 -- the Disenchant spell
 
 local counts            -- itemID -> how many you had at the last count; nil until the first one
 local queued = false    -- a count is on its way
@@ -20,6 +25,10 @@ local reason            -- what the items going would be down to, noted when the
 local loading = true    -- a loading screen is up: what the game says you have can't be trusted
 local atMerchant, atMail, atAuction, atGuildBank = false, false, false, false
 local craftedAt, tradedAt, destroyedAt = -math.huge, -math.huge, -math.huge
+local disenchantedAt = -math.huge
+-- What the last disenchant gave ({ { itemID, link, qty } ... }), until it's
+-- recorded, and the disenchant that was read for.
+local loot, lootReadFor
 
 -- A craft just finished: the materials it took are recorded with it (see Ledger.RecordCraft).
 function Gone.Crafted()
@@ -30,15 +39,33 @@ local function crafting()
 	return GetTime() - craftedAt <= CRAFT_WINDOW + SETTLE or C_TradeSkillUI.GetRemainingRecasts() > 0
 end
 
--- What an item leaving right now is down to: "vendor", "destroyed", "given" or
--- "used", or false when it hasn't left (on the auction house) or a craft took it.
+-- What an item leaving right now is down to: "disenchanted", "vendor",
+-- "destroyed", "given" or "used", or false when it hasn't left (on the auction
+-- house) or a craft took it.
 local function reasonNow()
+	local now = GetTime()
+	if now - disenchantedAt <= AFTER then return "disenchanted" end
 	if atAuction or crafting() then return false end
 	if atMerchant then return "vendor" end
-	local now = GetTime()
 	if now - destroyedAt <= AFTER then return "destroyed" end
 	if atMail or atGuildBank or now - tradedAt <= AFTER then return "given" end
 	return "used"
+end
+
+-- Reads what a disenchant gave from the loot window, once for each disenchant.
+local function readLoot()
+	if GetTime() - disenchantedAt > AFTER or lootReadFor == disenchantedAt then return end
+	local found = {}
+	for slot = 1, GetNumLootItems() do
+		local link = GetLootSlotLink(slot)
+		local itemID = link and C_Item.GetItemInfoInstant(link)
+		if itemID then
+			local _, _, qty = GetLootSlotInfo(slot)
+			found[#found + 1] = { itemID = itemID, link = link, qty = math.max(qty or 1, 1) }
+		end
+	end
+	if #found == 0 then return end
+	lootReadFor, loot = disenchantedAt, found
 end
 
 -- Counts what you have of everything you've crafted. What's gone since the last
@@ -51,16 +78,33 @@ local function count()
 	local first = counts == nil
 	counts = counts or {}
 	-- The craft's result can arrive just after the bags changed.
-	if crafting() then why = false end
+	if crafting() and why ~= "disenchanted" then why = false end
+	local disenchanted -- the craft of yours a disenchant took
 	for itemID in pairs(ns.Ledger.CraftedItems()) do
 		local now = ns.Model.Owned(itemID)
 		local before = counts[itemID]
 		if not first and why and before and now < before then
 			local qty = before - now
-			local pays = why == "vendor" and select(11, C_Item.GetItemInfo(itemID)) or 0
-			ns.Ledger.RecordGone(itemID, qty, why, (pays or 0) * qty)
+			if why == "disenchanted" and not disenchanted then
+				disenchanted = itemID
+				qty = qty - 1
+			end
+			if qty > 0 then
+				local how = why == "disenchanted" and "used" or why
+				local pays = how == "vendor" and select(11, C_Item.GetItemInfo(itemID)) or 0
+				ns.Ledger.RecordGone(itemID, qty, how, (pays or 0) * qty)
+			end
 		end
 		counts[itemID] = now
+	end
+	-- After the count: what a disenchant gave becomes something you've crafted.
+	if loot then
+		local gave = loot
+		loot = nil
+		ns.Ledger.RecordDisenchant(disenchanted, gave)
+	elseif disenchanted then
+		-- What it gave wasn't seen: all that's known is that it's gone.
+		ns.Ledger.RecordGone(disenchanted, 1, "used", 0)
 	end
 end
 
@@ -84,6 +128,13 @@ local HANDLERS = {
 	GUILDBANKFRAME_OPENED = function() atGuildBank = true end,
 	GUILDBANKFRAME_CLOSED = function() atGuildBank = false end,
 	TRADE_CLOSED = function() tradedAt = GetTime() end,
+	-- You disenchanted something: what goes now went that way, and the loot is what it gave.
+	UNIT_SPELLCAST_SUCCEEDED = function(unit, _, spellID)
+		if unit ~= "player" or spellID ~= DISENCHANT then return end
+		disenchantedAt, loot = GetTime(), nil
+	end,
+	LOOT_READY = readLoot,
+	LOOT_OPENED = readLoot,
 	LOADING_SCREEN_ENABLED = function() loading = true end,
 	-- After a loading screen the count starts over: nothing is compared across it.
 	LOADING_SCREEN_DISABLED = function()
@@ -96,9 +147,13 @@ local HANDLERS = {
 function Gone.Init()
 	local events = CreateFrame("Frame")
 	for event in pairs(HANDLERS) do
-		-- Not every version of the game has every one of these.
-		pcall(events.RegisterEvent, events, event)
+		-- Not every version of the game has every one of these. Only your own spells matter.
+		if event == "UNIT_SPELLCAST_SUCCEEDED" then
+			events:RegisterUnitEvent(event, "player")
+		else
+			pcall(events.RegisterEvent, events, event)
+		end
 	end
-	events:SetScript("OnEvent", function(_, event) HANDLERS[event]() end)
+	events:SetScript("OnEvent", function(_, event, ...) HANDLERS[event](...) end)
 	hooksecurefunc("DeleteCursorItem", function() destroyedAt = GetTime() end)
 end

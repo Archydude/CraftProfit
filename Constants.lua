@@ -78,6 +78,8 @@ ns.DEFAULTS = {
 	crafting = true,      -- show on the normal crafting page
 	panelAuto = true,     -- the panel opens by itself with the profession window; off: only from its button there
 	orders = true,        -- show on crafting orders
+	listProfit = true,    -- each recipe's profit on its row of the game's recipe list
+	disenchant = true,    -- the panel's disenchant value for weapons and armor
 	locked = false,
 	scale = 1,
 	precision = "silver", -- smallest coin shown: "copper" | "silver" | "gold"
@@ -360,4 +362,76 @@ ns.TSM_SOURCES = {
 function ns.TSMSourceText(source)
 	if source == ns.TSM_LOWER then return "lower of dbmarket, dbminbuyout" end
 	return source
+end
+
+-- WoW Forever: what disenchanting gives. By what the item is (armor or weapon)
+-- and its quality, rows of { lowest item level, highest, then one
+-- { chance in percent, fewest, most, itemID } for each material it can give }.
+-- Armor mostly gives dust and weapons mostly essences; rare items give a shard
+-- and epic ones several, or a crystal.
+if not ns.QUALITY_CRAFTING then
+	local STRANGE, SOUL, VISION, DREAM, ILLUSION = 10940, 11083, 11137, 11176, 16204 -- dusts
+	local LESSER_MAGIC, GREATER_MAGIC, LESSER_ASTRAL, GREATER_ASTRAL = 10938, 10939, 10998, 11082 -- essences
+	local LESSER_MYSTIC, GREATER_MYSTIC, LESSER_NETHER, GREATER_NETHER = 11134, 11135, 11174, 11175
+	local LESSER_ETERNAL, GREATER_ETERNAL = 16202, 16203
+	local SMALL_GLIMMERING, LARGE_GLIMMERING, SMALL_GLOWING, LARGE_GLOWING = 10978, 11084, 11138, 11139 -- shards
+	local SMALL_RADIANT, LARGE_RADIANT, SMALL_BRILLIANT, LARGE_BRILLIANT = 11177, 11178, 14343, 14344
+	local NEXUS = 20725 -- crystal
+
+	-- Uncommon items by item level: the dust and the essence with how many of each,
+	-- and the shard (one, when there is one).
+	local UNCOMMON = {
+		{ 5, 15, { STRANGE, 1, 2 }, { LESSER_MAGIC, 1, 2 } },
+		{ 16, 20, { STRANGE, 2, 3 }, { GREATER_MAGIC, 1, 2 }, SMALL_GLIMMERING },
+		{ 21, 25, { STRANGE, 4, 6 }, { LESSER_ASTRAL, 1, 2 }, SMALL_GLIMMERING },
+		{ 26, 30, { SOUL, 1, 2 }, { GREATER_ASTRAL, 1, 2 }, LARGE_GLIMMERING },
+		{ 31, 35, { SOUL, 2, 5 }, { LESSER_MYSTIC, 1, 2 }, SMALL_GLOWING },
+		{ 36, 40, { VISION, 1, 2 }, { GREATER_MYSTIC, 1, 2 }, LARGE_GLOWING },
+		{ 41, 45, { VISION, 2, 5 }, { LESSER_NETHER, 1, 2 }, SMALL_RADIANT },
+		{ 46, 50, { DREAM, 1, 2 }, { GREATER_NETHER, 1, 2 }, LARGE_RADIANT },
+		{ 51, 55, { DREAM, 2, 5 }, { LESSER_ETERNAL, 1, 2 }, SMALL_BRILLIANT },
+		{ 56, 60, { ILLUSION, 1, 2 }, { GREATER_ETERNAL, 1, 2 }, LARGE_BRILLIANT },
+		{ 61, 65, { ILLUSION, 2, 5 }, { GREATER_ETERNAL, 2, 3 }, LARGE_BRILLIANT },
+	}
+	-- The shard's chance: 10% at item levels 21 to 25, 5% elsewhere. What's left goes
+	-- to the dust and the essence: most of it to the dust for armor (to the essence
+	-- for a weapon), the other getting 20%, or 15% next to that 10%.
+	local function uncommon(mostlyDust)
+		local rows = {}
+		for index, tier in ipairs(UNCOMMON) do
+			local low, high, dust, essence, shard = unpack(tier)
+			local shardChance = shard and (low == 21 and 10 or 5) or 0
+			local less = shardChance == 10 and 15 or 20
+			local more = 100 - shardChance - less
+			local row = { low, high,
+				{ mostlyDust and more or less, dust[2], dust[3], dust[1] },
+				{ mostlyDust and less or more, essence[2], essence[3], essence[1] } }
+			if shard then row[5] = { shardChance, 1, 1, shard } end
+			rows[index] = row
+		end
+		return rows
+	end
+
+	local RARE = {
+		{ 5, 25, { 100, 1, 1, SMALL_GLIMMERING } },
+		{ 26, 30, { 100, 1, 1, LARGE_GLIMMERING } },
+		{ 31, 35, { 100, 1, 1, SMALL_GLOWING } },
+		{ 36, 40, { 100, 1, 1, LARGE_GLOWING } },
+		{ 41, 45, { 100, 1, 1, SMALL_RADIANT } },
+		{ 46, 50, { 100, 1, 1, LARGE_RADIANT } },
+		{ 51, 55, { 100, 1, 1, SMALL_BRILLIANT } },
+		{ 56, 65, { 99.5, 1, 1, LARGE_BRILLIANT }, { 0.5, 1, 1, NEXUS } },
+	}
+	local EPIC = {
+		{ 40, 45, { 100, 2, 4, SMALL_RADIANT } },
+		{ 46, 50, { 100, 2, 4, LARGE_RADIANT } },
+		{ 51, 55, { 100, 2, 4, SMALL_BRILLIANT } },
+		{ 56, 60, { 100, 1, 1, NEXUS } },
+		{ 61, 65, { 100, 1, 2, NEXUS } },
+	}
+	local quality = Enum.ItemQuality
+	ns.DISENCHANTS = {
+		[Enum.ItemClass.Armor] = { [quality.Uncommon] = uncommon(true), [quality.Rare] = RARE, [quality.Epic] = EPIC },
+		[Enum.ItemClass.Weapon] = { [quality.Uncommon] = uncommon(false), [quality.Rare] = RARE, [quality.Epic] = EPIC },
+	}
 end

@@ -43,6 +43,7 @@ local function onChanged()
 	ns.Patron.Redraw()
 	ns.BestCrafts.Reprice(true)
 	ns.BestCraftsList.Refresh()
+	if ns.RecipeProfit then ns.RecipeProfit.Refresh() end
 	ns.Minimap.Update()
 	ns.ShoppingList.OptionsChanged()
 end
@@ -167,6 +168,13 @@ function Options.Create()
 			"The panel always shows both: the expected profit, and Without procs under it.\n\n" ..
 			"Also in the Best crafts list's Filter menu.")
 	end
+	checkbox("listProfit", "Show profit on the recipe list",
+		"Every recipe you know shows what one craft makes, at the right of its row in the profession window's recipe " ..
+		"list. It's the Best crafts list's profit: after the auction house cut, " ..
+		(quality and "at the rank and with the materials your crafting strategy picks" or "with your crafting strategy") ..
+		".\n\nGreen makes gold, red loses it. Grey with a ?: a material has no price, so the profit is too high. " ..
+		"Recipes whose item has no price show nothing.\n\n" ..
+		"The first time you open a profession, the numbers take a moment to fill in.")
 
 	header("Minimap button")
 	checkbox("minimap", "Show minimap button",
@@ -240,6 +248,11 @@ function Options.Create()
 		"The panel opens by itself when you pick a recipe. Off: it stays closed until you click the Craftonomics " ..
 		"button at the top of the profession window. That button opens and closes the panel either way.\n\n" ..
 		"Also at the bottom of the panel.")
+	checkbox("disenchant", "Show disenchant value",
+		"For a recipe that makes a weapon or armor: what disenchanting it gives on average, what that leaves after " ..
+		"the materials, and a green line when that's more than selling it makes.\n\n" ..
+		"The value comes from TSM or Auctionator, whichever your prices come from. Without either, or when they " ..
+		"can't price what the item disenchants into, the lines don't show.")
 
 	header("Look")
 	local scaleOptions = Settings.CreateSliderOptions(0.6, 1.5, 0.05)
