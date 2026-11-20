@@ -23,6 +23,7 @@ local FORMAT = 1
 -- A saved scan's entries once unpacked, until it's replaced: saved scan -> { entry ... }.
 local unpacked = setmetatable({}, { __mode = "k" })
 local tidied = false -- whether the saved scans were looked through for doubles (see tidy)
+local version = 0 -- goes up each time a scan is saved (see Scans.Version)
 
 ---------------------------------------------------------------------------
 -- Packing
@@ -192,6 +193,7 @@ function Scans.Save(run)
 	me.scans = me.scans or {}
 	me.scans[run.professionID] = { format = FORMAT, time = time(), name = run.name, recipes = recipes }
 	tidied = false -- an older scan of the same profession under another number goes
+	version = version + 1
 	-- Craft myself can use the new recipes, and the list prices with them.
 	ns.Chains.Reset()
 	if ns.Chains.Active() then ns.BestCrafts.Reprice(true) end
@@ -234,6 +236,11 @@ local function tidy()
 			end
 		end
 	end
+end
+
+-- A number that changes when the saved recipes do, for what's worked out from them.
+function Scans.Version()
+	return version
 end
 
 -- This character's saved recipes, of every profession it has scanned.

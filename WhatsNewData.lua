@@ -2,10 +2,14 @@
 ArchdudeWhatsNew:Register("Craftonomics", {
 	title = "Craftonomics",
 	icon = "Interface\\Icons\\INV_Hammer_20",
-	version = "5.6.0",
+	version = "5.7.0",
 	seen = "CraftonomicsWhatsNew",
 	saved = { "CraftonomicsDB", "CraftonomicsCharDB" },
 	changes = {
+		{ "5.7.0",
+			"|cffffd100Best Craft on material tooltips:|r a material's tooltip now shows the most profitable recipe this character knows that takes it: the profit of one craft on a |cffffd100Best Craft|r line, and under it the profession's icon and what the recipe makes. It's the Best crafts list's profit, so it follows your crafting strategy, and it only shows when that recipe makes a profit. A profession's recipes count once you've opened its profession window on this character. Turn it off with |cffffd100Show best craft|r on the Tooltips options page.",
+			"|cffffd100The best craft's sale rate (with TSM):|r hold |cffffd100Shift|r to also see the TSM sale rate of what that recipe makes. Outside your bags, hold Shift first, then hover the item. |cffffd100Best craft's sale rate|r on the Tooltips options page shows it always, or never.",
+		},
 		{ "5.6.0",
 			"|cffffd100Profit on the recipe list:|r every recipe you know now shows what one craft makes at the right of its row in the profession window's own recipe list, green for a profit and red for a loss. It's the Best crafts list's profit, so it follows your crafting strategy. Grey with a |cffffd100?|r means a material has no price, so the profit is too high. The numbers take a moment to fill in the first time you open a profession. Turn it off with |cffffd100Show profit on the recipe list|r in the options.",
 			"|cffffd100Disenchant value:|r for a recipe that makes a weapon or armor, the panel shows what disenchanting it gives on average (|cffffd100Disenchant value|r) and what that leaves after the materials (|cffffd100Profit if disenchanted|r). When disenchanting makes more than selling, a |cffffd100Disenchant advantage|r line says how much more. The value comes from TSM or Auctionator. On WoW Forever, hover the lines for each material the item can disenchant into, with its chance and how many. Turn it off with |cffffd100Show disenchant value|r on the Panel options page.",
@@ -52,12 +56,6 @@ ArchdudeWhatsNew:Register("Craftonomics", {
 		},
 		{ "5.0.1",
 			"|cffffd100New logo:|r Craftonomics has a new logo. It shows on the button on the side of the auction house window and, on WoW Forever, on the Best crafts tab.",
-		},
-		{ "5.0.0",
-			"|cffffd100Craft Profit is now Craftonomics.|r Several addons on CurseForge have almost the same name, and on WoW Forever Craft Profit couldn't be installed together with two of them. The new name ends the mix-ups. Everything works as before; only the name changed, also where it shows in buttons and options, like |cffffd100Use Craftonomics Reagents|r.",
-			"|cffffd100Commands:|r |cffffd100/craftprofit|r is now |cffffd100/craftonomics|r, or |cffffd100/cn|r for short.",
-			"|cffffd100On Retail, your settings and history come along.|r For that, the update adds a second line to your addon list, |cffffd100Craftonomics: old Craft Profit settings|r. Leave it on; it goes away in a later update.",
-			"|cffffd100On WoW Forever, your settings and history start fresh:|r your options, the Ledger and the recipes Best crafts had saved. Open Best crafts once for each profession to bring its recipes back.",
 		},
 	},
 })

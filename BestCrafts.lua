@@ -394,8 +394,12 @@ local materialPrice, salePrice, market -- market: link -> { listed, listedAge, s
 local effectiveCost, buyCost
 -- Rows priced so far: entry -> row (see priceEntry).
 local priced = setmetatable({}, { __mode = "k" })
+-- The best craft found for a material so far: itemID -> { name, itemID, profit },
+-- or false for none (see BestCrafts.BestWith). Kept until prices change.
+local bestWith = {}
 
 function forgetMarket()
+	bestWith = {}
 	materialPrice = memo(ns.Prices.Material)
 	local sales = {}
 	salePrice = function(link, itemID)
@@ -680,6 +684,67 @@ function BestCrafts.RowOf(recipeID)
 		priced[entry] = row
 	end
 	return row
+end
+
+-- Which of this character's saved recipes take an item as a material:
+-- itemID -> { entry ... }. Built again when a scan is saved.
+local usedIn, usedInVersion
+
+local function recipesUsing(itemID)
+	-- Not before the game says who you are: your recipes are saved under your name.
+	local _, myKey = ns.Ranks.Me()
+	if not myKey then return end
+	local version = ns.Scans.Version()
+	if usedInVersion ~= version then
+		usedIn, usedInVersion, bestWith = {}, version, {}
+		local function add(id, entry)
+			local list = usedIn[id]
+			if not list then
+				list = {}
+				usedIn[id] = list
+			end
+			if list[#list] ~= entry then list[#list + 1] = entry end
+		end
+		for _, entry in ipairs(ns.Scans.Mine()) do
+			for _, slot in ipairs(entry.slots) do
+				for _, option in ipairs(slot.options) do add(option.itemID, entry) end
+			end
+			for _, other in ipairs(entry.others) do
+				for _, id in ipairs(other.itemIDs) do add(id, entry) end
+			end
+		end
+	end
+	return usedIn[itemID]
+end
+
+-- The most profitable recipe this character knows that takes `itemID` as a
+-- material, going by its saved recipes (every profession it has opened):
+-- { name = the recipe's, itemID = what it makes, profit = of one craft, as the
+-- list shows it, professionID = the recipe's, saleRate = TSM's for what it makes
+-- (nil without TSM) }. Nil when no recipe takes it, or none of them has a profit to
+-- show (no price for what it makes, or for one of its materials).
+function BestCrafts.BestWith(itemID)
+	local entries = recipesUsing(itemID)
+	if not entries then return end
+	local found = bestWith[itemID]
+	if found == nil then
+		if not effectiveCost then BestCrafts.Reprice() end
+		found = false
+		for _, entry in ipairs(entries) do
+			local row = priced[entry]
+			if not row then
+				row = priceEntry(entry)
+				priced[entry] = row
+			end
+			local profit = ns.db.countProcs and row.expected or row.profit
+			if profit and row.unpriced == 0 and (not found or profit > found.profit) then
+				found = { name = entry.name, itemID = row.output and row.output.itemID, profit = profit,
+					professionID = entry.professionID, saleRate = row.saleRate }
+			end
+		end
+		bestWith[itemID] = found
+	end
+	return found or nil
 end
 
 -- The rank-by-rank details for a row's tooltip: { rank, link, sale, listed } for

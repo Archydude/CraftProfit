@@ -514,6 +514,19 @@ function Options.Create()
 		"Expensive +12%: it's 12% above it.\n" ..
 		"Even: within 3% of the market value.\n\n" ..
 		"Only while someone has an auction up. Not on items you can't post, like soulbound ones.")
+	checkbox("tipBestCraft", "Show best craft",
+		"On the tooltip of a material: Best Craft, the most profitable recipe this character knows that takes it, " ..
+		"with what one craft of it makes. It's the Best crafts list's profit, so it follows your crafting strategy.\n\n" ..
+		"A profession's recipes count once you've opened its profession window on this character. " ..
+		"Recipes with no price for what they make, or for one of their materials, are left out. " ..
+		"The line only shows when that recipe makes a profit.")
+	dropdown("tipBestRate", "Best craft's sale rate", {
+		{ "shift", "While holding Shift" },
+		{ "always", "Always" },
+		{ "never", "Never" },
+	}, "With TSM, under the Best Craft lines: the TSM sale rate of what the recipe makes.\n\n" ..
+		"While holding Shift: in your bags it shows as you press Shift; anywhere else, hold Shift first, then " ..
+		"hover the item.")
 	checkbox("priceTooltip", "Show saved TSM prices",
 		"On characters without TSM that use TSM prices saved by another character (see Save TSM prices for alts, " ..
 		"on the main page): one line with the item's price, as Craftonomics prices it, and whose " ..

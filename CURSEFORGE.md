@@ -51,13 +51,13 @@ With TSM, **Best crafts** has **sale rate** and **trend** columns that show what
 **All recipes** lists every profession's sellable recipes with each craft's profit. With TSM, switch it to a **heatmap**: tiles colored by price trend and sized by gold sold per day.
 
 ### At the auction house
-**Shopping list**: click a material to see it with the amount to buy. **Sell**: a price and TSM sale rate on every item in your bags. **My auctions**: cancel the undercut ones.
+**Shopping list**: click a material to see it with the amount to buy. **Sell**: a price and sale rate on every bag item. **My auctions**: cancel the undercut ones.
 
 ### WoW Forever
-Best crafts shows what a **skill point** costs. **Craft myself** prices materials you can make at what crafting them costs, and **Cheapest way** crafts or buys each, whichever is cheaper.
+Best crafts shows what a **skill point** costs. **Craft myself** prices materials at what crafting them costs, and **Cheapest way** crafts or buys each, whichever is cheaper.
 
 ### Item tooltips
-Vendor and auction prices and the **AH deposit**, plus with TSM the **sale rate**, **trend** and whether the lowest auction is **cheap** or **expensive**.
+Vendor and auction prices and the **AH deposit**, plus with TSM the **sale rate**, **trend** and whether the lowest auction is **cheap** or **expensive**. On a material: your **best craft** with it, and its profit.
 
 ### Good to know
 **TSM prices for alts** that keep TSM turned off. Type **/craftonomics** for options.
@@ -74,18 +74,22 @@ This addon was made with AI.
 ## B. Upload File form
 
 **Files:** two, each uploaded with only its own game versions (why is in [UPLOADING.md](../UPLOADING.md)). The display name, release type and changelog are the same for both.
-- `dist\Craftonomics-5.6.0-retail.zip`: Retail `12.1.5`
-- `dist\Craftonomics-5.6.0-forever.zip`: WoW Forever `1.60.1`
+- `dist\Craftonomics-5.7.0-retail.zip`: Retail `12.1.5`
+- `dist\Craftonomics-5.7.0-forever.zip`: WoW Forever `1.60.1`
 
 **Display name**
 ```
-Craftonomics 5.6.0
+Craftonomics 5.7.0
 ```
 
 **Release type:** `Release`
 
 **Changelog** (paste only the newest part; paste older parts too if they never went up)
 ```markdown
+5.7.0
+- **Best Craft on material tooltips:** a material's tooltip now shows the most profitable recipe this character knows that takes it: the profit of one craft on a **Best Craft** line, and under it the profession's icon and what the recipe makes. It's the Best crafts list's profit, so it follows your crafting strategy, and it only shows when that recipe makes a profit. A profession's recipes count once you've opened its profession window on this character. Turn it off with **Show best craft** on the Tooltips options page.
+- **The best craft's sale rate (with TSM):** hold **Shift** to also see the TSM sale rate of what that recipe makes. Outside your bags, hold Shift first, then hover the item. **Best craft's sale rate** on the Tooltips options page shows it always, or never.
+
 5.6.0
 - **Profit on the recipe list:** every recipe you know now shows what one craft makes at the right of its row in the profession window's own recipe list, green for a profit and red for a loss. It's the Best crafts list's profit, so it follows your crafting strategy. Grey with a **?** means a material has no price, so the profit is too high. The numbers take a moment to fill in the first time you open a profession. Turn it off with **Show profit on the recipe list** in the options.
 - **Disenchant value:** for a recipe that makes a weapon or armor, the panel shows what disenchanting it gives on average (**Disenchant value**) and what that leaves after the materials (**Profit if disenchanted**). When disenchanting makes more than selling, a **Disenchant advantage** line says how much more. The value comes from TSM or Auctionator. On WoW Forever, hover the lines for each material the item can disenchant into, with its chance and how many. Turn it off with **Show disenchant value** on the Panel options page.
