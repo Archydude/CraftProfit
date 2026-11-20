@@ -43,6 +43,7 @@ local fonts = {
 	title = makeFont("CraftonomicsTitleFont", GameFontNormal, 4),
 	total = makeFont("CraftonomicsTotalFont", GameFontNormalLarge, 4),     -- Profit / Loss
 }
+fonts.total:SetTextColor(0.94, 0.89, 0.80)
 
 ---------------------------------------------------------------------------
 -- Rows
@@ -904,7 +905,7 @@ end
 
 local function drawMaterials(model)
 	if #model.materials == 0 then return drawActions(model) end
-	addGap()
+	contentHeight = contentHeight + 2 * Layout.GAP
 	-- What they cost in all, on the heading.
 	addHeading("Your materials", Color(ns.AmountColor(-model.cost), Money(-model.cost * count)))
 	local shownCheaper = {}
@@ -1071,8 +1072,8 @@ local function drawHeadline(model)
 	end
 	contentHeight = contentHeight + HERO_PAD - 2
 	local tint = amount >= 0 and PROFIT_TINT or LOSS_TINT
-	gradient(addBand(top, contentHeight - top, BOX_INSET), "HORIZONTAL", tint, 0.3, tint, 0.05)
-	gradient(addBand(top, contentHeight - top, BOX_INSET, 3), "HORIZONTAL", tint, 1, tint, 1)
+	gradient(addBand(top, contentHeight - top, BOX_INSET), "HORIZONTAL", tint, 0.10, tint, 0)
+	gradient(addBand(top, contentHeight - top, BOX_INSET, 2), "HORIZONTAL", tint, 0.55, tint, 0.55)
 end
 
 local INFO_ICON = "|TInterface\\Common\\help-i:20:20|t"
@@ -1696,12 +1697,12 @@ local function createFrame()
 	-- so a higher strata. Also above other addons' buttons on its edge (AllTheThings).
 	frame:SetFrameStrata("HIGH")
 	frame:SetBackdrop({
-		bgFile = "Interface\\Tooltips\\UI-Tooltip-Background",
+		bgFile = WHITE,
 		edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
-		tile = true, tileSize = 16, edgeSize = 16,
+		edgeSize = 16,
 		insets = { left = 4, right = 4, top = 4, bottom = 4 },
 	})
-	frame:SetBackdropColor(0.03, 0.03, 0.04, 0.95)
+	frame:SetBackdropColor(0.14, 0.12, 0.10, 1)
 	frame:SetBackdropBorderColor(unpack(Layout.BORDER))
 	frame:Hide()
 
