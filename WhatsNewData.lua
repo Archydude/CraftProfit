@@ -2,10 +2,14 @@
 ArchdudeWhatsNew:Register("Craftonomics", {
 	title = "Craftonomics",
 	icon = "Interface\\Icons\\INV_Hammer_20",
-	version = "5.2.2",
+	version = "5.3.0",
 	seen = "CraftonomicsWhatsNew",
 	saved = { "CraftonomicsDB", "CraftonomicsCharDB" },
 	changes = {
+		{ "5.3.0",
+			"|cffffd100Heatmap in All recipes (with TSM):|r a new dropdown at the bottom right of the All recipes window shows the recipes as a heatmap instead of a list: |cffffd100Heatmap: crafted items|r or |cffffd100Heatmap: materials|r. Every item is a tile. Its color is TSM's trend: red when the item's market value is below its historical price, green when it's above. Its size is the gold of the item sold in a day. Crafted items are grouped by profession, materials by what kind of item they are.",
+			"Click a group to see only its items, and right-click or |cffffd100Back|r to return. Hover a tile for its trend, market value, historical price, sales and TSM sale rate. Items too small for a tile of their own share a |cffffd100more|r tile. The search, the profession and the filters apply to the heatmap too.",
+		},
 		{ "5.2.2",
 			"Fixed: after you pressed Shift over an item's tooltip, right-clicking an item in your bags to use it, like a recipe, could fail with the error \"AddOn 'Craftonomics' tried to call the protected function 'UNKNOWN()'\".",
 			"Changed: in the bank, a stack's tooltip no longer changes while you hover it. Hold |cffffd100Shift|r first, then hover the stack, to see the whole stack's amounts. In your bags it still changes as you press Shift.",
@@ -54,12 +58,6 @@ ArchdudeWhatsNew:Register("Craftonomics", {
 			"|cffffd100The game's amount box follows it:|r the amount box next to Create gets the same number, up to what you can make with the materials you have, so Create makes that many.",
 			"|cffffd100Cheapest way (WoW Forever):|r a new crafting strategy, a mix of Buy missing and Craft myself. Each material you know the recipe for is crafted or bought, whichever costs less, at every step down. The shopping list buys what that takes, and only the materials that come out as crafted get the hammer.",
 			"|cffffd100Net profit and Gross profit (WoW Forever):|r the panel's main line is now called |cffffd100Net profit|r (or Net loss), and |cffffd100Sells for|r is now |cffffd100Gross profit|r. The numbers are the same.",
-		},
-		{ "4.5.1",
-			"Fixed: adding a recipe's materials to the shopping list twice doubled them. Adding for the same recipe again now only adds what the list doesn't have for it yet: 10 crafts after 5 adds the difference, and the same amount again adds nothing. For more crafts, pick a bigger amount. Other recipes still add to the amounts on the list.",
-			"The |cffffd100Shopping list|r button's menu says when a line's materials are on the list already, or how many more it would add.",
-			"Fixed: on the Patron tab, adding an order that's already on the shopping list doubled its materials, also through Add profitable or Add all.",
-			"On the Patron tab, |cffffd100Shift-click|r on an order's cart takes off what the order put on the list after you log out and back in too.",
 		},
 	},
 })

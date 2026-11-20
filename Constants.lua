@@ -113,6 +113,7 @@ ns.DEFAULTS = {
 	recipesMinNet = false,     -- only the ones whose net profit is at least this, in copper (false: any),
 	recipesRateMin = false,    -- and only the ones whose TSM sale rate is at least this, in percent (false: any),
 	recipesRateMax = false,    -- and at most this
+	recipesView = "list",      -- what the All recipes window shows: the "list", or a heatmap of "crafted" items or of "materials"
 	patronSort = false,   -- the Patron tab sorted by profit: "desc" | "asc", or false for Blizzard's sort
 	concentrationFor = "profit", -- patron orders that need concentration get it by: "profit" | "knowledge", or "none" of it
 	concentrationStrategy = "cheapest", -- where concentration is spent, the qualities picked: "cheapest" | "least" concentration | most "gold" per point

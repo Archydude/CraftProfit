@@ -40,14 +40,19 @@ local FRAME_BUDGET_MS = 4
 --   each = what one item sells for (nil without a price), gross = what a craft's
 --   items sell for after the auction house cut, cost = the materials (nil when one
 --   has no price), unpriced = how many of them have none, net = gross - cost,
---   saleRate and soldPerDay = TSM's (nil without). An enchant has only cost and
---   unpriced,
+--   saleRate and soldPerDay = TSM's (nil without), market and historical = TSM's
+--   market value and historical price of one (both, or neither). An enchant has
+--   only cost and unpriced,
 -- }
 local rows
 local byItem -- itemID -> the rows that make it (a few items have two recipes)
 -- Every material's name in lower case, for the search: itemID -> name, or false
 -- until the game has loaded the item.
 local materialNames
+-- What TSM says about each material, for the heatmap: itemID -> { itemID, market,
+-- historical, soldPerDay, saleRate }, or false for one without both prices. Nil until every
+-- recipe is priced, and without TSM on this character.
+local materials
 -- The pricing in progress or finished: { done, total, finished, buy and keep = what
 -- it prices with (see priceRow) }.
 local run
@@ -292,6 +297,7 @@ end
 -- of a sale the auction house leaves you.
 local function priceRow(row, buy, keep)
 	row.each, row.gross, row.cost, row.net, row.saleRate, row.soldPerDay = nil, nil, nil, nil, nil, nil
+	row.market, row.historical = nil, nil
 	-- An enchant makes nothing to sell: only its materials have a price.
 	if row.enchant then return priceMaterials(row, buy) end
 	-- The item's own name, once the game has loaded it. Some prices need the item
@@ -306,6 +312,28 @@ local function priceRow(row, buy, keep)
 	row.net = row.cost and row.gross - row.cost
 	row.saleRate = ns.Prices.SaleRate(row.link)
 	row.soldPerDay = ns.Prices.SoldPerDay(row.link)
+	row.market, row.historical = ns.Prices.MarketAndHistorical(row.link)
+end
+
+-- Asks TSM about every material of the recipes, each once (see `materials`).
+local function priceMaterialItems()
+	if not ns.Prices.HasTrend() then return end
+	local list = {}
+	for _, row in ipairs(rows) do
+		for _, material in ipairs(row.materials) do
+			local itemID = material.itemID
+			if list[itemID] == nil then
+				local link = "item:" .. itemID
+				local market, historical = ns.Prices.MarketAndHistorical(link)
+				list[itemID] = historical
+					and { itemID = itemID, market = market, historical = historical,
+						soldPerDay = ns.Prices.SoldPerDay(link), saleRate = ns.Prices.SaleRate(link) }
+					or false
+				pauseIfDue()
+			end
+		end
+	end
+	materials = list
 end
 
 local function priceAll(this)
@@ -331,6 +359,8 @@ local function priceAll(this)
 		this.done = scanned + index
 		pauseIfDue()
 	end
+	materials = nil
+	priceMaterialItems()
 end
 
 -- Prices every recipe again, a few each frame. `onChange` is called after each
@@ -361,6 +391,12 @@ function AllRecipes.Rows()
 	return run and run.finished and rows or nil
 end
 
+-- What TSM says about a material of these recipes ({ itemID, market, historical,
+-- soldPerDay, saleRate }), or nil: no TSM on this character, or it lacks one of the prices.
+function AllRecipes.Material(itemID)
+	return materials and materials[itemID] or nil
+end
+
 -- The game has loaded an item: its recipes go by its name from here on, and one
 -- that had no price is priced again, since some prices need the item loaded.
 -- A material's name is there for the search from here on. True when it's an item
@@ -383,5 +419,5 @@ end
 
 -- Stops pricing and lets the recipes go: the window closed.
 function AllRecipes.Release()
-	run, rows, byItem, materialNames = nil, nil, nil, nil
+	run, rows, byItem, materialNames, materials = nil, nil, nil, nil, nil
 end

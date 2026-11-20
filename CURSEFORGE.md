@@ -35,28 +35,28 @@ Craftonomics, formerly **Craft Profit**, answers in gold: **profit or loss?** A 
 
 - **Expected profit** on every craft, procs included
 - **Best crafts**: every recipe ranked by profit, across all your characters
-- **All recipes**: every profession's recipes, known or not
+- **All recipes**: every profession's recipes, as a list or a **trend heatmap**
 - **Ledger**: your crafts, sales, orders and purchases against the forecast
 - **Auction house window**: shopping list, selling, cancelling undercut auctions
 - **No price addon needed**: its own price scan, or **TradeSkillMaster** and **Auctionator** prices
 - **Patron orders** priced and crafted right in Blizzard's Patron tab
 
 ### Crafts and orders
-The sale price at the rank you'll get, minus the 5% cut and your materials. On orders: the commission, minus the materials **you** supply, plus sellable rewards. With concentration on, the **concentration strategy** picks the materials: cheapest, least concentration or most **gold per point**. The **Crafts** box shows it for any number of crafts.
+The sale price at the rank you'll get, minus the 5% cut and your materials. On orders: the commission, minus the materials **you** supply, plus sellable rewards. With concentration on, the **concentration strategy** picks the materials: cheapest, least concentration or most **gold per point**.
 
 ### What should I craft?
 **Best crafts** lists every recipe you know, most profitable first. Search by item or **material**. With TSM, **sale rate** and **trend** columns show what really sells.
 
-**All recipes** lists every profession's sellable recipes with each craft's profit and, with TSM, sale rate.
+**All recipes** lists every profession's sellable recipes with each craft's profit. With TSM, switch it to a **heatmap**: tiles colored by price trend and sized by gold sold per day.
 
 ### At the auction house
-**Shopping list**: click a material to see it with the amount to buy. **Sell**: your bags with a price and TSM sale rate on every item, the lowest price filled in. **My auctions**: see which are undercut and cancel them.
+**Shopping list**: click a material to see it with the amount to buy. **Sell**: your bags with a price and TSM sale rate on every item. **My auctions**: see which are undercut and cancel them.
 
 ### Patron orders
 Blizzard's Patron tab shows each order's **expected profit**, **rewards** and missing **materials**. **Next order** works through them.
 
 ### WoW Forever
-Best crafts shows what a **skill point** costs with each recipe. **Craft myself** prices materials you can make at what crafting them costs, and **Cheapest way** crafts or buys each one, whichever costs less.
+Best crafts shows what a **skill point** costs with each recipe. **Craft myself** prices materials you can make at what crafting them costs, and **Cheapest way** crafts or buys each, whichever is cheaper.
 
 ### Item tooltips
 Vendor prices, the auction price and the **AH deposit**, plus with TSM the **sale rate**, **trend** and whether the lowest auction is **cheap** or **expensive** against the market value. Hold **Shift** on a stack for the whole stack's amounts.
@@ -77,18 +77,22 @@ This addon was made with AI.
 ## B. Upload File form
 
 **Files:** two, each uploaded with only its own game versions (why is in [UPLOADING.md](../UPLOADING.md)). The display name, release type and changelog are the same for both.
-- `dist\Craftonomics-5.2.2-retail.zip`: Retail `12.1.5`
-- `dist\Craftonomics-5.2.2-forever.zip`: WoW Forever `1.60.1`
+- `dist\Craftonomics-5.3.0-retail.zip`: Retail `12.1.5`
+- `dist\Craftonomics-5.3.0-forever.zip`: WoW Forever `1.60.1`
 
 **Display name**
 ```
-Craftonomics 5.2.2
+Craftonomics 5.3.0
 ```
 
 **Release type:** `Release`
 
 **Changelog** (paste only the newest part; paste older parts too if they never went up)
 ```markdown
+5.3.0
+- **Heatmap in All recipes (with TSM):** a new dropdown at the bottom right of the All recipes window shows the recipes as a heatmap instead of a list: **Heatmap: crafted items** or **Heatmap: materials**. Every item is a tile. Its color is TSM's trend: red when the item's market value is below its historical price, green when it's above. Its size is the gold of the item sold in a day. Crafted items are grouped by profession, materials by what kind of item they are.
+- Click a group to see only its items, and right-click or **Back** to return. Hover a tile for its trend, market value, historical price, sales and TSM sale rate. Items too small for a tile of their own share a **more** tile. The search, the profession and the filters apply to the heatmap too.
+
 5.2.2
 - Fixed: after you pressed Shift over an item's tooltip, right-clicking an item in your bags to use it, like a recipe, could fail with the error "AddOn 'Craftonomics' tried to call the protected function 'UNKNOWN()'".
 - Changed: in the bank, a stack's tooltip no longer changes while you hover it. Hold **Shift** first, then hover the stack, to see the whole stack's amounts. In your bags it still changes as you press Shift.

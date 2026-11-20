@@ -2,7 +2,9 @@
 -- craft would make at today's prices and how the item sells, whether or not a
 -- character of yours knows the recipe (see AllRecipes.lua). On WoW Forever an
 -- enchant, which makes nothing to sell, is listed with what its materials cost.
--- On Retail it lists one expansion at a time, at the rank you pick.
+-- On Retail it lists one expansion at a time, at the rank you pick. Its View
+-- dropdown shows the same recipes as a heatmap instead (see Heatmap.lua): the
+-- items they make, or the materials they take.
 local _, ns = ...
 
 local AllRecipesWindow = {}
@@ -29,6 +31,16 @@ local REFRESH_DELAY = 0.2   -- redraws are batched this long
 local PRICING = "Pricing every recipe... %d%%"
 local NO_PRICES = "None of these recipes' items or materials has a price yet.\nPrices: %s"
 local NO_MATCH = "Nothing matches the search and the filters."
+local NO_TREND = "The heatmap needs TSM on this character: its colors are TSM's trend, and its sizes "
+	.. "what TSM says sells in a day."
+local NO_TILES = "TSM has no trend or no sales for any of these."
+local VIEW_WIDTH = 210      -- the View dropdown: room for "Heatmap: crafted items"
+-- What the window can show (ns.db.recipesView).
+local VIEWS = {
+	{ "list", "List" },
+	{ "crafted", "Heatmap: crafted items" },
+	{ "materials", "Heatmap: materials" },
+}
 local CHECK_SIZE = 24       -- the Only profitable checkbox
 local FILTERS_BUTTON_WIDTH = 96 -- the Filters button: room for "Filters (3)"
 local FILTERS_WIDTH = 326  -- the box of filters the button opens,
@@ -60,11 +72,21 @@ local RANK_CHOICES = {
 	{ "highest", "Highest rank, best materials" },
 	{ "lowest", "Lowest rank, cheapest materials" },
 }
+local HEATMAP_HOW = "Every tile is an item: one the recipes make, or one of their materials. The search, the "
+	.. "profession and the filters decide which recipes count, as in the list.\n\n"
+	.. "Color: TSM's trend, how far the item's market value on your realm is from its historical price. Red is "
+	.. "below it, green above, strongest from 50%.\n\n"
+	.. "Size: the gold of the item sold in a day, which is TSM's sold per day times its market value."
+	.. (ns.QUALITY_CRAFTING and "" or " On WoW Forever TSM counts the sales of your whole region.")
+	.. "\n\nCrafted items are grouped by profession, materials by what kind of item they are. Items too small "
+	.. "for a tile of their own share one, and an item TSM lacks the trend or the sales of is left out."
 local EXPANSION_WIDTH = 190 -- the expansion dropdown: room for "Wrath of the Lich King"
 local RANK_WIDTH = 250      -- the rank dropdown: room for "Lowest rank, cheapest materials"
 
 local frame, scrollBox, footer, empty, searchBox, professionDropdown
 local expansionDropdown, rankDropdown -- Retail only
+local viewDropdown, heatmap -- the View dropdown, and the heatmap it switches to (made when first shown)
+local listParts = {}        -- what only shows with the list: its rows, scroll bar and the bar behind the column names
 -- The Filters button beside the search box and the box it opens, with what's in
 -- it: Only profitable, the lowest net profit's gold, silver and copper boxes, and
 -- the lowest and highest TSM sale rate.
@@ -117,9 +139,7 @@ end
 
 local function soldText(row)
 	local sold = row.soldPerDay
-	if not sold then return Color("muted", "-") end
-	if sold >= 100 then return BreakUpLargeNumbers(math.floor(sold + 0.5)) end
-	return sold < 0.05 and "<0.1" or format("%.1f", sold)
+	return sold and ns.Format.SoldPerDay(sold) or Color("muted", "-")
 end
 
 local function grossTip()
@@ -489,18 +509,61 @@ local function footerText(shown, priced, unpriced)
 	return Color("muted", table.concat(parts, " · "))
 end
 
--- Shows `text` in place of the list.
+-- Shows `text` in place of the list or the heatmap.
 local function showInstead(text)
 	scrollBox:SetDataProvider(CreateDataProvider({}))
+	ns.Heatmap.Hide()
 	empty:SetText(text)
 	empty:Show()
+end
+
+-- What the window shows: "list", or a heatmap of "crafted" items or of "materials".
+local function currentView()
+	local view = ns.db.recipesView
+	return (view == "crafted" or view == "materials") and view or "list"
+end
+
+-- The heatmap in place of the list, filling the list's box.
+local function createHeatmap()
+	heatmap = ns.Heatmap.Create(frame, WIDTH - 2 * (SIDE - 4) - 2 * INSET_PAD,
+		HEIGHT - INSET_TOP - 32 - 2 * INSET_PAD, AllRecipesWindow.Render)
+	heatmap:SetPoint("TOPLEFT", frame.Inset, "TOPLEFT", INSET_PAD, -INSET_PAD)
+end
+
+-- Draws the heatmap of the recipes in `list`, or says why there's none.
+local function renderHeatmap(list, view, anyPrice)
+	if not ns.Prices.HasTrend() then
+		footer:SetText(Color("muted", "Prices: " .. ns.Prices.SourceLabel()))
+		return showInstead(NO_TREND)
+	end
+	if not heatmap then createHeatmap() end
+	local shown, left = ns.Heatmap.Draw(list, view)
+	local parts = { format("%s %s", BreakUpLargeNumbers(shown), view == "materials" and "materials" or "items") }
+	if left > 0 then parts[#parts + 1] = format("%s more have no TSM trend or sales", BreakUpLargeNumbers(left)) end
+	parts[#parts + 1] = "Size: gold sold per day"
+	footer:SetText(Color("muted", table.concat(parts, " · ")))
+	if shown > 0 then
+		empty:Hide()
+	elseif #list == 0 then
+		showInstead(anyPrice and NO_MATCH or format(NO_PRICES, ns.Prices.SourceLabel()))
+	else
+		showInstead(NO_TILES)
+	end
 end
 
 function AllRecipesWindow.Render()
 	refreshQueued = false
 	if not (frame and frame:IsShown()) then return end
+	local view = currentView()
+	local listed = view == "list"
+	for _, part in ipairs(listParts) do part:SetShown(listed) end
 	columns = shownColumns()
-	drawHeaders()
+	if listed then
+		drawHeaders()
+	else
+		for _, header in ipairs(headers) do header:Hide() end
+	end
+	viewDropdown:GenerateMenu()
 	professionDropdown:GenerateMenu()
 	if expansionDropdown then
 		expansionDropdown:GenerateMenu()
@@ -510,6 +573,8 @@ function AllRecipesWindow.Render()
 	local rows = ns.AllRecipes.Rows()
 	if not rows then return end
 	local list, unpriced, anyPrice = inView(rows)
+	if not listed then return renderHeatmap(list, view, anyPrice) end
+	ns.Heatmap.Hide()
 	local priced = #rows - unpriced
 	sortRows(list)
 	for index, row in ipairs(list) do row.stripe = index % 2 == 0 end
@@ -606,10 +671,26 @@ local function createRetailDropdowns()
 	rankDropdown:SetupMenu(rankMenu)
 end
 
+local function viewMenu(_, root)
+	for _, choice in ipairs(VIEWS) do
+		local key = choice[1]
+		root:CreateRadio(choice[2], function() return currentView() == key end, function()
+			if currentView() == key then return end
+			ns.db.recipesView = key
+			AllRecipesWindow.Render()
+		end)
+	end
+end
+
 local function showNote(self)
 	GameTooltip:SetOwner(self, "ANCHOR_TOP")
-	GameTooltip:SetText("How this is worked out")
-	GameTooltip:AddLine(HOW, 1, 1, 1, true)
+	if currentView() == "list" then
+		GameTooltip:SetText("How this is worked out")
+		GameTooltip:AddLine(HOW, 1, 1, 1, true)
+	else
+		GameTooltip:SetText("How to read the heatmap")
+		GameTooltip:AddLine(HEATMAP_HOW, 1, 1, 1, true)
+	end
 	GameTooltip:Show()
 end
 
@@ -818,6 +899,7 @@ local function createList()
 	headerBar:SetPoint("BOTTOMRIGHT", scrollBox, "TOPRIGHT", 0, 0)
 	headerBar:SetHeight(HEADER_HEIGHT)
 	headerBar:SetColorTexture(0, 0, 0, 0.5)
+	listParts = { scrollBox, scrollBar, headerBar }
 
 	empty = frame:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
 	empty:SetPoint("CENTER", scrollBox, "CENTER")
@@ -865,6 +947,11 @@ local function create()
 	createFilters()
 	createList()
 
+	viewDropdown = CreateFrame("DropdownButton", nil, frame, "WowStyle1DropdownTemplate")
+	viewDropdown:SetWidth(VIEW_WIDTH)
+	viewDropdown:SetPoint("BOTTOMRIGHT", -SIDE, 5)
+	viewDropdown:SetupMenu(viewMenu)
+
 	footer = frame:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
 	footer:SetPoint("BOTTOMLEFT", SIDE + 4, 10)
 
@@ -885,6 +972,7 @@ local function create()
 	frame:SetScript("OnHide", function()
 		if frame:IsShown() then return end
 		filtersBox:Hide()
+		ns.Heatmap.Hide()
 		ns.AllRecipes.Release()
 		scrollBox:SetDataProvider(CreateDataProvider({}))
 		GameTooltip:Hide()
@@ -894,6 +982,7 @@ end
 -- Opens the window and prices every recipe again, at the prices of this moment.
 function AllRecipesWindow.Show()
 	if not frame then create() end
+	ns.Heatmap.Reset()
 	frame:Show()
 	footer:SetText(Color("muted", "Prices: " .. ns.Prices.SourceLabel()))
 	showInstead(format(PRICING, 0))

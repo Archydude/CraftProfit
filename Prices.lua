@@ -267,13 +267,21 @@ end
 -- either price. The number TSM's own tooltip shows beside its market value,
 -- rounded the same way, whatever TSM price type prices are taken from here.
 function Prices.Trend(link)
+	local market, historical = Prices.MarketAndHistorical(link)
+	if not historical then return end
+	return math.floor((market - historical) * 100 / historical + 0.5)
+end
+
+-- An item's market value on your realm and its historical price, from TSM, in
+-- copper: both, or nothing without TSM or either price. What the trend is made of.
+function Prices.MarketAndHistorical(link)
 	if not (TSM_API and TSM_API.GetCustomPriceValue) then return end
 	local ok, itemString = pcall(TSM_API.ToItemString, link)
 	if not (ok and itemString) then return end
 	local market = tsmValue("dbmarket", itemString)
 	local historical = market and tsmValue("dbhistorical", itemString)
 	if not historical then return end
-	return math.floor((market - historical) * 100 / historical + 0.5)
+	return market, historical
 end
 
 -- How far an item's lowest auction on your realm is from its market value, from

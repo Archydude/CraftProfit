@@ -49,6 +49,13 @@ function Format.Trend(trend)
 	return ns.Color("profit", format("%s%.0f%%", trend > 0 and "+" or "", trend))
 end
 
+-- How many of an item sell in a day: "1,240" from a hundred up, "3.4" below, and
+-- "<0.1" for hardly any.
+function Format.SoldPerDay(sold)
+	if sold >= 100 then return BreakUpLargeNumbers(math.floor(sold + 0.5)) end
+	return sold < 0.05 and "<0.1" or format("%.1f", sold)
+end
+
 -- How far the lowest auction can be from the market value and still count as
 -- about the same, in percent.
 local EVEN_PERCENT = 3

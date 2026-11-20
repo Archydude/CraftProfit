@@ -1,5 +1,9 @@
 # Changelog
 
+## 5.3.0
+- **Heatmap in All recipes (with TSM):** a new dropdown at the bottom right of the All recipes window shows the recipes as a heatmap instead of a list: **Heatmap: crafted items** or **Heatmap: materials**. Every item is a tile. Its color is TSM's trend: red when the item's market value is below its historical price, green when it's above. Its size is the gold of the item sold in a day. Crafted items are grouped by profession, materials by what kind of item they are.
+- Click a group to see only its items, and right-click or **Back** to return. Hover a tile for its trend, market value, historical price, sales and TSM sale rate. Items too small for a tile of their own share a **more** tile. The search, the profession and the filters apply to the heatmap too.
+
 ## 5.2.2
 - Fixed: after you pressed Shift over an item's tooltip, right-clicking an item in your bags to use it, like a recipe, could fail with the error "AddOn 'Craftonomics' tried to call the protected function 'UNKNOWN()'".
 - Changed: in the bank, a stack's tooltip no longer changes while you hover it. Hold **Shift** first, then hover the stack, to see the whole stack's amounts. In your bags it still changes as you press Shift.
