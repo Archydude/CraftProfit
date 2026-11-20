@@ -311,6 +311,8 @@ end
 
 local function onCraftResult(data)
 	if not data then return end
+	-- One fewer to go in the panel's Crafts box, when it's for this recipe.
+	ns.Panel.Crafted(started and started.recipeID)
 	local panel = ns.Panel.Frame()
 	-- On screen: the panel still counts as shown while the profession window is closed.
 	local shown = panel and panel:IsVisible()

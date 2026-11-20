@@ -194,6 +194,57 @@ local function addButton(text, onClick, tooltip)
 	contentHeight = contentHeight + BUTTON_HEIGHT + 2
 end
 
+-- The Craft button, at the right of the shopping list button's row: starts the
+-- crafts, as the game's own Create button does.
+local craftButton, craftButtonUsed
+
+-- Its text and whether it can be clicked follow the game's Create button and
+-- amount box: "Craft", or "Craft 5" for more than one.
+local function updateCraftButton()
+	if not (craftButton and craftButton:IsShown()) then return end
+	local amount = ns.Blizzard.CreateCount()
+	craftButton:SetText(amount > 1 and format("Craft %d", amount) or "Craft")
+	craftButton:SetWidth(craftButton:GetFontString():GetUnboundedStringWidth() + 32)
+	craftButton:SetEnabled(ns.Blizzard.CanCreate())
+end
+
+local function showCraftTip(self)
+	local can, reason = ns.Blizzard.CanCreate()
+	local amount = ns.Blizzard.CreateCount()
+	GameTooltip:SetOwner(self, "ANCHOR_LEFT")
+	GameTooltip:SetText("Craft")
+	if can then
+		GameTooltip:AddLine(amount > 1 and format("Crafts this %d times, with the materials picked in the crafting window.", amount)
+			or "Crafts this once, with the materials picked in the crafting window.", 1, 1, 1, true)
+		GameTooltip:AddLine("The same as the Create button there. The Crafts box sets how many, up to what you can "
+			.. "make now.", 0.53, 0.53, 0.53, true)
+	else
+		GameTooltip:AddLine(reason or "You can't craft this right now.", 1, 0.3, 0.3, true)
+	end
+	GameTooltip:Show()
+end
+
+-- Puts the Craft button on the row that starts at `top`.
+local function addCraftButton(top)
+	if not craftButton then
+		craftButton = CreateFrame("Button", nil, frame, "UIPanelButtonTemplate")
+		craftButton:SetFrameLevel(frame:GetFrameLevel() + 2)
+		craftButton:SetHeight(BUTTON_HEIGHT)
+		craftButton:SetMotionScriptsWhileDisabled(true)
+		craftButton:SetScript("OnClick", function()
+			GameTooltip:Hide()
+			ns.Blizzard.Create()
+		end)
+		craftButton:SetScript("OnEnter", showCraftTip)
+		craftButton:SetScript("OnLeave", GameTooltip_Hide)
+	end
+	craftButton:ClearAllPoints()
+	craftButton:SetPoint("TOPRIGHT", frame, "TOPRIGHT", -Layout.PAD_SIDE + 2, -Layout.PAD_TOP - top)
+	craftButton:Show()
+	craftButtonUsed = true
+	updateCraftButton()
+end
+
 -- A little extra space that sets the next row apart.
 -- The crafting strategy dropdown, on a row of its own with a label.
 local STRATEGY_WIDTH = 140
@@ -511,6 +562,13 @@ local function stripe(top)
 	gradient(band, "HORIZONTAL", { 1, 1, 1 }, 0.05, { 1, 1, 1 }, 0.05)
 end
 
+-- A red tint behind the row that was just added at "top": a material you're
+-- short of. It fades out to the right, under the amount.
+local function shortTint(top)
+	local band = addBand(top - 2, contentHeight - top, BOX_INSET)
+	gradient(band, "HORIZONTAL", LOSS_TINT, 0.28, LOSS_TINT, 0.04)
+end
+
 local header
 
 local function createHeader()
@@ -641,14 +699,82 @@ local function isCrafted(material)
 	return ns.Chains.Crafted(material.itemID) ~= nil
 end
 
--- Shows the recipe that makes a material you craft yourself, in its profession's window.
-local function openCrafted(material)
+-- The recipes you came from by clicking a material you craft yourself, the first
+-- one first: { recipeID, professionID = its profession, name } ... The Back row
+-- at the top of the panel returns to the last of them. Forgotten when the
+-- profession window closes.
+local trail = {}
+-- The recipe a click is on its way to, and until when: another profession takes
+-- a moment to open, and until then the panel still draws the recipe you left.
+-- headingCrafts is what its Crafts box starts on when it shows.
+local headingTo, headingUntil, headingCrafts = nil, 0, 1
+local HEADING_SECONDS = 3
+local BACK_ICON = "|TInterface\\Buttons\\UI-SpellbookIcon-PrevPage-Up:18|t"
+local CANT_OPEN = "Couldn't open the profession that makes %s right now."
+
+-- How many crafts of its recipe make what you're short of a material for the
+-- crafts the panel shows: one when you have enough.
+local function craftsToCover(material, recipe)
+	local short = material.qty * count - ns.Model.Owned(material.itemID)
+	if short <= 0 then return 1 end
+	return math.min(math.ceil(short / recipe.madeAtLeast), ns.Shopping.MAX_CRAFTS)
+end
+
+-- Shows the recipe that makes a material you craft yourself, in its profession's
+-- window, with its Crafts box on what you're short of. Remembers the recipe you
+-- clicked it on, and how many crafts that was on, for the Back row.
+local function openCrafted(model, material)
 	local recipe = ns.Chains.RecipeFor(material.itemID)
 	if not (recipe and recipe.recipeID) then return end
 	GameTooltip:Hide()
+	local from = model.kind == "craft" and model.recipeID and model.recipeID ~= recipe.recipeID
+		and { recipeID = model.recipeID, professionID = ns.Blizzard.ShownBaseProfession(), name = model.title,
+			crafts = count }
+	local cover = craftsToCover(material, recipe)
 	if not ns.Blizzard.OpenRecipe(recipe.recipeID, recipe.professionID) then
-		ns.Shopping.Say(format("Couldn't open the profession that makes %s right now.", recipe.name or "it"))
+		ns.Shopping.Say(format(CANT_OPEN, recipe.name or "it"))
+		return
 	end
+	if from then trail[#trail + 1] = from end
+	headingTo, headingUntil, headingCrafts = recipe.recipeID, GetTime() + HEADING_SECONDS, cover
+end
+
+-- The Back row's click: shows the recipe you last came from again.
+local function goBack()
+	local to = table.remove(trail)
+	if not to then return end
+	GameTooltip:Hide()
+	if ns.Blizzard.OpenRecipe(to.recipeID, to.professionID) then
+		headingTo, headingUntil, headingCrafts = to.recipeID, GetTime() + HEADING_SECONDS, to.crafts or 1
+	else
+		trail[#trail + 1] = to
+		ns.Shopping.Say(format(CANT_OPEN, to.name or "it"))
+	end
+	Panel.Refresh()
+end
+
+-- The Back row, under the panel's top: "Back to" the recipe whose material you
+-- clicked, while there is one. Drawn before the rest of a craft.
+local function drawBack(model)
+	if headingTo == model.recipeID or GetTime() > headingUntil then headingTo = nil end
+	-- You're on a recipe you came from again (picked by hand, or its materials
+	-- lead back to it): the way back ends before it.
+	if not headingTo then
+		for index, entry in ipairs(trail) do
+			if entry.recipeID == model.recipeID then
+				for last = #trail, index, -1 do trail[last] = nil end
+				break
+			end
+		end
+	end
+	local to = trail[#trail]
+	if not to then return end
+	local name = to.name or "the recipe"
+	addGap()
+	addRow(BACK_ICON .. " Back to " .. Color("heading", name), nil, nil, goBack, function(tip)
+		tip:SetText("Back to " .. name)
+		tip:AddLine("The recipe you clicked this material on.", 1, 1, 1, true)
+	end)
 end
 
 -- `canCycle`: the material comes in qualities you can click through.
@@ -762,8 +888,22 @@ local function materialCart(model, material)
 	}
 end
 
+-- The buttons under the materials: the shopping list's, and on the crafting page
+-- the Craft button, which shares its row or has its own.
+local function drawActions(model)
+	local before = contentHeight
+	drawShoppingButton(model)
+	if model.kind == "craft" and ns.Blizzard.ShowsCreate() then
+		if contentHeight == before then
+			addGap()
+			contentHeight = contentHeight + BUTTON_HEIGHT + 2
+		end
+		addCraftButton(contentHeight - BUTTON_HEIGHT - 2)
+	end
+end
+
 local function drawMaterials(model)
-	if #model.materials == 0 then return end
+	if #model.materials == 0 then return drawActions(model) end
 	addGap()
 	-- What they cost in all, on the heading.
 	addHeading("Your materials", Color(ns.AmountColor(-model.cost), Money(-model.cost * count)))
@@ -789,15 +929,26 @@ local function drawMaterials(model)
 				elseif canCycle then
 					ns.Simulation.Cycle(material, mouseButton)
 				elseif crafted and mouseButton == "LeftButton" then
-					openCrafted(material)
+					openCrafted(model, material)
 				end
 			end
 			tooltip = materialTooltip(model, material, canCycle)
 		end
 		local amount = material.price and Money(material.price * material.qty * count) or Color("warning", "no price")
 		local top = contentHeight
-		addRow(Item(material.itemID, material.qty * count) .. tag, amount, nil, onClick, tooltip, cart)
-		if index % 2 == 0 then stripe(top) end
+		-- In front, how many you have of how many the crafts shown take ("2/5"), as
+		-- the crafting window has it: green when that's enough, and red, on a row
+		-- tinted red, when you're short.
+		local need, have = material.qty * count, ns.Model.Owned(material.itemID)
+		local short = have < need
+		local name = Item(material.itemID, need):gsub("^%d+x",
+			Color(short and "loss" or "profit", format("%d/%d", have, need)), 1)
+		addRow(name .. tag, amount, nil, onClick, tooltip, cart)
+		if short then
+			shortTint(top)
+		elseif index % 2 == 0 then
+			stripe(top)
+		end
 
 		-- A cheaper rank to buy instead of using yours, once per slot.
 		local cheaper = model.cheaper and model.cheaper[material.slotIndex]
@@ -808,7 +959,7 @@ local function drawMaterials(model)
 				function() ns.Simulation.Pick(material.slotIndex, cheaper.itemID) end, cheaperTooltip(material, cheaper))
 		end
 	end
-	drawShoppingButton(model)
+	drawActions(model)
 end
 
 -- What multicraft / resourcefulness added on the last craft, and what that craft
@@ -1126,6 +1277,7 @@ end
 local function drawCraft(model)
 	local output = model.output
 	drawHeader(model, output and format("Makes %sx %s", output.qtyText, output.link), output and output.link)
+	drawBack(model)
 	drawHeadline(model)
 	if output then
 		addGap()
@@ -1317,15 +1469,18 @@ function Panel.Render()
 		return
 	end
 	rowCount, dividerCount, bandCount, contentHeight, profitRow, procRow = 0, 0, 0, 0, nil, nil
-	rowButtonUsed, craftsBoxUsed = false, false
+	rowButtonUsed, craftsBoxUsed, craftButtonUsed = false, false, false
 	wipe(dropdownsUsed)
 	wipe(checksUsed)
 	-- The Crafts box is for the recipe it was typed on: another one starts at 1.
+	-- One you came to from a material, or went back to, starts on what you're
+	-- short of there, or on what it was on.
 	local crafting = model ~= nil and model.kind == "craft"
 	if crafting and model.key ~= craftsKey then
-		-- The amount box next to Create stops following the old number.
-		if crafts > 1 then ns.Blizzard.SetCraftAmount(1, model.key) end
-		crafts, craftsKey = 1, model.key
+		local start = (headingTo == model.key and GetTime() <= headingUntil) and headingCrafts or 1
+		-- The amount box next to Create follows the new number, not the old one.
+		if crafts > 1 or start > 1 then ns.Blizzard.SetCraftAmount(start, model.key) end
+		crafts, craftsKey = start, model.key
 		if craftsBox then craftsBox:ClearFocus() end
 	end
 	count = crafting and crafts or 1
@@ -1348,6 +1503,7 @@ function Panel.Render()
 	for i = dividerCount + 1, #dividers do dividers[i]:Hide() end
 	for i = bandCount + 1, #bands do bands[i]:Hide() end
 	if rowButton and not rowButtonUsed then rowButton:Hide() end
+	if craftButton and not craftButtonUsed then craftButton:Hide() end
 	if craftsBox and not craftsBoxUsed then craftsBox:Hide() end
 	for key, check in pairs(checks) do
 		if not checksUsed[key] then check:Hide() end
@@ -1375,6 +1531,16 @@ function Panel.Toggle()
 end
 
 -- Redraws once at the end of this frame, however many times it's called.
+-- A craft of `recipeID` finished. When that's the recipe the Crafts box is for
+-- and it's on more than one, there's one fewer to go: the box counts down to 1,
+-- and the panel and the amount box next to Create follow it.
+function Panel.Crafted(recipeID)
+	if not recipeID or recipeID ~= craftsKey or crafts <= 1 then return end
+	crafts = crafts - 1
+	ns.Blizzard.SetCraftAmount(crafts, craftsKey)
+	Panel.Refresh()
+end
+
 function Panel.Refresh()
 	if refreshQueued or not frame then return end
 	refreshQueued = true
@@ -1429,6 +1595,12 @@ local function createToggle()
 	-- Each time the window opens, the panel starts open or closed as the option says.
 	open = ns.db.panelAuto == true
 	ProfessionsFrame:HookScript("OnShow", function() open = ns.db.panelAuto == true end)
+	-- The Back row's way back ends when the window closes (not when it only
+	-- switches to another profession).
+	ns.Blizzard.WatchWindowClosed(function()
+		wipe(trail)
+		headingTo = nil
+	end)
 end
 
 local function createFrame()
@@ -1505,5 +1677,6 @@ function Panel.Init()
 	createFrame()
 	ns.Blizzard.Watch(Panel.Refresh, frame)
 	ns.Blizzard.WatchCraftAmount()
+	ns.Blizzard.WatchCreate(updateCraftButton)
 	ns.Results.Init()
 end

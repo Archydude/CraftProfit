@@ -184,9 +184,12 @@ end
 
 -- The profession the window shows right now: its ID and name.
 local function shownProfession()
-	local child = C_TradeSkillUI.GetChildProfessionInfo()
+	-- Retail: the expansion's part of the profession (Midnight Blacksmithing).
+	local child = ns.QUALITY_CRAFTING and C_TradeSkillUI.GetChildProfessionInfo()
 	if child and child.professionID and child.professionID > 0 then return child.professionID, child.professionName end
-	-- Forever's professions may have no expansion parts: the profession itself.
+	-- WoW Forever's professions have no expansions: always the profession itself.
+	-- The game sometimes names a part of it there too (2941 for Engineering, 202),
+	-- which would save its recipes a second time under that number.
 	local base = C_TradeSkillUI.GetBaseProfessionInfo()
 	if base and base.professionID and base.professionID > 0 then return base.professionID, base.professionName end
 end

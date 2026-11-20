@@ -22,6 +22,7 @@ local FORMAT = 1
 -- }
 -- A saved scan's entries once unpacked, until it's replaced: saved scan -> { entry ... }.
 local unpacked = setmetatable({}, { __mode = "k" })
+local tidied = false -- whether the saved scans were looked through for doubles (see tidy)
 
 ---------------------------------------------------------------------------
 -- Packing
@@ -190,6 +191,7 @@ function Scans.Save(run)
 	for i, entry in ipairs(run.recipes) do recipes[i] = packRecipe(entry) end
 	me.scans = me.scans or {}
 	me.scans[run.professionID] = { format = FORMAT, time = time(), name = run.name, recipes = recipes }
+	tidied = false -- an older scan of the same profession under another number goes
 	-- Craft myself can use the new recipes, and the list prices with them.
 	ns.Chains.Reset()
 	if ns.Chains.Active() then ns.BestCrafts.Reprice(true) end
@@ -209,8 +211,34 @@ local function entriesOf(saved, professionID, character)
 	return entries
 end
 
+-- WoW Forever: a profession's recipes could be saved twice, under two of the
+-- game's numbers for it (Engineering as 202 and as 2941), and the game opens it
+-- by only one of them. Of a character's scans with the same profession name, the
+-- newest stays. Looked at once, and again after a scan is saved.
+local function tidy()
+	if tidied then return end
+	tidied = true
+	if ns.QUALITY_CRAFTING then return end
+	for _, character in pairs(CraftonomicsDB.characters) do
+		local newest = {} -- profession name -> the number its newest scan is saved under
+		for professionID, saved in pairs(character.scans or {}) do
+			local name = saved.name
+			local other = name and newest[name]
+			if not other then
+				if name then newest[name] = professionID end
+			elseif (saved.time or 0) > (character.scans[other].time or 0) then
+				character.scans[other] = nil
+				newest[name] = professionID
+			else
+				character.scans[professionID] = nil
+			end
+		end
+	end
+end
+
 -- This character's saved recipes, of every profession it has scanned.
 function Scans.Mine()
+	tidy()
 	local _, myKey = ns.Ranks.Me()
 	local character = myKey and CraftonomicsDB.characters[myKey]
 	local list = {}
@@ -225,6 +253,7 @@ end
 -- Every saved recipe of every character, except this character's `shownProfession`,
 -- which the list has fresh from the game.
 function Scans.Entries(shownProfession)
+	tidy()
 	local list = {}
 	local _, myKey = ns.Ranks.Me()
 	for key, character in pairs(CraftonomicsDB.characters) do

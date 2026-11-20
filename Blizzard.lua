@@ -672,6 +672,40 @@ function Blizzard.WatchCraftAmount()
 	end)
 end
 
+-- Whether the crafting page has the game's Create button: your own recipe, one
+-- you've learned.
+function Blizzard.ShowsCreate()
+	local page = ProfessionsFrame.CraftingPage
+	return page:IsVisible() and page.CreateButton ~= nil and page.CreateButton:IsShown()
+end
+
+-- Whether that button can be clicked right now, and when it can't, the game's own
+-- reason (in red), if it gives one.
+function Blizzard.CanCreate()
+	local button = ProfessionsFrame.CraftingPage.CreateButton
+	if not Blizzard.ShowsCreate() then return false end
+	return button:IsEnabled(), button.tooltipText
+end
+
+-- How many crafts a click on it starts: what its amount box is on.
+function Blizzard.CreateCount()
+	local box = ProfessionsFrame.CraftingPage.CreateMultipleInputBox
+	local value = box and box:IsShown() and box.GetValue and box:GetValue()
+	return value and value > 0 and value or 1
+end
+
+-- Starts the crafts, as a click on the game's Create button does: the recipe on
+-- the crafting page, with the materials picked there, as many as its amount box says.
+function Blizzard.Create()
+	if Blizzard.CanCreate() then ProfessionsFrame.CraftingPage:Create() end
+end
+
+-- Calls onChange() when the Create button, or its amount box, may have changed.
+function Blizzard.WatchCreate(onChange)
+	local page = ProfessionsFrame.CraftingPage
+	if page.ValidateControls then hooksecurefunc(page, "ValidateControls", onChange) end
+end
+
 local CLOSED_DELAY = 0.5
 
 -- Calls onClosed() when you close the profession window (not for a moment).
@@ -706,6 +740,12 @@ local RECIPE_RETRY, RECIPE_TRIES = 0.2, 10
 -- recipe's base profession, when it's known. False when that profession couldn't
 -- be opened.
 function Blizzard.OpenRecipe(recipeID, professionID)
+	-- The game can know a profession by a second number, for a part of it (WoW
+	-- Forever's Engineering is 202, its recipes' part 2941), and only opens it by
+	-- the first: the part's parent.
+	local part = professionID and C_TradeSkillUI.GetProfessionInfoByRecipeID(recipeID)
+	local parent = part and part.parentProfessionID
+	if parent and parent > 0 then professionID = parent end
 	if not professionID or Blizzard.ShownBaseProfession() == professionID then
 		Blizzard.ShowRecipe(recipeID)
 		return true

@@ -112,6 +112,7 @@ end
 local function owned(itemID)
 	return C_Item.GetItemCount(itemID, true, false, true, true) or 0
 end
+Model.Owned = owned
 
 -- What using `qty` of a material really costs you, or nil without a price. What
 -- you'd buy costs its price; what you already own costs what you'd get selling it

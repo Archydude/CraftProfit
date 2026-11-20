@@ -42,21 +42,21 @@ Craftonomics, formerly **Craft Profit**, answers in gold: **profit or loss?** A 
 - **Patron orders** priced and crafted right in Blizzard's Patron tab
 
 ### Crafts and orders
-The sale price at the rank you'll get, minus the 5% cut and your materials. On orders: the commission, minus the materials **you** supply, plus sellable rewards. With concentration on, the **concentration strategy** picks the materials: cheapest, least concentration or most **gold per point**. The **Crafts** box shows it for any number of crafts.
+The sale price at the rank you'll get, minus the 5% cut and your materials. On orders: the commission, minus the materials **you** supply, plus sellable rewards. With concentration on, the **concentration strategy** picks the materials: cheapest, least concentration or most **gold per point**. The **Crafts** box shows it for any number of crafts and counts down as you craft. Materials show what you **have** of what you need, and a **Craft** button crafts from the panel.
 
 ### What should I craft?
-**Best crafts** lists every recipe you know, most profitable first. Search by item or **material**. With TSM, **sale rate** and **trend** columns show what really sells.
+**Best crafts** lists every recipe you know, most profitable first. With TSM, **sale rate** and **trend** columns show what really sells.
 
-**All recipes** lists every profession's sellable recipes with each craft's profit. With TSM, switch it to a **heatmap**: tiles colored by price trend and sized by gold sold per day. Click a group to see only its items.
+**All recipes** lists every profession's sellable recipes with each craft's profit. With TSM, switch it to a **heatmap**: tiles colored by price trend and sized by gold sold per day.
 
 ### At the auction house
-**Shopping list**: click a material to see it with the amount to buy. **Sell**: your bags with a price and TSM sale rate on every item. **My auctions**: see which are undercut and cancel them. With Auctionator installed, you choose which of the two does each part.
+**Shopping list**: click a material to see it with the amount to buy. **Sell**: your bags with a price and TSM sale rate on every item. **My auctions**: see which are undercut and cancel them.
 
 ### Patron orders
 Blizzard's Patron tab shows each order's **expected profit**, **rewards** and missing **materials**. **Next order** works through them.
 
 ### WoW Forever
-Best crafts shows what a **skill point** costs with each recipe. **Craft myself** prices materials you can make at what crafting them costs, and **Cheapest way** crafts or buys each, whichever is cheaper.
+Best crafts shows what a **skill point** costs with each recipe. **Craft myself** prices materials you can make at what crafting them costs, and **Cheapest way** crafts or buys each, whichever is cheaper. Click such a material to open its recipe, then **Back** to return.
 
 ### Item tooltips
 Vendor prices, the auction price and the **AH deposit**, plus with TSM the **sale rate**, **trend** and whether the lowest auction is **cheap** or **expensive** against the market value. Hold **Shift** on a stack for the whole stack's amounts.
@@ -77,18 +77,25 @@ This addon was made with AI.
 ## B. Upload File form
 
 **Files:** two, each uploaded with only its own game versions (why is in [UPLOADING.md](../UPLOADING.md)). The display name, release type and changelog are the same for both.
-- `dist\Craftonomics-5.3.0-retail.zip`: Retail `12.1.5`
-- `dist\Craftonomics-5.3.0-forever.zip`: WoW Forever `1.60.1`
+- `dist\Craftonomics-5.4.0-retail.zip`: Retail `12.1.5`
+- `dist\Craftonomics-5.4.0-forever.zip`: WoW Forever `1.60.1`
 
 **Display name**
 ```
-Craftonomics 5.3.0
+Craftonomics 5.4.0
 ```
 
 **Release type:** `Release`
 
 **Changelog** (paste only the newest part; paste older parts too if they never went up)
 ```markdown
+5.4.0
+- **Craft button on the panel:** under your materials, at the right of the Shopping list button, a **Craft** button starts the crafts for the number in the **Crafts** box, as the game's Create button does. It says how many, like **Craft 5**, and when you can't craft it's greyed out and its tooltip says why.
+- **Have and need on materials:** each material now starts with how many you have of how many the crafts take, like **2/5**, in green when that's enough. A material you're short of is red, on a row tinted red.
+- **The Crafts box counts down:** each craft you finish takes one off, down to 1, so the panel shows how many are left to make and the materials for those.
+- **Back to the recipe you came from (WoW Forever):** after you click a material you craft yourself to open its recipe, a **Back to** row at the top of the panel returns to the recipe you came from. The material's Crafts box starts on what you're short of for the crafts you were looking at, and going back puts the first recipe's number back.
+- Fixed on WoW Forever: clicking a material you craft yourself could fail with "Couldn't open the profession that makes ... right now."
+
 5.3.0
 - **Heatmap in All recipes (with TSM):** a new dropdown at the bottom right of the All recipes window shows the recipes as a heatmap instead of a list: **Heatmap: crafted items** or **Heatmap: materials**. Every item is a tile. Its color is TSM's trend: red when the item's market value is below its historical price, green when it's above. Its size is the gold of the item sold in a day. Crafted items are grouped by profession, materials by what kind of item they are.
 - Click a group to see only its items, and right-click or **Back** to return. Hover a tile for its trend, market value, historical price, sales and TSM sale rate. Items too small for a tile of their own share a **more** tile. The search, the profession and the filters apply to the heatmap too.

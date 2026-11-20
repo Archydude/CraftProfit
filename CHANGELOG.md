@@ -1,5 +1,12 @@
 # Changelog
 
+## 5.4.0
+- **Craft button on the panel:** under your materials, at the right of the Shopping list button, a **Craft** button starts the crafts for the number in the **Crafts** box, as the game's Create button does. It says how many, like **Craft 5**, and when you can't craft it's greyed out and its tooltip says why.
+- **Have and need on materials:** each material now starts with how many you have of how many the crafts take, like **2/5**, in green when that's enough. A material you're short of is red, on a row tinted red.
+- **The Crafts box counts down:** each craft you finish takes one off, down to 1, so the panel shows how many are left to make and the materials for those.
+- **Back to the recipe you came from (WoW Forever):** after you click a material you craft yourself to open its recipe, a **Back to** row at the top of the panel returns to the recipe you came from. The material's Crafts box starts on what you're short of for the crafts you were looking at, and going back puts the first recipe's number back.
+- Fixed on WoW Forever: clicking a material you craft yourself could fail with "Couldn't open the profession that makes ... right now."
+
 ## 5.3.0
 - **Heatmap in All recipes (with TSM):** a new dropdown at the bottom right of the All recipes window shows the recipes as a heatmap instead of a list: **Heatmap: crafted items** or **Heatmap: materials**. Every item is a tile. Its color is TSM's trend: red when the item's market value is below its historical price, green when it's above. Its size is the gold of the item sold in a day. Crafted items are grouped by profession, materials by what kind of item they are.
 - Click a group to see only its items, and right-click or **Back** to return. Hover a tile for its trend, market value, historical price, sales and TSM sale rate. Items too small for a tile of their own share a **more** tile. The search, the profession and the filters apply to the heatmap too.
