@@ -42,15 +42,15 @@ Craftonomics, formerly **Craft Profit**, answers in gold: **profit or loss?** A 
 - **Patron orders** priced and crafted right in Blizzard's Patron tab
 
 ### Crafts and orders
-The sale price at the rank you'll get, minus the 5% cut and your materials. On orders: the commission, minus the materials **you** supply, plus sellable rewards. With concentration on, the **concentration strategy** picks the materials: cheapest, least concentration or most **gold per point**.
+The sale price at the rank you'll get, minus the 5% cut and your materials. On orders: the commission, minus the materials **you** supply, plus sellable rewards. With concentration on, the **concentration strategy** picks the materials: cheapest, least concentration or most **gold per point**. The **Crafts** box shows it for any number of crafts.
 
 ### What should I craft?
 **Best crafts** lists every recipe you know, most profitable first. Search by item or **material**. With TSM, **sale rate** and **trend** columns show what really sells.
 
-**All recipes** lists every profession's sellable recipes with each craft's profit. With TSM, switch it to a **heatmap**: tiles colored by price trend and sized by gold sold per day.
+**All recipes** lists every profession's sellable recipes with each craft's profit. With TSM, switch it to a **heatmap**: tiles colored by price trend and sized by gold sold per day. Click a group to see only its items.
 
 ### At the auction house
-**Shopping list**: click a material to see it with the amount to buy. **Sell**: your bags with a price and TSM sale rate on every item. **My auctions**: see which are undercut and cancel them.
+**Shopping list**: click a material to see it with the amount to buy. **Sell**: your bags with a price and TSM sale rate on every item. **My auctions**: see which are undercut and cancel them. With Auctionator installed, you choose which of the two does each part.
 
 ### Patron orders
 Blizzard's Patron tab shows each order's **expected profit**, **rewards** and missing **materials**. **Next order** works through them.
