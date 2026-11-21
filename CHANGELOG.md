@@ -1,5 +1,10 @@
 # Changelog
 
+## 5.9.0
+- **Freshest prices:** a new choice under **Price addon** in the options. It prices with whichever is newest: TSM (its desktop app's last download), Auctionator's last scan, or Craftonomics' last full scan. An item the newest one didn't see takes the next newest's price. With TSM loaded it only applies where the TSM price type is **Lowest auction right now**, for materials, crafted items or both, since that's the price a scan gives too; with any other TSM price type, prices come as with Automatic. The footers of the panel and the Best crafts list say which one is in use and how old it is.
+- With Freshest prices, Craftonomics' scan starts by itself when you open the auction house, at most once an hour, unless Auctionator does the pricing there. A scan made with TSM in the game doesn't count as a newer TSM price.
+- Fixed: after Craftonomics' price scan finished, the Best crafts list kept its old prices until you opened it again. It now uses the new prices right away, and so do the profits on the recipe list and the Best Craft line on tooltips.
+
 ## 5.8.0
 - **Best Craft follows chains:** on a material's tooltip, the Best Craft line now also looks at what its crafts go into. When what a recipe makes goes into another recipe that makes more, like Heavy Stone into Heavy Blasting Powder and that into a bomb, the line shows that last recipe's profit, and the crafts on the way are listed under it in order, each set in further than the one before. Chains go up to four crafts.
 - **Weigh best craft by sale rate (with TSM):** a new option on the Tooltips options page, off by default. With it on, when the best craft is picked, a recipe's profit counts in full when what it makes has a TSM sale rate of 70% or more, and for less below that, in proportion: at 35% it counts for half. So a craft that sells well can beat one that makes more but rarely sells. The line still shows the craft's real profit.

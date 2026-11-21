@@ -188,13 +188,23 @@ function Options.Create()
 		{ "tsm", "TradeSkillMaster only" },
 		{ "auctionator", "Auctionator only" },
 		{ "own", "Craftonomics' scan only" },
+		{ "fresh", "Freshest prices" },
 	}, "Where prices come from. Automatic uses TSM, falls back to Auctionator for items TSM has no price for, " ..
 		"and to Craftonomics' own scan of the auction house for what neither prices. With neither installed, " ..
 		"Craftonomics' scan prices everything.\n\n" ..
+		"Freshest prices uses whichever is newest: TSM (its desktop app's last download), Auctionator's last " ..
+		"scan, or Craftonomics' last full scan. An item the newest one didn't see takes the next newest's price. " ..
+		"With TSM loaded it only does so where the TSM price type below is Lowest auction right now, since " ..
+		"that's the price a scan gives too: set it for materials, for crafted items, or both. With any other TSM " ..
+		"price type it prices as Automatic does. The footers say which one is in use and how old it is. " ..
+		"Craftonomics' scan starts by itself at the auction house, at most once an hour, unless Auctionator does " ..
+		"the pricing there (Price with, on the Auction house page). A scan made with TSM in the game doesn't " ..
+		"count as a newer TSM price.\n\n" ..
 		"The scan runs from the Prices tab of Craftonomics' window at the auction house (/craftonomics prices).")
 	checkbox("autoScan", "Scan when I open the auction house",
 		"Craftonomics' own price scan starts by itself when you open the auction house.\n\n" ..
-		"Only while your prices come from that scan (not from TSM or Auctionator), and at most once an hour. " ..
+		"Only while your prices come from that scan (not from TSM or Auctionator), or with Freshest prices " ..
+		"as the price addon, and at most once an hour. " ..
 		"Chat says when it starts and when it's done.\n\n" ..
 		"Off: you start it with Scan now on the Prices tab, or /craftonomics scan.")
 	dropdown("matSource", "TSM price for materials", ns.TSM_SOURCES,

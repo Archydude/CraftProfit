@@ -98,10 +98,14 @@ local function tell()
 	for _, listener in ipairs(listeners) do listener() end
 end
 
--- Prices changed: everything that shows one draws again.
+-- Prices changed: everything that shows one draws again, and the lists that keep
+-- the prices they asked for ask again.
 local function redraw()
+	ns.Planner.Reset()
 	ns.Panel.Refresh()
+	ns.BestCrafts.Reprice(true)
 	ns.BestCraftsList.Refresh()
+	if ns.RecipeProfit then ns.RecipeProfit.Refresh() end
 	ns.ShoppingList.Refresh()
 end
 
@@ -130,6 +134,20 @@ end
 function PriceScan.Vendor(itemID)
 	local seen = CraftonomicsDB.vendorSeen
 	return seen and seen[itemID] or nil
+end
+
+-- Whether the last full scan saw the material up for sale. Only then is its
+-- price as new as that scan: an item nobody had up keeps the price of the last
+-- time it was seen.
+function PriceScan.MaterialInLastScan(itemID)
+	return load() and (counts[tostring(itemID)] or 0) > 0 or false
+end
+
+-- The same for a crafted item.
+function PriceScan.SaleInLastScan(link, itemID)
+	if not load() then return false end
+	local key = ns.SavedPrices.SaleKey(link, itemID)
+	return key ~= nil and (counts[key] or 0) > 0
 end
 
 -- How many seconds ago the last full scan ended, or nil when there never was one.

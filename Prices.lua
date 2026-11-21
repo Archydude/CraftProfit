@@ -8,7 +8,7 @@ ns.Prices = Prices
 
 -- Whether the Price addon option lets TSM's prices in.
 local function wantsTSM()
-	return ns.db.provider == "auto" or ns.db.provider == "tsm"
+	return ns.db.provider == "auto" or ns.db.provider == "tsm" or ns.db.provider == "fresh"
 end
 
 local function tsmAvailable()
@@ -21,15 +21,20 @@ local function savedPrices()
 end
 
 local function auctionatorAPI()
-	if ns.db.provider ~= "auto" and ns.db.provider ~= "auctionator" then return end
+	if ns.db.provider ~= "auto" and ns.db.provider ~= "auctionator" and ns.db.provider ~= "fresh" then return end
 	return Auctionator and Auctionator.API and Auctionator.API.v1
 end
 
 -- Craftonomics' own scan: the last one asked with Automatic, so it prices what
 -- nobody else does, and the only one when it's the Price addon picked.
 local function ownScan()
-	if ns.db.provider == "auto" or ns.db.provider == "own" then return ns.PriceScan end
+	if ns.db.provider == "auto" or ns.db.provider == "own" or ns.db.provider == "fresh" then return ns.PriceScan end
 end
+
+-- TSM's price type for the lowest auction right now. A scan of the auction
+-- house gives the same kind of price, so only for this type can TSM and a scan
+-- stand in for each other.
+local LOWEST = "dbminbuyout"
 
 -- Other addons' APIs can change or throw on items they don't know, so every
 -- call into them is guarded. A failed lookup is just "no price".
@@ -42,6 +47,115 @@ local function auctionatorValue(fn, arg)
 	if not fn then return end
 	local ok, value = pcall(fn, ADDON_NAME, arg)
 	if ok and value and value > 0 then return value end
+end
+
+-- Where Auctionator keeps the times of its scans: in its own saved state, not its
+-- API, so a change on its side just means no answer.
+local AUCTIONATOR_SCANS = { "TimeOfLastReplicateScan", "TimeOfLastBrowseScan", "TimeOfLastGetAllScan" }
+
+-- When Auctionator last scanned the auction house (seconds since 1970), or nil.
+local function auctionatorScanned()
+	local state = Auctionator and Auctionator.SavedState
+	if type(state) ~= "table" then return end
+	local last = 0
+	for _, key in ipairs(AUCTIONATOR_SCANS) do
+		if type(state[key]) == "number" and state[key] > last then last = state[key] end
+	end
+	return last > 0 and last or nil
+end
+
+---------------------------------------------------------------------------
+-- The freshest prices
+---------------------------------------------------------------------------
+
+-- What each source is called in the footer.
+local FRESH_NAMES = { tsm = "TSM", own = "Craftonomics' scan", auctionator = "Auctionator's scan" }
+-- The sources newest first, and when that was worked out (see freshest).
+local freshList, freshAt
+
+-- With "Freshest prices" as the Price addon: who has prices, newest first:
+-- { { name = "tsm" | "own" | "auctionator", seconds = how old its prices are } ... }.
+-- TSM's are as old as its desktop app's last download, a scan's as old as the
+-- scan. Worked out again at most once a second. Nil when the choice isn't on, on
+-- an alt using saved TSM prices, and when TSM is loaded but doesn't say how old
+-- its prices are: prices then come as with Automatic.
+local function freshest()
+	if ns.db.provider ~= "fresh" or savedPrices() then return end
+	local now = GetTime()
+	if freshAt and now - freshAt < 1 then return freshList or nil end
+	freshAt, freshList = now, false
+	local list = {}
+	if TSM_API and TSM_API.GetCustomPriceValue then
+		local downloaded = ns.SavedPrices.TSMDownloaded()
+		if not downloaded then return end
+		list[#list + 1] = { name = "tsm", seconds = math.max(time() - downloaded, 0) }
+	end
+	local scanned = ns.PriceScan.Seconds()
+	if scanned then list[#list + 1] = { name = "own", seconds = scanned } end
+	local auctionator = Auctionator and Auctionator.API and Auctionator.API.v1 and auctionatorScanned()
+	if auctionator then list[#list + 1] = { name = "auctionator", seconds = math.max(time() - auctionator, 0) } end
+	table.sort(list, function(a, b) return a.seconds < b.seconds end)
+	freshList = list
+	return list
+end
+
+-- That list for a price of TSM's type `source` (the one picked for materials, or
+-- for crafted items). With TSM loaded, only its lowest auction is a price a scan
+-- can stand in for; any other type prices as with Automatic.
+local function freshFor(source)
+	local list = freshest()
+	if not list or #list == 0 then return end
+	if TSM_API and TSM_API.GetCustomPriceValue and source ~= LOWEST then return end
+	return list
+end
+
+-- Whether Auctionator saw the item in its last scan, going by how many days ago
+-- it last saw it (`ageOf` is its function for that) and how old that scan is.
+local function auctionatorSaw(ageOf, arg, seconds)
+	if not ageOf then return false end
+	local ok, age = pcall(ageOf, ADDON_NAME, arg)
+	return ok and type(age) == "number" and age <= math.floor(seconds / 86400)
+end
+
+-- A material's price from the freshest source that has it, and which that is. A
+-- scan only counts for what it saw up for sale: an item nobody had up keeps an
+-- older price there. Nil when none has it that fresh.
+local function freshMaterial(itemID)
+	local list = freshFor(ns.db.matSource)
+	if not list then return end
+	for _, source in ipairs(list) do
+		local value
+		if source.name == "tsm" then
+			value = tsmValue(ns.db.matSource, "i:" .. itemID)
+		elseif source.name == "own" then
+			value = ns.PriceScan.MaterialInLastScan(itemID) and ns.PriceScan.Material(itemID)
+		else
+			local api = Auctionator.API.v1
+			value = auctionatorSaw(api.GetAuctionAgeByItemID, itemID, source.seconds)
+				and auctionatorValue(api.GetAuctionPriceByItemID, itemID)
+		end
+		if value then return value, source.name end
+	end
+end
+
+-- The same for a crafted item, by its link.
+local function freshSale(link, itemID)
+	local list = freshFor(ns.db.saleSource)
+	if not list then return end
+	for _, source in ipairs(list) do
+		local value
+		if source.name == "tsm" then
+			local ok, itemString = pcall(TSM_API.ToItemString, link)
+			value = ok and itemString and tsmValue(ns.db.saleSource, itemString)
+		elseif source.name == "own" then
+			value = ns.PriceScan.SaleInLastScan(link, itemID) and ns.PriceScan.Sale(link, itemID)
+		else
+			local api = Auctionator.API.v1
+			value = auctionatorSaw(api.GetAuctionAgeByItemLink, link, source.seconds)
+				and auctionatorValue(api.GetAuctionPriceByItemLink, link)
+		end
+		if value then return value, source.name end
+	end
 end
 
 -- What a vendor sells an item for, in copper (nil if no vendor sells it, or
@@ -73,6 +187,9 @@ end
 -- What a material costs on the auction house, in copper (nil if nobody knows).
 local function auctionPrice(itemID)
 	local api, own = auctionatorAPI(), ownScan()
+	-- Freshest prices: the newest source that has it. Failing that, as with Automatic.
+	local fresh = freshMaterial(itemID)
+	if fresh then return fresh end
 	local value = (tsmAvailable() and tsmValue(ns.db.matSource, "i:" .. itemID))
 		or (savedPrices() and ns.SavedPrices.Material(itemID))
 	if value then return value end
@@ -113,6 +230,9 @@ end
 -- "tsm", "saved" (TSM prices saved for alts), "auctionator" or "own" (Craft
 -- Profit's scan). Uses the full link so quality and item level count.
 function Prices.SaleFrom(link, itemID)
+	-- Freshest prices: the newest source that has it. Failing that, as with Automatic.
+	local fresh, from = freshSale(link, itemID)
+	if fresh then return fresh, from end
 	if tsmAvailable() then
 		local ok, itemString = pcall(TSM_API.ToItemString, link)
 		local value = ok and itemString and tsmValue(ns.db.saleSource, itemString)
@@ -285,6 +405,14 @@ end
 -- aren't (they need no scan), and scanning is Craftonomics' part, or its scan is
 -- the only price addon picked.
 function Prices.ScansItself()
+	-- Freshest prices: the scan has to keep up, where scanning is Craftonomics' part
+	-- (not Auctionator's) and a scan can price something: without TSM, or with TSM's
+	-- lowest auction as a price type.
+	if ns.db.provider == "fresh" then
+		local tsm = TSM_API and TSM_API.GetCustomPriceValue
+		return ns.UsesOwn("ahPrice") and not savedPrices()
+			and (not tsm or ns.db.matSource == LOWEST or ns.db.saleSource == LOWEST)
+	end
 	if tsmAvailable() or Prices.SavedAge() or not ownScan() then return false end
 	return ns.db.provider == "own" or ns.UsesOwn("ahPrice")
 end
@@ -399,13 +527,9 @@ function Prices.ScanAge()
 	local scanner = Prices.Scanner()
 	if scanner == "own" then return ns.PriceScan.Age() end
 	if scanner ~= "auctionator" then return end
-	local state = Auctionator.SavedState
-	if type(state) ~= "table" then return end
-	local last = 0
-	for _, key in ipairs({ "TimeOfLastReplicateScan", "TimeOfLastBrowseScan", "TimeOfLastGetAllScan" }) do
-		if type(state[key]) == "number" and state[key] > last then last = state[key] end
-	end
-	if last == 0 then return false end
+	if type(Auctionator.SavedState) ~= "table" then return end
+	local last = auctionatorScanned()
+	if not last then return false end
 	return math.floor((time() - last) / 86400)
 end
 
@@ -438,10 +562,28 @@ function Prices.AgeText(age)
 	return age == 1 and "yesterday" or string.format("%d days ago", age)
 end
 
+-- "just now", "12 min ago", "3 hours ago" or "2 days ago" for a number of seconds.
+function Prices.AgoText(seconds)
+	if seconds < 60 then return "just now" end
+	if seconds < 3600 then return string.format("%d min ago", math.floor(seconds / 60)) end
+	if seconds < 86400 then
+		local hours = math.floor(seconds / 3600)
+		return hours == 1 and "1 hour ago" or string.format("%d hours ago", hours)
+	end
+	local days = math.floor(seconds / 86400)
+	return days == 1 and "1 day ago" or string.format("%d days ago", days)
+end
+
 -- Where prices currently come from, for the panel's footer. Saved TSM prices say
 -- whose they are, and how old while that's recent (old ones say it in red after
 -- this, see Reminder.FooterText).
 function Prices.SourceLabel()
+	-- Freshest prices: who prices first right now, and how old its prices are.
+	local first = (freshFor(ns.db.matSource) or freshFor(ns.db.saleSource) or {})[1]
+	if first then
+		return string.format("Freshest: %s, %s%s", FRESH_NAMES[first.name], first.name == "tsm" and "downloaded " or "",
+			Prices.AgoText(first.seconds))
+	end
 	if tsmAvailable() then
 		return "TSM (" .. ns.TSMSourceText(ns.db.matSource) .. ")" .. (ns.SavedPrices.Saving() and ", saving for alts..." or "")
 	end

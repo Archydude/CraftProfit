@@ -78,6 +78,9 @@ local tsmData = {}
 -- TSM's kinds of auction data that list items: the region's commodities and
 -- this realm's other items.
 local TSM_ITEM_DATA = { AUCTIONDB_COMMODITY_DATA = "region", AUCTIONDB_NON_COMMODITY_DATA = "realm" }
+-- When TSM's desktop app downloaded the newest of that data, as the data says
+-- itself (seconds since 1970), or nil when none was seen.
+local tsmDownloaded
 
 -- Realm names with only lowercase letters and digits, to match TSM's spelling of them.
 local function bareRealm(realm)
@@ -110,6 +113,15 @@ local function onTSMData(tag, realmOrRegion, data)
 	if not kind or type(data) ~= "string" then return end
 	if kind == "realm" and bareRealm(realmOrRegion) ~= bareRealm(tsmRealm()) then return end
 	tsmData[#tsmData + 1] = data
+	local downloaded = tonumber(data:match("downloadTime=(%d+)"))
+	if downloaded and (not tsmDownloaded or downloaded > tsmDownloaded) then tsmDownloaded = downloaded end
+end
+
+-- When TSM's desktop app last downloaded this realm's prices (seconds since
+-- 1970), or nil when that isn't known: TSM isn't loaded, or its app never ran.
+-- A scan made with TSM in the game doesn't count: TSM doesn't say when that was.
+function SavedPrices.TSMDownloaded()
+	return tsmDownloaded
 end
 
 -- TSM hands its data to this function as the game loads TradeSkillMaster_AppHelper,

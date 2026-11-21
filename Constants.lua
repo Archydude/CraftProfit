@@ -84,7 +84,9 @@ ns.DEFAULTS = {
 	locked = false,
 	scale = 1,
 	precision = "silver", -- smallest coin shown: "copper" | "silver" | "gold"
-	provider = "auto",    -- "auto" | "tsm" | "auctionator" | "own" (Craftonomics' scan, see Prices.lua)
+	-- "auto" | "tsm" | "auctionator" | "own" (Craftonomics' scan) | "fresh" (TSM, Auctionator's scan or
+	-- Craftonomics', whichever is newest; see Prices.lua)
+	provider = "auto",
 	matSource = "dbmarket",
 	saleSource = "dbmarket",
 	vendorOnAH = false,   -- materials vendors sell are bought on the auction house, not at a vendor
