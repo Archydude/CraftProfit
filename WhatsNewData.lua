@@ -2,10 +2,14 @@
 ArchdudeWhatsNew:Register("Craftonomics", {
 	title = "Craftonomics",
 	icon = "Interface\\Icons\\INV_Hammer_20",
-	version = "5.7.0",
+	version = "5.8.0",
 	seen = "CraftonomicsWhatsNew",
 	saved = { "CraftonomicsDB", "CraftonomicsCharDB" },
 	changes = {
+		{ "5.8.0",
+			"|cffffd100Best Craft follows chains:|r on a material's tooltip, the Best Craft line now also looks at what its crafts go into. When what a recipe makes goes into another recipe that makes more, like Heavy Stone into Heavy Blasting Powder and that into a bomb, the line shows that last recipe's profit, and the crafts on the way are listed under it in order, each set in further than the one before. Chains go up to four crafts.",
+			"|cffffd100Weigh best craft by sale rate (with TSM):|r a new option on the Tooltips options page, off by default. With it on, when the best craft is picked, a recipe's profit counts in full when what it makes has a TSM sale rate of 70% or more, and for less below that, in proportion: at 35% it counts for half. So a craft that sells well can beat one that makes more but rarely sells. The line still shows the craft's real profit.",
+		},
 		{ "5.7.0",
 			"|cffffd100Best Craft on material tooltips:|r a material's tooltip now shows the most profitable recipe this character knows that takes it: the profit of one craft on a |cffffd100Best Craft|r line, and under it the profession's icon and what the recipe makes. It's the Best crafts list's profit, so it follows your crafting strategy, and it only shows when that recipe makes a profit. A profession's recipes count once you've opened its profession window on this character. Turn it off with |cffffd100Show best craft|r on the Tooltips options page.",
 			"|cffffd100The best craft's sale rate (with TSM):|r hold |cffffd100Shift|r to also see the TSM sale rate of what that recipe makes. Outside your bags, hold Shift first, then hover the item. |cffffd100Best craft's sale rate|r on the Tooltips options page shows it always, or never.",
@@ -53,9 +57,6 @@ ArchdudeWhatsNew:Register("Craftonomics", {
 		},
 		{ "5.1.0",
 			"|cffffd100Buy vendor items on the auction house, on the panel:|r the option is now also a checkbox on the panel, under the crafting strategy, so you can switch it without opening the options. Ticked, materials a vendor sells (thread, flux, vials...) are priced at the auction house and go on the shopping list. Unticked, they're priced at the vendor. It shows on the crafting page and on crafting orders you bring materials to.",
-		},
-		{ "5.0.1",
-			"|cffffd100New logo:|r Craftonomics has a new logo. It shows on the button on the side of the auction house window and, on WoW Forever, on the Best crafts tab.",
 		},
 	},
 })

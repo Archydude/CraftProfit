@@ -517,9 +517,17 @@ function Options.Create()
 	checkbox("tipBestCraft", "Show best craft",
 		"On the tooltip of a material: Best Craft, the most profitable recipe this character knows that takes it, " ..
 		"with what one craft of it makes. It's the Best crafts list's profit, so it follows your crafting strategy.\n\n" ..
+		"It follows chains: when what a recipe makes goes into another recipe that makes more, the line shows " ..
+		"that one's profit, and the crafts on the way are listed under it, each set in further.\n\n" ..
 		"A profession's recipes count once you've opened its profession window on this character. " ..
 		"Recipes with no price for what they make, or for one of their materials, are left out. " ..
 		"The line only shows when that recipe makes a profit.")
+	checkbox("tipBestWeigh", "Weigh best craft by sale rate",
+		"With TSM: when the best craft is picked, a recipe's profit counts in full when what it makes has a TSM " ..
+		"sale rate of 70% or more, and for less below that, in proportion: at 35% it counts for half, at 7% for " ..
+		"a tenth. So a craft that sells well can beat one that makes more but rarely sells.\n\n" ..
+		"The Best Craft line still shows the craft's real profit. A recipe TSM has no sale rate for counts in " ..
+		"full, and one with a sale rate of 0% is never the best craft.")
 	dropdown("tipBestRate", "Best craft's sale rate", {
 		{ "shift", "While holding Shift" },
 		{ "always", "Always" },

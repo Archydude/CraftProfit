@@ -1,5 +1,9 @@
 # Changelog
 
+## 5.8.0
+- **Best Craft follows chains:** on a material's tooltip, the Best Craft line now also looks at what its crafts go into. When what a recipe makes goes into another recipe that makes more, like Heavy Stone into Heavy Blasting Powder and that into a bomb, the line shows that last recipe's profit, and the crafts on the way are listed under it in order, each set in further than the one before. Chains go up to four crafts.
+- **Weigh best craft by sale rate (with TSM):** a new option on the Tooltips options page, off by default. With it on, when the best craft is picked, a recipe's profit counts in full when what it makes has a TSM sale rate of 70% or more, and for less below that, in proportion: at 35% it counts for half. So a craft that sells well can beat one that makes more but rarely sells. The line still shows the craft's real profit.
+
 ## 5.7.0
 - **Best Craft on material tooltips:** a material's tooltip now shows the most profitable recipe this character knows that takes it: the profit of one craft on a **Best Craft** line, and under it the profession's icon and what the recipe makes. It's the Best crafts list's profit, so it follows your crafting strategy, and it only shows when that recipe makes a profit. A profession's recipes count once you've opened its profession window on this character. Turn it off with **Show best craft** on the Tooltips options page.
 - **The best craft's sale rate (with TSM):** hold **Shift** to also see the TSM sale rate of what that recipe makes. Outside your bags, hold Shift first, then hover the item. **Best craft's sale rate** on the Tooltips options page shows it always, or never.

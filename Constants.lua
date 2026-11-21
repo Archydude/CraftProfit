@@ -141,6 +141,7 @@ ns.DEFAULTS = {
 	tipLowest = true,     -- item tooltips: TSM's lowest auction against its market value, with Cheap or Expensive
 	tipBestCraft = true,  -- item tooltips: for a material, your most profitable recipe that takes it
 	tipBestRate = "shift", -- that recipe's TSM sale rate under it: while holding "shift" | "always" | "never"
+	tipBestWeigh = false, -- picking that recipe, a profit counts for less the worse what it makes sells (TSM sale rate under 70%)
 	rankConcentration = true, -- add the concentration that rank takes
 	rankCharacters = "all", -- whose ranks: "all" your characters | "current" one
 	bestSort = "profit",  -- the Best crafts list's sort: "profit" | "plain" | "procs" | "cost" | "gold" | "perPoint" | "listed" | "sold" | "crafter" | "name"

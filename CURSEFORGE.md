@@ -46,9 +46,9 @@ Craftonomics, formerly **Craft Profit**, answers in gold: **profit or loss?** A 
 The sale price at the rank you'll get, minus the 5% cut and your materials. On orders: the commission, minus the materials **you** supply, plus sellable rewards. With concentration on, the **concentration strategy** picks the materials: cheapest, least concentration or most **gold per point**. The **Crafts** box shows it for any number of crafts. A warning shows when the **AH deposit** is high on an item that sells poorly, and for weapons and armor the panel shows the **disenchant value** and when disenchanting beats selling. Materials show what you **have** of what you need, and a **Craft** button crafts from the panel.
 
 ### What should I craft?
-With TSM, **Best crafts** has **sale rate** and **trend** columns that show what really sells.
+With TSM, **Best crafts** shows each item's **sale rate** and **trend**.
 
-**All recipes** lists every profession's sellable recipes with each craft's profit. With TSM, switch it to a **heatmap**: tiles colored by price trend and sized by gold sold per day.
+**All recipes** lists every profession's sellable recipes and their profit. With TSM, switch it to a **heatmap**: tiles colored by price trend and sized by gold sold per day.
 
 ### At the auction house
 **Shopping list**: click a material to see it with the amount to buy. **Sell**: a price and sale rate on every bag item. **My auctions**: cancel the undercut ones.
@@ -57,7 +57,7 @@ With TSM, **Best crafts** has **sale rate** and **trend** columns that show what
 Best crafts shows what a **skill point** costs. **Craft myself** prices materials at what crafting them costs, and **Cheapest way** crafts or buys each, whichever is cheaper.
 
 ### Item tooltips
-Vendor and auction prices and the **AH deposit**, plus with TSM the **sale rate**, **trend** and whether the lowest auction is **cheap** or **expensive**. On a material: your **best craft** with it, and its profit.
+Vendor and auction prices and the **AH deposit**, plus with TSM the **sale rate**, **trend** and whether the lowest auction is **cheap** or **expensive**. On a material: the **best craft** it leads to, chains of crafts included, and its profit.
 
 ### Good to know
 **TSM prices for alts** that keep TSM turned off. Type **/craftonomics** for options.
@@ -74,18 +74,22 @@ This addon was made with AI.
 ## B. Upload File form
 
 **Files:** two, each uploaded with only its own game versions (why is in [UPLOADING.md](../UPLOADING.md)). The display name, release type and changelog are the same for both.
-- `dist\Craftonomics-5.7.0-retail.zip`: Retail `12.1.5`
-- `dist\Craftonomics-5.7.0-forever.zip`: WoW Forever `1.60.1`
+- `dist\Craftonomics-5.8.0-retail.zip`: Retail `12.1.5`
+- `dist\Craftonomics-5.8.0-forever.zip`: WoW Forever `1.60.1`
 
 **Display name**
 ```
-Craftonomics 5.7.0
+Craftonomics 5.8.0
 ```
 
 **Release type:** `Release`
 
 **Changelog** (paste only the newest part; paste older parts too if they never went up)
 ```markdown
+5.8.0
+- **Best Craft follows chains:** on a material's tooltip, the Best Craft line now also looks at what its crafts go into. When what a recipe makes goes into another recipe that makes more, like Heavy Stone into Heavy Blasting Powder and that into a bomb, the line shows that last recipe's profit, and the crafts on the way are listed under it in order, each set in further than the one before. Chains go up to four crafts.
+- **Weigh best craft by sale rate (with TSM):** a new option on the Tooltips options page, off by default. With it on, when the best craft is picked, a recipe's profit counts in full when what it makes has a TSM sale rate of 70% or more, and for less below that, in proportion: at 35% it counts for half. So a craft that sells well can beat one that makes more but rarely sells. The line still shows the craft's real profit.
+
 5.7.0
 - **Best Craft on material tooltips:** a material's tooltip now shows the most profitable recipe this character knows that takes it: the profit of one craft on a **Best Craft** line, and under it the profession's icon and what the recipe makes. It's the Best crafts list's profit, so it follows your crafting strategy, and it only shows when that recipe makes a profit. A profession's recipes count once you've opened its profession window on this character. Turn it off with **Show best craft** on the Tooltips options page.
 - **The best craft's sale rate (with TSM):** hold **Shift** to also see the TSM sale rate of what that recipe makes. Outside your bags, hold Shift first, then hover the item. **Best craft's sale rate** on the Tooltips options page shows it always, or never.

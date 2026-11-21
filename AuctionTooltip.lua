@@ -154,7 +154,7 @@ local function onItem(tooltip, data)
 	-- For a material: the most profitable recipe this character knows that takes it.
 	-- Only when it makes gold: the best of recipes that all lose it is nothing to craft.
 	local best = db.tipBestCraft and ns.BestCrafts.BestWith(itemID) or nil
-	if best and best.profit <= 0 then best = nil end
+	if best and (best.profit <= 0 or best.score <= 0) then best = nil end
 	if not (vendorBuy or vendorSell or price or list or rate or trend or lowest or best) then return end
 
 	tooltip:AddLine(" ")
@@ -177,13 +177,17 @@ local function onItem(tooltip, data)
 			1, 0.82, 0, 1, 1, 1)
 	end
 	if best then
-		-- What it makes, by its own name once the game has it, and what one craft makes.
-		local name = best.itemID and ns.Format.ItemName(best.itemID)
-		name = name and ns.Format.RarityColored(best.itemID, name) or best.name
+		-- What one craft of the last recipe in the chain makes.
 		tooltip:AddDoubleLine("Best Craft", ns.Color("profit", "+" .. money(best.profit)), 1, 0.82, 0, 1, 1, 1)
-		-- Under it, set in: its profession's icon and what it makes.
-		local icon = professionIcon(best.professionID)
-		tooltip:AddLine("  " .. (icon and format("|T%s:0|t ", icon) or "") .. name, 1, 1, 1)
+		-- Under it, the chain of crafts that gets there, each set in further than the
+		-- one before: its profession's icon and what it makes (by the item's own
+		-- name once the game has it).
+		for index, step in ipairs(best.steps) do
+			local name = step.itemID and ns.Format.ItemName(step.itemID)
+			name = name and ns.Format.RarityColored(step.itemID, name) or step.name
+			local icon = professionIcon(step.professionID)
+			tooltip:AddLine(string.rep("  ", index) .. (icon and format("|T%s:0|t ", icon) or "") .. name, 1, 1, 1)
+		end
 		-- With TSM: how well what it makes sells. Always, never, or while Shift is held.
 		local shown = db.tipBestRate == "always" or (db.tipBestRate ~= "never" and IsShiftKeyDown())
 		if best.saleRate and shown then

@@ -394,8 +394,8 @@ local materialPrice, salePrice, market -- market: link -> { listed, listedAge, s
 local effectiveCost, buyCost
 -- Rows priced so far: entry -> row (see priceEntry).
 local priced = setmetatable({}, { __mode = "k" })
--- The best craft found for a material so far: itemID -> { name, itemID, profit },
--- or false for none (see BestCrafts.BestWith). Kept until prices change.
+-- The best craft found for a material so far: itemID -> what BestCrafts.BestWith
+-- returns, or false for none. Kept until prices change.
 local bestWith = {}
 
 function forgetMarket()
@@ -717,32 +717,109 @@ local function recipesUsing(itemID)
 	return usedIn[itemID]
 end
 
--- The most profitable recipe this character knows that takes `itemID` as a
--- material, going by its saved recipes (every profession it has opened):
--- { name = the recipe's, itemID = what it makes, profit = of one craft, as the
--- list shows it, professionID = the recipe's, saleRate = TSM's for what it makes
--- (nil without TSM) }. Nil when no recipe takes it, or none of them has a profit to
--- show (no price for what it makes, or for one of its materials).
-function BestCrafts.BestWith(itemID)
+-- How many crafts a chain can be: a material into a craft, that into another...
+local MAX_CHAIN = 4
+
+-- One craft of a chain: { name = the recipe's, itemID = what it makes,
+-- professionID = the recipe's }.
+local function chainStep(entry, row)
+	return { name = entry.name, itemID = row.output and row.output.itemID, professionID = entry.professionID }
+end
+
+-- Whether a chain goes through an item that's on the way here already.
+local function comesBack(found, onPath)
+	for _, step in ipairs(found.steps) do
+		if step.itemID and onPath[step.itemID] then return true end
+	end
+	return false
+end
+
+-- With "Weigh best craft by sale rate" on: from this TSM sale rate up, a craft's
+-- profit counts in full when the best craft is picked. Below it, in proportion:
+-- at half of it, for half.
+local FULL_SALE_RATE = 0.70
+
+-- What a craft's profit counts for when the best craft is picked: the profit,
+-- or with that option on, less of it the worse what it makes sells. A loss
+-- counts as it is, and so does a profit TSM has no sale rate for.
+local function scoreOf(profit, saleRate)
+	if not (ns.db.tipBestWeigh and saleRate) or profit <= 0 then return profit end
+	return profit * math.min(saleRate / FULL_SALE_RATE, 1)
+end
+
+-- Whether a chain of `count` crafts that counts for `score` beats the best so
+-- far: a higher score, or the same in fewer crafts.
+local function beats(score, count, found)
+	if not found or score > found.score then return true end
+	return score == found.score and count < #found.steps
+end
+
+-- The best craft `itemID` leads to (see BestCrafts.BestWith), or false, and
+-- whether every way on from it was followed to its end. `onPath` has the items
+-- on the way here, so a chain never comes back to one (a recipe can turn what
+-- another makes back into its material), and `depth` is how many crafts in this is.
+local function bestFrom(itemID, onPath, depth)
 	local entries = recipesUsing(itemID)
-	if not entries then return end
+	if not entries then return false, true end
+	local known = bestWith[itemID]
+	if known == false or (known and not comesBack(known, onPath)) then return known, true end
+	local found, whole = false, true
+	onPath[itemID] = true
+	for _, entry in ipairs(entries) do
+		local row = priced[entry]
+		if not row then
+			row = priceEntry(entry)
+			priced[entry] = row
+		end
+		local made = row.output and row.output.itemID
+		if made and onPath[made] then
+			-- Back where the chain has been: not a way on.
+			whole = false
+		else
+			-- Crafted and sold.
+			local profit = ns.db.countProcs and row.expected or row.profit
+			local score = profit and scoreOf(profit, row.saleRate)
+			if score and row.unpriced == 0 and beats(score, 1, found) then
+				found = { profit = profit, score = score, saleRate = row.saleRate, steps = { chainStep(entry, row) } }
+			end
+			-- Or crafted and put into another craft.
+			if made and recipesUsing(made) then
+				if depth >= MAX_CHAIN then
+					whole = false
+				else
+					local further, followed = bestFrom(made, onPath, depth + 1)
+					whole = whole and followed
+					if further and beats(further.score, #further.steps + 1, found) then
+						local steps = { chainStep(entry, row) }
+						for _, step in ipairs(further.steps) do steps[#steps + 1] = step end
+						found = { profit = further.profit, score = further.score, saleRate = further.saleRate, steps = steps }
+					end
+				end
+			end
+		end
+	end
+	onPath[itemID] = nil
+	-- Only kept when nothing was cut short: an answer found partway down another
+	-- item's chain can be less than the item's own.
+	if whole or depth == 1 then bestWith[itemID] = found end
+	return found, whole
+end
+
+-- The most profitable craft a material leads to, for this character, going by
+-- its saved recipes (every profession it has opened). That's a recipe that takes
+-- `itemID`, or one further down a chain: a recipe that takes what such a recipe
+-- makes, and so on. { profit = of one craft of the last recipe, as the list
+-- shows it, score = what that counted for when it was picked (see scoreOf),
+-- saleRate = TSM's for what that makes (nil without TSM), steps = the
+-- crafts in order, each { name, itemID, professionID } }. Nil when no recipe
+-- takes it, or none on the way has a profit to show (no price for what it makes,
+-- or for one of its materials).
+function BestCrafts.BestWith(itemID)
+	if not recipesUsing(itemID) then return end
 	local found = bestWith[itemID]
 	if found == nil then
 		if not effectiveCost then BestCrafts.Reprice() end
-		found = false
-		for _, entry in ipairs(entries) do
-			local row = priced[entry]
-			if not row then
-				row = priceEntry(entry)
-				priced[entry] = row
-			end
-			local profit = ns.db.countProcs and row.expected or row.profit
-			if profit and row.unpriced == 0 and (not found or profit > found.profit) then
-				found = { name = entry.name, itemID = row.output and row.output.itemID, profit = profit,
-					professionID = entry.professionID, saleRate = row.saleRate }
-			end
-		end
-		bestWith[itemID] = found
+		found = bestFrom(itemID, {}, 1)
 	end
 	return found or nil
 end
